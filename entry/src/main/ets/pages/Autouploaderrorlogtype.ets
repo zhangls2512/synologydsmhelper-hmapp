@@ -1,0 +1,143 @@
+import { preferences } from '@kit.ArkData'
+
+interface Type {
+  name: string,
+  value: string
+}
+
+@Builder
+export function AutouploaderrorlogtypeBuilder() {
+  Autouploaderrorlogtype()
+}
+
+@ComponentV2
+struct Autouploaderrorlogtype {
+  @Local autoUploadErrorLogType: string[] = []
+  context = this.getUIContext().getHostContext()
+  debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+    name: 'debugSetting'
+  })
+  typeArray: Type[] = [
+    {
+      name: 'js 运行异常',
+      value: 'JS_ERROR'
+    },
+    {
+      name: '应用崩溃',
+      value: 'APP_CRASH'
+    },
+    {
+      name: '应用冻屏',
+      value: 'APP_FREEZE'
+    },
+    {
+      name: '应用查杀',
+      value: 'APP_KILLED'
+    },
+    {
+      name: '应用启动耗时',
+      value: 'APP_LAUNCH'
+    },
+    {
+      name: '资源泄漏',
+      value: 'RESOURCE_OVERLIMIT'
+    },
+    {
+      name: '地址越界',
+      value: 'ADDRESS_SANITIZER'
+    },
+    {
+      name: '主线程超时',
+      value: 'MAIN_THREAD_JANK'
+    },
+    {
+      name: '滑动丢帧',
+      value: 'SCROLL_JANK'
+    },
+    {
+      name: 'CPU高负载',
+      value: 'CPU_USAGE_HIGH'
+    },
+    {
+      name: '24小时功耗器件分解统计',
+      value: 'BATTERY_USAGE'
+    }
+  ]
+
+  getSetting() {
+    this.autoUploadErrorLogType = this.debugSettingDataPreferences.getSync('autoUploadErrorLogType', [
+      'JS_ERROR',
+      'APP_CRASH',
+      'APP_FREEZE',
+      'APP_KILLED',
+      'APP_LAUNCH',
+      'RESOURCE_OVERLIMIT',
+      'ADDRESS_SANITIZER',
+      'MAIN_THREAD_JANK',
+      'SCROLL_JANK',
+      'CPU_USAGE_HIGH',
+      'BATTERY_USAGE'
+    ]) as string[]
+  }
+
+  build() {
+    NavDestination() {
+      List() {
+        ListItem() {
+          Column() {
+            ForEach(this.typeArray, (item: Type, index) => {
+              if (index !== 0) {
+                Divider()
+                  .padding({
+                    left: 12,
+                    right: 12
+                  })
+              }
+              Row() {
+                Text(item.name)
+                  .enableAutoSpacing(true)
+                  .fontWeight(FontWeight.Medium)
+                Blank()
+                Toggle({
+                  type: ToggleType.Switch,
+                  isOn: this.autoUploadErrorLogType.includes(item.value)
+                })
+                  .onChange((isOn) => {
+                    let autoUploadErrorLogType: string[] = []
+                    if (!isOn) {
+                      autoUploadErrorLogType = this.autoUploadErrorLogType.filter(itema => itema !== item.value)
+                    }
+                    if (isOn) {
+                      autoUploadErrorLogType = [...this.autoUploadErrorLogType, item.value]
+                    }
+                    this.debugSettingDataPreferences.putSync('autoUploadErrorLogType', autoUploadErrorLogType)
+                    this.debugSettingDataPreferences.flushSync()
+                    this.getSetting()
+                  })
+              }
+              .borderRadius(12)
+              .padding(12)
+              .width('100%')
+            })
+          }
+          .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+          .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+          .padding($r('sys.float.ohos_id_corner_radius_mark'))
+        }
+        .margin({
+          top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+        })
+      }
+      .padding({
+        bottom: $r('sys.float.ohos_id_default_padding_bottom_fixed'),
+        left: $r('sys.float.ohos_id_max_padding_start'),
+        right: $r('sys.float.ohos_id_max_padding_end')
+      })
+    }
+    .backgroundColor($r('app.color.sheet_background'))
+    .title('自动上传故障日志类型')
+    .onAppear(() => {
+      this.getSetting()
+    })
+  }
+}

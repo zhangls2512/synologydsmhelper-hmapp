@@ -1,0 +1,47 @@
+{
+  "app": {
+    "signingConfigs": [],
+    "products": [
+      {
+        "name": "default",
+        "signingConfig": "",
+        "buildOption": {
+          "resOptions": {
+            "resCompileThreads": 32
+          },
+          "arkOptions": {
+            "autoLazyImport": true,
+            "reExportCheckMode": "strict",
+            "branchElimination": true,
+            "expandImportPath": {
+              "enable": true
+            }
+          },
+          "strictMode": {
+            "noExternalImportByPath": true,
+            "useNormalizedOHMUrl": true,
+            "caseSensitiveCheck": true,
+            "harLocalDependencyCheck": true
+          }
+        },
+        "runtimeOS": "HarmonyOS",
+        "compatibleSdkVersion": "6.0.0(20)",
+        "targetSdkVersion": "6.0.0(20)"
+      }
+    ]
+  },
+  "modules": [
+    {
+      "name": "entry",
+      "srcPath": "./entry",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    }
+  ]
+}
