@@ -18,7 +18,7 @@ import { connection } from '@kit.NetworkKit'
 import { notificationManager } from '@kit.NotificationKit'
 import { hiAppEvent } from '@kit.PerformanceAnalysisKit'
 import openLink from '../common/Openlink'
-import request from '../common/Request'
+import { developerRequest } from '../common/Request'
 
 interface JsErrorObject {
   name: string,
@@ -156,8 +156,8 @@ export default class EntryAbility extends UIAbility {
             'CPU_USAGE_HIGH',
             'BATTERY_USAGE'
           ]) as string[]).includes('JS_ERROR')) {
-            const res = await request('/debug/newErrorLog', {
-              product: '群晖DSM助手',
+            const res = await developerRequest('/debug/newErrorLog', {
+              product: 'synologydsmhelper',
               object: object
             })
             if (res !== 'fail') {
@@ -232,8 +232,8 @@ export default class EntryAbility extends UIAbility {
             'CPU_USAGE_HIGH',
             'BATTERY_USAGE'
           ]) as string[]).includes('JS_ERROR')) {
-            const res = await request('/debug/newErrorLog', {
-              product: '群晖DSM助手',
+            const res = await developerRequest('/debug/newErrorLog', {
+              product: 'synologydsmhelper',
               object: object
             })
             if (res !== 'fail') {
@@ -289,8 +289,8 @@ export default class EntryAbility extends UIAbility {
               'CPU_USAGE_HIGH',
               'BATTERY_USAGE'
             ]) as string[]).includes(item.name)) {
-              const res = await request('/debug/newErrorLog', {
-                product: '群晖DSM助手',
+              const res = await developerRequest('/debug/newErrorLog', {
+                product: 'synologydsmhelper',
                 object: item
               })
               if (res !== 'fail') {

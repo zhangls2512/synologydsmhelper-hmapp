@@ -234,10 +234,9 @@ struct About {
               }
             })
             .width('100%')
-
-            /*.onClick(() => {
-              openLink('')
-            })*/
+            .onClick(() => {
+              openLink('https://docs.qq.com/doc/p/')
+            })
 
             Divider()
               .padding({
@@ -494,7 +493,7 @@ struct About {
                   Text('QQ群')
                     .enableAutoSpacing(true)
                     .fontWeight(FontWeight.Medium)
-                  Text('')
+                  Text('https://qm.qq.com/q/9PB8SIWhby')
                     .fontColor($r('sys.color.font_secondary'))
                     .fontSize($r('sys.float.ohos_id_text_size_body2'))
                     .margin({
@@ -521,7 +520,7 @@ struct About {
               })
               .width('100%')
               .onClick(() => {
-                openLink('')
+                openLink('https://qm.qq.com/q/9PB8SIWhby')
               })
 
               Divider()

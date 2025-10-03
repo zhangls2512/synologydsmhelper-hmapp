@@ -1,5 +1,5 @@
 import { LoadingDialog, promptAction } from '@kit.ArkUI'
-import request from '../common/Request'
+import { developerRequest } from '../common/Request'
 
 @Builder
 export function FeedbackBuilder() {
@@ -106,8 +106,8 @@ struct Feedback {
                   })
                 })
                 dialogControllerProgress.open()
-                const res = await request('/debug/sendFeedbackEmail', {
-                  product: '群晖DSM助手',
+                const res = await developerRequest('/debug/sendFeedbackEmail', {
+                  product: 'synologydsmhelper',
                   content: this.content,
                   contactType: this.contactType,
                   contactValue: this.contactValue

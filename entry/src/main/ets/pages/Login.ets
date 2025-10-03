@@ -1,12 +1,23 @@
 import { privacyManager } from '@kit.AppGalleryKit'
 import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { netBoost } from '@kit.NetworkBoostKit'
+import { set } from '../common/Account'
 import openLink from '../common/Openlink'
-import request from '../common/Request'
+import { dsmRequest } from '../common/Request'
+
+export interface ResponseData {
+  account: string,
+  sid: string,
+  device_id: string
+}
 
 @ComponentV2
 export default struct Login {
   @Consumer() isShowLoginSheet: boolean = false
+  @Local scheme: string = 'http'
+  @Local host: string = ''
+  @Local port: string = ''
+  @Local name: string = ''
   @Local password: string = ''
   @Local agree: boolean = false
 
@@ -15,9 +26,102 @@ export default struct Login {
       ListItem() {
         Column() {
           Row() {
+            Text('协议')
+              .fontWeight(FontWeight.Medium)
+              .width('15%')
+            Row() {
+              Radio({
+                value: 'http',
+                group: 'scheme'
+              })
+                .checked(this.scheme === 'http' ? true : false)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+                .onChange((isChecked) => {
+                  if (isChecked) {
+                    this.scheme = 'http'
+                  }
+                })
+              Text('http')
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+              Row() {
+                Radio({
+                  value: 'https',
+                  group: 'scheme'
+                })
+                  .checked(this.scheme === 'https' ? true : false)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                  .onChange((isChecked) => {
+                    if (isChecked) {
+                      this.scheme = 'https'
+                    }
+                  })
+                Text('https')
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+              }
+            }
+            .width('80%')
+          }
+
+          Row() {
+            Text('主机')
+              .fontWeight(FontWeight.Medium)
+              .width('15%')
+            TextInput({
+              text: this.host!!,
+              placeholder: '请输入主机'
+            })
+              .enableAutoSpacing(true)
+              .width('80%')
+          }
+          .margin({
+            top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+          })
+
+          Row() {
+            Text('端口')
+              .fontWeight(FontWeight.Medium)
+              .width('15%')
+            TextInput({
+              text: this.port!!,
+              placeholder: '请输入端口 (可选)'
+            })
+              .enableAutoSpacing(true)
+              .type(InputType.Number)
+              .maxLength(5)
+              .width('80%')
+          }
+          .margin({
+            top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+          })
+
+          Row() {
+            Text('账号')
+              .fontWeight(FontWeight.Medium)
+              .width('15%')
+            TextInput({
+              text: this.name!!,
+              placeholder: '请输入账号'
+            })
+              .contentType(ContentType.USER_NAME)
+              .enableAutoSpacing(true)
+              .width('80%')
+          }
+          .margin({
+            top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+          })
+
+          Row() {
             Text('密码')
               .fontWeight(FontWeight.Medium)
-              .width('20%')
+              .width('15%')
             TextInput({
               text: this.password!!,
               placeholder: '请输入密码'
@@ -26,7 +130,7 @@ export default struct Login {
               .enableAutoSpacing(true)
               .maxLength(30)
               .type(InputType.Password)
-              .width('75%')
+              .width('80%')
           }
           .margin({
             top: $r('sys.float.ohos_id_elements_margin_vertical_m')
@@ -39,6 +143,30 @@ export default struct Login {
             })
             .width('100%')
             .onClick(async () => {
+              if (!this.host) {
+                promptAction.openToast({
+                  message: '请输入主机'
+                })
+                return
+              }
+              let port = '0'
+              if (!this.port) {
+                if (this.scheme === 'http') {
+                  port = '5000'
+                }
+                if (this.scheme === 'https') {
+                  port = '5001'
+                }
+              }
+              if (this.port) {
+                port = this.port
+              }
+              if (!this.name) {
+                promptAction.openToast({
+                  message: '请输入账号'
+                })
+                return
+              }
               if (!this.password) {
                 promptAction.openToast({
                   message: '请输入密码'
@@ -55,15 +183,22 @@ export default struct Login {
                 scene: 'login',
                 sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
               })
-              const res = await request('/', {
-                password: this.password
-              })
+              const res = await dsmRequest(this.scheme + '://' + this.host + ':' + port, 'SYNO.API.Auth',
+                '&method=login&account=' + this.name + '&passwd=' + this.password, {})
               netBoost.setSceneDesc({
                 scene: 'login',
                 sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
               })
               dialogControllerProgress.close()
               if (res !== 'fail') {
+                const data = res as ResponseData
+                await set({
+                  path: this.scheme + '://' + this.host + ':' + port,
+                  name: data.account,
+                  password: this.password,
+                  sid: data.sid,
+                  did: data.device_id
+                })
                 promptAction.openToast({
                   message: '登录成功'
                 })
