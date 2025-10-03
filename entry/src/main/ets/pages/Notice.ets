@@ -173,7 +173,7 @@ struct Notice {
       }
       this.loading = true
       const res = await request('/product/getPushList', {
-        product: 'password',
+        product: 'synologydsmhelper',
         pushToken: this.pushToken
       })
       this.loading = false

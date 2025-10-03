@@ -46,7 +46,6 @@
     "@typescript-eslint/space-before-function-paren": "off",
     "@typescript-eslint/strict-boolean-expressions": "off",
     "@typescript-eslint/unbound-method": "off",
-    "@security/no-commented-code": "off",
     "@security/no-cycle": "off",
     "@security/no-unsafe-mac": "off",
     "@performance/avoid-overusing-custom-component-check": "off",

@@ -26,7 +26,7 @@ export default async function copy(text: string, requirePermission: boolean = tr
     }
     if (!canWritePasteBoard) {
       const data = await promptAction.showDialog({
-        title: '允许“轩铭密码智能备忘录”写入剪贴板？',
+        title: '允许“群晖 DSM 助手”写入剪贴板？',
         message: $r('app.string.WRITE_PASTEBOARD_reason'),
         buttons: [
           {

@@ -107,8 +107,7 @@ struct Feedback {
                 })
                 dialogControllerProgress.open()
                 const res = await request('/debug/sendFeedbackEmail', {
-                  key: 'RaGvhiCmYP8aPZ-QmmDgBQvwkfkp9TXEVCWEn8fPjshs9GyUCooG_kq7N8bHBRcT',
-                  product: '密码智能备忘录',
+                  product: '群晖DSM助手',
                   content: this.content,
                   contactType: this.contactType,
                   contactValue: this.contactValue

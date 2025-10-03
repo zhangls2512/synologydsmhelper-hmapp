@@ -46,7 +46,7 @@ struct Moresetting {
               .onClick(() => {
                 const applicationContext = this.context.getApplicationContext()
                 applicationContext.restartApp({
-                  bundleName: 'com.zhangxm.aipasswordmemo',
+                  bundleName: 'com.songjy.synologydsmhelper',
                   abilityName: 'EntryAbility'
                 })
               })
