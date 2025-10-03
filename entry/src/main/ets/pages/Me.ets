@@ -2,6 +2,8 @@ import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { window } from '@kit.ArkUI'
 import { deviceInfo } from '@kit.BasicServicesKit'
+import { hdsEffect } from '@kit.UIDesignKit'
+import { get, remove } from '../common/Account'
 import Login from './Login'
 import Setting from './Setting'
 
@@ -9,8 +11,14 @@ import Setting from './Setting'
 export default struct Me {
   @Provider() isShowLoginSheet: boolean = false
   @Local isShowSettingSheet: boolean = false
+  @Local name: string = ''
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
   preferType = 1
+
+  async get() {
+    const accountInfo = await get()
+    this.name = accountInfo.name
+  }
 
   @Builder
   LoginSheetBuilder() {
@@ -33,9 +41,16 @@ export default struct Me {
                 right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
               })
               .width(40)
-            Text('登录')
-              .fontSize($r('sys.float.ohos_id_text_size_dialog_tittle'))
-              .fontWeight(FontWeight.Bold)
+            if (!this.name) {
+              Text('登录')
+                .fontSize($r('sys.float.ohos_id_text_size_dialog_tittle'))
+                .fontWeight(FontWeight.Bold)
+            }
+            if (this.name) {
+              Text(this.name)
+                .fontSize($r('sys.float.ohos_id_text_size_dialog_tittle'))
+                .fontWeight(FontWeight.Bold)
+            }
           }
           .borderRadius(12)
           .padding(12)
@@ -49,7 +64,9 @@ export default struct Me {
           })
           .width('100%')
           .onClick(() => {
-            this.isShowLoginSheet = true
+            if (!this.name) {
+              this.isShowLoginSheet = true
+            }
           })
           .bindSheet(this.isShowLoginSheet!!, this.LoginSheetBuilder(), {
             height: SheetSize.FIT_CONTENT,
@@ -70,6 +87,7 @@ export default struct Me {
             onDisappear: (async () => {
               const lastWindow = await window.getLastWindow(this.context)
               await lastWindow.setWindowPrivacyMode(false)
+              this.get()
             })
           })
         }
@@ -121,6 +139,51 @@ export default struct Me {
       .margin({
         top: $r('sys.float.ohos_id_elements_margin_vertical_l')
       })
+
+      if (this.name) {
+        ListItem() {
+          Button('退出登录')
+            .buttonStyle(ButtonStyleMode.NORMAL)
+            .fontColor($r('sys.color.warning'))
+            .visualEffect(new hdsEffect.HdsEffectBuilder()
+              .pointLight({
+                sourceType: hdsEffect.PointLightSourceType.SOFT,
+                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+              })
+              .buildEffect())
+            .onClick(async () => {
+              const promptAction = this.getUIContext().getPromptAction()
+              const data = await promptAction.showDialog({
+                title: '提示',
+                message: '确定退出登录？',
+                buttons: [
+                  {
+                    text: '取消',
+                    color: $r('sys.color.font_primary')
+                  },
+                  {
+                    text: '退出',
+                    color: $r('sys.color.warning')
+                  }
+                ]
+              })
+              if (data.index === 1) {
+                remove()
+                await preferences.deletePreferences(this.context, {
+                  name: 'login'
+                })
+                this.name = ''
+                promptAction.openToast({
+                  message: '退出成功'
+                })
+              }
+            })
+        }
+        .margin({
+          top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+        })
+        .width('100%')
+      }
     }
     .padding({
       bottom: $r('sys.float.ohos_id_default_padding_bottom_fixed'),
@@ -132,7 +195,9 @@ export default struct Me {
         this.preferType = 0
       }
       this.context.eventHub.on('refreshMe', () => {
+        this.get()
       })
+      this.get()
     })
     .onDisAppear(() => {
       this.context.eventHub.off('refreshMe')

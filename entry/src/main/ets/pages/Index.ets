@@ -1,7 +1,10 @@
 import { common } from '@kit.AbilityKit'
+import { LoadingDialog, prompt } from '@kit.ArkUI'
 import { deviceInfo } from '@kit.BasicServicesKit'
 import { fileIo } from '@kit.CoreFileKit'
 import { image } from '@kit.ImageKit'
+import { get } from '../common/Account'
+import { dsmRequest } from '../common/Request'
 import Me from './Me'
 import Cleardata from './Cleardata'
 
@@ -12,6 +15,7 @@ struct Index {
   @Local index: number = 0
   @Local title: string = '首页'
   @Local isShowCleardataSheet: boolean = false
+  @Local content: string = ''
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
   preferType = 1
 
@@ -23,6 +27,26 @@ struct Index {
       return backgroundImageSource.createPixelMapSync()
     }
     return
+  }
+
+  async get() {
+    const accountInfo = await get()
+    if (!accountInfo.path) {
+      this.content = '未登录'
+    }
+    if (accountInfo.path) {
+      const dialogControllerProgress = new CustomDialogController({
+        builder: LoadingDialog({
+          content: '加载中...'
+        })
+      })
+      dialogControllerProgress.open()
+      const res = await dsmRequest('', 'SYNO.FileStation.List', '&method=list_share', {})
+      dialogControllerProgress.close()
+      if (res !== 'fail') {
+        this.content = JSON.stringify(res)
+      }
+    }
   }
 
   @Builder
@@ -61,7 +85,7 @@ struct Index {
         index: $$this.index
       }) {
         TabContent() {
-          Text('首页')
+          Text(this.content)
             .height('100%')
         }
         .tabBar(this.tabBuilder(0, $r('app.media.icon'), '首页'))
@@ -105,10 +129,12 @@ struct Index {
       if (deviceInfo.deviceType === 'phone') {
         this.preferType = 0
       }
-      this.backgroundImagePixelMap = this.getBackgroundImage()
       this.context.eventHub.on('refreshIndex', () => {
         this.backgroundImagePixelMap = this.getBackgroundImage()
+        this.get()
       })
+      this.backgroundImagePixelMap = this.getBackgroundImage()
+      this.get()
     })
     .bindSheet(this.isShowCleardataSheet!!, this.CleardataSheetBuilder(), {
       preferType: this.preferType,

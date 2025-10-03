@@ -2,7 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { notificationManager } from '@kit.NotificationKit'
 import { pushService } from '@kit.PushKit'
-import request from '../common/Request'
+import { developerRequest } from '../common/Request'
 
 interface NoticeItem {
   _id: string,
@@ -127,7 +127,7 @@ struct Notice {
                           })
                         })
                         dialogControllerProgress.open()
-                        const res = await request('/product/updatePushStatus', {
+                        const res = await developerRequest('/product/updatePushStatus', {
                           id: item._id,
                           pushToken: this.pushToken
                         })
@@ -172,7 +172,7 @@ struct Notice {
         })
       }
       this.loading = true
-      const res = await request('/product/getPushList', {
+      const res = await developerRequest('/product/getPushList', {
         product: 'synologydsmhelper',
         pushToken: this.pushToken
       })
