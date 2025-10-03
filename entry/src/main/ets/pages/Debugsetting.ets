@@ -298,7 +298,7 @@ struct Debugsetting {
                     if (data.index === 1) {
                       const applicationContext = this.context.getApplicationContext()
                       applicationContext.restartApp({
-                        bundleName: 'com.zhangxm.aipasswordmemo',
+                        bundleName: 'com.songjy.synologydsmhelper',
                         abilityName: 'EntryAbility'
                       })
                     }
@@ -391,7 +391,7 @@ struct Debugsetting {
                   right: 12
                 })
               Row() {
-                Text('清除所有数据并退出')
+                Text('清除全部数据并退出')
                   .fontColor($r('sys.color.warning'))
                   .fontWeight('medium')
                 Blank()

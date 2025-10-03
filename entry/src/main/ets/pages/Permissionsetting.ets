@@ -1,6 +1,4 @@
-import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
-import { getPermission } from '../common/Permission'
 
 @Builder
 export function PermissionsettingBuilder() {
@@ -10,8 +8,7 @@ export function PermissionsettingBuilder() {
 @ComponentV2
 struct Permissionsetting {
   @Local writePasteBoard: boolean = false
-  context = this.getUIContext().getHostContext() as common.UIAbilityContext
-  dataSync = getPermission('ohos.permission.DISTRIBUTED_DATASYNC')
+  context = this.getUIContext().getHostContext()
   permissionSettingDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'permissionSetting'
   })
@@ -23,12 +20,12 @@ struct Permissionsetting {
           Column() {
             Column() {
               Row() {
-                Text('设备发现和连接')
+                Text('系统授权')
                   .fontWeight(FontWeight.Medium)
                 Blank()
                 Toggle({
                   type: ToggleType.Switch,
-                  isOn: this.dataSync
+                  isOn: true
                 })
                   .enabled(false)
               }
@@ -40,33 +37,15 @@ struct Permissionsetting {
             .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
             .padding($r('sys.float.ohos_id_corner_radius_mark'))
 
-            Text() {
-              Span($r('app.string.DISTRIBUTED_DATASYNC_reason'))
-                .fontColor($r('sys.color.font_secondary'))
-              Span('请前往')
-                .fontColor($r('sys.color.font_secondary'))
-              Span('系统设置')
-                .fontColor($r('sys.color.font_emphasize'))
-                .fontWeight(FontWeight.Medium)
-                .onClick(() => {
-                  this.context.startAbility({
-                    bundleName: 'com.huawei.hmos.settings',
-                    abilityName: 'com.huawei.hmos.settings.MainAbility',
-                    uri: 'application_info_entry',
-                    parameters: {
-                      pushParams: 'com.zhangxm.aipasswordmemo'
-                    }
-                  })
-                })
-              Span('管理此权限。')
-                .fontColor($r('sys.color.font_secondary'))
-            }
-            .fontSize($r('sys.float.ohos_id_text_size_body3'))
-            .margin({
-              top: 6,
-              left: 12,
-              right: 12
-            })
+            Text('系统自动开启此权限，无法手动管理。本应用使用此权限获取并根据网络、Wi-Fi等信息，使用互联网、隐私窗口、振动、窗口置顶等能力优化使用体验。通过此权限获取的信息不上传到本应用开发者服务器。')
+              .enableAutoSpacing(true)
+              .fontColor($r('sys.color.font_secondary'))
+              .fontSize($r('sys.float.ohos_id_text_size_body3'))
+              .margin({
+                top: 6,
+                left: 12,
+                right: 12
+              })
           }
           .alignItems(HorizontalAlign.Start)
         }

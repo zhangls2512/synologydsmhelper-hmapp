@@ -1,18 +1,12 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
-import { promptAction } from '@kit.ArkUI'
 import { webview } from '@kit.ArkWeb'
-import { asset } from '@kit.AssetStoreKit'
 import { fileIo } from '@kit.CoreFileKit'
-import { stringToArray } from '../common/Crypto'
-import { getPasswordList, getTypeInfoList } from '../common/Dataget'
 
 @ComponentV2
 export default struct Cleardata {
   @Local setting: string[] = []
   @Local allSetting: boolean = false
-  @Local cloudbackupSetting: boolean = false
-  @Local dataSetting: boolean = false
   @Local commonSetting: boolean = false
   @Local permissionSetting: boolean = false
   @Local debugSetting: boolean = false
@@ -20,15 +14,9 @@ export default struct Cleardata {
   @Local allCache: boolean = false
   @Local appCache: boolean = false
   @Local webviewCache: boolean = false
-  @Local invitationQrcodeCache: boolean = false
   @Local log: string[] = []
   @Local allLog: boolean = false
   @Local errorLog: boolean = false
-  @Local nouse: string[] = []
-  @Local allNouse: boolean = false
-  @Local speakSettingNouse: boolean = false
-  @Local oldaccountNouse: boolean = false
-  @Local passwordIconNouse: boolean = false
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
   build() {
@@ -58,70 +46,6 @@ export default struct Cleardata {
                 })
               Text('全部')
                 .fontWeight(FontWeight.Bold)
-            }
-            .borderRadius(12)
-            .padding(12)
-            .width('100%')
-
-            Divider()
-              .padding({
-                left: 12,
-                right: 12
-              })
-            Row() {
-              Checkbox({
-                name: 'cloudbackupSetting',
-                group: 'setting'
-              })
-                .shape(CheckBoxShape.ROUNDED_SQUARE)
-                .margin({
-                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                })
-                .select(this.cloudbackupSetting!!)
-              Column() {
-                Text('云备份')
-                  .fontWeight(FontWeight.Medium)
-                Text('自动同步等')
-                  .fontColor($r('sys.color.font_secondary'))
-                  .fontSize($r('sys.float.ohos_id_text_size_body2'))
-                  .margin({
-                    top: $r('sys.float.ohos_id_text_margin_vertical')
-                  })
-                  .width('90%')
-              }
-              .alignItems(HorizontalAlign.Start)
-            }
-            .borderRadius(12)
-            .padding(12)
-            .width('100%')
-
-            Divider()
-              .padding({
-                left: 12,
-                right: 12
-              })
-            Row() {
-              Checkbox({
-                name: 'dataSetting',
-                group: 'setting'
-              })
-                .shape(CheckBoxShape.ROUNDED_SQUARE)
-                .margin({
-                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                })
-                .select(this.dataSetting!!)
-              Column() {
-                Text('数据')
-                  .fontWeight(FontWeight.Medium)
-                Text('设备间自动同步等')
-                  .fontColor($r('sys.color.font_secondary'))
-                  .fontSize($r('sys.float.ohos_id_text_size_body2'))
-                  .margin({
-                    top: $r('sys.float.ohos_id_text_margin_vertical')
-                  })
-                  .width('90%')
-              }
-              .alignItems(HorizontalAlign.Start)
             }
             .borderRadius(12)
             .padding(12)
@@ -255,25 +179,6 @@ export default struct Cleardata {
             })
             if (data.index === 1) {
               this.setting.forEach((item) => {
-                if (item === 'dataSetting') {
-                  const keys = [
-                    'autoSyncTables',
-                    'autoSyncDevices',
-                    'autoBackupTables',
-                    'pauseAutoSyncWhenLowBatteryCapacityLevel',
-                    'pauseAutoSyncWhenPowerSave',
-                    'pauseAutoBackupWhenLowBatteryCapacityLevel',
-                    'pauseAutoBackupWhenPowerSave'
-                  ]
-                  const dataPreferences = preferences.getPreferencesSync(this.context, {
-                    name: 'dataSetting'
-                  })
-                  keys.forEach((item) => {
-                    dataPreferences.deleteSync(item)
-                    dataPreferences.flushSync()
-                  })
-                  return
-                }
                 preferences.deletePreferences(this.context, item)
               })
               promptAction.openToast({
@@ -381,38 +286,6 @@ export default struct Cleardata {
             .borderRadius(12)
             .padding(12)
             .width('100%')
-
-            Divider()
-              .padding({
-                left: 12,
-                right: 12
-              })
-            Row() {
-              Checkbox({
-                name: 'invitationQrcodeCache',
-                group: 'cache'
-              })
-                .shape(CheckBoxShape.ROUNDED_SQUARE)
-                .margin({
-                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                })
-                .select(this.invitationQrcodeCache!!)
-              Column() {
-                Text('邀请二维码图片')
-                  .fontWeight(FontWeight.Medium)
-                Text('邀请二维码图片缓存')
-                  .fontColor($r('sys.color.font_secondary'))
-                  .fontSize($r('sys.float.ohos_id_text_size_body2'))
-                  .margin({
-                    top: $r('sys.float.ohos_id_text_margin_vertical')
-                  })
-                  .width('90%')
-              }
-              .alignItems(HorizontalAlign.Start)
-            }
-            .borderRadius(12)
-            .padding(12)
-            .width('100%')
           }
           .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
           .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
@@ -483,21 +356,6 @@ export default struct Cleardata {
                 }
                 if (item === 'webviewCache') {
                   webview.WebviewController.removeAllCache(true)
-                }
-                if (item === 'invitationQrcodeCache') {
-                  try {
-                    const invitationcodeQrcodeDir = this.context.filesDir + '/media/invitationqrcode'
-                    const filenames = fileIo.listFileSync(invitationcodeQrcodeDir)
-                    for (let i = 0; i < filenames.length; i++) {
-                      fileIo.unlinkSync(invitationcodeQrcodeDir + '/' + filenames[i])
-                    }
-                  } catch (err) {
-                    if (err.code !== 13900002) {
-                      promptAction.openToast({
-                        message: '发生错误，错误码：' + err.code
-                      })
-                    }
-                  }
                 }
               })
               promptAction.openToast({
@@ -625,208 +483,6 @@ export default struct Cleardata {
                 message: '清理成功'
               })
             }
-          })
-      }
-      .margin({
-        top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-      })
-      .width('100%')
-
-      ListItem() {
-        Column() {
-          Text('无用数据')
-            .fontColor($r('sys.color.font_secondary'))
-            .fontSize($r('sys.float.ohos_id_text_size_body2'))
-            .fontWeight(FontWeight.Medium)
-            .margin({
-              bottom: 6,
-              left: 12
-            })
-          Column() {
-            Row() {
-              CheckboxGroup({
-                group: 'nouse'
-              })
-                .checkboxShape(CheckBoxShape.ROUNDED_SQUARE)
-                .margin({
-                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                })
-                .selectAll(this.allNouse!!)
-                .onChange((itemName) => {
-                  this.nouse = itemName.name
-                })
-              Text('全部')
-                .fontWeight(FontWeight.Bold)
-            }
-            .borderRadius(12)
-            .padding(12)
-            .width('100%')
-
-            Divider()
-              .padding({
-                left: 12,
-                right: 12
-              })
-            Row() {
-              Checkbox({
-                name: 'speakSettingNouse',
-                group: 'nouse'
-              })
-                .shape(CheckBoxShape.ROUNDED_SQUARE)
-                .margin({
-                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                })
-                .select(this.speakSettingNouse!!)
-              Column() {
-                Text('AI助手设置数据')
-                  .enableAutoSpacing(true)
-                  .fontWeight(FontWeight.Medium)
-                Text('语音播报、连续对话')
-                  .fontColor($r('sys.color.font_secondary'))
-                  .fontSize($r('sys.float.ohos_id_text_size_body2'))
-                  .margin({
-                    top: $r('sys.float.ohos_id_text_margin_vertical')
-                  })
-                  .width('90%')
-              }
-              .alignItems(HorizontalAlign.Start)
-            }
-            .borderRadius(12)
-            .padding(12)
-            .width('100%')
-
-            Divider()
-              .padding({
-                left: 12,
-                right: 12
-              })
-            Row() {
-              Checkbox({
-                name: 'oldaccountNouse',
-                group: 'nouse'
-              })
-                .shape(CheckBoxShape.ROUNDED_SQUARE)
-                .margin({
-                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                })
-                .select(this.oldaccountNouse!!)
-              Column() {
-                Text('旧账号数据')
-                  .fontWeight(FontWeight.Medium)
-                Text('accessToken、登录到期时间')
-                  .fontColor($r('sys.color.font_secondary'))
-                  .fontSize($r('sys.float.ohos_id_text_size_body2'))
-                  .margin({
-                    top: $r('sys.float.ohos_id_text_margin_vertical')
-                  })
-                  .width('90%')
-              }
-              .alignItems(HorizontalAlign.Start)
-            }
-            .borderRadius(12)
-            .padding(12)
-            .width('100%')
-
-            Divider()
-              .padding({
-                left: 12,
-                right: 12
-              })
-            Row() {
-              Checkbox({
-                name: 'passwordIconNouse',
-                group: 'nouse'
-              })
-                .shape(CheckBoxShape.ROUNDED_SQUARE)
-                .margin({
-                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                })
-                .select(this.passwordIconNouse!!)
-              Column() {
-                Text('无用密码图标图片')
-                  .fontWeight(FontWeight.Medium)
-                Text('无用密码图标图片文件')
-                  .fontColor($r('sys.color.font_secondary'))
-                  .fontSize($r('sys.float.ohos_id_text_size_body2'))
-                  .margin({
-                    top: $r('sys.float.ohos_id_text_margin_vertical')
-                  })
-                  .width('90%')
-              }
-              .alignItems(HorizontalAlign.Start)
-            }
-            .borderRadius(12)
-            .padding(12)
-            .width('100%')
-          }
-          .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-          .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
-          .padding($r('sys.float.ohos_id_corner_radius_mark'))
-        }
-        .alignItems(HorizontalAlign.Start)
-      }
-      .margin({
-        top: $r('sys.float.ohos_id_elements_margin_vertical_l')
-      })
-
-      ListItem() {
-        Button('清理无用数据')
-          .enabled(this.nouse.length > 0)
-          .role(ButtonRole.ERROR)
-          .onClick(() => {
-            this.nouse.forEach(async (item) => {
-              if (item === 'oldaccountNouse') {
-                try {
-                  const query: asset.AssetMap = new Map()
-                  query.set(asset.Tag.ALIAS, stringToArray('accessToken'))
-                  asset.removeSync(query)
-                  await preferences.deletePreferences(this.context, {
-                    name: 'login'
-                  })
-                } catch (err) {
-                  if (err.code !== 24000002) {
-                    promptAction.openToast({
-                      message: '发生错误，错误码：' + err.code
-                    })
-                  }
-                }
-              }
-              if (item === 'speakSettingNouse') {
-                preferences.deletePreferences(this.context, 'speakSetting')
-              }
-              if (item === 'passwordIconNouse') {
-                try {
-                  const passwordIconDir = this.context.filesDir + '/media/passwordicon'
-                  const passwordIconFileArray =
-                    fileIo.listFileSync(passwordIconDir).map(item => passwordIconDir + '/' + item)
-                  const passwordArray = await getPasswordList()
-                  const passwordIconPathArray: string[] = []
-                  passwordArray.forEach((item) => {
-                    const index = item.info.findIndex(infoItem => infoItem.type === '图标')
-                    if (index !== -1) {
-                      passwordIconPathArray.push(item.info[index].value.replace('file://com.zhangxm.aipasswordmemo',
-                        ''))
-                    }
-                  })
-                  const infoArray = await getTypeInfoList('图标')
-                  const infoIconPathArray = infoArray.map(item => item.replace('file://com.zhangxm.aipasswordmemo', ''))
-                  const iconPathSet = new Set(passwordIconPathArray.concat(infoIconPathArray))
-                  const nousePasswordIconFilePathArray = passwordIconFileArray.filter(item => !iconPathSet.has(item))
-                  nousePasswordIconFilePathArray.forEach(item => {
-                    fileIo.unlinkSync(item)
-                  })
-                } catch (err) {
-                  if (err.code !== 13900002) {
-                    promptAction.openToast({
-                      message: '发生错误，错误码：' + err.code
-                    })
-                  }
-                }
-              }
-            })
-            promptAction.openToast({
-              message: '清理成功'
-            })
           })
       }
       .margin({

@@ -1,10 +1,24 @@
 {
   "app": {
-    "signingConfigs": [],
+    "signingConfigs": [
+      {
+        "name": "debug",
+        "type": "HarmonyOS",
+        "material": {
+          "storeFile": "C:\\Users\\zls25\\.ohos\\config\\default_synologydsmhelperhmapp_Ex1mAlsEleTUrK2Mt9RtAHQ-X3YSsN0n-_K3gkNxl2A=.p12",
+          "storePassword": "0000001BE9463CC73C9581F4B130FB8140EFE039FA874B8E2EE8F471DC7CACE5516CC7E1093063C5FB818D",
+          "keyAlias": "debugKey",
+          "keyPassword": "0000001B22C2153D2BE18C0C6FC3856A0FE64294AA7FD74F8DBA9A9E1765883F0E2CD50604CB9B89CC9A50",
+          "certpath": "C:\\Users\\zls25\\.ohos\\config\\default_synologydsmhelperhmapp_Ex1mAlsEleTUrK2Mt9RtAHQ-X3YSsN0n-_K3gkNxl2A=.cer",
+          "profile": "C:\\Users\\zls25\\.ohos\\config\\default_synologydsmhelperhmapp_Ex1mAlsEleTUrK2Mt9RtAHQ-X3YSsN0n-_K3gkNxl2A=.p7b",
+          "signAlg": "SHA256withECDSA",
+        }
+      }
+    ],
     "products": [
       {
         "name": "default",
-        "signingConfig": "",
+        "signingConfig": "debug",
         "buildOption": {
           "resOptions": {
             "resCompileThreads": 32

@@ -14,7 +14,7 @@ struct Deletefile {
       List() {
         ListItem() {
           TextInput({
-            placeholder: '请输入文件 URI',
+            placeholder: '请输入文件Uri',
             text: this.fileUri!!
           })
             .defaultFocus(true)
@@ -47,7 +47,7 @@ struct Deletefile {
                 })
                 if (data.index === 1) {
                   try {
-                    fileIo.unlinkSync(this.fileUri.replace('file://com.zhangxm.aipasswordmemo', ''))
+                    fileIo.unlinkSync(this.fileUri.replace('file://com.songjy.synologydsmhelper', ''))
                     promptAction.openToast({
                       message: '删除成功'
                     })

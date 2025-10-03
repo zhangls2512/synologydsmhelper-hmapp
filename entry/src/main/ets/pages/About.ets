@@ -60,6 +60,7 @@ struct About {
                   })
               )
             Text($r('app.string.app_name'))
+              .enableAutoSpacing(true)
               .fontSize($r('sys.float.ohos_id_text_size_dialog_tittle'))
               .fontWeight(FontWeight.Bold)
               .margin({
@@ -165,7 +166,7 @@ struct About {
               Column() {
                 Text('更新日志')
                   .fontWeight(FontWeight.Medium)
-                Text('https://www.zhangls2512.cn/product/updatelog/aipasswordmemohmapp')
+                Text('https://www.zhangls2512.cn/product/updatelog/synologydsmhelperhmapp')
                   .fontColor($r('sys.color.font_secondary'))
                   .fontSize($r('sys.float.ohos_id_text_size_body2'))
                   .margin({
@@ -194,7 +195,7 @@ struct About {
             .onClick(() => {
               this.pageInfos.pushPath({
                 name: 'Webview',
-                param: 'https://www.zhangls2512.cn/product/updatelog/aipasswordmemohmapp'
+                param: 'https://www.zhangls2512.cn/product/updatelog/synologydsmhelperhmapp'
               })
             })
 
@@ -207,7 +208,7 @@ struct About {
               Column() {
                 Text('使用教程')
                   .fontWeight(FontWeight.Medium)
-                Text('https://docs.qq.com/doc/p/ad13731bb5a5562d7e7b11ee738928c6f1974b51')
+                Text('制作中，敬请期待')
                   .fontColor($r('sys.color.font_secondary'))
                   .fontSize($r('sys.float.ohos_id_text_size_body2'))
                   .margin({
@@ -233,9 +234,10 @@ struct About {
               }
             })
             .width('100%')
-            .onClick(() => {
-              openLink('https://docs.qq.com/doc/p/ad13731bb5a5562d7e7b11ee738928c6f1974b51')
-            })
+
+            /*.onClick(() => {
+              openLink('')
+            })*/
 
             Divider()
               .padding({
@@ -263,7 +265,7 @@ struct About {
             })
             .width('100%')
             .onClick(() => {
-              this.context.openLink('https://appgallery.huawei.com/app/detail?id=com.zhangxm.aipasswordmemo')
+              this.context.openLink('https://appgallery.huawei.com/app/detail?id=com.songjy.synologydsmhelper')
             })
 
             Divider()
@@ -292,7 +294,7 @@ struct About {
             })
             .width('100%')
             .onClick(() => {
-              this.context.openLink('https://appgallery.huawei.com/app/detail?id=com.zhangxm.aipasswordmemo&action=write-review')
+              this.context.openLink('https://appgallery.huawei.com/app/detail?id=com.songjy.synologydsmhelper&action=write-review')
             })
 
             Divider()
@@ -337,7 +339,7 @@ struct About {
         if (this.isAgentSupport) {
           ListItem() {
             FunctionComponent({
-              agentId: 'agentdf468e04a1474579bbf0653f19c929ee',
+              agentId: 'agent2250c6634775435b9f26182497d7bc1b',
               options: {
                 title: '智能客服'
               },
@@ -492,7 +494,7 @@ struct About {
                   Text('QQ群')
                     .enableAutoSpacing(true)
                     .fontWeight(FontWeight.Medium)
-                  Text('https://qm.qq.com/q/8Ugei32784')
+                  Text('')
                     .fontColor($r('sys.color.font_secondary'))
                     .fontSize($r('sys.float.ohos_id_text_size_body2'))
                     .margin({
@@ -519,7 +521,7 @@ struct About {
               })
               .width('100%')
               .onClick(() => {
-                openLink('https://qm.qq.com/q/8Ugei32784')
+                openLink('')
               })
 
               Divider()
@@ -559,7 +561,7 @@ struct About {
               })
               .width('100%')
               .onClick(() => {
-                this.context.openLink('https://www.chuckfang.com/MeoW/appLinking?channelId=e734229e5e9141ba83682e72ecd9df41')
+                this.context.openLink('https://www.chuckfang.com/MeoW/appLinking?channelId=')
               })
             }
             .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
@@ -665,7 +667,7 @@ struct About {
                 Column() {
                   Text('Gitcode')
                     .fontWeight(FontWeight.Medium)
-                  Text('https://gitcode.com/zhangls2512/aipasswordmemo-hmapp')
+                  Text('https://gitcode.com/zhangls2512/synologydsmhelper-hmapp')
                     .fontColor($r('sys.color.font_secondary'))
                     .fontSize($r('sys.float.ohos_id_text_size_body2'))
                     .margin({
@@ -692,7 +694,7 @@ struct About {
               })
               .width('100%')
               .onClick(() => {
-                openLink('https://gitcode.com/zhangls2512/aipasswordmemo-hmapp')
+                openLink('https://gitcode.com/zhangls2512/synologydsmhelper-hmapp')
               })
             }
             .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
@@ -715,7 +717,7 @@ struct About {
                   name: 'License'
                 })
               })
-            Text('版权所有 ©️ 2025 张轩铭 保留一切权利')
+            Text('版权所有 ©️ 2025 宋佳懿 保留一切权利')
               .fontColor($r('sys.color.font_secondary'))
               .fontSize($r('sys.float.ohos_id_text_size_body3'))
               .margin({
@@ -741,7 +743,7 @@ struct About {
       this.pageInfos = context.pathStack
       try {
         this.isAgentSupport =
-          await this.controller.isAgentSupport(this.context, 'agentdf468e04a1474579bbf0653f19c929ee')
+          await this.controller.isAgentSupport(this.context, 'agent2250c6634775435b9f26182497d7bc1b')
       } catch (err) {
         promptAction.openToast({
           message: '发生错误，错误码：' + err.code + '，错误信息：' + err.message

@@ -1,12 +1,7 @@
 import { common } from '@kit.AbilityKit'
-import { preferences } from '@kit.ArkData'
-import { window } from '@kit.ArkUI'
 import { deviceInfo } from '@kit.BasicServicesKit'
 import { fileIo } from '@kit.CoreFileKit'
 import { image } from '@kit.ImageKit'
-import Password from './Password'
-import Info from './Info'
-import Tag from './Tag'
 import Me from './Me'
 import Cleardata from './Cleardata'
 
@@ -15,7 +10,7 @@ import Cleardata from './Cleardata'
 struct Index {
   @Local backgroundImagePixelMap: PixelMap | undefined = undefined
   @Local index: number = 0
-  @Local title: string = '密码'
+  @Local title: string = '首页'
   @Local isShowCleardataSheet: boolean = false
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
   preferType = 1
@@ -66,59 +61,27 @@ struct Index {
         index: $$this.index
       }) {
         TabContent() {
-          Password()
+          Text('首页')
             .height('100%')
         }
-        .tabBar(this.tabBuilder(0, $r('app.media.password'), '密码'))
-
-        TabContent() {
-          Info()
-            .height('100%')
-        }
-        .tabBar(this.tabBuilder(1, $r('app.media.info'), '常用信息'))
-
-        TabContent() {
-          Tag()
-            .height('100%')
-        }
-        .tabBar(this.tabBuilder(2, $r('app.media.tag'), '标签'))
+        .tabBar(this.tabBuilder(0, $r('app.media.icon'), '首页'))
 
         TabContent() {
           Me()
             .height('100%')
         }
-        .tabBar(this.tabBuilder(3, $r('app.media.me'), '我的'))
+        .tabBar(this.tabBuilder(1, $r('app.media.me'), '我的'))
       }
       .barOverlap(deviceInfo.deviceType === 'phone' ? true : false)
       .barPosition(deviceInfo.deviceType === 'phone' ? BarPosition.End : BarPosition.Start)
       .scrollable(false)
       .vertical(deviceInfo.deviceType === 'phone' ? false : true)
-      .onAnimationStart(async (index, targetIndex) => {
-        if (targetIndex !== 1) {
-          const lastWindow = await window.getLastWindow(this.context)
-          await lastWindow.setWindowPrivacyMode(false)
-        }
+      .onAnimationStart((index, targetIndex) => {
         if (targetIndex === 0) {
-          this.title = '密码'
-          this.context.eventHub.emit('refreshPassword')
+          this.title = '首页'
+          this.context.eventHub.emit('refreshIndex')
         }
         if (targetIndex === 1) {
-          const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-            name: 'commonSetting'
-          })
-          const disallowScreenshot = commonSettingDataPreferences.getSync('disallowScreenshot', true) as boolean
-          if (disallowScreenshot) {
-            const lastWindow = await window.getLastWindow(this.context)
-            await lastWindow.setWindowPrivacyMode(true)
-          }
-          this.title = '常用信息'
-          this.context.eventHub.emit('refreshInfo')
-        }
-        if (targetIndex === 2) {
-          this.title = '标签'
-          this.context.eventHub.emit('refreshTag')
-        }
-        if (targetIndex === 3) {
           this.title = '我的'
           this.context.eventHub.emit('refreshMe')
         }
