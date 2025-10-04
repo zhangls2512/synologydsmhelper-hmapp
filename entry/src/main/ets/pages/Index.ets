@@ -1,10 +1,9 @@
 import { common } from '@kit.AbilityKit'
-import { LoadingDialog } from '@kit.ArkUI'
 import { deviceInfo } from '@kit.BasicServicesKit'
 import { fileIo } from '@kit.CoreFileKit'
 import { image } from '@kit.ImageKit'
-import { get } from '../common/Account'
-import { dsmRequest } from '../common/Request'
+import Cardlist from './Cardlist'
+import Filelist from './Filelist'
 import Me from './Me'
 import Cleardata from './Cleardata'
 
@@ -15,7 +14,6 @@ struct Index {
   @Local index: number = 0
   @Local title: string = '首页'
   @Local isShowCleardataSheet: boolean = false
-  @Local content: string = ''
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
   preferType = 1
 
@@ -29,7 +27,7 @@ struct Index {
     return
   }
 
-  async get() {
+  /*async get() {
     const accountInfo = await get()
     if (!accountInfo.path) {
       this.content = '未登录'
@@ -47,7 +45,7 @@ struct Index {
         this.content = JSON.stringify(res)
       }
     }
-  }
+  }*/
 
   @Builder
   tabBuilder(index: number, image: Resource, title: string) {
@@ -85,16 +83,22 @@ struct Index {
         index: $$this.index
       }) {
         TabContent() {
-          Text(this.content)
+          Cardlist()
             .height('100%')
         }
-        .tabBar(this.tabBuilder(0, $r('app.media.icon'), '首页'))
+        .tabBar(this.tabBuilder(0, $r('app.media.card'), '卡片'))
+
+        TabContent() {
+          Filelist()
+            .height('100%')
+        }
+        .tabBar(this.tabBuilder(1, $r('app.media.file'), '文件'))
 
         TabContent() {
           Me()
             .height('100%')
         }
-        .tabBar(this.tabBuilder(1, $r('app.media.me'), '我的'))
+        .tabBar(this.tabBuilder(2, $r('app.media.me'), '我的'))
       }
       .barOverlap(deviceInfo.deviceType === 'phone' ? true : false)
       .barPosition(deviceInfo.deviceType === 'phone' ? BarPosition.End : BarPosition.Start)
@@ -102,10 +106,14 @@ struct Index {
       .vertical(deviceInfo.deviceType === 'phone' ? false : true)
       .onAnimationStart((index, targetIndex) => {
         if (targetIndex === 0) {
-          this.title = '首页'
-          this.context.eventHub.emit('refreshIndex')
+          this.title = '卡片'
+          this.context.eventHub.emit('refreshCardlist')
         }
         if (targetIndex === 1) {
+          this.title = '文件'
+          this.context.eventHub.emit('refreshFilelist')
+        }
+        if (targetIndex === 2) {
           this.title = '我的'
           this.context.eventHub.emit('refreshMe')
         }
@@ -131,10 +139,8 @@ struct Index {
       }
       this.context.eventHub.on('refreshIndex', () => {
         this.backgroundImagePixelMap = this.getBackgroundImage()
-        this.get()
       })
       this.backgroundImagePixelMap = this.getBackgroundImage()
-      this.get()
     })
     .bindSheet(this.isShowCleardataSheet!!, this.CleardataSheetBuilder(), {
       preferType: this.preferType,
