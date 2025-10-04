@@ -64,8 +64,7 @@ async function getDsmApiMaxVersion(path: string, api: string) {
   }
 }
 
-export async function dsmRequest(path: string, api: string, params: string,
-  body: rcp.RequestContent): Promise<string | object> {
+export async function dsmRequest(path: string, api: string, params: string): Promise<string | object> {
   const accountInfo = await get()
   let requestPath = path
   if (!requestPath) {
@@ -80,8 +79,7 @@ export async function dsmRequest(path: string, api: string, params: string,
       }
     })
     try {
-      const response =
-        await session.post(requestPath + '/webapi/entry.cgi?api=' + api + '&version=' + version + params, body)
+      const response = await session.get(requestPath + '/webapi/entry.cgi?api=' + api + '&version=' + version + params)
       session.close()
       if (response.statusCode === 200) {
         let body = ''
@@ -117,7 +115,7 @@ export async function dsmRequest(path: string, api: string, params: string,
             sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
           })
           const loginres = await dsmRequest(accountInfo.path, 'SYNO.API.Auth',
-            '&method=login&account=' + accountInfo.name + '&passwd=' + accountInfo.password, {})
+            '&method=login&account=' + accountInfo.name + '&passwd=' + accountInfo.password)
           netBoost.setSceneDesc({
             scene: 'login',
             sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
@@ -131,7 +129,7 @@ export async function dsmRequest(path: string, api: string, params: string,
               sid: data.sid,
               did: data.device_id
             })
-            const resa = await dsmRequest(path, api, params, body)
+            const resa = await dsmRequest(path, api, params)
             return resa
           }
           promptAction.openToast({

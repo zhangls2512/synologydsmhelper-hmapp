@@ -184,7 +184,7 @@ export default struct Login {
                 sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
               })
               const res = await dsmRequest(this.scheme + '://' + this.host + ':' + port, 'SYNO.API.Auth',
-                '&method=login&account=' + this.name + '&passwd=' + this.password, {})
+                '&method=login&account=' + this.name + '&passwd=' + this.password)
               netBoost.setSceneDesc({
                 scene: 'login',
                 sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
