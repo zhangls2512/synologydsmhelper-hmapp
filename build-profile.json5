@@ -2,15 +2,28 @@
   "app": {
     "signingConfigs": [
       {
+        "name": "release",
+        "type": "HarmonyOS",
+        "material": {
+          "storeFile": "D:/harmonyproject/群晖DSM助手应用/内部文件/签名材料/synologydsmhelper.p12",
+          "storePassword": "0000001930A7C70D1D8D81967771EDE3B14188A4D1321C4626889A7AF2977A9AB1CB43EDC288C49D55",
+          "keyAlias": "releaseKey",
+          "keyPassword": "00000018AA8EB1E859C5600D9695FBC656C5A5C6C8AC7FA95106FAD2E41D36471879AB5E9492F1E3",
+          "certpath": "D:/harmonyproject/群晖DSM助手应用/内部文件/签名材料/release-synologydsmhelper.cer",
+          "profile": "D:/harmonyproject/群晖DSM助手应用/内部文件/签名材料/release-synologydsmhelperRelease.p7b",
+          "signAlg": "SHA256withECDSA"
+        }
+      },
+      {
         "name": "debug",
         "type": "HarmonyOS",
         "material": {
-          "storeFile": "C:\\Users\\zls25\\.ohos\\config\\default_synologydsmhelperhmapp_Ex1mAlsEleTUrK2Mt9RtAHQ-X3YSsN0n-_K3gkNxl2A=.p12",
-          "storePassword": "0000001BE9463CC73C9581F4B130FB8140EFE039FA874B8E2EE8F471DC7CACE5516CC7E1093063C5FB818D",
+          "storeFile": "C:\\Users\\zls25\\.ohos\\config\\debug_synologydsmhelperhmapp_Ex1mAlsEleTUrK2Mt9RtAHQ-X3YSsN0n-_K3gkNxl2A=.p12",
+          "storePassword": "0000001B46AFF483505C03048E0839B68DB69B1B4204A28CF5B36D5AE0C15F7CC99DC0E861BC2940829498",
           "keyAlias": "debugKey",
-          "keyPassword": "0000001B22C2153D2BE18C0C6FC3856A0FE64294AA7FD74F8DBA9A9E1765883F0E2CD50604CB9B89CC9A50",
-          "certpath": "C:\\Users\\zls25\\.ohos\\config\\default_synologydsmhelperhmapp_Ex1mAlsEleTUrK2Mt9RtAHQ-X3YSsN0n-_K3gkNxl2A=.cer",
-          "profile": "C:\\Users\\zls25\\.ohos\\config\\default_synologydsmhelperhmapp_Ex1mAlsEleTUrK2Mt9RtAHQ-X3YSsN0n-_K3gkNxl2A=.p7b",
+          "keyPassword": "0000001B30F9FFEB8D1699B04DEC7DAEEB28B45CAAEFF04F1F912DBF19D4F7A9D5411A38E359D3CD829732",
+          "certpath": "C:\\Users\\zls25\\.ohos\\config\\debug_synologydsmhelperhmapp_Ex1mAlsEleTUrK2Mt9RtAHQ-X3YSsN0n-_K3gkNxl2A=.cer",
+          "profile": "C:\\Users\\zls25\\.ohos\\config\\debug_synologydsmhelperhmapp_Ex1mAlsEleTUrK2Mt9RtAHQ-X3YSsN0n-_K3gkNxl2A=.p7b",
           "signAlg": "SHA256withECDSA",
         }
       }

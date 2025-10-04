@@ -205,45 +205,6 @@ struct About {
                 right: 12
               })
             Row() {
-              Column() {
-                Text('使用教程')
-                  .fontWeight(FontWeight.Medium)
-                Text('制作中，敬请期待')
-                  .fontColor($r('sys.color.font_secondary'))
-                  .fontSize($r('sys.float.ohos_id_text_size_body2'))
-                  .margin({
-                    top: $r('sys.float.ohos_id_text_margin_vertical')
-                  })
-              }
-              .alignItems(HorizontalAlign.Start)
-
-              Blank()
-              Image($r('app.media.right'))
-                .fillColor($r('sys.color.icon_fourth'))
-                .height(12)
-                .width(12)
-            }
-            .borderRadius(12)
-            .padding(12)
-            .stateStyles({
-              normal: {
-                .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-              },
-              pressed: {
-                .backgroundColor($r('sys.color.interactive_pressed'))
-              }
-            })
-            .width('100%')
-            .onClick(() => {
-              openLink('https://docs.qq.com/doc/p/')
-            })
-
-            Divider()
-              .padding({
-                left: 12,
-                right: 12
-              })
-            Row() {
               Text('应用详情')
                 .fontWeight(FontWeight.Medium)
               Blank()
@@ -560,7 +521,7 @@ struct About {
               })
               .width('100%')
               .onClick(() => {
-                this.context.openLink('https://www.chuckfang.com/MeoW/appLinking?channelId=')
+                this.context.openLink('https://www.chuckfang.com/MeoW/appLinking?channelId=c7c59236fe0543cbacc44855b99a2d43')
               })
             }
             .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
