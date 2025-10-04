@@ -27,26 +27,6 @@ struct Index {
     return
   }
 
-  /*async get() {
-    const accountInfo = await get()
-    if (!accountInfo.path) {
-      this.content = '未登录'
-    }
-    if (accountInfo.path) {
-      const dialogControllerProgress = new CustomDialogController({
-        builder: LoadingDialog({
-          content: '加载中...'
-        })
-      })
-      dialogControllerProgress.open()
-      const res = await dsmRequest('', 'SYNO.FileStation.List', '&method=list_share', {})
-      dialogControllerProgress.close()
-      if (res !== 'fail') {
-        this.content = JSON.stringify(res)
-      }
-    }
-  }*/
-
   @Builder
   tabBuilder(index: number, image: Resource, title: string) {
     Column() {
