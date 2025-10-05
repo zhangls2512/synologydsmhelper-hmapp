@@ -328,7 +328,7 @@ export default struct Setting {
               })
               .width('100%')
               .onClick(() => {
-                openLink('https://docs.qq.com/doc/p/')
+                openLink('https://docs.qq.com/doc/p/142d00b55db803faf04f75a8486617bd4e51b07c')
               })
 
               Divider()
@@ -388,7 +388,7 @@ export default struct Setting {
               })
               .width('100%')
               .onClick(() => {
-                openLink('https://docs.qq.com/doc/p/')
+                openLink('https://docs.qq.com/doc/p/396e155d30adf768c0efcac3d14bebca4876143c')
               })
             }
             .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
