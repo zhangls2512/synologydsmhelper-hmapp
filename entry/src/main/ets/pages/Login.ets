@@ -75,8 +75,8 @@ export default struct Login {
               .fontWeight(FontWeight.Medium)
               .width('15%')
             TextInput({
-              text: this.host!!,
-              placeholder: '请输入主机'
+              placeholder: '请输入主机',
+              text: this.host!!
             })
               .enableAutoSpacing(true)
               .width('80%')
@@ -90,8 +90,8 @@ export default struct Login {
               .fontWeight(FontWeight.Medium)
               .width('15%')
             TextInput({
-              text: this.port!!,
-              placeholder: '请输入端口 (可选)'
+              placeholder: '请输入端口 (可选)',
+              text: this.port!!
             })
               .enableAutoSpacing(true)
               .type(InputType.Number)
@@ -107,8 +107,8 @@ export default struct Login {
               .fontWeight(FontWeight.Medium)
               .width('15%')
             TextInput({
-              text: this.name!!,
-              placeholder: '请输入账号'
+              placeholder: '请输入账号',
+              text: this.name!!
             })
               .contentType(ContentType.USER_NAME)
               .enableAutoSpacing(true)
@@ -123,8 +123,8 @@ export default struct Login {
               .fontWeight(FontWeight.Medium)
               .width('15%')
             TextInput({
-              text: this.password!!,
-              placeholder: '请输入密码'
+              placeholder: '请输入密码',
+              text: this.password!!
             })
               .contentType(ContentType.PASSWORD)
               .enableAutoSpacing(true)
