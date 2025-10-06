@@ -122,7 +122,7 @@ export default struct Systeminfo {
     .borderRadius(12)
     .padding(12)
     .width('100%')
-    .onAppear(async () => {
+    .onAppear(() => {
       this.context.eventHub.on('refreshCard', () => {
         this.status = 'pending'
       })
