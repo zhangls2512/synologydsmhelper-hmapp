@@ -55,6 +55,14 @@ export async function set(accountInfo: InAccountInfo) {
   }
 }
 
+export async function getLoginStatus() {
+  const res = await get()
+  if (res.id !== -1) {
+    return true
+  }
+  return false
+}
+
 export async function get(): Promise<AccountInfo> {
   const accounts = await getList()
   const index = accounts.findIndex(item => item.isLogin === 'true')

@@ -1,22 +1,31 @@
 import { common } from '@kit.AbilityKit'
+import { getLoginStatus } from '../common/Account'
 
 @ComponentV2
 export default struct Filelist {
+  @Local isLogin: boolean = false
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
-  get() {
+  async get() {
+    this.isLogin = await getLoginStatus()
   }
 
   build() {
     List() {
-      ListItem() {
+      if (!this.isLogin) {
+        ListItem() {
+          Text('未登录账号')
+        }
+        .height('100%')
+        .width('100%')
       }
-
-      ListItem() {
+      if (this.isLogin) {
+        ListItem() {
+          Text('待开发')
+        }
+        .height('100%')
+        .width('100%')
       }
-      .margin({
-        top: $r('sys.float.ohos_id_elements_margin_vertical_l')
-      })
     }
     .padding({
       bottom: $r('sys.float.ohos_id_default_padding_bottom_fixed'),

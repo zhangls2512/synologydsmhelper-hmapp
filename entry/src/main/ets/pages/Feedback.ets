@@ -76,7 +76,7 @@ struct Feedback {
               }
               if (this.contactType === 'QQ') {
                 TextInput({
-                  placeholder: '请输入 QQ 号',
+                  placeholder: '请输入QQ号',
                   text: this.contactValue!!
                 })
                   .enableAutoSpacing(true)

@@ -668,28 +668,15 @@ struct About {
         })
 
         ListItem() {
-          Column() {
-            Text('资质证照')
-              .fontColor($r('sys.color.font_emphasize'))
-              .fontSize($r('sys.float.ohos_id_text_size_body3'))
-              .onClick(() => {
-                this.pageInfos.pushPath({
-                  name: 'License'
-                })
-              })
-            Text('版权所有 ©️ 2025 宋佳懿 保留一切权利')
-              .fontColor($r('sys.color.font_secondary'))
-              .fontSize($r('sys.float.ohos_id_text_size_body3'))
-              .margin({
-                top: $r('sys.float.ohos_id_text_margin_vertical')
-              })
-              .textAlign(TextAlign.Center)
-          }
-          .width('100%')
+          Text('版权所有 ©️ 2025 宋佳懿 保留一切权利')
+            .fontColor($r('sys.color.font_secondary'))
+            .fontSize($r('sys.float.ohos_id_text_size_body3'))
+            .textAlign(TextAlign.Center)
         }
         .margin({
           top: $r('sys.float.ohos_id_elements_margin_vertical_l')
         })
+        .width('100%')
       }
       .padding({
         bottom: $r('sys.float.ohos_id_default_padding_bottom_fixed'),
