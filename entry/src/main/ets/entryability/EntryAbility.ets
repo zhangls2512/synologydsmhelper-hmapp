@@ -31,9 +31,6 @@ export default class EntryAbility extends UIAbility {
     if (want.parameters?.noticeUrl) {
       openLink(want.parameters.noticeUrl as string)
     }
-    if (want.parameters?.shortcutId === '') {
-      this.context.eventHub.emit('')
-    }
     if (want.uri) {
       if (want.uri === 'storage:///clearcache') {
         this.context.eventHub.emit('clearData')
@@ -493,7 +490,7 @@ export default class EntryAbility extends UIAbility {
   }
 
   onContinue(wantParam: Record<string, Object>) {
-    if (wantParam.version !== 25) {
+    if (wantParam.version !== 2) {
       promptAction.openToast({
         message: '接续失败，原因：目标端应用版本号与发起端不匹配'
       })
