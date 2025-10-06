@@ -26,6 +26,19 @@
           "profile": "C:\\Users\\zls25\\.ohos\\config\\debug_synologydsmhelperhmapp_Ex1mAlsEleTUrK2Mt9RtAHQ-X3YSsN0n-_K3gkNxl2A=.p7b",
           "signAlg": "SHA256withECDSA"
         }
+      },
+      {
+        "name": "debugsjy",
+        "type": "HarmonyOS",
+        "material": {
+          "storeFile": "C:\\Users\\Lenovo\\.ohos\\config\\debugsjy_synologydsmhelper_z1YKi4fCiPF-syFZjEJ_7sZs93FKZupePDYcs9zyO48=.p12",
+          "storePassword": "0000001B6C54D46FEC204C0D2521E7758DD9BD1A788A54BD6F87BEDFFAA5CF7B7DCD881A42C00D0E08C02B",
+          "keyAlias": "debugKey",
+          "keyPassword": "0000001BDAF5127DCD748A83B62FE9F7FAEC6CFAB07F4318054D0B721BCBD4CE06EBF41AE9041958C123B2",
+          "certpath": "C:\\Users\\Lenovo\\.ohos\\config\\debugsjy_synologydsmhelper_z1YKi4fCiPF-syFZjEJ_7sZs93FKZupePDYcs9zyO48=.cer",
+          "profile": "C:\\Users\\Lenovo\\.ohos\\config\\debugsjy_synologydsmhelper_z1YKi4fCiPF-syFZjEJ_7sZs93FKZupePDYcs9zyO48=.p7b",
+          "signAlg": "SHA256withECDSA"
+        }
       }
     ],
     "products": [
