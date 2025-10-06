@@ -31,6 +31,10 @@ struct Webview {
         .enableNativeEmbedMode(true)
         .geolocationAccess(false)
         .mixedMode(MixedMode.None)
+        .nestedScroll({
+          scrollForward: NestedScrollMode.SELF_ONLY,
+          scrollBackward: NestedScrollMode.SELF_ONLY
+        })
         .optimizeParserBudget(this.optimizeParserBudget)
         .pinchSmooth(true)
         .onControllerAttached(() => {

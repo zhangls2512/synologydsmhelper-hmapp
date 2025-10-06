@@ -7,6 +7,7 @@ import { fileIo } from '@kit.CoreFileKit'
 export default struct Cleardata {
   @Local setting: string[] = []
   @Local allSetting: boolean = false
+  @Local cardSetting: boolean = false
   @Local commonSetting: boolean = false
   @Local permissionSetting: boolean = false
   @Local debugSetting: boolean = false
@@ -46,6 +47,38 @@ export default struct Cleardata {
                 })
               Text('全部')
                 .fontWeight(FontWeight.Bold)
+            }
+            .borderRadius(12)
+            .padding(12)
+            .width('100%')
+
+            Divider()
+              .padding({
+                left: 12,
+                right: 12
+              })
+            Row() {
+              Checkbox({
+                name: 'cardSetting',
+                group: 'setting'
+              })
+                .shape(CheckBoxShape.ROUNDED_SQUARE)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+                .select(this.cardSetting!!)
+              Column() {
+                Text('卡片')
+                  .fontWeight(FontWeight.Medium)
+                Text('卡片')
+                  .fontColor($r('sys.color.font_secondary'))
+                  .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                  .margin({
+                    top: $r('sys.float.ohos_id_text_margin_vertical')
+                  })
+                  .width('90%')
+              }
+              .alignItems(HorizontalAlign.Start)
             }
             .borderRadius(12)
             .padding(12)
