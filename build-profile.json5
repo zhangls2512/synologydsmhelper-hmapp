@@ -6,9 +6,9 @@
         "type": "HarmonyOS",
         "material": {
           "storeFile": "D:/harmonyproject/群晖DSM助手应用/内部文件/签名材料/synologydsmhelper.p12",
-          "storePassword": "0000001930A7C70D1D8D81967771EDE3B14188A4D1321C4626889A7AF2977A9AB1CB43EDC288C49D55",
+          "storePassword": "0000001969861284E0A4E034BDEEFD4EF0300A83B581E2A8F726CC010CF57C454F81E4A131A504622F",
           "keyAlias": "releaseKey",
-          "keyPassword": "00000018AA8EB1E859C5600D9695FBC656C5A5C6C8AC7FA95106FAD2E41D36471879AB5E9492F1E3",
+          "keyPassword": "000000190B54583C1C054BD6157AAB0C97958963F76E7BA30BAF72DACBDD3B8D90AF34E05EC076BE16",
           "certpath": "D:/harmonyproject/群晖DSM助手应用/内部文件/签名材料/release-synologydsmhelper.cer",
           "profile": "D:/harmonyproject/群晖DSM助手应用/内部文件/签名材料/release-synologydsmhelperRelease.p7b",
           "signAlg": "SHA256withECDSA"
@@ -24,7 +24,7 @@
           "keyPassword": "0000001B30F9FFEB8D1699B04DEC7DAEEB28B45CAAEFF04F1F912DBF19D4F7A9D5411A38E359D3CD829732",
           "certpath": "C:\\Users\\zls25\\.ohos\\config\\debug_synologydsmhelperhmapp_Ex1mAlsEleTUrK2Mt9RtAHQ-X3YSsN0n-_K3gkNxl2A=.cer",
           "profile": "C:\\Users\\zls25\\.ohos\\config\\debug_synologydsmhelperhmapp_Ex1mAlsEleTUrK2Mt9RtAHQ-X3YSsN0n-_K3gkNxl2A=.p7b",
-          "signAlg": "SHA256withECDSA",
+          "signAlg": "SHA256withECDSA"
         }
       }
     ],
