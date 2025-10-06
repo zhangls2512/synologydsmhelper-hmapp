@@ -45,73 +45,73 @@ export default struct Systeminfo {
           Text('DSM版本：' + this.systeminfo.firmware_ver)
             .enableAutoSpacing(true)
             .margin({
-              top: $r('sys.float.ohos_id_text_paragraph_margin_s')
+              top: $r('sys.float.ohos_id_text_margin_vertical')
             })
           Text('DSM发布日期：' + this.systeminfo.firmware_date)
             .enableAutoSpacing(true)
             .margin({
-              top: $r('sys.float.ohos_id_text_paragraph_margin_s')
+              top: $r('sys.float.ohos_id_text_margin_vertical')
             })
           Text('产品序列号：' + this.systeminfo.serial)
             .margin({
-              top: $r('sys.float.ohos_id_text_paragraph_margin_s')
+              top: $r('sys.float.ohos_id_text_margin_vertical')
             })
           Text('产品型号：' + this.systeminfo.model)
             .margin({
-              top: $r('sys.float.ohos_id_text_paragraph_margin_s')
+              top: $r('sys.float.ohos_id_text_margin_vertical')
             })
           Text('CPU：' + this.systeminfo.cpu_vendor + ' ' + this.systeminfo.cpu_series + ' ' +
           this.systeminfo.cpu_family)
             .margin({
-              top: $r('sys.float.ohos_id_text_paragraph_margin_s')
+              top: $r('sys.float.ohos_id_text_margin_vertical')
             })
           Text('CPU时钟频率：' + this.systeminfo.cpu_clock_speed + ' MHz')
             .enableAutoSpacing(true)
             .margin({
-              top: $r('sys.float.ohos_id_text_paragraph_margin_s')
+              top: $r('sys.float.ohos_id_text_margin_vertical')
             })
           Text('CPU内核数：' + this.systeminfo.cpu_cores)
             .enableAutoSpacing(true)
             .margin({
-              top: $r('sys.float.ohos_id_text_paragraph_margin_s')
+              top: $r('sys.float.ohos_id_text_margin_vertical')
             })
           Text('物理内存大小：' + this.systeminfo.ram_size + ' MB')
             .margin({
-              top: $r('sys.float.ohos_id_text_paragraph_margin_s')
+              top: $r('sys.float.ohos_id_text_margin_vertical')
             })
           Text('温度：' + this.systeminfo.sys_temp + ' ℃')
             .margin({
-              top: $r('sys.float.ohos_id_text_paragraph_margin_s')
+              top: $r('sys.float.ohos_id_text_margin_vertical')
             })
           Text('温度警告：' + this.systeminfo.sys_tempwarn)
             .margin({
-              top: $r('sys.float.ohos_id_text_paragraph_margin_s')
+              top: $r('sys.float.ohos_id_text_margin_vertical')
             })
           Text('时间与NTP服务器同步：' + this.systeminfo.enabled_ntp)
             .enableAutoSpacing(true)
             .margin({
-              top: $r('sys.float.ohos_id_text_paragraph_margin_s')
+              top: $r('sys.float.ohos_id_text_margin_vertical')
             })
           Text('NTP服务器：' + this.systeminfo.ntp_server)
             .enableAutoSpacing(true)
             .margin({
-              top: $r('sys.float.ohos_id_text_paragraph_margin_s')
+              top: $r('sys.float.ohos_id_text_margin_vertical')
             })
           Text('时区：' + this.systeminfo.time_zone)
             .margin({
-              top: $r('sys.float.ohos_id_text_paragraph_margin_s')
+              top: $r('sys.float.ohos_id_text_margin_vertical')
             })
           Text('时区描述：' + this.systeminfo.time_zone_desc)
             .margin({
-              top: $r('sys.float.ohos_id_text_paragraph_margin_s')
+              top: $r('sys.float.ohos_id_text_margin_vertical')
             })
           Text('系统时间：' + this.systeminfo.time)
             .margin({
-              top: $r('sys.float.ohos_id_text_paragraph_margin_s')
+              top: $r('sys.float.ohos_id_text_margin_vertical')
             })
           Text('运行时间：' + this.systeminfo.up_time)
             .margin({
-              top: $r('sys.float.ohos_id_text_paragraph_margin_s')
+              top: $r('sys.float.ohos_id_text_margin_vertical')
             })
         }
         .alignItems(HorizontalAlign.Start)

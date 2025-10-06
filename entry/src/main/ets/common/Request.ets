@@ -38,13 +38,7 @@ async function getDsmApiMaxVersion(path: string, api: string) {
       }
       const res = JSON.parse(body) as DsmResponse
       if (res.success) {
-        let maxVersion = 0
-        Object.keys(res.data).forEach((key) => {
-          if (key === api) {
-            maxVersion = res.data[key].maxVersion
-          }
-        })
-        return maxVersion
+        return res.data[api].maxVersion as number
       }
       promptAction.openToast({
         message: '接口调用失败，错误码：' + res.error?.code

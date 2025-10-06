@@ -3,14 +3,22 @@ import { preferences } from '@kit.ArkData'
 import { deviceInfo } from '@kit.BasicServicesKit'
 import { hdsEffect } from '@kit.UIDesignKit'
 import { getLoginStatus } from '../common/Account'
+import { dsmRequest } from '../common/Request'
 import Cardedit from './Cardedit'
+import Noticelist from './Noticelist'
 import Systeminfo from '../card/Systeminfo'
+
+interface NoticeResponseData {
+  total: number
+}
 
 @ComponentV2
 export default struct Cardlist {
   @Local isShowCardeditSheet: boolean = false
+  @Local isShowNoticelistSheet: boolean = false
   @Local isLogin: boolean = false
   @Local cards: string[] = []
+  @Local haveNotice: boolean = false
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
   preferType = 1
 
@@ -21,11 +29,28 @@ export default struct Cardlist {
     })
     this.cards = cardSettingDataPreferences.getSync('cards', []) as string[]
     this.context.eventHub.emit('refreshCard')
+    if (this.isLogin) {
+      const res = await dsmRequest('', 'SYNO.Core.DSMNotify', '&method=notify&action=load')
+      if (res !== 'fail') {
+        const noticeres = res as NoticeResponseData
+        if (noticeres.total === 0) {
+          this.haveNotice = false
+        }
+        if (noticeres.total > 0) {
+          this.haveNotice = true
+        }
+      }
+    }
   }
 
   @Builder
   CardeditSheetBuilder() {
     Cardedit()
+  }
+
+  @Builder
+  NoticelistSheetBuilder() {
+    Noticelist()
   }
 
   build() {
@@ -46,6 +71,9 @@ export default struct Cardlist {
             .backgroundColor($r('sys.color.interactive_hover'))
             .borderRadius(20)
             .height(40)
+            .margin({
+              right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+            })
             .padding(11)
             .visualEffect(new hdsEffect.HdsEffectBuilder()
               .pointLight({
@@ -67,6 +95,39 @@ export default struct Cardlist {
                 this.get()
               })
             })
+
+            Badge({
+              value: '',
+              style: {
+                badgeSize: 10,
+                badgeColor: this.haveNotice ? Color.Red : 'rgba(0,0,0,0)',
+                borderColor: this.haveNotice ? Color.Red : 'rgba(0,0,0,0)'
+              }
+            }) {
+              Column() {
+                Image($r('app.media.notice'))
+              }
+              .backgroundColor($r('sys.color.interactive_hover'))
+              .borderRadius(20)
+              .height(40)
+              .padding(11)
+              .visualEffect(new hdsEffect.HdsEffectBuilder()
+                .pointLight({
+                  sourceType: hdsEffect.PointLightSourceType.SOFT,
+                  illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                })
+                .buildEffect())
+              .width(40)
+              .onClick(() => {
+                this.isShowNoticelistSheet = true
+              })
+              .bindSheet(this.isShowNoticelistSheet!!, this.NoticelistSheetBuilder(), {
+                preferType: this.preferType,
+                title: {
+                  title: '消息'
+                }
+              })
+            }
           }
           .justifyContent(FlexAlign.End)
           .width('100%')
