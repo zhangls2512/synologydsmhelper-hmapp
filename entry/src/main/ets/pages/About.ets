@@ -627,7 +627,7 @@ struct About {
                 Column() {
                   Text('Gitcode')
                     .fontWeight(FontWeight.Medium)
-                  Text('https://gitcode.com/zhangls2512/synologydsmhelper-hmapp')
+                  Text('https://gitcode.com/xm2512/synologydsmhelper-hmapp')
                     .fontColor($r('sys.color.font_secondary'))
                     .fontSize($r('sys.float.ohos_id_text_size_body2'))
                     .margin({
@@ -654,7 +654,7 @@ struct About {
               })
               .width('100%')
               .onClick(() => {
-                openLink('https://gitcode.com/zhangls2512/synologydsmhelper-hmapp')
+                openLink('https://gitcode.com/xm2512/synologydsmhelper-hmapp')
               })
             }
             .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
