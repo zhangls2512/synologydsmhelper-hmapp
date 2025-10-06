@@ -15,12 +15,12 @@ export function NetworktestBuilder() {
 
 @ComponentV2
 struct Networktest {
-  @Local errCode: number = 0
+  @Local errCode: number = -1
   @Local errMsg: string = ''
   @Local requestIp: string = ''
-  @Local timeStamp: number = 0
+  @Local timeStamp: number = -1
   @Local httpVersion: string = ''
-  @Local totalTimeMs: number = 0
+  @Local totalTimeMs: number = -1
 
   build() {
     NavDestination() {

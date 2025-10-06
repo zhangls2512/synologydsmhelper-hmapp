@@ -2,7 +2,7 @@ import { preferences } from '@kit.ArkData'
 import { promptAction } from '@kit.ArkUI'
 import { netBoost } from '@kit.NetworkBoostKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
-import { get, remove, set } from './Account'
+import { get, set } from './Account'
 import { ResponseData } from '../pages/Login'
 
 interface Error {
@@ -109,7 +109,6 @@ export async function dsmRequest(path: string, api: string, params: string): Pro
           return 'fail'
         }
         if (res.error?.code === 106 || res.error?.code === 107) {
-          await remove()
           netBoost.setSceneDesc({
             scene: 'login',
             sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER

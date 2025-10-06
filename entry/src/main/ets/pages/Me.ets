@@ -3,13 +3,15 @@ import { preferences } from '@kit.ArkData'
 import { window } from '@kit.ArkUI'
 import { deviceInfo } from '@kit.BasicServicesKit'
 import { hdsEffect } from '@kit.UIDesignKit'
-import { get, remove } from '../common/Account'
+import { exit, get } from '../common/Account'
+import Accountlist from './Accountlist'
 import Login from './Login'
 import Setting from './Setting'
 
 @ComponentV2
 export default struct Me {
   @Provider() isShowLoginSheet: boolean = false
+  @Provider() isShowAccountlistSheet: boolean = false
   @Local isShowSettingSheet: boolean = false
   @Local name: string = ''
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
@@ -23,6 +25,11 @@ export default struct Me {
   @Builder
   LoginSheetBuilder() {
     Login()
+  }
+
+  @Builder
+  AccountlistSheetBuilder() {
+    Accountlist()
   }
 
   @Builder
@@ -87,6 +94,52 @@ export default struct Me {
             onDisappear: (async () => {
               const lastWindow = await window.getLastWindow(this.context)
               await lastWindow.setWindowPrivacyMode(false)
+              this.get()
+            })
+          })
+
+          Divider()
+            .padding({
+              left: 12,
+              right: 12
+            })
+          Row() {
+            Image($r('app.media.users'))
+              .fillColor($r('sys.color.icon_primary'))
+              .height(24)
+              .margin({
+                right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+              })
+              .width(24)
+            Text('切换账号')
+              .fontWeight(FontWeight.Medium)
+            Blank()
+            Image($r('app.media.right'))
+              .fillColor($r('sys.color.icon_fourth'))
+              .height(12)
+              .width(12)
+          }
+          .borderRadius(12)
+          .padding(12)
+          .stateStyles({
+            normal: {
+              .backgroundColor($r('sys.color.comp_background_primary'))
+            },
+            pressed: {
+              .backgroundColor($r('sys.color.comp_background_secondary'))
+            }
+          })
+          .width('100%')
+          .onClick(() => {
+            this.isShowAccountlistSheet = true
+          })
+          .bindSheet(this.isShowAccountlistSheet!!, this.AccountlistSheetBuilder(), {
+            height: SheetSize.FIT_CONTENT,
+            preferType: this.preferType,
+            title: {
+              title: '切换账号'
+            },
+            onDisappear: (() => {
               this.get()
             })
           })
@@ -168,14 +221,11 @@ export default struct Me {
                 ]
               })
               if (data.index === 1) {
-                remove()
-                await preferences.deletePreferences(this.context, {
-                  name: 'login'
-                })
-                this.name = ''
+                await exit()
                 promptAction.openToast({
                   message: '退出成功'
                 })
+                this.name = ''
               }
             })
         }

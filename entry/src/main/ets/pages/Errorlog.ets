@@ -263,8 +263,8 @@ struct Errorlog {
                 })
                 .width('100%')
                 .onClick(async () => {
-                  try {
-                    const filestring = read(externalLogItem)
+                  const filestring = read(externalLogItem)
+                  if (filestring !== 'fail') {
                     const promptAction = this.getUIContext().getPromptAction()
                     const data = await promptAction.showDialog({
                       title: externalLogItem,
@@ -283,10 +283,6 @@ struct Errorlog {
                     if (data.index === 1) {
                       copy(filestring)
                     }
-                  } catch (err) {
-                    promptAction.openToast({
-                      message: '发生错误，错误码：' + err.code
-                    })
                   }
                 })
               })
