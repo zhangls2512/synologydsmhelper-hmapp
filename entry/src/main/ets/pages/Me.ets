@@ -1,6 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
-import { window } from '@kit.ArkUI'
+import { LoadingDialog, window } from '@kit.ArkUI'
 import { deviceInfo } from '@kit.BasicServicesKit'
 import { hdsEffect } from '@kit.UIDesignKit'
 import { exit, get } from '../common/Account'
@@ -206,27 +206,36 @@ export default struct Me {
               .buildEffect())
             .onClick(async () => {
               const promptAction = this.getUIContext().getPromptAction()
-              const data = await promptAction.showDialog({
-                title: '提示',
-                message: '确定退出登录？',
+              const data = await promptAction.showActionMenu({
+                title: '是否注销会话？（注销后无法使用切换账号功能一键登录）',
                 buttons: [
                   {
-                    text: '取消',
-                    color: $r('sys.color.font_primary')
+                    text: '是',
+                    color: $r('sys.color.warning')
                   },
                   {
-                    text: '退出',
-                    color: $r('sys.color.warning')
+                    text: '否',
+                    color: $r('sys.color.font_primary')
                   }
                 ]
               })
-              if (data.index === 1) {
-                await exit()
-                promptAction.openToast({
-                  message: '退出成功'
+              if (data.index === 0) {
+                const dialogControllerProgress = new CustomDialogController({
+                  builder: LoadingDialog({
+                    content: '注销会话中...'
+                  })
                 })
-                this.name = ''
+                dialogControllerProgress.open()
+                await exit(true)
+                dialogControllerProgress.close()
               }
+              if (data.index === 1) {
+                await exit(false)
+              }
+              promptAction.openToast({
+                message: '退出成功'
+              })
+              this.name = ''
             })
         }
         .margin({
