@@ -54,7 +54,7 @@ export default class EntryAbility extends UIAbility {
     }
     if (!notificationManager.isNotificationEnabledSync()) {
       try {
-        notificationManager.requestEnableNotification(this.context)
+        await notificationManager.requestEnableNotification(this.context)
       } catch (err) {
         if (err.code !== 1600004) {
           promptAction.openToast({
