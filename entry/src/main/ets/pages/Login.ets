@@ -19,6 +19,7 @@ export default struct Login {
   @Local port: string = ''
   @Local name: string = ''
   @Local password: string = ''
+  @Local mfa: string = ''
   @Local agree: boolean = false
 
   build() {
@@ -136,6 +137,23 @@ export default struct Login {
             top: $r('sys.float.ohos_id_elements_margin_vertical_m')
           })
 
+          Row() {
+            Text('MFA')
+              .fontWeight(FontWeight.Medium)
+              .width('15%')
+            TextInput({
+              placeholder: '请输入MFA (可选)',
+              text: this.mfa!!
+            })
+              .enableAutoSpacing(true)
+              .type(InputType.Number)
+              .maxLength(6)
+              .width('80%')
+          }
+          .margin({
+            top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+          })
+
           Button('登录')
             .enabled(this.agree)
             .margin({
@@ -173,6 +191,12 @@ export default struct Login {
                 })
                 return
               }
+              if (this.mfa && this.mfa.length !== 6) {
+                promptAction.openToast({
+                  message: '请输入正确的 MFA'
+                })
+                return
+              }
               const dialogControllerProgress = new CustomDialogController({
                 builder: LoadingDialog({
                   content: '登录中...'
@@ -184,7 +208,7 @@ export default struct Login {
                 sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
               })
               const res = await dsmRequest(this.scheme + '://' + this.host + ':' + port, 'SYNO.API.Auth',
-                '&method=login&account=' + this.name + '&passwd=' + this.password)
+                '&method=login&account=' + this.name + '&passwd=' + this.password + '&otp_code=' + this.mfa)
               netBoost.setSceneDesc({
                 scene: 'login',
                 sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
