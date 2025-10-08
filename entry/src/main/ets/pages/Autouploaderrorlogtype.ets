@@ -70,13 +70,8 @@ struct Autouploaderrorlogtype {
       'APP_CRASH',
       'APP_FREEZE',
       'APP_KILLED',
-      'APP_LAUNCH',
       'RESOURCE_OVERLIMIT',
-      'ADDRESS_SANITIZER',
-      'MAIN_THREAD_JANK',
-      'SCROLL_JANK',
-      'CPU_USAGE_HIGH',
-      'BATTERY_USAGE'
+      'ADDRESS_SANITIZER'
     ]) as string[]
   }
 
