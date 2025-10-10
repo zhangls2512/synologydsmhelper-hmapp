@@ -19,9 +19,9 @@
         "type": "HarmonyOS",
         "material": {
           "storeFile": "C:\\Users\\zls25\\.ohos\\config\\debug_synologydsmhelperhmapp_Ex1mAlsEleTUrK2Mt9RtAHQ-X3YSsN0n-_K3gkNxl2A=.p12",
-          "storePassword": "0000001B46AFF483505C03048E0839B68DB69B1B4204A28CF5B36D5AE0C15F7CC99DC0E861BC2940829498",
+          "storePassword": "0000001AE93DE3BDFC6B3572DE0264363B9F36C6405A77CCE40C80142A71A0F73C0B4A599D965776835F",
           "keyAlias": "debugKey",
-          "keyPassword": "0000001B30F9FFEB8D1699B04DEC7DAEEB28B45CAAEFF04F1F912DBF19D4F7A9D5411A38E359D3CD829732",
+          "keyPassword": "0000001A26A92231B127D0F0C48520AABD938D16B84B7406469DD64B7A57878ACBBB62AB6EB7F8FEC780",
           "certpath": "C:\\Users\\zls25\\.ohos\\config\\debug_synologydsmhelperhmapp_Ex1mAlsEleTUrK2Mt9RtAHQ-X3YSsN0n-_K3gkNxl2A=.cer",
           "profile": "C:\\Users\\zls25\\.ohos\\config\\debug_synologydsmhelperhmapp_Ex1mAlsEleTUrK2Mt9RtAHQ-X3YSsN0n-_K3gkNxl2A=.p7b",
           "signAlg": "SHA256withECDSA"
