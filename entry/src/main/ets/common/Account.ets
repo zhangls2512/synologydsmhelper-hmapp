@@ -1,5 +1,6 @@
 import { promptAction } from '@kit.ArkUI'
 import { appAccount } from '@kit.BasicServicesKit'
+import { dsmRequest } from './Request'
 
 export interface AccountInfo {
   id: number,
@@ -20,7 +21,7 @@ interface InAccountInfo {
 }
 
 export async function set(accountInfo: InAccountInfo) {
-  await exit()
+  await exit(false)
   const accounts = await getList()
   let accountIndex = -1
   accounts.forEach((item, index) => {
@@ -35,6 +36,12 @@ export async function set(accountInfo: InAccountInfo) {
     await appAccountManager.setCustomData(String(accounts[accountIndex].id), 'isLogin', 'true')
   }
   if (accountIndex === -1) {
+    let oldAccountIndex = -1
+    accounts.forEach((item, index) => {
+      if (accountInfo.path === item.path && accountInfo.name === item.name) {
+        oldAccountIndex = index
+      }
+    })
     try {
       const id = String(Date.now())
       await appAccountManager.createAccount(id, {
@@ -47,6 +54,9 @@ export async function set(accountInfo: InAccountInfo) {
         }
       })
       await appAccountManager.setCredential(id, 'password', accountInfo.password)
+      if (oldAccountIndex !== -1) {
+        await remove(accounts[oldAccountIndex].id)
+      }
     } catch (err) {
       promptAction.openToast({
         message: '发生错误，错误码：' + err.code
@@ -99,12 +109,18 @@ export async function getList(): Promise<AccountInfo[]> {
   return appAccounts
 }
 
-export async function exit() {
+export async function exit(logout: boolean) {
   const accounts = await getList()
   const index = accounts.findIndex(item => item.isLogin === 'true')
   if (index !== -1) {
-    const appAccountManager = appAccount.createAppAccountManager()
-    await appAccountManager.setCustomData(String(accounts[index].id), 'isLogin', 'false')
+    if (!logout) {
+      const appAccountManager = appAccount.createAppAccountManager()
+      await appAccountManager.setCustomData(String(accounts[index].id), 'isLogin', 'false')
+    }
+    if (logout) {
+      await dsmRequest('', 'SYNO.API.Auth', '&method=logout')
+      await remove(accounts[index].id)
+    }
   }
 }
 

@@ -145,13 +145,8 @@ export default class EntryAbility extends UIAbility {
             'APP_CRASH',
             'APP_FREEZE',
             'APP_KILLED',
-            'APP_LAUNCH',
             'RESOURCE_OVERLIMIT',
-            'ADDRESS_SANITIZER',
-            'MAIN_THREAD_JANK',
-            'SCROLL_JANK',
-            'CPU_USAGE_HIGH',
-            'BATTERY_USAGE'
+            'ADDRESS_SANITIZER'
           ]) as string[]).includes('JS_ERROR')) {
             const res = await developerRequest('/debug/newErrorLog', {
               product: 'synologydsmhelper',
@@ -221,13 +216,8 @@ export default class EntryAbility extends UIAbility {
             'APP_CRASH',
             'APP_FREEZE',
             'APP_KILLED',
-            'APP_LAUNCH',
             'RESOURCE_OVERLIMIT',
-            'ADDRESS_SANITIZER',
-            'MAIN_THREAD_JANK',
-            'SCROLL_JANK',
-            'CPU_USAGE_HIGH',
-            'BATTERY_USAGE'
+            'ADDRESS_SANITIZER'
           ]) as string[]).includes('JS_ERROR')) {
             const res = await developerRequest('/debug/newErrorLog', {
               product: 'synologydsmhelper',
@@ -278,13 +268,8 @@ export default class EntryAbility extends UIAbility {
               'APP_CRASH',
               'APP_FREEZE',
               'APP_KILLED',
-              'APP_LAUNCH',
               'RESOURCE_OVERLIMIT',
-              'ADDRESS_SANITIZER',
-              'MAIN_THREAD_JANK',
-              'SCROLL_JANK',
-              'CPU_USAGE_HIGH',
-              'BATTERY_USAGE'
+              'ADDRESS_SANITIZER'
             ]) as string[]).includes(item.name)) {
               const res = await developerRequest('/debug/newErrorLog', {
                 product: 'synologydsmhelper',
@@ -490,7 +475,7 @@ export default class EntryAbility extends UIAbility {
   }
 
   onContinue(wantParam: Record<string, Object>) {
-    if (wantParam.version !== 3) {
+    if (wantParam.version !== 4) {
       promptAction.openToast({
         message: '接续失败，原因：目标端应用版本号与发起端不匹配'
       })
