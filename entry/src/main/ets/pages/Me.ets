@@ -182,7 +182,10 @@ export default struct Me {
             this.isShowSettingSheet = true
           })
           .bindSheet(this.isShowSettingSheet!!, this.SettingSheetBuilder(), {
-            preferType: this.preferType
+            preferType: this.preferType,
+            onDisappear: () => {
+              this.get()
+            }
           })
         }
         .backgroundColor($r('sys.color.comp_background_primary'))

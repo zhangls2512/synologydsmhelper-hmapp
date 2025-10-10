@@ -2,16 +2,20 @@ import { common } from '@kit.AbilityKit'
 import { privacyManager } from '@kit.AppGalleryKit'
 import { preferences } from '@kit.ArkData'
 import { promptAction } from '@kit.ArkUI'
+import { fileIo, picker } from '@kit.CoreFileKit'
+import { AccountInfo, getList, set } from '../common/Account'
+import { read } from '../common/File'
 import openLink from '../common/Openlink'
 
 @ComponentV2
 export default struct Setting {
   @Local allService: boolean = false
   @Local agreedPrivacyAgreement: number | undefined = undefined
+  @Local accountCount: number = -1
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
   pageInfos = new NavPathStack()
 
-  getSetting() {
+  async getSetting() {
     const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
       name: 'commonSetting'
     })
@@ -24,11 +28,133 @@ export default struct Setting {
         message: '发生错误，错误码：' + err.code + '，错误信息：' + err.message
       })
     }
+    const accounts = await getList()
+    this.accountCount = accounts.length
   }
 
   build() {
     Navigation(this.pageInfos) {
       List() {
+        ListItem() {
+          Column() {
+            Text('账号')
+              .fontColor($r('sys.color.font_secondary'))
+              .fontSize($r('sys.float.ohos_id_text_size_body2'))
+              .fontWeight(FontWeight.Medium)
+              .margin({
+                bottom: 6,
+                left: 12
+              })
+            Column() {
+              if (this.accountCount === 0) {
+                Row() {
+                  Text('导入')
+                    .fontWeight(FontWeight.Medium)
+                  Blank()
+                  Image($r('app.media.right'))
+                    .fillColor($r('sys.color.icon_fourth'))
+                    .height(12)
+                    .width(12)
+                }
+                .borderRadius(12)
+                .padding(12)
+                .stateStyles({
+                  normal: {
+                    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  },
+                  pressed: {
+                    .backgroundColor($r('sys.color.interactive_pressed'))
+                  }
+                })
+                .width('100%')
+                .onClick(async () => {
+                  const documentSelectOptions = new picker.DocumentSelectOptions()
+                  documentSelectOptions.maxSelectNumber = 1
+                  documentSelectOptions.fileSuffixFilters = ['.txt']
+                  const documentViewPicker = new picker.DocumentViewPicker(this.context)
+                  const uris = await documentViewPicker.select(documentSelectOptions)
+                  if (uris.length === 1) {
+                    const filePath = uris[0]
+                    const filestring = read(filePath)
+                    const accounts = JSON.parse(filestring) as AccountInfo[]
+                    const promises = accounts.map(async (item) => {
+                      await set({
+                        path: item.path,
+                        name: item.name,
+                        password: item.password,
+                        sid: item.sid,
+                        did: item.did
+                      })
+                    })
+                    await Promise.all(promises)
+                    promptAction.openToast({
+                      message: '导入成功'
+                    })
+                    this.getSetting()
+                  }
+                })
+
+                Divider()
+                  .padding({
+                    left: 12,
+                    right: 12
+                  })
+              }
+
+              Row() {
+                Text('导出')
+                  .fontWeight(FontWeight.Medium)
+                Blank()
+                Image($r('app.media.right'))
+                  .fillColor($r('sys.color.icon_fourth'))
+                  .height(12)
+                  .width(12)
+              }
+              .borderRadius(12)
+              .padding(12)
+              .stateStyles({
+                normal: {
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                pressed: {
+                  .backgroundColor($r('sys.color.interactive_pressed'))
+                }
+              })
+              .width('100%')
+              .onClick(async () => {
+                try {
+                  const documentSaveOptions = new picker.DocumentSaveOptions()
+                  documentSaveOptions.newFileNames = ['synologydsmhelperaccounts']
+                  documentSaveOptions.fileSuffixChoices = ['.txt']
+                  const documentViewPicker = new picker.DocumentViewPicker(this.context)
+                  const uris = await documentViewPicker.save(documentSaveOptions)
+                  const filePath = uris[0]
+                  const file = fileIo.openSync(filePath, fileIo.OpenMode.READ_WRITE)
+                  const array = await getList()
+                  fileIo.writeSync(file.fd, JSON.stringify(array))
+                  fileIo.closeSync(file)
+                  promptAction.openToast({
+                    message: '导出成功'
+                  })
+                } catch (err) {
+                  if (err.code !== 13900020) {
+                    promptAction.openToast({
+                      message: '发生错误，错误码：' + err.code
+                    })
+                  }
+                }
+              })
+            }
+            .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+            .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+            .padding($r('sys.float.ohos_id_corner_radius_mark'))
+          }
+          .alignItems(HorizontalAlign.Start)
+        }
+        .margin({
+          top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+        })
+
         ListItem() {
           Column() {
             Row() {
@@ -62,7 +188,7 @@ export default struct Setting {
           .padding($r('sys.float.ohos_id_corner_radius_mark'))
         }
         .margin({
-          top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+          top: $r('sys.float.ohos_id_elements_margin_vertical_l')
         })
 
         ListItem() {

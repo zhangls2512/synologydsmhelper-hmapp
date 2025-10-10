@@ -1,3 +1,4 @@
+import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { dsmRequest } from '../common/Request'
 
 interface NoticeItem {
@@ -15,15 +16,61 @@ interface NoticeResponseData {
 export default struct Noticelist {
   @Local notices: NoticeItem[] = []
   @Local loading: boolean = false
-  empty: boolean | undefined = undefined
 
   getTime(time: string) {
     const timejson = JSON.parse(time) as object
     return timejson['%DATE%'] + ' ' + timejson['%TIME%']
   }
 
+  async get() {
+    this.loading = true
+    const res = await dsmRequest('', 'SYNO.Core.DSMNotify', '&method=notify&action=load')
+    this.loading = false
+    if (res !== 'fail') {
+      const noticeres = res as NoticeResponseData
+      this.notices = noticeres.items
+    }
+  }
+
   build() {
     List() {
+      if (this.loading) {
+        ListItem() {
+          LoadingProgress()
+            .width('20%')
+        }
+        .margin({
+          top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+        })
+        .width('100%')
+      }
+      if (!this.loading) {
+        ListItem() {
+          Button('清除全部')
+            .role(ButtonRole.ERROR)
+            .onClick(async () => {
+              const dialogControllerProgress = new CustomDialogController({
+                builder: LoadingDialog({
+                  content: '清除中...'
+                })
+              })
+              dialogControllerProgress.open()
+              const res = await dsmRequest('', 'SYNO.Core.DSMNotify', '&method=notify&action=apply&clean=all')
+              dialogControllerProgress.close()
+              if (res !== 'fail') {
+                promptAction.openToast({
+                  message: '清除成功'
+                })
+                this.get()
+              }
+            })
+        }
+        .margin({
+          bottom: $r('sys.float.ohos_id_elements_margin_vertical_m'),
+          top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+        })
+        .width('100%')
+      }
       if (this.notices.length === 0 && !this.loading) {
         ListItem() {
           Text('无消息')
@@ -123,46 +170,14 @@ export default struct Noticelist {
           top: $r('sys.float.ohos_id_elements_margin_vertical_m')
         })
       })
-      if (this.loading) {
-        ListItem() {
-          LoadingProgress()
-            .width('20%')
-        }
-        .margin({
-          top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-        })
-        .width('100%')
-      }
     }
     .padding({
       bottom: $r('sys.float.ohos_id_default_padding_bottom_fixed'),
       left: $r('sys.float.ohos_id_max_padding_start'),
       right: $r('sys.float.ohos_id_max_padding_end')
     })
-    .onAppear(async () => {
-      this.loading = true
-      const res = await dsmRequest('', 'SYNO.Core.DSMNotify', '&method=notify&action=load')
-      this.loading = false
-      if (res !== 'fail') {
-        const noticeres = res as NoticeResponseData
-        this.notices = noticeres.items
-        this.empty = false
-      }
-    })
-    .onReachEnd(async () => {
-      if (this.empty === false) {
-        this.loading = true
-        const res =
-          await dsmRequest('', 'SYNO.Core.DSMNotify', '&method=notify&action=load&offset=' + this.notices.length)
-        this.loading = false
-        if (res !== 'fail') {
-          const noticeres = res as NoticeResponseData
-          if (noticeres.items.length === 0) {
-            this.empty = true
-          }
-          this.notices = this.notices.concat(noticeres.items)
-        }
-      }
+    .onAppear(() => {
+      this.get()
     })
   }
 }

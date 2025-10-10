@@ -125,6 +125,9 @@ export default struct Cardlist {
                 preferType: this.preferType,
                 title: {
                   title: '消息'
+                },
+                onDisappear: () => {
+                  this.get()
                 }
               })
             }
