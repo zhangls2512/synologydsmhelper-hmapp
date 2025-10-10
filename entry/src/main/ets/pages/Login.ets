@@ -1,6 +1,7 @@
 import { privacyManager } from '@kit.AppGalleryKit'
 import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { netBoost } from '@kit.NetworkBoostKit'
+import { rcp } from '@kit.RemoteCommunicationKit'
 import { set } from '../common/Account'
 import openLink from '../common/Openlink'
 import { dsmRequest } from '../common/Request'
@@ -17,6 +18,7 @@ export default struct Login {
   @Local scheme: string = 'http'
   @Local host: string = ''
   @Local port: string = ''
+  @Local quickConnectId: string = ''
   @Local name: string = ''
   @Local password: string = ''
   @Local mfa: string = ''
@@ -26,83 +28,93 @@ export default struct Login {
     List() {
       ListItem() {
         Column() {
-          Row() {
-            Text('协议')
-              .fontWeight(FontWeight.Medium)
-              .width('15%')
+          if (!this.quickConnectId) {
             Row() {
-              Radio({
-                value: 'http',
-                group: 'scheme'
-              })
-                .checked(this.scheme === 'http' ? true : false)
-                .margin({
-                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                })
-                .onChange((isChecked) => {
-                  if (isChecked) {
-                    this.scheme = 'http'
-                  }
-                })
-              Text('http')
-                .margin({
-                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                })
+              Text('协议')
+                .fontWeight(FontWeight.Medium)
+                .width('15%')
               Row() {
                 Radio({
-                  value: 'https',
+                  value: 'http',
                   group: 'scheme'
                 })
-                  .checked(this.scheme === 'https' ? true : false)
+                  .checked(this.scheme === 'http' ? true : false)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                   })
                   .onChange((isChecked) => {
                     if (isChecked) {
-                      this.scheme = 'https'
+                      this.scheme = 'http'
                     }
                   })
-                Text('https')
+                Text('http')
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                   })
+                Row() {
+                  Radio({
+                    value: 'https',
+                    group: 'scheme'
+                  })
+                    .checked(this.scheme === 'https' ? true : false)
+                    .margin({
+                      right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                    })
+                    .onChange((isChecked) => {
+                      if (isChecked) {
+                        this.scheme = 'https'
+                      }
+                    })
+                  Text('https')
+                    .margin({
+                      right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                    })
+                }
               }
+              .width('80%')
             }
-            .width('80%')
-          }
 
-          Row() {
-            Text('主机')
-              .fontWeight(FontWeight.Medium)
-              .width('15%')
-            TextInput({
-              placeholder: '请输入主机',
-              text: this.host!!
+            Row() {
+              Text('主机')
+                .fontWeight(FontWeight.Medium)
+                .width('15%')
+              TextInput({
+                placeholder: '请输入主机',
+                text: this.host!!
+              })
+                .enableAutoSpacing(true)
+                .width('80%')
+            }
+            .margin({
+              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
             })
-              .enableAutoSpacing(true)
-              .width('80%')
-          }
-          .margin({
-            top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-          })
 
-          Row() {
-            Text('端口')
-              .fontWeight(FontWeight.Medium)
-              .width('15%')
-            TextInput({
-              placeholder: '请输入端口 (可选)',
-              text: this.port!!
+            Row() {
+              Text('端口')
+                .fontWeight(FontWeight.Medium)
+                .width('15%')
+              TextInput({
+                placeholder: '请输入端口 (可选)',
+                text: this.port!!
+              })
+                .enableAutoSpacing(true)
+                .type(InputType.Number)
+                .maxLength(5)
+                .width('80%')
+            }
+            .margin({
+              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
             })
-              .enableAutoSpacing(true)
-              .type(InputType.Number)
-              .maxLength(5)
-              .width('80%')
           }
-          .margin({
-            top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+          TextInput({
+            placeholder: '请输入QuickConnect ID',
+            text: this.quickConnectId!!
           })
-
+            .enableAutoSpacing(true)
+            .margin({
+              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+            })
+            .width('95%')
           Row() {
             Text('账号')
               .fontWeight(FontWeight.Medium)
@@ -161,11 +173,13 @@ export default struct Login {
             })
             .width('100%')
             .onClick(async () => {
-              if (!this.host) {
-                promptAction.openToast({
-                  message: '请输入主机'
-                })
-                return
+              if (!this.quickConnectId) {
+                if (!this.host) {
+                  promptAction.openToast({
+                    message: '请输入主机'
+                  })
+                  return
+                }
               }
               let port = '0'
               if (!this.port) {
@@ -203,12 +217,67 @@ export default struct Login {
                 })
               })
               dialogControllerProgress.open()
-              netBoost.setSceneDesc({
-                scene: 'login',
-                sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
-              })
-              const res = await dsmRequest(this.scheme + '://' + this.host + ':' + port, 'SYNO.API.Auth',
-                '&method=login&account=' + this.name + '&passwd=' + this.password + '&otp_code=' + this.mfa)
+              let path = ''
+              let res: string | object = ''
+              if (!this.quickConnectId) {
+                path = this.scheme + '://' + this.host + ':' + port
+                netBoost.setSceneDesc({
+                  scene: 'login',
+                  sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
+                })
+                res = await dsmRequest(path, 'SYNO.API.Auth',
+                  '&method=login&account=' + this.name + '&passwd=' + this.password + '&otp_code=' + this.mfa)
+              }
+              if (this.quickConnectId) {
+                const session = rcp.createSession()
+                try {
+                  const response = await session.post('https://global.quickconnect.cn/Serv.php', JSON.stringify([
+                    {
+                      command: 'get_server_info',
+                      id: 'dsm',
+                      serverID: this.quickConnectId
+                    }
+                  ]))
+                  session.close()
+                  if (response.statusCode === 200) {
+                    let body = ''
+                    if (response.toString()) {
+                      body = response.toString() as string
+                    }
+                    const bodyObject = JSON.parse(body) as object
+                    if (bodyObject[0]['errno'] === 0) {
+                      path =
+                        'https://' + this.quickConnectId + '.' + bodyObject[0]['env']['relay_region'] +
+                          '.quickconnect.cn'
+                      netBoost.setSceneDesc({
+                        scene: 'login',
+                        sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
+                      })
+                      res = await dsmRequest(path, 'SYNO.API.Auth',
+                        '&method=login&account=' + this.name + '&passwd=' + this.password + '&otp_code=' + this.mfa)
+                    } else {
+                      dialogControllerProgress.close()
+                      promptAction.openToast({
+                        message: 'QuickConnect 连接失败，错误码：' + bodyObject[0]['errno']
+                      })
+                      return
+                    }
+                  } else {
+                    dialogControllerProgress.close()
+                    promptAction.openToast({
+                      message: 'QuickConnect 请求失败，错误码：' + response.statusCode
+                    })
+                    return
+                  }
+                } catch (err) {
+                  session.close()
+                  dialogControllerProgress.close()
+                  promptAction.openToast({
+                    message: 'QuickConnect 请求失败，错误码：' + err.code
+                  })
+                  return
+                }
+              }
               netBoost.setSceneDesc({
                 scene: 'login',
                 sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
@@ -217,7 +286,7 @@ export default struct Login {
               if (res !== 'fail') {
                 const data = res as ResponseData
                 await set({
-                  path: this.scheme + '://' + this.host + ':' + port,
+                  path: path,
                   name: data.account,
                   password: this.password,
                   sid: data.sid,

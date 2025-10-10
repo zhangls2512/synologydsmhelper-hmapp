@@ -27,7 +27,11 @@ async function getDsmApiMaxVersion(path: string, api: string) {
   if (!requestPath) {
     requestPath = accountInfo.path
   }
-  const session = rcp.createSession()
+  const session = rcp.createSession({
+    headers: {
+      referer: requestPath
+    }
+  })
   try {
     const response = await session.get(requestPath + '/webapi/entry.cgi?api=SYNO.API.Info&version=1&method=query')
     session.close()
@@ -85,13 +89,13 @@ async function getDsmApiMaxVersion(path: string, api: string) {
       return 'fail'
     }
     promptAction.openToast({
-      message: '请求失败，错误码：' + response.statusCode
+      message: 'DSM 请求失败，错误码：' + response.statusCode
     })
     return 'fail'
   } catch (err) {
     session.close()
     promptAction.openToast({
-      message: '发生错误，错误码：' + err.code
+      message: 'DSM 请求失败，错误码：' + err.code
     })
     return 'fail'
   }
@@ -106,6 +110,9 @@ export async function dsmRequest(path: string, api: string, params: string): Pro
   const version = await getDsmApiMaxVersion(path, api)
   if (version !== 'fail') {
     const session = rcp.createSession({
+      headers: {
+        referer: requestPath
+      },
       cookies: {
         id: accountInfo.sid,
         did: accountInfo.did
@@ -196,13 +203,13 @@ export async function dsmRequest(path: string, api: string, params: string): Pro
         return 'fail'
       }
       promptAction.openToast({
-        message: '请求失败，错误码：' + response.statusCode
+        message: 'DSM 请求失败，错误码：' + response.statusCode
       })
       return 'fail'
     } catch (err) {
       session.close()
       promptAction.openToast({
-        message: '发生错误，错误码：' + err.code
+        message: 'DSM 请求失败，错误码：' + err.code
       })
       return 'fail'
     }
