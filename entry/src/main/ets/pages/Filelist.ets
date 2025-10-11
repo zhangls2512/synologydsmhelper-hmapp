@@ -288,8 +288,15 @@ export default struct Filelist {
         content: '分享'
       })
         .onClick(async () => {
+          const dialogControllerProgress = new CustomDialogController({
+            builder: LoadingDialog({
+              content: '获取分享链接...'
+            })
+          })
+          dialogControllerProgress.open()
           const res = await dsmRequest('', 'SYNO.FileStation.Sharing',
             '&method=create&path=' + encodeURIComponent(JSON.stringify([item.path])))
+          dialogControllerProgress.close()
           if (res !== 'fail') {
             const links = res['links'] as ShareLinkItem[]
             const qrcodebase64 = links[0].qrcode.slice(22)
@@ -334,8 +341,15 @@ export default struct Filelist {
             ]
           })
           if (data.index === 1) {
+            const dialogControllerProgress = new CustomDialogController({
+              builder: LoadingDialog({
+                content: '删除中...'
+              })
+            })
+            dialogControllerProgress.open()
             const res =
               await dsmRequest('', 'SYNO.FileStation.Delete', '&method=start&path=' + encodeURIComponent(item.path))
+            dialogControllerProgress.close()
             if (res !== 'fail') {
               promptAction.openToast({
                 message: '删除成功'

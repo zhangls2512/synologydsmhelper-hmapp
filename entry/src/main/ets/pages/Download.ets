@@ -40,7 +40,7 @@ export default struct Download {
             .width(40)
           Column() {
             Text('进度：' + Number((this.transferredSize / this.totalSize).toFixed(2)) * 100 + '%')
-            Text(this.getSizeString(this.transferredSize) + '/' + this.getSizeString(this.totalSize) + '(' +
+            Text(this.getSizeString(this.transferredSize) + '/' + this.getSizeString(this.totalSize) + ' (' +
             this.getSizeString(this.oneSecondTransferredSize) + '/s)')
               .margin({
                 top: $r('sys.float.ohos_id_text_margin_vertical')
