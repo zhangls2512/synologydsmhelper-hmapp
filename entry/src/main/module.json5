@@ -44,6 +44,11 @@
             ],
             "uris": [
               {
+                "scheme": "file",
+                "type": "general.plain-text",
+                "linkFeature": "FileOpen"
+              },
+              {
                 "scheme": "storage",
                 "path": "clearcache",
                 "linkFeature": "AppStorageMgmt"
@@ -106,6 +111,7 @@
         "name": "ohos.permission.WINDOW_TOPMOST"
       }
     ],
+    "fileContextMenu": "$profile:menu",
     "routerMap": "$profile:router_map"
   }
 }

@@ -21,7 +21,7 @@ interface DeveloperErrorResponse {
   errFix: string
 }
 
-async function getDsmApiMaxVersion(path: string, api: string) {
+export async function getDsmApiMaxVersion(path: string, api: string) {
   const accountInfo = await get()
   let requestPath = path
   if (!requestPath) {
@@ -44,48 +44,9 @@ async function getDsmApiMaxVersion(path: string, api: string) {
       if (res.success) {
         return res.data[api].maxVersion as number
       }
-      const errCodeMap: Record<number, string> = {
-        100: '未知错误',
-        101: '请求的参数不存在 API、方法或版本',
-        102: '请求的 API 不存在',
-        103: '请求的方法不存在',
-        104: '请求的版本不支持此功能',
-        105: '会话无权限',
-        106: '会话超时',
-        107: '会话因重复登录而中断',
-        108: '无法上传文件',
-        109: '网络连接不稳定或系统繁忙',
-        110: '网络连接不稳定或系统繁忙',
-        111: '网络连接不稳定或系统繁忙',
-        114: '此 API 的参数丢失',
-        115: '不允许上传文件',
-        116: '不允许为演示站点执行',
-        117: '网络连接不稳定或系统繁忙',
-        118: '网络连接不稳定或系统繁忙',
-        119: '会话无效',
-        150: '请求源 IP 与登录 IP 不匹配',
-        400: '账号不存在或密码错误',
-        401: '账号被停用',
-        402: '权限被拒绝',
-        403: '需要二次验证',
-        404: '二次验证失败',
-        406: '强制要求二次验证',
-        407: '请求源 IP 被封锁',
-        408: '不允许修改已过期的密码',
-        409: '密码已过期',
-        410: '需要修改密码'
-      }
-      const errCode = res.error?.code
-      if (!errCodeMap[errCode]) {
-        promptAction.openToast({
-          message: '接口调用失败，错误码：' + errCode
-        })
-      }
-      if (errCodeMap[errCode]) {
-        promptAction.openToast({
-          message: '接口调用失败，错误码：' + errCode + '，错误信息：' + errCodeMap[errCode]
-        })
-      }
+      promptAction.openToast({
+        message: '接口调用失败，错误码：' + res.error?.code
+      })
       return 'fail'
     }
     promptAction.openToast({
@@ -136,7 +97,8 @@ export async function dsmRequest(path: string, api: string, params: string): Pro
             sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
           })
           const loginres = await dsmRequest(accountInfo.path, 'SYNO.API.Auth',
-            '&method=login&account=' + accountInfo.name + '&passwd=' + accountInfo.password)
+            '&method=login&account=' + encodeURIComponent(accountInfo.name) + '&passwd=' +
+            encodeURIComponent(accountInfo.password))
           netBoost.setSceneDesc({
             scene: 'login',
             sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
@@ -158,48 +120,9 @@ export async function dsmRequest(path: string, api: string, params: string): Pro
           })
           return 'fail'
         }
-        const errCodeMap: Record<number, string> = {
-          100: '未知错误',
-          101: '请求的参数不存在 API、方法或版本',
-          102: '请求的 API 不存在',
-          103: '请求的方法不存在',
-          104: '请求的版本不支持此功能',
-          105: '会话无权限',
-          106: '会话超时',
-          107: '会话因重复登录而中断',
-          108: '无法上传文件',
-          109: '网络连接不稳定或系统繁忙',
-          110: '网络连接不稳定或系统繁忙',
-          111: '网络连接不稳定或系统繁忙',
-          114: '此 API 的参数丢失',
-          115: '不允许上传文件',
-          116: '不允许为演示站点执行',
-          117: '网络连接不稳定或系统繁忙',
-          118: '网络连接不稳定或系统繁忙',
-          119: '会话无效',
-          150: '请求源 IP 与登录 IP 不匹配',
-          400: '账号不存在或密码错误',
-          401: '账号被停用',
-          402: '权限被拒绝',
-          403: '需要二次验证',
-          404: '二次验证失败',
-          406: '强制要求二次验证',
-          407: '请求源 IP 被封锁',
-          408: '不允许修改已过期的密码',
-          409: '密码已过期',
-          410: '需要修改密码'
-        }
-        const errCode = res.error?.code
-        if (!errCodeMap[errCode]) {
-          promptAction.openToast({
-            message: '接口调用失败，错误码：' + errCode
-          })
-        }
-        if (errCodeMap[errCode]) {
-          promptAction.openToast({
-            message: '接口调用失败，错误码：' + errCode + '，错误信息：' + errCodeMap[errCode]
-          })
-        }
+        promptAction.openToast({
+          message: '接口调用失败，错误码：' + res.error?.code
+        })
         return 'fail'
       }
       promptAction.openToast({

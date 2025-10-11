@@ -3,8 +3,7 @@ import { privacyManager } from '@kit.AppGalleryKit'
 import { preferences } from '@kit.ArkData'
 import { promptAction } from '@kit.ArkUI'
 import { fileIo, picker } from '@kit.CoreFileKit'
-import { AccountInfo, getList, set } from '../common/Account'
-import { read } from '../common/File'
+import { getList, importAccounts } from '../common/Account'
 import openLink from '../common/Openlink'
 
 @ComponentV2
@@ -74,22 +73,8 @@ export default struct Setting {
                   const documentViewPicker = new picker.DocumentViewPicker(this.context)
                   const uris = await documentViewPicker.select(documentSelectOptions)
                   if (uris.length === 1) {
-                    const filePath = uris[0]
-                    const filestring = read(filePath)
-                    const accounts = JSON.parse(filestring) as AccountInfo[]
-                    const promises = accounts.map(async (item) => {
-                      await set({
-                        path: item.path,
-                        name: item.name,
-                        password: item.password,
-                        sid: item.sid,
-                        did: item.did
-                      })
-                    })
-                    await Promise.all(promises)
-                    promptAction.openToast({
-                      message: '导入成功'
-                    })
+                    const uri = uris[0]
+                    await importAccounts(uri)
                     this.getSetting()
                   }
                 })
@@ -100,7 +85,6 @@ export default struct Setting {
                     right: 12
                   })
               }
-
               Row() {
                 Text('导出')
                   .fontWeight(FontWeight.Medium)
@@ -129,7 +113,7 @@ export default struct Setting {
                   const documentViewPicker = new picker.DocumentViewPicker(this.context)
                   const uris = await documentViewPicker.save(documentSaveOptions)
                   const filePath = uris[0]
-                  const file = fileIo.openSync(filePath, fileIo.OpenMode.READ_WRITE)
+                  const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
                   const array = await getList()
                   fileIo.writeSync(file.fd, JSON.stringify(array))
                   fileIo.closeSync(file)
