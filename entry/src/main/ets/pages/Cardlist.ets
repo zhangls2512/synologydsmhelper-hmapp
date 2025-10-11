@@ -91,9 +91,9 @@ export default struct Cardlist {
               title: {
                 title: '编辑卡片'
               },
-              onDisappear: (() => {
+              onDisappear: () => {
                 this.get()
-              })
+              }
             })
 
             Badge({
@@ -125,6 +125,9 @@ export default struct Cardlist {
                 preferType: this.preferType,
                 title: {
                   title: '消息'
+                },
+                onDisappear: () => {
+                  this.get()
                 }
               })
             }

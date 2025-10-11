@@ -81,7 +81,7 @@ export default struct Me {
             title: {
               title: '登录'
             },
-            onAppear: (async () => {
+            onAppear: async () => {
               const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
                 name: 'commonSetting'
               })
@@ -90,12 +90,12 @@ export default struct Me {
                 const lastWindow = await window.getLastWindow(this.context)
                 await lastWindow.setWindowPrivacyMode(true)
               }
-            }),
-            onDisappear: (async () => {
+            },
+            onDisappear: async () => {
               const lastWindow = await window.getLastWindow(this.context)
               await lastWindow.setWindowPrivacyMode(false)
               this.get()
-            })
+            }
           })
 
           Divider()
@@ -139,9 +139,9 @@ export default struct Me {
             title: {
               title: '切换账号'
             },
-            onDisappear: (() => {
+            onDisappear: () => {
               this.get()
-            })
+            }
           })
         }
         .backgroundColor($r('sys.color.comp_background_primary'))
@@ -182,7 +182,10 @@ export default struct Me {
             this.isShowSettingSheet = true
           })
           .bindSheet(this.isShowSettingSheet!!, this.SettingSheetBuilder(), {
-            preferType: this.preferType
+            preferType: this.preferType,
+            onDisappear: () => {
+              this.get()
+            }
           })
         }
         .backgroundColor($r('sys.color.comp_background_primary'))

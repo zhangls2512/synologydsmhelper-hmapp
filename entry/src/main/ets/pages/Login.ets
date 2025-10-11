@@ -226,7 +226,8 @@ export default struct Login {
                   sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
                 })
                 res = await dsmRequest(path, 'SYNO.API.Auth',
-                  '&method=login&account=' + this.name + '&passwd=' + this.password + '&otp_code=' + this.mfa)
+                  '&method=login&account=' + encodeURIComponent(this.name) + '&passwd=' +
+                  encodeURIComponent(this.password) + '&otp_code=' + this.mfa)
               }
               if (this.quickConnectId) {
                 const session = rcp.createSession()
@@ -254,7 +255,8 @@ export default struct Login {
                         sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
                       })
                       res = await dsmRequest(path, 'SYNO.API.Auth',
-                        '&method=login&account=' + this.name + '&passwd=' + this.password + '&otp_code=' + this.mfa)
+                        '&method=login&account=' + encodeURIComponent(this.name) + '&passwd=' +
+                        encodeURIComponent(this.password) + '&otp_code=' + this.mfa)
                     } else {
                       dialogControllerProgress.close()
                       promptAction.openToast({

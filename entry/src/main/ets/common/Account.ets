@@ -1,5 +1,6 @@
 import { promptAction } from '@kit.ArkUI'
 import { appAccount } from '@kit.BasicServicesKit'
+import { read } from './File'
 import { dsmRequest } from './Request'
 
 export interface AccountInfo {
@@ -133,4 +134,29 @@ export async function remove(id: number) {
       message: '删除成功'
     })
   }
+}
+
+export async function importAccounts(uri: string) {
+  const array = await getList()
+  if (array.length > 0) {
+    promptAction.openToast({
+      message: '导入失败，原因：本地存在账号'
+    })
+    return
+  }
+  const filestring = read(uri)
+  const accounts = JSON.parse(filestring) as AccountInfo[]
+  const promises = accounts.map(async (item) => {
+    await set({
+      path: item.path,
+      name: item.name,
+      password: item.password,
+      sid: item.sid,
+      did: item.did
+    })
+  })
+  await Promise.all(promises)
+  promptAction.openToast({
+    message: '导入成功'
+  })
 }
