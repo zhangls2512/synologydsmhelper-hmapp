@@ -80,7 +80,6 @@ struct Index {
         }
         .tabBar(this.tabBuilder(2, $r('app.media.me'), '我的'))
       }
-      .barOverlap(deviceInfo.deviceType === 'phone' ? true : false)
       .barPosition(deviceInfo.deviceType === 'phone' ? BarPosition.End : BarPosition.Start)
       .vertical(deviceInfo.deviceType === 'phone' ? false : true)
       .onAnimationStart((index, targetIndex) => {
