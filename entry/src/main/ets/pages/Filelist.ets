@@ -253,100 +253,102 @@ export default struct Filelist {
               }
               const documentViewPicker = new picker.DocumentViewPicker(this.context)
               const uris = await documentViewPicker.save(documentSaveOptions)
-              const filePath = uris[0]
-              this.prepareDownloadDialogControllerProgress.open()
-              const version = await getDsmApiMaxVersion('', 'SYNO.FileStation.Download')
-              this.prepareDownloadDialogControllerProgress.close()
-              if (version !== 'fail') {
-                this.context.eventHub.on('cancelDownload', () => {
-                  session.cancel()
-                })
-                this.isShowDownloadSheet = true
-                this.totalSize = item.additional.size
-                const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
-                const fileStream = fileIo.fdopenStreamSync(file.fd, 'w+')
-                netBoost.setSceneDesc({
-                  scene: 'download',
-                  sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
-                })
-                const accountInfo = await get()
-                const session = rcp.createSession({
-                  requestConfiguration: {
-                    transfer: {
-                      timeout: {
-                        transferMs: 0
-                      }
-                    },
-                    tracing: {
-                      httpEventsHandler: {
-                        onDataReceive: (incomingData) => {
-                          fileStream.writeSync(incomingData)
-                          this.transferredSize = this.transferredSize + incomingData.byteLength
-                        },
-                        onDataEnd: () => {
-                          session.close()
-                          netBoost.setSceneDesc({
-                            scene: 'download',
-                            sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-                          })
-                          fileStream.closeSync()
-                          this.transferredSize = -1
-                          this.totalSize = -1
-                          this.isShowDownloadSheet = false
-                          this.context.eventHub.off('cancelDownload')
-                          promptAction.openToast({
-                            message: '下载成功'
-                          })
+              if (uris.length === 1) {
+                const filePath = uris[0]
+                this.prepareDownloadDialogControllerProgress.open()
+                const version = await getDsmApiMaxVersion('', 'SYNO.FileStation.Download')
+                this.prepareDownloadDialogControllerProgress.close()
+                if (version !== 'fail') {
+                  const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
+                  const fileStream = fileIo.fdopenStreamSync(file.fd, 'w+')
+                  netBoost.setSceneDesc({
+                    scene: 'download',
+                    sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
+                  })
+                  const accountInfo = await get()
+                  const session = rcp.createSession({
+                    requestConfiguration: {
+                      transfer: {
+                        timeout: {
+                          transferMs: 0
+                        }
+                      },
+                      tracing: {
+                        httpEventsHandler: {
+                          onDataReceive: (incomingData) => {
+                            fileStream.writeSync(incomingData)
+                            this.transferredSize = this.transferredSize + incomingData.byteLength
+                          },
+                          onDataEnd: () => {
+                            session.close()
+                            netBoost.setSceneDesc({
+                              scene: 'download',
+                              sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                            })
+                            fileStream.closeSync()
+                            this.transferredSize = -1
+                            this.totalSize = -1
+                            this.isShowDownloadSheet = false
+                            this.context.eventHub.off('cancelDownload')
+                            promptAction.openToast({
+                              message: '下载成功'
+                            })
+                          }
                         }
                       }
+                    },
+                    cookies: {
+                      id: accountInfo.sid,
+                      did: accountInfo.did
                     }
-                  },
-                  cookies: {
-                    id: accountInfo.sid,
-                    did: accountInfo.did
-                  }
-                })
-                try {
-                  const response =
-                    await session.get(accountInfo.path + '/webapi/entry.cgi?api=SYNO.FileStation.Download&version=' +
-                      version + '&method=download&mode=download&path=' + encodeURIComponent(item.path))
-                  if (response.statusCode !== 200) {
+                  })
+                  this.context.eventHub.on('cancelDownload', () => {
+                    session.cancel()
+                  })
+                  this.totalSize = item.additional.size
+                  this.isShowDownloadSheet = true
+                  try {
+                    const response =
+                      await session.get(accountInfo.path + '/webapi/entry.cgi?api=SYNO.FileStation.Download&version=' +
+                        version + '&method=download&mode=download&path=' + encodeURIComponent(item.path))
+                    if (response.statusCode !== 200) {
+                      session.close()
+                      netBoost.setSceneDesc({
+                        scene: 'download',
+                        sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                      })
+                      fileStream.closeSync()
+                      this.isShowDownloadSheet = false
+                      this.transferredSize = -1
+                      this.totalSize = -1
+                      this.context.eventHub.off('cancelDownload')
+                      promptAction.openToast({
+                        message: '下载失败，错误码：' + response.statusCode
+                      })
+                    }
+                  } catch (err) {
                     session.close()
                     netBoost.setSceneDesc({
                       scene: 'download',
                       sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
                     })
                     fileStream.closeSync()
+                    this.isShowDownloadSheet = false
                     this.transferredSize = -1
                     this.totalSize = -1
-                    this.isShowDownloadSheet = false
                     this.context.eventHub.off('cancelDownload')
-                    promptAction.openToast({
-                      message: '下载失败，错误码：' + response.statusCode
-                    })
+                    if (err.code !== 1007900992) {
+                      promptAction.openToast({
+                        message: '下载失败，错误码：' + err.code
+                      })
+                    }
                   }
-                } catch (err) {
-                  session.close()
-                  netBoost.setSceneDesc({
-                    scene: 'download',
-                    sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-                  })
-                  fileStream.closeSync()
-                  this.transferredSize = -1
-                  this.totalSize = -1
-                  this.isShowDownloadSheet = false
-                  this.context.eventHub.off('cancelDownload')
-                  promptAction.openToast({
-                    message: '下载失败，错误码：' + err.code
-                  })
                 }
               }
             } catch (err) {
-              if (err.code !== 13900020 && err.code !== 1007900992) {
-                promptAction.openToast({
-                  message: '发生错误，错误码：' + err.code
-                })
-              }
+              promptAction.openToast({
+                message: '发生错误，错误码：' + err.code
+              })
             }
           })
       }
@@ -536,9 +538,6 @@ export default struct Filelist {
                   this.search()
                 })
             }
-            .margin({
-              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-            })
           }
 
           if (this.dirnames.length > 0) {
@@ -565,8 +564,7 @@ export default struct Filelist {
                 })
             }
             .margin({
-              bottom: $r('sys.float.ohos_id_elements_margin_vertical_m'),
-              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+              bottom: $r('sys.float.ohos_id_elements_margin_vertical_m')
             })
           }
           ForEach(this.fileArray, (item: FileItem, index) => {
@@ -651,16 +649,11 @@ export default struct Filelist {
                       if (!fileIo.accessSync(previewDir)) {
                         fileIo.mkdirSync(previewDir)
                       }
-                      const filePath = previewDir + item.name
+                      const filePath = previewDir + '/' + item.name
                       this.prepareDownloadDialogControllerProgress.open()
                       const version = await getDsmApiMaxVersion('', 'SYNO.FileStation.Download')
                       this.prepareDownloadDialogControllerProgress.close()
                       if (version !== 'fail') {
-                        this.context.eventHub.on('cancelDownload', () => {
-                          session.cancel()
-                        })
-                        this.isShowDownloadSheet = true
-                        this.totalSize = item.additional.size
                         const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
                         const fileStream = fileIo.fdopenStreamSync(file.fd, 'w+')
                         netBoost.setSceneDesc({
@@ -715,6 +708,11 @@ export default struct Filelist {
                             did: accountInfo.did
                           }
                         })
+                        this.context.eventHub.on('cancelDownload', () => {
+                          session.cancel()
+                        })
+                        this.totalSize = item.additional.size
+                        this.isShowDownloadSheet = true
                         try {
                           const response =
                             await session.get(accountInfo.path +
@@ -727,9 +725,9 @@ export default struct Filelist {
                               sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
                             })
                             fileStream.closeSync()
+                            this.isShowDownloadSheet = false
                             this.transferredSize = -1
                             this.totalSize = -1
-                            this.isShowDownloadSheet = false
                             this.context.eventHub.off('cancelDownload')
                             promptAction.openToast({
                               message: '下载失败，错误码：' + response.statusCode
@@ -742,21 +740,21 @@ export default struct Filelist {
                             sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
                           })
                           fileStream.closeSync()
+                          this.isShowDownloadSheet = false
                           this.transferredSize = -1
                           this.totalSize = -1
-                          this.isShowDownloadSheet = false
                           this.context.eventHub.off('cancelDownload')
-                          promptAction.openToast({
-                            message: '下载失败，错误码：' + err.code
-                          })
+                          if (err.code !== 1007900992) {
+                            promptAction.openToast({
+                              message: '下载失败，错误码：' + err.code
+                            })
+                          }
                         }
                       }
                     } catch (err) {
-                      if (err.code !== 1007900992) {
-                        promptAction.openToast({
-                          message: '发生错误，错误码：' + err.code
-                        })
-                      }
+                      promptAction.openToast({
+                        message: '发生错误，错误码：' + err.code
+                      })
                     }
                   }
                   if (item.isdir) {

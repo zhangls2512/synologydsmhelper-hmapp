@@ -1,5 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
+import { promptAction } from '@kit.ArkUI'
 import { webview } from '@kit.ArkWeb'
 import { fileIo } from '@kit.CoreFileKit'
 
@@ -18,6 +19,9 @@ export default struct Cleardata {
   @Local log: string[] = []
   @Local allLog: boolean = false
   @Local errorLog: boolean = false
+  @Local nouse: string[] = []
+  @Local allNouse: boolean = false
+  @Local previewNouse: boolean = false
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
   build() {
@@ -516,6 +520,117 @@ export default struct Cleardata {
                 message: '清理成功'
               })
             }
+          })
+      }
+      .margin({
+        top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+      })
+      .width('100%')
+
+      ListItem() {
+        Column() {
+          Text('无用数据')
+            .fontColor($r('sys.color.font_secondary'))
+            .fontSize($r('sys.float.ohos_id_text_size_body2'))
+            .fontWeight(FontWeight.Medium)
+            .margin({
+              bottom: 6,
+              left: 12
+            })
+          Column() {
+            Row() {
+              CheckboxGroup({
+                group: 'nouse'
+              })
+                .checkboxShape(CheckBoxShape.ROUNDED_SQUARE)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+                .selectAll(this.allNouse!!)
+                .onChange((itemName) => {
+                  this.nouse = itemName.name
+                })
+              Text('全部')
+                .fontWeight(FontWeight.Bold)
+            }
+            .borderRadius(12)
+            .padding(12)
+            .width('100%')
+
+            Divider()
+              .padding({
+                left: 12,
+                right: 12
+              })
+            Row() {
+              Checkbox({
+                name: 'previewNouse',
+                group: 'nouse'
+              })
+                .shape(CheckBoxShape.ROUNDED_SQUARE)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+                .select(this.previewNouse!!)
+              Column() {
+                Text('预览临时文件')
+                  .fontWeight(FontWeight.Medium)
+                Text('预览临时文件')
+                  .fontColor($r('sys.color.font_secondary'))
+                  .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                  .margin({
+                    top: $r('sys.float.ohos_id_text_margin_vertical')
+                  })
+                  .width('90%')
+              }
+              .alignItems(HorizontalAlign.Start)
+            }
+            .borderRadius(12)
+            .padding(12)
+            .width('100%')
+          }
+          .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+          .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+          .padding($r('sys.float.ohos_id_corner_radius_mark'))
+        }
+        .alignItems(HorizontalAlign.Start)
+      }
+      .margin({
+        top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+      })
+
+      ListItem() {
+        Button('清理无用数据')
+          .enabled(this.nouse.length > 0)
+          .role(ButtonRole.ERROR)
+          .onClick(() => {
+            this.nouse.forEach((item) => {
+              if (item === 'previewNouse') {
+                try {
+                  const oldPreviewDir = this.context.tempDir
+                  const newPreviewDir = this.context.tempDir + '/preview'
+                  const oldfilenames = fileIo.listFileSync(oldPreviewDir)
+                  const newfilenames = fileIo.listFileSync(newPreviewDir)
+                  for (let i = 0; i < oldfilenames.length; i++) {
+                    if (oldfilenames[i] !== 'preview') {
+                      fileIo.unlinkSync(oldPreviewDir + '/' + oldfilenames[i])
+                    }
+                  }
+                  for (let i = 0; i < newfilenames.length; i++) {
+                    fileIo.unlinkSync(newPreviewDir + '/' + newfilenames[i])
+                  }
+                } catch (err) {
+                  if (err.code !== 13900002) {
+                    promptAction.openToast({
+                      message: '发生错误，错误码：' + err.code
+                    })
+                  }
+                }
+              }
+            })
+            promptAction.openToast({
+              message: '清理成功'
+            })
           })
       }
       .margin({
