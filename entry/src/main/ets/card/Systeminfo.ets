@@ -118,7 +118,7 @@ export default struct Systeminfo {
         .width('100%')
       }
     }
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+    .backgroundColor($r('sys.color.comp_background_primary'))
     .borderRadius(12)
     .padding(12)
     .width('100%')
