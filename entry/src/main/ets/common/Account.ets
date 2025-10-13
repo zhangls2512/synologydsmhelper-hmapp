@@ -137,26 +137,32 @@ export async function remove(id: number) {
 }
 
 export async function importAccounts(uri: string) {
-  const array = await getList()
-  if (array.length > 0) {
+  try {
+    const array = await getList()
+    if (array.length > 0) {
+      promptAction.openToast({
+        message: '导入失败，原因：本地存在账号'
+      })
+      return
+    }
+    const filestring = read(uri)
+    const accounts = JSON.parse(filestring) as AccountInfo[]
+    const promises = accounts.map(async (item) => {
+      await set({
+        path: item.path,
+        name: item.name,
+        password: item.password,
+        sid: item.sid,
+        did: item.did
+      })
+    })
+    await Promise.all(promises)
     promptAction.openToast({
-      message: '导入失败，原因：本地存在账号'
+      message: '导入成功'
     })
-    return
+  } catch {
+    promptAction.openToast({
+      message: '导入失败'
+    })
   }
-  const filestring = read(uri)
-  const accounts = JSON.parse(filestring) as AccountInfo[]
-  const promises = accounts.map(async (item) => {
-    await set({
-      path: item.path,
-      name: item.name,
-      password: item.password,
-      sid: item.sid,
-      did: item.did
-    })
-  })
-  await Promise.all(promises)
-  promptAction.openToast({
-    message: '导入成功'
-  })
 }
