@@ -8,6 +8,7 @@ import { netBoost } from '@kit.NetworkBoostKit'
 import { filePreview } from '@kit.PreviewKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { systemShare } from '@kit.ShareKit'
+import { hdsEffect } from '@kit.UIDesignKit'
 import { get, getLoginStatus } from '../common/Account'
 import { dsmRequest, getDsmApiMaxVersion } from '../common/Request'
 import Download from './Download'
@@ -43,19 +44,31 @@ export default struct Filelist {
   @Provider() isShowNewfolderSheet: boolean = false
   @Provider() isShowDownloadSheet: boolean = false
   @Provider() isShowRenamefileSheet: boolean = false
+  @Local loading: boolean = false
+  @Local fileArray: FileItem[] = []
+  @Local dirnames: string[] = []
+  @Provider() editPath: string = ''
+  @Provider() editName: string = ''
+  @Provider() transferredSize: number = -1
+  @Provider() totalSize: number = -1
   @Local isLogin: boolean = false
   @Local sortByIndex: number = 2
   @Local sortByValue: string = '类型'
   @Local sortDirectionIndex: number = 0
   @Local sortDirectionValue: string = '正序'
-  @Local dirnames: string[] = []
-  @Local fileArray: FileItem[] = []
-  @Provider() editPath: string = ''
-  @Provider() editName: string = ''
-  @Provider() transferredSize: number = -1
-  @Provider() totalSize: number = -1
+  @Local searchKeyword: string = ''
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
   preferType = 1
+  searchDialogControllerProgress = new CustomDialogController({
+    builder: LoadingDialog({
+      content: '搜索中...'
+    })
+  })
+  prepareDownloadDialogControllerProgress = new CustomDialogController({
+    builder: LoadingDialog({
+      content: '下载准备中...'
+    })
+  })
 
   getSizeString(size: number) {
     if (size < Math.pow(1024, 1)) {
@@ -84,6 +97,7 @@ export default struct Filelist {
   }
 
   async get() {
+    this.searchKeyword = ''
     this.isLogin = await getLoginStatus()
     if (this.isLogin) {
       let path = ''
@@ -139,6 +153,69 @@ export default struct Filelist {
     }
   }
 
+  async search() {
+    let path = ''
+    for (let i = 0; i < this.dirnames.length; i++) {
+      path = path + '/' + this.dirnames[i]
+    }
+    this.searchDialogControllerProgress.open()
+    const res = await dsmRequest('', 'SYNO.FileStation.Search',
+      '&method=start&folder_path=' + encodeURIComponent(JSON.stringify([path])) + '&pattern=' +
+      encodeURIComponent(this.searchKeyword))
+    if (res !== 'fail') {
+      const taskId = res['taskid'] as string
+      this.searchByTaskId(taskId)
+    }
+    if (res === 'fail') {
+      this.searchDialogControllerProgress.close()
+    }
+  }
+
+  async searchByTaskId(taskId: string) {
+    let sortBy = ''
+    if (this.sortByValue === '名称') {
+      sortBy = 'name'
+    }
+    if (this.sortByValue === '大小') {
+      sortBy = 'size'
+    }
+    if (this.sortByValue === '类型') {
+      sortBy = 'type'
+    }
+    if (this.sortByValue === '修改日期') {
+      sortBy = 'mt'
+    }
+    let sortDirection = ''
+    if (this.sortDirectionValue === '正序') {
+      sortDirection = 'ASC'
+    }
+    if (this.sortDirectionValue === '倒序') {
+      sortDirection = 'DESC'
+    }
+    const res = await dsmRequest('', 'SYNO.FileStation.Search',
+      '&method=list&additional=["size","time"]&taskid=' + taskId + '&sort_by=' + sortBy + '&sort_direction=' +
+        sortDirection)
+    if (res !== 'fail') {
+      const finished = res['finished'] as boolean
+      if (!finished) {
+        this.searchByTaskId(taskId)
+      }
+      if (finished) {
+        this.searchDialogControllerProgress.close()
+        const files = res['files'] as FileItem[]
+        if (!files) {
+          this.fileArray = []
+        }
+        if (files) {
+          this.fileArray = files
+        }
+      }
+    }
+    if (res === 'fail') {
+      this.searchDialogControllerProgress.close()
+    }
+  }
+
   @Builder
   NewfolderSheetBuilder() {
     Newfolder()
@@ -176,110 +253,102 @@ export default struct Filelist {
               }
               const documentViewPicker = new picker.DocumentViewPicker(this.context)
               const uris = await documentViewPicker.save(documentSaveOptions)
-              const filePath = uris[0]
-              const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
-              const fileStream = fileIo.fdopenStreamSync(file.fd, 'w+')
-              const accountInfo = await get()
-              const prepareDialogControllerProgress = new CustomDialogController({
-                builder: LoadingDialog({
-                  content: '准备开始下载...'
-                })
-              })
-              prepareDialogControllerProgress.open()
-              const version = await getDsmApiMaxVersion('', 'SYNO.FileStation.Download')
-              prepareDialogControllerProgress.close()
-              if (version !== 'fail') {
-                netBoost.setSceneDesc({
-                  scene: 'download',
-                  sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
-                })
-                this.totalSize = item.additional.size
-                const session = rcp.createSession({
-                  requestConfiguration: {
-                    transfer: {
-                      timeout: {
-                        transferMs: 0
-                      }
-                    },
-                    tracing: {
-                      httpEventsHandler: {
-                        onDataReceive: (incomingData) => {
-                          fileStream.writeSync(incomingData)
-                          this.transferredSize = this.transferredSize + incomingData.byteLength
-                        },
-                        onDataEnd: () => {
-                          session.close()
-                          netBoost.setSceneDesc({
-                            scene: 'download',
-                            sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-                          })
-                          fileStream.closeSync()
-                          fileIo.closeSync(file)
-                          this.transferredSize = -1
-                          this.totalSize = -1
-                          this.isShowDownloadSheet = false
-                          promptAction.openToast({
-                            message: '下载成功'
-                          })
+              if (uris.length === 1) {
+                const filePath = uris[0]
+                this.prepareDownloadDialogControllerProgress.open()
+                const version = await getDsmApiMaxVersion('', 'SYNO.FileStation.Download')
+                this.prepareDownloadDialogControllerProgress.close()
+                if (version !== 'fail') {
+                  const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
+                  const fileStream = fileIo.fdopenStreamSync(file.fd, 'w+')
+                  netBoost.setSceneDesc({
+                    scene: 'download',
+                    sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
+                  })
+                  const accountInfo = await get()
+                  const session = rcp.createSession({
+                    requestConfiguration: {
+                      transfer: {
+                        timeout: {
+                          transferMs: 0
+                        }
+                      },
+                      tracing: {
+                        httpEventsHandler: {
+                          onDataReceive: (incomingData) => {
+                            fileStream.writeSync(incomingData)
+                            this.transferredSize = this.transferredSize + incomingData.byteLength
+                          },
+                          onDataEnd: () => {
+                            session.close()
+                            netBoost.setSceneDesc({
+                              scene: 'download',
+                              sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                            })
+                            fileStream.closeSync()
+                            this.transferredSize = -1
+                            this.totalSize = -1
+                            this.isShowDownloadSheet = false
+                            this.context.eventHub.off('cancelDownload')
+                            promptAction.openToast({
+                              message: '下载成功'
+                            })
+                          }
                         }
                       }
+                    },
+                    cookies: {
+                      id: accountInfo.sid,
+                      did: accountInfo.did
                     }
-                  },
-                  cookies: {
-                    id: accountInfo.sid,
-                    did: accountInfo.did
-                  }
-                })
-                this.context.eventHub.on('cancelDownload', () => {
-                  session.cancel()
-                })
-                this.isShowDownloadSheet = true
-                try {
-                  const response =
-                    await session.get(accountInfo.path + '/webapi/entry.cgi?api=SYNO.FileStation.Download&version=' +
-                      version + '&method=download&mode=download&path=' + encodeURIComponent(item.path))
-                  if (response.statusCode !== 200) {
+                  })
+                  this.context.eventHub.on('cancelDownload', () => {
+                    session.cancel()
+                  })
+                  this.totalSize = item.additional.size
+                  this.isShowDownloadSheet = true
+                  try {
+                    const response =
+                      await session.get(accountInfo.path + '/webapi/entry.cgi?api=SYNO.FileStation.Download&version=' +
+                        version + '&method=download&mode=download&path=' + encodeURIComponent(item.path))
+                    if (response.statusCode !== 200) {
+                      session.close()
+                      netBoost.setSceneDesc({
+                        scene: 'download',
+                        sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                      })
+                      fileStream.closeSync()
+                      this.isShowDownloadSheet = false
+                      this.transferredSize = -1
+                      this.totalSize = -1
+                      this.context.eventHub.off('cancelDownload')
+                      promptAction.openToast({
+                        message: '下载失败，错误码：' + response.statusCode
+                      })
+                    }
+                  } catch (err) {
                     session.close()
                     netBoost.setSceneDesc({
                       scene: 'download',
                       sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
                     })
-                    this.context.eventHub.off('cancelDownload')
                     fileStream.closeSync()
-                    fileIo.closeSync(file)
+                    this.isShowDownloadSheet = false
                     this.transferredSize = -1
                     this.totalSize = -1
-                    this.isShowDownloadSheet = false
-                    promptAction.openToast({
-                      message: '下载失败，错误码：' + response.statusCode
-                    })
+                    this.context.eventHub.off('cancelDownload')
+                    if (err.code !== 1007900992) {
+                      promptAction.openToast({
+                        message: '下载失败，错误码：' + err.code
+                      })
+                    }
                   }
-                } catch (err) {
-                  session.close()
-                  netBoost.setSceneDesc({
-                    scene: 'download',
-                    sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-                  })
-                  this.context.eventHub.off('cancelDownload')
-                  fileStream.closeSync()
-                  fileIo.closeSync(file)
-                  this.transferredSize = -1
-                  this.totalSize = -1
-                  this.isShowDownloadSheet = false
-                  promptAction.openToast({
-                    message: '下载失败，错误码：' + err.code
-                  })
                 }
-              } else {
-                fileStream.closeSync()
-                fileIo.closeSync(file)
               }
             } catch (err) {
-              if (err.code !== 13900020 && err.code !== 1007900992) {
-                promptAction.openToast({
-                  message: '发生错误，错误码：' + err.code
-                })
-              }
+              promptAction.openToast({
+                message: '发生错误，错误码：' + err.code
+              })
             }
           })
       }
@@ -311,15 +380,17 @@ export default struct Filelist {
             shareController.show(this.context, {})
           }
         })
-      MenuItem({
-        startIcon: $r('app.media.rename'),
-        content: '重命名'
-      })
-        .onClick(() => {
-          this.editPath = item.path
-          this.editName = item.name
-          this.isShowRenamefileSheet = true
+      if (this.dirnames.length > 0) {
+        MenuItem({
+          startIcon: $r('app.media.rename'),
+          content: '重命名'
         })
+          .onClick(() => {
+            this.editPath = item.path
+            this.editName = item.name
+            this.isShowRenamefileSheet = true
+          })
+      }
       MenuItem({
         startIcon: $r('app.media.delete'),
         content: '删除'
@@ -354,7 +425,7 @@ export default struct Filelist {
               promptAction.openToast({
                 message: '删除成功'
               })
-              this.get()
+              this.loading = true
             }
           }
         })
@@ -362,356 +433,390 @@ export default struct Filelist {
   }
 
   build() {
-    List() {
-      if (!this.isLogin) {
-        ListItem() {
-          Text('未登录账号')
-        }
-        .height('100%')
-        .width('100%')
-      }
-      if (this.isLogin) {
-        ListItem() {
-          Row() {
-            Select([
-              { value: '名称' },
-              { value: '大小' },
-              { value: '类型' },
-              { value: '修改日期' }
-            ])
-              .margin({
-                right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-              })
-              .selected(this.sortByIndex!!)
-              .value(this.sortByValue!!)
-              .onSelect(() => {
-                this.get()
-              })
-            Select([
-              { value: '正序' },
-              { value: '倒序' }
-            ])
-              .selected(this.sortDirectionIndex!!)
-              .value(this.sortDirectionValue!!)
-              .onSelect(() => {
-                this.get()
-              })
+    Refresh({
+      refreshing: $$this.loading
+    }) {
+      List() {
+        if (!this.isLogin) {
+          ListItem() {
+            Text('未登录账号')
           }
-          .justifyContent(FlexAlign.End)
+          .height('100%')
           .width('100%')
         }
-
-        ListItem() {
-          Text() {
-            ForEach(this.dirnames, (item: string, index) => {
-              if (index !== 0) {
-                Span('/ ')
+        if (this.isLogin) {
+          ListItem() {
+            Row() {
+              if (this.dirnames.length > 0) {
+                Column() {
+                  Image($r('app.media.back'))
+                }
+                .backgroundColor($r('sys.color.interactive_hover'))
+                .borderRadius(20)
+                .height(40)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+                .padding(11)
+                .visualEffect(new hdsEffect.HdsEffectBuilder()
+                  .pointLight({
+                    sourceType: hdsEffect.PointLightSourceType.SOFT,
+                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                  })
+                  .buildEffect())
+                .width(40)
+                .onClick(() => {
+                  this.dirnames.pop()
+                  this.loading = true
+                })
               }
-              if (index === 0) {
-                Span('根目录')
+              Blank()
+              Select([
+                { value: '名称' },
+                { value: '大小' },
+                { value: '类型' },
+                { value: '修改日期' }
+              ])
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+                .selected(this.sortByIndex!!)
+                .value(this.sortByValue!!)
+                .onSelect(() => {
+                  this.loading = true
+                })
+              Select([
+                { value: '正序' },
+                { value: '倒序' }
+              ])
+                .selected(this.sortDirectionIndex!!)
+                .value(this.sortDirectionValue!!)
+                .onSelect(() => {
+                  this.loading = true
+                })
+            }
+            .width('100%')
+          }
+
+          ListItem() {
+            Text() {
+              ForEach(this.dirnames, (item: string, index) => {
+                if (index !== 0) {
+                  Span('/ ')
+                }
+                if (index === 0) {
+                  Span('根目录')
+                    .fontColor($r('sys.color.font_emphasize'))
+                    .onClick(() => {
+                      this.dirnames = []
+                      this.loading = true
+                    })
+                  Span(' / ')
+                }
+                Span(item + ' ')
                   .fontColor($r('sys.color.font_emphasize'))
                   .onClick(() => {
-                    this.dirnames = []
-                    this.get()
+                    this.dirnames = this.dirnames.slice(0, index + 1)
+                    this.loading = true
                   })
-                Span(' / ')
-              }
-              Span(item + ' ')
-                .fontColor($r('sys.color.font_emphasize'))
-                .onClick(() => {
-                  this.dirnames = this.dirnames.slice(0, index + 1)
-                  this.get()
-                })
-            })
-          }
-          .enableAutoSpacing(true)
-        }
-        .margin({
-          top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-        })
-
-        if (this.dirnames.length > 0) {
-          ListItem() {
-            Button('新建文件夹')
-              .onClick(() => {
-                let path = ''
-                for (let i = 0; i < this.dirnames.length; i++) {
-                  path = path + '/' + this.dirnames[i]
-                }
-                this.editPath = path
-                this.isShowNewfolderSheet = true
               })
-              .bindSheet(this.isShowNewfolderSheet!!, this.NewfolderSheetBuilder(), {
-                height: SheetSize.FIT_CONTENT,
-                preferType: this.preferType,
-                title: {
-                  title: '新建文件夹'
-                },
-                onDisappear: () => {
-                  this.editPath = ''
-                  this.get()
-                }
-              })
+            }
+            .enableAutoSpacing(true)
           }
           .margin({
-            bottom: $r('sys.float.ohos_id_elements_margin_vertical_m'),
             top: $r('sys.float.ohos_id_elements_margin_vertical_m')
           })
-        }
-        ForEach(this.fileArray, (item: FileItem, index) => {
-          ListItem() {
-            Column() {
-              if (index !== 0) {
-                Divider()
-                  .padding({
-                    left: 38,
-                    right: 6
-                  })
-              }
-              Row() {
-                if (!item.isdir) {
-                  Image($r('app.media.fileicon'))
-                    .fillColor($r('sys.color.icon_secondary'))
-                    .height(24)
-                    .margin({
-                      right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                    })
-                    .width(24)
-                }
-                if (item.isdir) {
-                  Image($r('app.media.foldericon'))
-                    .height(24)
-                    .margin({
-                      right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                    })
-                    .width(24)
-                }
-                Column() {
-                  Text(item.name)
-                    .enableAutoSpacing(true)
-                    .fontWeight(FontWeight.Medium)
-                    .width('85%')
-                  Text() {
-                    Span(this.getTimeString(item.additional.time.mtime))
-                    if (item.additional.size && !item.isdir) {
-                      Span(' - ' + this.getSizeString(item.additional.size))
-                    }
-                  }
-                  .fontColor($r('sys.color.font_secondary'))
-                  .fontSize($r('sys.float.ohos_id_text_size_body2'))
-                  .margin({
-                    top: $r('sys.float.ohos_id_text_margin_vertical')
-                  })
-                }
-                .alignItems(HorizontalAlign.Start)
 
-                Blank()
-                Image($r('app.media.right'))
-                  .fillColor($r('sys.color.icon_fourth'))
-                  .height(12)
-                  .width(12)
-              }
-              .borderRadius(12)
-              .padding({
-                bottom: 12,
-                left: 6,
-                right: 5,
-                top: 12
+          if (this.dirnames.length > 0) {
+            ListItem() {
+              Search({
+                placeholder: '请输入搜索关键词',
+                value: this.searchKeyword!!
               })
-              .stateStyles({
-                normal: {
-                  .backgroundColor($r('sys.color.background_secondary'))
-                },
-                pressed: {
-                  .backgroundColor($r('sys.color.comp_background_secondary'))
-                }
-              })
-              .width('100%')
-              .onClick(async () => {
-                if (!item.isdir) {
-                  if (item.additional.size > 256 * 1024 * 1024) {
-                    promptAction.openToast({
-                      message: '文件过大，请长按将其下载到本地后预览'
-                    })
-                    return
+                .searchButton('搜索')
+                .onSubmit(() => {
+                  this.search()
+                })
+            }
+          }
+
+          if (this.dirnames.length > 0) {
+            ListItem() {
+              Button('新建文件夹')
+                .onClick(() => {
+                  let path = ''
+                  for (let i = 0; i < this.dirnames.length; i++) {
+                    path = path + '/' + this.dirnames[i]
                   }
-                  try {
-                    const previewDir = this.context.tempDir + '/preview'
-                    if (!fileIo.accessSync(previewDir)) {
-                      fileIo.mkdirSync(previewDir)
-                    }
-                    const filePath = previewDir + item.name
-                    const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
-                    const fileStream = fileIo.fdopenStreamSync(file.fd, 'w+')
-                    const accountInfo = await get()
-                    const prepareDialogControllerProgress = new CustomDialogController({
-                      builder: LoadingDialog({
-                        content: '准备开始下载...'
-                      })
+                  this.editPath = path
+                  this.isShowNewfolderSheet = true
+                })
+                .bindSheet(this.isShowNewfolderSheet!!, this.NewfolderSheetBuilder(), {
+                  height: SheetSize.FIT_CONTENT,
+                  preferType: this.preferType,
+                  title: {
+                    title: '新建文件夹'
+                  },
+                  onDisappear: () => {
+                    this.editPath = ''
+                    this.loading = true
+                  }
+                })
+            }
+            .margin({
+              bottom: $r('sys.float.ohos_id_elements_margin_vertical_m')
+            })
+          }
+          ForEach(this.fileArray, (item: FileItem, index) => {
+            ListItem() {
+              Column() {
+                if (index !== 0) {
+                  Divider()
+                    .padding({
+                      left: 38,
+                      right: 6
                     })
-                    prepareDialogControllerProgress.open()
-                    const version = await getDsmApiMaxVersion('', 'SYNO.FileStation.Download')
-                    prepareDialogControllerProgress.close()
-                    if (version !== 'fail') {
-                      netBoost.setSceneDesc({
-                        scene: 'download',
-                        sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
+                }
+                Row() {
+                  if (!item.isdir) {
+                    Image($r('app.media.fileicon'))
+                      .fillColor($r('sys.color.icon_secondary'))
+                      .height(24)
+                      .margin({
+                        right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                       })
-                      this.totalSize = item.additional.size
-                      const session = rcp.createSession({
-                        requestConfiguration: {
-                          transfer: {
-                            timeout: {
-                              transferMs: 0
-                            }
-                          },
-                          tracing: {
-                            httpEventsHandler: {
-                              onDataReceive: (incomingData) => {
-                                fileStream.writeSync(incomingData)
-                                this.transferredSize = this.transferredSize + incomingData.byteLength
-                              },
-                              onDataEnd: async () => {
-                                session.close()
-                                netBoost.setSceneDesc({
-                                  scene: 'download',
-                                  sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-                                })
-                                fileStream.closeSync()
-                                this.transferredSize = -1
-                                this.totalSize = -1
-                                this.isShowDownloadSheet = false
-                                const uri = fileUri.getUriFromPath(filePath)
-                                const canPreview = await filePreview.canPreview(this.context, uri)
-                                if (!canPreview) {
-                                  promptAction.openToast({
-                                    message: '文件类型不支持预览'
+                      .width(24)
+                  }
+                  if (item.isdir) {
+                    Image($r('app.media.foldericon'))
+                      .height(24)
+                      .margin({
+                        right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                      })
+                      .width(24)
+                  }
+                  Column() {
+                    Text(item.name)
+                      .enableAutoSpacing(true)
+                      .fontWeight(FontWeight.Medium)
+                      .width('85%')
+                    Text() {
+                      Span(this.getTimeString(item.additional.time.mtime))
+                      if (item.additional.size && !item.isdir) {
+                        Span(' - ' + this.getSizeString(item.additional.size))
+                      }
+                    }
+                    .fontColor($r('sys.color.font_secondary'))
+                    .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                    .margin({
+                      top: $r('sys.float.ohos_id_text_margin_vertical')
+                    })
+                  }
+                  .alignItems(HorizontalAlign.Start)
+
+                  Blank()
+                  Image($r('app.media.right'))
+                    .fillColor($r('sys.color.icon_fourth'))
+                    .height(12)
+                    .width(12)
+                }
+                .borderRadius(12)
+                .padding({
+                  bottom: 12,
+                  left: 6,
+                  right: 5,
+                  top: 12
+                })
+                .stateStyles({
+                  normal: {
+                    .backgroundColor($r('sys.color.background_secondary'))
+                  },
+                  pressed: {
+                    .backgroundColor($r('sys.color.comp_background_secondary'))
+                  }
+                })
+                .width('100%')
+                .onClick(async () => {
+                  if (!item.isdir) {
+                    if (item.additional.size > Math.pow(1024, 3)) {
+                      promptAction.openToast({
+                        message: '大小大于 1GB，请长按将其下载到本地后预览'
+                      })
+                      return
+                    }
+                    try {
+                      const previewDir = this.context.tempDir + '/preview'
+                      if (!fileIo.accessSync(previewDir)) {
+                        fileIo.mkdirSync(previewDir)
+                      }
+                      const filePath = previewDir + '/' + item.name
+                      this.prepareDownloadDialogControllerProgress.open()
+                      const version = await getDsmApiMaxVersion('', 'SYNO.FileStation.Download')
+                      this.prepareDownloadDialogControllerProgress.close()
+                      if (version !== 'fail') {
+                        const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
+                        const fileStream = fileIo.fdopenStreamSync(file.fd, 'w+')
+                        netBoost.setSceneDesc({
+                          scene: 'download',
+                          sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
+                        })
+                        const accountInfo = await get()
+                        const session = rcp.createSession({
+                          requestConfiguration: {
+                            transfer: {
+                              timeout: {
+                                transferMs: 0
+                              }
+                            },
+                            tracing: {
+                              httpEventsHandler: {
+                                onDataReceive: (incomingData) => {
+                                  fileStream.writeSync(incomingData)
+                                  this.transferredSize = this.transferredSize + incomingData.byteLength
+                                },
+                                onDataEnd: async () => {
+                                  session.close()
+                                  netBoost.setSceneDesc({
+                                    scene: 'download',
+                                    sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
                                   })
-                                }
-                                if (canPreview) {
-                                  filePreview.openPreview(this.context, {
-                                    title: item.name,
-                                    uri: uri,
-                                    mimeType: ''
-                                  })
+                                  fileStream.closeSync()
+                                  this.transferredSize = -1
+                                  this.totalSize = -1
+                                  this.isShowDownloadSheet = false
+                                  this.context.eventHub.off('cancelDownload')
+                                  const uri = fileUri.getUriFromPath(filePath)
+                                  const canPreview = await filePreview.canPreview(this.context, uri)
+                                  if (!canPreview) {
+                                    promptAction.openToast({
+                                      message: '此类型不支持预览'
+                                    })
+                                  }
+                                  if (canPreview) {
+                                    filePreview.openPreview(this.context, {
+                                      title: item.name,
+                                      uri: uri,
+                                      mimeType: ''
+                                    })
+                                  }
                                 }
                               }
                             }
+                          },
+                          cookies: {
+                            id: accountInfo.sid,
+                            did: accountInfo.did
                           }
-                        },
-                        cookies: {
-                          id: accountInfo.sid,
-                          did: accountInfo.did
-                        }
-                      })
-                      this.context.eventHub.on('cancelDownload', () => {
-                        session.cancel()
-                      })
-                      this.isShowDownloadSheet = true
-                      try {
-                        const response =
-                          await session.get(accountInfo.path +
-                            '/webapi/entry.cgi?api=SYNO.FileStation.Download&version=' +
-                            version + '&method=download&mode=download&path=' + encodeURIComponent(item.path))
-                        if (response.statusCode !== 200) {
+                        })
+                        this.context.eventHub.on('cancelDownload', () => {
+                          session.cancel()
+                        })
+                        this.totalSize = item.additional.size
+                        this.isShowDownloadSheet = true
+                        try {
+                          const response =
+                            await session.get(accountInfo.path +
+                              '/webapi/entry.cgi?api=SYNO.FileStation.Download&version=' +
+                              version + '&method=download&mode=download&path=' + encodeURIComponent(item.path))
+                          if (response.statusCode !== 200) {
+                            session.close()
+                            netBoost.setSceneDesc({
+                              scene: 'download',
+                              sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                            })
+                            fileStream.closeSync()
+                            this.isShowDownloadSheet = false
+                            this.transferredSize = -1
+                            this.totalSize = -1
+                            this.context.eventHub.off('cancelDownload')
+                            promptAction.openToast({
+                              message: '下载失败，错误码：' + response.statusCode
+                            })
+                          }
+                        } catch (err) {
                           session.close()
                           netBoost.setSceneDesc({
                             scene: 'download',
                             sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
                           })
-                          this.context.eventHub.off('cancelDownload')
                           fileStream.closeSync()
-                          fileIo.closeSync(file)
+                          this.isShowDownloadSheet = false
                           this.transferredSize = -1
                           this.totalSize = -1
-                          this.isShowDownloadSheet = false
-                          promptAction.openToast({
-                            message: '下载失败，错误码：' + response.statusCode
-                          })
+                          this.context.eventHub.off('cancelDownload')
+                          if (err.code !== 1007900992) {
+                            promptAction.openToast({
+                              message: '下载失败，错误码：' + err.code
+                            })
+                          }
                         }
-                      } catch (err) {
-                        session.close()
-                        netBoost.setSceneDesc({
-                          scene: 'download',
-                          sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-                        })
-                        this.context.eventHub.off('cancelDownload')
-                        fileStream.closeSync()
-                        fileIo.closeSync(file)
-                        this.transferredSize = -1
-                        this.totalSize = -1
-                        this.isShowDownloadSheet = false
-                        promptAction.openToast({
-                          message: '下载失败，错误码：' + err.code
-                        })
                       }
-                    } else {
-                      fileStream.closeSync()
-                      fileIo.closeSync(file)
-                    }
-                  } catch (err) {
-                    if (err.code !== 1007900992) {
+                    } catch (err) {
                       promptAction.openToast({
                         message: '发生错误，错误码：' + err.code
                       })
                     }
                   }
-                }
-                if (item.isdir) {
-                  this.dirnames.push(item.name)
-                  this.get()
-                }
-              })
-              .bindContextMenu(this.MenuBuilder(item), ResponseType.LongPress | ResponseType.RightClick, {
-                hapticFeedbackMode: HapticFeedbackMode.AUTO
-              })
-              .bindSheet(this.isShowDownloadSheet!!, this.DownloadSheetBuilder(), {
-                height: SheetSize.FIT_CONTENT,
-                preferType: this.preferType,
-                showClose: false,
-                title: {
-                  title: '下载'
-                },
-                onWillDismiss: () => {
-                },
-                onDisappear: () => {
-                  this.context.eventHub.emit('cancelDownload')
-                }
-              })
+                  if (item.isdir) {
+                    this.dirnames.push(item.name)
+                    this.loading = true
+                  }
+                })
+                .bindContextMenu(this.MenuBuilder(item), ResponseType.LongPress | ResponseType.RightClick, {
+                  hapticFeedbackMode: HapticFeedbackMode.AUTO
+                })
+                .bindSheet(this.isShowDownloadSheet!!, this.DownloadSheetBuilder(), {
+                  height: SheetSize.FIT_CONTENT,
+                  preferType: this.preferType,
+                  showClose: false,
+                  title: {
+                    title: '下载'
+                  },
+                  onWillDismiss: () => {
+                  },
+                  onDisappear: () => {
+                    this.context.eventHub.emit('cancelDownload')
+                  }
+                })
+              }
+              .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
             }
-            .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
-          }
-        })
+          })
+        }
       }
-    }
-    .padding({
-      bottom: $r('sys.float.ohos_id_default_padding_bottom_fixed'),
-      left: $r('sys.float.ohos_id_max_padding_start'),
-      right: $r('sys.float.ohos_id_max_padding_end')
-    })
-    .onAppear(() => {
-      if (deviceInfo.deviceType === 'phone') {
-        this.preferType = 0
-      }
-      this.context.eventHub.on('refreshFilelist', () => {
-        this.get()
+      .height('100%')
+      .padding({
+        left: $r('sys.float.ohos_id_max_padding_start'),
+        right: $r('sys.float.ohos_id_max_padding_end')
       })
-      this.get()
-    })
-    .onDisAppear(() => {
-      this.context.eventHub.off('refreshFilelist')
-    })
-    .bindSheet(this.isShowRenamefileSheet!!, this.RenamefileSheetBuilder(), {
-      height: SheetSize.FIT_CONTENT,
-      preferType: this.preferType,
-      title: {
-        title: '重命名'
-      },
-      onDisappear: () => {
-        this.editPath = ''
-        this.editName = ''
-        this.get()
-      }
+      .onAppear(() => {
+        if (deviceInfo.deviceType === 'phone') {
+          this.preferType = 0
+        }
+        this.context.eventHub.on('refreshFilelist', () => {
+          this.loading = true
+        })
+        this.loading = true
+      })
+      .onDisAppear(() => {
+        this.context.eventHub.off('refreshFilelist')
+      })
+      .bindSheet(this.isShowRenamefileSheet!!, this.RenamefileSheetBuilder(), {
+        height: SheetSize.FIT_CONTENT,
+        preferType: this.preferType,
+        title: {
+          title: '重命名'
+        },
+        onDisappear: () => {
+          this.editPath = ''
+          this.editName = ''
+          this.loading = true
+        }
+      })
+    }
+    .onRefreshing(async () => {
+      await this.get()
+      this.loading = false
     })
   }
 }

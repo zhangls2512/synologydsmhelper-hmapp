@@ -54,7 +54,7 @@ export default struct Download {
       })
 
       ListItem() {
-        Button('取消下载')
+        Button('取消')
           .role(ButtonRole.ERROR)
           .onClick(async () => {
             const promptAction = this.getUIContext().getPromptAction()
