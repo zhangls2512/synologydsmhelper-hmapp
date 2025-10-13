@@ -437,15 +437,7 @@ export default class EntryAbility extends UIAbility {
     })
     const checkVersionUpdate = commonSettingDataPreferences.getSync('checkVersionUpdate', 1)
     try {
-      if (checkVersionUpdate === 1) {
-        if (getCurrentNetworkBearerType() !== 0) {
-          const res = await updateManager.checkAppUpdate(this.context)
-          if (res.updateAvailable === 1) {
-            updateManager.showUpdateDialog(this.context)
-          }
-        }
-      }
-      if (checkVersionUpdate === 2) {
+      if (checkVersionUpdate === 2 || (checkVersionUpdate === 1 && getCurrentNetworkBearerType() !== 0)) {
         const res = await updateManager.checkAppUpdate(this.context)
         if (res.updateAvailable === 1) {
           updateManager.showUpdateDialog(this.context)
