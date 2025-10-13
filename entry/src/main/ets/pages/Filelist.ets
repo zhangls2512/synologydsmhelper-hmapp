@@ -1,15 +1,18 @@
-import { common } from '@kit.AbilityKit'
-import { uniformTypeDescriptor } from '@kit.ArkData'
+import { common, wantAgent } from '@kit.AbilityKit'
+import { preferences, uniformTypeDescriptor } from '@kit.ArkData'
 import { fastbuffer } from '@kit.ArkTS'
 import { LoadingDialog, promptAction } from '@kit.ArkUI'
+import { backgroundTaskManager } from '@kit.BackgroundTasksKit'
 import { deviceInfo } from '@kit.BasicServicesKit'
 import { fileIo, fileUri, picker } from '@kit.CoreFileKit'
 import { netBoost } from '@kit.NetworkBoostKit'
+import { notificationManager } from '@kit.NotificationKit'
 import { filePreview } from '@kit.PreviewKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { systemShare } from '@kit.ShareKit'
 import { hdsEffect } from '@kit.UIDesignKit'
 import { get, getLoginStatus } from '../common/Account'
+import { getCurrentNetworkBearerType } from '../common/Network'
 import { dsmRequest, getDsmApiMaxVersion } from '../common/Request'
 import Download from './Download'
 import Newfolder from './Newfolder'
@@ -240,6 +243,34 @@ export default struct Filelist {
           content: '下载'
         })
           .onClick(async () => {
+            if (getCurrentNetworkBearerType() === 0) {
+              const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+                name: 'commonSetting'
+              })
+              const cellularDataDownloadRemind = commonSettingDataPreferences.getSync('cellularDataDownloadRemind', 0)
+              if (cellularDataDownloadRemind === 0 ||
+                (cellularDataDownloadRemind === 1 && item.additional.size > 200 * Math.pow(1024, 2))) {
+                const promptAction = this.getUIContext().getPromptAction()
+                const data = await promptAction.showDialog({
+                  title: '流量下载提醒',
+                  message: '当前正在使用流量上网，下载此文件将消耗约 ' + this.getSizeString(item.additional.size) +
+                    ' 流量，确定下载？',
+                  buttons: [
+                    {
+                      text: '取消',
+                      color: $r('sys.color.font_primary')
+                    },
+                    {
+                      text: '确定',
+                      color: $r('sys.color.font_emphasize')
+                    }
+                  ]
+                })
+                if (data.index === 0) {
+                  return
+                }
+              }
+            }
             try {
               const documentSaveOptions = new picker.DocumentSaveOptions()
               const lastDotIndex = item.name.lastIndexOf('.')
@@ -259,6 +290,19 @@ export default struct Filelist {
                 const version = await getDsmApiMaxVersion('', 'SYNO.FileStation.Download')
                 this.prepareDownloadDialogControllerProgress.close()
                 if (version !== 'fail') {
+                  const wandAgent = await wantAgent.getWantAgent({
+                    wants: [
+                      {
+                        bundleName: 'com.songjy.synologydsmhelper',
+                        abilityName: 'EntryAbility'
+                      }
+                    ],
+                    actionType: wantAgent.OperationType.START_ABILITY,
+                    requestCode: 0,
+                    wantAgentFlags: [wantAgent.WantAgentFlags.UPDATE_PRESENT_FLAG]
+                  })
+                  const continuousTaskNotificationInfo =
+                    await backgroundTaskManager.startBackgroundRunning(this.context, ['dataTransfer'], wandAgent)
                   const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
                   const fileStream = fileIo.fdopenStreamSync(file.fd, 'w+')
                   netBoost.setSceneDesc({
@@ -275,24 +319,65 @@ export default struct Filelist {
                       },
                       tracing: {
                         httpEventsHandler: {
-                          onDataReceive: (incomingData) => {
+                          onDataReceive: async (incomingData) => {
                             fileStream.writeSync(incomingData)
                             this.transferredSize = this.transferredSize + incomingData.byteLength
+                            try {
+                              await notificationManager.publish({
+                                content: {
+                                  notificationContentType: notificationManager.ContentType.NOTIFICATION_CONTENT_SYSTEM_LIVE_VIEW,
+                                  systemLiveView: {
+                                    typeCode: 8,
+                                    title: '正在下载文件：' + item.name,
+                                    text: '进度：' + Number((this.transferredSize / this.totalSize).toFixed(2)) * 100 +
+                                      '% (' + this.getSizeString(this.transferredSize) + '/' +
+                                    this.getSizeString(this.totalSize) + ')'
+                                  }
+                                },
+                                id: continuousTaskNotificationInfo.notificationId,
+                                notificationSlotType: notificationManager.SlotType.LIVE_VIEW,
+                                template: {
+                                  name: 'downloadTemplate',
+                                  data: {
+                                    title: '正在下载文件，进度：' +
+                                      Number((this.transferredSize / this.totalSize).toFixed(2)) * 100 + '%',
+                                    fileName: item.name,
+                                    progressValue: Number((this.transferredSize / this.totalSize).toFixed(2)) * 100
+                                  }
+                                }
+                              })
+                            } catch (err) {
+                              if (err.code !== 1600009 && err.code !== 202) {
+                                promptAction.openToast({
+                                  message: '发生错误，错误码：' + err.code
+                                })
+                              }
+                            }
                           },
-                          onDataEnd: () => {
+                          onDataEnd: async () => {
                             session.close()
                             netBoost.setSceneDesc({
                               scene: 'download',
                               sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
                             })
                             fileStream.closeSync()
-                            this.transferredSize = -1
-                            this.totalSize = -1
+                            await backgroundTaskManager.stopBackgroundRunning(this.context)
                             this.isShowDownloadSheet = false
                             this.context.eventHub.off('cancelDownload')
-                            promptAction.openToast({
-                              message: '下载成功'
-                            })
+                            if (this.transferredSize + 1 !== item.additional.size) {
+                              this.transferredSize = -1
+                              this.totalSize = -1
+                              promptAction.openToast({
+                                message: '下载失败'
+                              })
+                            }
+                            if (this.transferredSize + 1 === item.additional.size) {
+                              this.transferredSize = -1
+                              this.totalSize = -1
+                              promptAction.openToast({
+                                message: '下载成功'
+                              })
+                            }
                           }
                         }
                       }
@@ -301,6 +386,12 @@ export default struct Filelist {
                       id: accountInfo.sid,
                       did: accountInfo.did
                     }
+                  })
+                  backgroundTaskManager.on('continuousTaskCancel', () => {
+                    session.cancel()
+                    promptAction.openToast({
+                      message: '下载失败'
+                    })
                   })
                   this.context.eventHub.on('cancelDownload', () => {
                     session.cancel()
@@ -318,6 +409,7 @@ export default struct Filelist {
                         sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
                       })
                       fileStream.closeSync()
+                      await backgroundTaskManager.stopBackgroundRunning(this.context)
                       this.isShowDownloadSheet = false
                       this.transferredSize = -1
                       this.totalSize = -1
@@ -333,6 +425,15 @@ export default struct Filelist {
                       sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
                     })
                     fileStream.closeSync()
+                    try {
+                      await backgroundTaskManager.stopBackgroundRunning(this.context)
+                    } catch (err) {
+                      if (err.code !== 9800005) {
+                        promptAction.openToast({
+                          message: '发生错误，错误码：' + err.code
+                        })
+                      }
+                    }
                     this.isShowDownloadSheet = false
                     this.transferredSize = -1
                     this.totalSize = -1
@@ -539,7 +640,6 @@ export default struct Filelist {
                 })
             }
           }
-
           if (this.dirnames.length > 0) {
             ListItem() {
               Button('新建文件夹')
@@ -644,6 +744,36 @@ export default struct Filelist {
                       })
                       return
                     }
+                    if (getCurrentNetworkBearerType() === 0) {
+                      const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+                        name: 'commonSetting'
+                      })
+                      const cellularDataDownloadRemind =
+                        commonSettingDataPreferences.getSync('cellularDataDownloadRemind', 0)
+                      if (cellularDataDownloadRemind === 0 ||
+                        (cellularDataDownloadRemind === 1 && item.additional.size > 200 * Math.pow(1024, 2))) {
+                        const promptAction = this.getUIContext().getPromptAction()
+                        const data = await promptAction.showDialog({
+                          title: '流量下载提醒',
+                          message: '当前正在使用流量上网，下载此文件将消耗约 ' +
+                          this.getSizeString(item.additional.size) +
+                            ' 流量，确定下载？',
+                          buttons: [
+                            {
+                              text: '取消',
+                              color: $r('sys.color.font_primary')
+                            },
+                            {
+                              text: '确定',
+                              color: $r('sys.color.font_emphasize')
+                            }
+                          ]
+                        })
+                        if (data.index === 0) {
+                          return
+                        }
+                      }
+                    }
                     try {
                       const previewDir = this.context.tempDir + '/preview'
                       if (!fileIo.accessSync(previewDir)) {
@@ -654,6 +784,19 @@ export default struct Filelist {
                       const version = await getDsmApiMaxVersion('', 'SYNO.FileStation.Download')
                       this.prepareDownloadDialogControllerProgress.close()
                       if (version !== 'fail') {
+                        const wandAgent = await wantAgent.getWantAgent({
+                          wants: [
+                            {
+                              bundleName: 'com.songjy.synologydsmhelper',
+                              abilityName: 'EntryAbility'
+                            }
+                          ],
+                          actionType: wantAgent.OperationType.START_ABILITY,
+                          requestCode: 0,
+                          wantAgentFlags: [wantAgent.WantAgentFlags.UPDATE_PRESENT_FLAG]
+                        })
+                        const continuousTaskNotificationInfo =
+                          await backgroundTaskManager.startBackgroundRunning(this.context, ['dataTransfer'], wandAgent)
                         const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
                         const fileStream = fileIo.fdopenStreamSync(file.fd, 'w+')
                         netBoost.setSceneDesc({
@@ -670,9 +813,42 @@ export default struct Filelist {
                             },
                             tracing: {
                               httpEventsHandler: {
-                                onDataReceive: (incomingData) => {
+                                onDataReceive: async (incomingData) => {
                                   fileStream.writeSync(incomingData)
                                   this.transferredSize = this.transferredSize + incomingData.byteLength
+                                  try {
+                                    await notificationManager.publish({
+                                      content: {
+                                        notificationContentType: notificationManager.ContentType.NOTIFICATION_CONTENT_SYSTEM_LIVE_VIEW,
+                                        systemLiveView: {
+                                          typeCode: 8,
+                                          title: '正在下载文件：' + item.name,
+                                          text: '进度：' +
+                                            Number((this.transferredSize / this.totalSize).toFixed(2)) * 100 +
+                                            '% (' + this.getSizeString(this.transferredSize) + '/' +
+                                          this.getSizeString(this.totalSize) + ')'
+                                        }
+                                      },
+                                      id: continuousTaskNotificationInfo.notificationId,
+                                      notificationSlotType: notificationManager.SlotType.LIVE_VIEW,
+                                      template: {
+                                        name: 'downloadTemplate',
+                                        data: {
+                                          title: '正在下载文件，进度：' +
+                                            Number((this.transferredSize / this.totalSize).toFixed(2)) * 100 + '%',
+                                          fileName: item.name,
+                                          progressValue: Number((this.transferredSize / this.totalSize).toFixed(2)) *
+                                            100
+                                        }
+                                      }
+                                    })
+                                  } catch (err) {
+                                    if (err.code !== 1600009 && err.code !== 202) {
+                                      promptAction.openToast({
+                                        message: '发生错误，错误码：' + err.code
+                                      })
+                                    }
+                                  }
                                 },
                                 onDataEnd: async () => {
                                   session.close()
@@ -681,23 +857,33 @@ export default struct Filelist {
                                     sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
                                   })
                                   fileStream.closeSync()
-                                  this.transferredSize = -1
-                                  this.totalSize = -1
+                                  await backgroundTaskManager.stopBackgroundRunning(this.context)
                                   this.isShowDownloadSheet = false
                                   this.context.eventHub.off('cancelDownload')
-                                  const uri = fileUri.getUriFromPath(filePath)
-                                  const canPreview = await filePreview.canPreview(this.context, uri)
-                                  if (!canPreview) {
+                                  if (this.transferredSize + 1 !== item.additional.size) {
+                                    this.transferredSize = -1
+                                    this.totalSize = -1
                                     promptAction.openToast({
-                                      message: '此类型不支持预览'
+                                      message: '下载失败'
                                     })
                                   }
-                                  if (canPreview) {
-                                    filePreview.openPreview(this.context, {
-                                      title: item.name,
-                                      uri: uri,
-                                      mimeType: ''
-                                    })
+                                  if (this.transferredSize + 1 === item.additional.size) {
+                                    this.transferredSize = -1
+                                    this.totalSize = -1
+                                    const uri = fileUri.getUriFromPath(filePath)
+                                    const canPreview = await filePreview.canPreview(this.context, uri)
+                                    if (!canPreview) {
+                                      promptAction.openToast({
+                                        message: '此类型不支持预览'
+                                      })
+                                    }
+                                    if (canPreview) {
+                                      filePreview.openPreview(this.context, {
+                                        title: item.name,
+                                        uri: uri,
+                                        mimeType: ''
+                                      })
+                                    }
                                   }
                                 }
                               }
@@ -707,6 +893,12 @@ export default struct Filelist {
                             id: accountInfo.sid,
                             did: accountInfo.did
                           }
+                        })
+                        backgroundTaskManager.on('continuousTaskCancel', () => {
+                          session.cancel()
+                          promptAction.openToast({
+                            message: '下载失败'
+                          })
                         })
                         this.context.eventHub.on('cancelDownload', () => {
                           session.cancel()
@@ -725,6 +917,7 @@ export default struct Filelist {
                               sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
                             })
                             fileStream.closeSync()
+                            await backgroundTaskManager.stopBackgroundRunning(this.context)
                             this.isShowDownloadSheet = false
                             this.transferredSize = -1
                             this.totalSize = -1
@@ -740,6 +933,15 @@ export default struct Filelist {
                             sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
                           })
                           fileStream.closeSync()
+                          try {
+                            await backgroundTaskManager.stopBackgroundRunning(this.context)
+                          } catch (err) {
+                            if (err.code !== 9800005) {
+                              promptAction.openToast({
+                                message: '发生错误，错误码：' + err.code
+                              })
+                            }
+                          }
                           this.isShowDownloadSheet = false
                           this.transferredSize = -1
                           this.totalSize = -1

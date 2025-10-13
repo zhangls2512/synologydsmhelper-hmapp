@@ -14,6 +14,7 @@ export default struct Newfolder {
           placeholder: '请输入名称',
           text: this.name!!
         })
+          .defaultFocus(true)
           .enableAutoSpacing(true)
       }
       .width('95%')

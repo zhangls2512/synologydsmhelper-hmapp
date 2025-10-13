@@ -11,13 +11,13 @@ import { updateManager } from '@kit.AppGalleryKit'
 import { preferences } from '@kit.ArkData'
 import { promptAction, window } from '@kit.ArkUI'
 import { deviceInfo } from '@kit.BasicServicesKit'
-import { wifiManager } from '@kit.ConnectivityKit'
 import { fileIo } from '@kit.CoreFileKit'
 import { netQuality } from '@kit.NetworkBoostKit'
 import { connection } from '@kit.NetworkKit'
 import { notificationManager } from '@kit.NotificationKit'
 import { hiAppEvent } from '@kit.PerformanceAnalysisKit'
 import { importAccounts } from '../common/Account'
+import { getCurrentNetworkBearerType } from '../common/Network'
 import openLink from '../common/Openlink'
 import { developerRequest } from '../common/Request'
 
@@ -437,15 +437,7 @@ export default class EntryAbility extends UIAbility {
     })
     const checkVersionUpdate = commonSettingDataPreferences.getSync('checkVersionUpdate', 1)
     try {
-      if (checkVersionUpdate === 1) {
-        if (wifiManager.isConnected()) {
-          const res = await updateManager.checkAppUpdate(this.context)
-          if (res.updateAvailable === 1) {
-            updateManager.showUpdateDialog(this.context)
-          }
-        }
-      }
-      if (checkVersionUpdate === 2) {
+      if (checkVersionUpdate === 2 || (checkVersionUpdate === 1 && getCurrentNetworkBearerType() !== 0)) {
         const res = await updateManager.checkAppUpdate(this.context)
         if (res.updateAvailable === 1) {
           updateManager.showUpdateDialog(this.context)
@@ -484,7 +476,7 @@ export default class EntryAbility extends UIAbility {
   }
 
   onContinue(wantParam: Record<string, Object>) {
-    if (wantParam.version !== 7) {
+    if (wantParam.version !== 8) {
       promptAction.openToast({
         message: '接续失败，原因：目标端应用版本号与发起端不匹配'
       })

@@ -1,6 +1,5 @@
 import { common } from '@kit.AbilityKit'
-import { preferences } from '@kit.ArkData'
-import { LoadingDialog, window } from '@kit.ArkUI'
+import { LoadingDialog } from '@kit.ArkUI'
 import { deviceInfo } from '@kit.BasicServicesKit'
 import { hdsEffect } from '@kit.UIDesignKit'
 import { exit, get } from '../common/Account'
@@ -81,19 +80,7 @@ export default struct Me {
             title: {
               title: '登录'
             },
-            onAppear: async () => {
-              const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-                name: 'commonSetting'
-              })
-              const disallowScreenshot = commonSettingDataPreferences.getSync('disallowScreenshot', true) as boolean
-              if (disallowScreenshot) {
-                const lastWindow = await window.getLastWindow(this.context)
-                await lastWindow.setWindowPrivacyMode(true)
-              }
-            },
-            onDisappear: async () => {
-              const lastWindow = await window.getLastWindow(this.context)
-              await lastWindow.setWindowPrivacyMode(false)
+            onDisappear: () => {
               this.get()
             }
           })

@@ -22,6 +22,7 @@ export default struct Cleardata {
   @Local nouse: string[] = []
   @Local allNouse: boolean = false
   @Local previewNouse: boolean = false
+  @Local disallowScreenshotCommonSettingNouse: boolean = false
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
   build() {
@@ -588,6 +589,38 @@ export default struct Cleardata {
             .borderRadius(12)
             .padding(12)
             .width('100%')
+
+            Divider()
+              .padding({
+                left: 12,
+                right: 12
+              })
+            Row() {
+              Checkbox({
+                name: 'disallowScreenshotCommonSettingNouse',
+                group: 'nouse'
+              })
+                .shape(CheckBoxShape.ROUNDED_SQUARE)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+                .select(this.disallowScreenshotCommonSettingNouse!!)
+              Column() {
+                Text('敏感页面禁止截、录屏通用设置')
+                  .fontWeight(FontWeight.Medium)
+                Text('敏感页面禁止截、录屏通用设置')
+                  .fontColor($r('sys.color.font_secondary'))
+                  .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                  .margin({
+                    top: $r('sys.float.ohos_id_text_margin_vertical')
+                  })
+                  .width('90%')
+              }
+              .alignItems(HorizontalAlign.Start)
+            }
+            .borderRadius(12)
+            .padding(12)
+            .width('100%')
           }
           .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
           .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
@@ -626,6 +659,12 @@ export default struct Cleardata {
                     })
                   }
                 }
+              }
+              if (item === 'disallowScreenshotCommonSettingNouse') {
+                const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+                  name: 'commonSetting'
+                })
+                commonSettingDataPreferences.deleteSync('disallowScreenshot')
               }
             })
             promptAction.openToast({

@@ -14,6 +14,7 @@ export default struct Renamefile {
           placeholder: '请输入名称',
           text: this.editName!!
         })
+          .defaultFocus(true)
           .enableAutoSpacing(true)
       }
       .width('95%')
