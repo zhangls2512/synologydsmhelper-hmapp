@@ -7,8 +7,7 @@
       "phone",
       "tablet",
       "2in1",
-      "tv",
-      "car"
+      "tv"
     ],
     "deliveryWithInstall": true,
     "pages": "$profile:main_pages",
@@ -72,6 +71,9 @@
             "domainVerify": true
           }
         ],
+        "backgroundModes": [
+          "dataTransfer"
+        ],
         "startWindowIcon": "$media:layered_image",
         "startWindowBackground": "$color:start_window_background",
         "removeMissionAfterTerminate": true,
@@ -100,6 +102,9 @@
       },
       {
         "name": "ohos.permission.INTERNET"
+      },
+      {
+        "name": "ohos.permission.KEEP_BACKGROUND_RUNNING"
       },
       {
         "name": "ohos.permission.PRIVACY_WINDOW"
