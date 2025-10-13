@@ -541,7 +541,7 @@ struct Commonsetting {
                 Blank()
                 Select([
                   { value: '始终' },
-                  { value: '大于 200MB' },
+                  { value: '大于 200 MB' },
                   { value: '从不' }
                 ])
                   .selected(this.cellularDataDownloadRemindIndex!!)
@@ -650,7 +650,7 @@ struct Commonsetting {
         this.cellularDataDownloadRemindValue = '始终'
       }
       if (cellularDataDownloadRemind === 1) {
-        this.cellularDataDownloadRemindValue = '大于 200MB'
+        this.cellularDataDownloadRemindValue = '大于 200 MB'
       }
       if (cellularDataDownloadRemind === 2) {
         this.cellularDataDownloadRemindValue = '从不'

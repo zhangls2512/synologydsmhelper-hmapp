@@ -75,7 +75,7 @@ export default struct Systeminfo {
             .margin({
               top: $r('sys.float.ohos_id_text_margin_vertical')
             })
-          Text('物理内存大小：' + this.systeminfo.ram_size + 'MB')
+          Text('物理内存大小：' + this.systeminfo.ram_size + ' MB')
             .margin({
               top: $r('sys.float.ohos_id_text_margin_vertical')
             })
