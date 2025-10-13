@@ -112,8 +112,7 @@ export async function dsmRequest(path: string, api: string, params: string): Pro
               sid: data.sid,
               did: data.device_id
             })
-            const resa = await dsmRequest(path, api, params)
-            return resa
+            return await dsmRequest(path, api, params)
           }
           promptAction.openToast({
             message: '登录态失效，请重新登录'

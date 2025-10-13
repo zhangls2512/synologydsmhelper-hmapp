@@ -11,13 +11,13 @@ import { updateManager } from '@kit.AppGalleryKit'
 import { preferences } from '@kit.ArkData'
 import { promptAction, window } from '@kit.ArkUI'
 import { deviceInfo } from '@kit.BasicServicesKit'
-import { wifiManager } from '@kit.ConnectivityKit'
 import { fileIo } from '@kit.CoreFileKit'
 import { netQuality } from '@kit.NetworkBoostKit'
 import { connection } from '@kit.NetworkKit'
 import { notificationManager } from '@kit.NotificationKit'
 import { hiAppEvent } from '@kit.PerformanceAnalysisKit'
 import { importAccounts } from '../common/Account'
+import { getCurrentNetworkBearerType } from '../common/Network'
 import openLink from '../common/Openlink'
 import { developerRequest } from '../common/Request'
 
@@ -351,7 +351,7 @@ export default class EntryAbility extends UIAbility {
         promptAction.showDialog({
           title: '网络能力变化',
           message: '数据网络句柄：' + data.netHandle.netId + '\n上行带宽：' + data.netCap.linkUpBandwidthKbps +
-            ' KB/s\n下行带宽：' + data.netCap.linkDownBandwidthKbps + ' KB/s\n网络类型：' + netBearType,
+            'KB/s\n下行带宽：' + data.netCap.linkDownBandwidthKbps + 'KB/s\n网络类型：' + netBearType,
           buttons: [
             {
               text: '确定',
@@ -373,9 +373,9 @@ export default class EntryAbility extends UIAbility {
           promptAction.showDialog({
             title: '网络质量变化',
             message: '数据路径：' + pathType + '\n上行带宽：' + data.linkUpBandwidth +
-              ' bps\n下行带宽：' + data.linkDownBandwidth + ' bps\n上行速率：' + data.linkUpRate +
-              ' bps\n下行速率：' + data.linkDownRate + '\nRTT 时延：' + data.rttMs + ' ms\n上行发送空口缓冲时延：' +
-            data.linkUpBufferDelayMs + ' ms\n上行发送空口缓冲时延占总缓冲时间的比例：' +
+              'bps\n下行带宽：' + data.linkDownBandwidth + ' bps\n上行速率：' + data.linkUpRate +
+              'bps\n下行速率：' + data.linkDownRate + '\nRTT 时延：' + data.rttMs + 'ms\n上行发送空口缓冲时延：' +
+            data.linkUpBufferDelayMs + 'ms\n上行发送空口缓冲时延占总缓冲时间的比例：' +
             data.linkUpBufferCongestionPercent + '%',
             buttons: [
               {
@@ -424,7 +424,7 @@ export default class EntryAbility extends UIAbility {
               '\n建议的数传策略：' + dataSpeedSimpleAction + '\n最近一次的弱信号预测是否有效：' + isLastPredictionValid +
               '\n预计多长时间进入弱信号：' + data.weakSignalPrediction?.startTime + ' s\n预计在弱信号区域停留时长：' +
               data.weakSignalPrediction?.duration +
-              ' s',
+              's',
             buttons: [
               {
                 text: '确定',
@@ -438,7 +438,7 @@ export default class EntryAbility extends UIAbility {
     const checkVersionUpdate = commonSettingDataPreferences.getSync('checkVersionUpdate', 1)
     try {
       if (checkVersionUpdate === 1) {
-        if (wifiManager.isConnected()) {
+        if (getCurrentNetworkBearerType() !== 0) {
           const res = await updateManager.checkAppUpdate(this.context)
           if (res.updateAvailable === 1) {
             updateManager.showUpdateDialog(this.context)
@@ -484,7 +484,7 @@ export default class EntryAbility extends UIAbility {
   }
 
   onContinue(wantParam: Record<string, Object>) {
-    if (wantParam.version !== 7) {
+    if (wantParam.version !== 8) {
       promptAction.openToast({
         message: '接续失败，原因：目标端应用版本号与发起端不匹配'
       })

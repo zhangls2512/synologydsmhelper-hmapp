@@ -23,9 +23,10 @@ struct Commonsetting {
   @Local windowRectAutoSave: boolean = false
   @Local windowTopmost: boolean = false
   @Local keepScreenOn: boolean = false
-  @Local disallowScreenshot: boolean = true
+  @Local cellularDataDownloadRemindIndex: number = 0
+  @Local cellularDataDownloadRemindValue: string = '始终'
   @Local checkVersionUpdateIndex: number = 1
-  @Local checkVersionUpdateValue: string = '仅 WLAN 下'
+  @Local checkVersionUpdateValue: string = '非流量下'
   @Local openLinkTypeIndex: number = 0
   @Local openLinkTypeValue: string = '系统默认'
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
@@ -407,28 +408,6 @@ struct Commonsetting {
                   right: 12
                 })
               Row() {
-                Text('敏感页面禁止截、录屏')
-                  .fontWeight(FontWeight.Medium)
-                Blank()
-                Toggle({
-                  type: ToggleType.Switch,
-                  isOn: this.disallowScreenshot!!
-                })
-                  .onChange((isOn) => {
-                    this.commonSettingDataPreferences.putSync('disallowScreenshot', isOn)
-                    this.commonSettingDataPreferences.flushSync()
-                  })
-              }
-              .borderRadius(12)
-              .padding(12)
-              .width('100%')
-
-              Divider()
-                .padding({
-                  left: 12,
-                  right: 12
-                })
-              Row() {
                 Text('背景图')
                   .fontWeight('medium')
                 Blank()
@@ -557,12 +536,37 @@ struct Commonsetting {
               })
             Column() {
               Row() {
+                Text('流量下载提醒')
+                  .fontWeight(FontWeight.Medium)
+                Blank()
+                Select([
+                  { value: '始终' },
+                  { value: '大于 200MB' },
+                  { value: '从不' }
+                ])
+                  .selected(this.cellularDataDownloadRemindIndex!!)
+                  .value(this.cellularDataDownloadRemindValue!!)
+                  .onSelect((index) => {
+                    this.commonSettingDataPreferences.putSync('cellularDataDownloadRemind', index)
+                    this.commonSettingDataPreferences.flushSync()
+                  })
+              }
+              .borderRadius(12)
+              .padding(12)
+              .width('100%')
+
+              Divider()
+                .padding({
+                  left: 12,
+                  right: 12
+                })
+              Row() {
                 Text('启动时检查更新')
                   .fontWeight(FontWeight.Medium)
                 Blank()
                 Select([
                   { value: '从不' },
-                  { value: '仅 WLAN 下' },
+                  { value: '非流量下' },
                   { value: '始终' }
                 ])
                   .selected(this.checkVersionUpdateIndex!!)
@@ -640,14 +644,24 @@ struct Commonsetting {
       this.windowTopmost = this.commonSettingDataPreferences.getSync('windowTopmost', false) as boolean
       const lastWindow = await window.getLastWindow(this.context)
       this.keepScreenOn = lastWindow.getWindowProperties().isKeepScreenOn
-      this.disallowScreenshot = this.commonSettingDataPreferences.getSync('disallowScreenshot', true) as boolean
+      const cellularDataDownloadRemind = this.commonSettingDataPreferences.getSync('cellularDataDownloadRemind', 0)
+      this.cellularDataDownloadRemindIndex = cellularDataDownloadRemind as number
+      if (cellularDataDownloadRemind === 0) {
+        this.cellularDataDownloadRemindValue = '始终'
+      }
+      if (cellularDataDownloadRemind === 1) {
+        this.cellularDataDownloadRemindValue = '大于 200MB'
+      }
+      if (cellularDataDownloadRemind === 2) {
+        this.cellularDataDownloadRemindValue = '从不'
+      }
       const checkVersionUpdate = this.commonSettingDataPreferences.getSync('checkVersionUpdate', 1)
       this.checkVersionUpdateIndex = checkVersionUpdate as number
       if (checkVersionUpdate === 0) {
         this.checkVersionUpdateValue = '从不'
       }
       if (checkVersionUpdate === 1) {
-        this.checkVersionUpdateValue = '仅 WLAN 下'
+        this.checkVersionUpdateValue = '非流量下'
       }
       if (checkVersionUpdate === 2) {
         this.checkVersionUpdateValue = '始终'
