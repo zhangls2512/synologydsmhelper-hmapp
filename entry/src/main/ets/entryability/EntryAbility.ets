@@ -435,18 +435,20 @@ export default class EntryAbility extends UIAbility {
         }
       }
     })
-    const checkVersionUpdate = commonSettingDataPreferences.getSync('checkVersionUpdate', 1)
-    try {
-      if (checkVersionUpdate === 2 || (checkVersionUpdate === 1 && getCurrentNetworkBearerType() !== 0)) {
-        const res = await updateManager.checkAppUpdate(this.context)
-        if (res.updateAvailable === 1) {
-          updateManager.showUpdateDialog(this.context)
+    if (getCurrentNetworkBearerType() !== -1) {
+      const checkVersionUpdate = commonSettingDataPreferences.getSync('checkVersionUpdate', 1)
+      try {
+        if (checkVersionUpdate === 2 || (checkVersionUpdate === 1 && getCurrentNetworkBearerType() !== 0)) {
+          const res = await updateManager.checkAppUpdate(this.context)
+          if (res.updateAvailable === 1) {
+            updateManager.showUpdateDialog(this.context)
+          }
         }
+      } catch (err) {
+        promptAction.openToast({
+          message: '发生错误，错误码：' + err.code + '，错误信息：' + err.message
+        })
       }
-    } catch (err) {
-      promptAction.openToast({
-        message: '发生错误，错误码：' + err.code + '，错误信息：' + err.message
-      })
     }
     this.appInit(want)
   }
@@ -476,7 +478,7 @@ export default class EntryAbility extends UIAbility {
   }
 
   onContinue(wantParam: Record<string, Object>) {
-    if (wantParam.version !== 8) {
+    if (wantParam.version !== 9) {
       promptAction.openToast({
         message: '接续失败，原因：目标端应用版本号与发起端不匹配'
       })

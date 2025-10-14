@@ -364,14 +364,14 @@ export default struct Filelist {
                             await backgroundTaskManager.stopBackgroundRunning(this.context)
                             this.isShowDownloadSheet = false
                             this.context.eventHub.off('cancelDownload')
-                            if (this.transferredSize + 1 !== item.additional.size) {
+                            if (this.transferredSize < item.additional.size * 0.99) {
                               this.transferredSize = -1
                               this.totalSize = -1
                               promptAction.openToast({
                                 message: '下载失败'
                               })
                             }
-                            if (this.transferredSize + 1 === item.additional.size) {
+                            if (this.transferredSize >= item.additional.size * 0.99) {
                               this.transferredSize = -1
                               this.totalSize = -1
                               promptAction.openToast({
@@ -860,14 +860,14 @@ export default struct Filelist {
                                   await backgroundTaskManager.stopBackgroundRunning(this.context)
                                   this.isShowDownloadSheet = false
                                   this.context.eventHub.off('cancelDownload')
-                                  if (this.transferredSize + 1 !== item.additional.size) {
+                                  if (this.transferredSize < item.additional.size * 0.99) {
                                     this.transferredSize = -1
                                     this.totalSize = -1
                                     promptAction.openToast({
                                       message: '下载失败'
                                     })
                                   }
-                                  if (this.transferredSize + 1 === item.additional.size) {
+                                  if (this.transferredSize >= item.additional.size * 0.99) {
                                     this.transferredSize = -1
                                     this.totalSize = -1
                                     const uri = fileUri.getUriFromPath(filePath)
