@@ -23,8 +23,8 @@ struct Commonsetting {
   @Local windowRectAutoSave: boolean = false
   @Local windowTopmost: boolean = false
   @Local keepScreenOn: boolean = false
-  @Local cellularDataDownloadRemindIndex: number = 0
-  @Local cellularDataDownloadRemindValue: string = '始终'
+  @Local cellularDataUseRemindIndex: number = 0
+  @Local cellularDataUseRemindValue: string = '始终'
   @Local checkVersionUpdateIndex: number = 1
   @Local checkVersionUpdateValue: string = '非流量下'
   @Local openLinkTypeIndex: number = 0
@@ -536,7 +536,7 @@ struct Commonsetting {
               })
             Column() {
               Row() {
-                Text('流量下载提醒')
+                Text('流量使用提醒')
                   .fontWeight(FontWeight.Medium)
                 Blank()
                 Select([
@@ -544,10 +544,10 @@ struct Commonsetting {
                   { value: '大于 200 MB' },
                   { value: '从不' }
                 ])
-                  .selected(this.cellularDataDownloadRemindIndex!!)
-                  .value(this.cellularDataDownloadRemindValue!!)
+                  .selected(this.cellularDataUseRemindIndex!!)
+                  .value(this.cellularDataUseRemindValue!!)
                   .onSelect((index) => {
-                    this.commonSettingDataPreferences.putSync('cellularDataDownloadRemind', index)
+                    this.commonSettingDataPreferences.putSync('cellularDataUseRemind', index)
                     this.commonSettingDataPreferences.flushSync()
                   })
               }
@@ -644,16 +644,16 @@ struct Commonsetting {
       this.windowTopmost = this.commonSettingDataPreferences.getSync('windowTopmost', false) as boolean
       const lastWindow = await window.getLastWindow(this.context)
       this.keepScreenOn = lastWindow.getWindowProperties().isKeepScreenOn
-      const cellularDataDownloadRemind = this.commonSettingDataPreferences.getSync('cellularDataDownloadRemind', 0)
-      this.cellularDataDownloadRemindIndex = cellularDataDownloadRemind as number
-      if (cellularDataDownloadRemind === 0) {
-        this.cellularDataDownloadRemindValue = '始终'
+      const cellularDataUseRemind = this.commonSettingDataPreferences.getSync('cellularDataUseRemind', 0)
+      this.cellularDataUseRemindIndex = cellularDataUseRemind as number
+      if (cellularDataUseRemind === 0) {
+        this.cellularDataUseRemindValue = '始终'
       }
-      if (cellularDataDownloadRemind === 1) {
-        this.cellularDataDownloadRemindValue = '大于 200 MB'
+      if (cellularDataUseRemind === 1) {
+        this.cellularDataUseRemindValue = '大于 200 MB'
       }
-      if (cellularDataDownloadRemind === 2) {
-        this.cellularDataDownloadRemindValue = '从不'
+      if (cellularDataUseRemind === 2) {
+        this.cellularDataUseRemindValue = '从不'
       }
       const checkVersionUpdate = this.commonSettingDataPreferences.getSync('checkVersionUpdate', 1)
       this.checkVersionUpdateIndex = checkVersionUpdate as number

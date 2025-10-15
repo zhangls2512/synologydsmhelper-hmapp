@@ -21,8 +21,8 @@ export default struct Cleardata {
   @Local errorLog: boolean = false
   @Local nouse: string[] = []
   @Local allNouse: boolean = false
-  @Local previewNouse: boolean = false
-  @Local disallowScreenshotCommonSettingNouse: boolean = false
+  @Local tempFileNouse: boolean = false
+  @Local commonSettingNouse: boolean = false
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
   build() {
@@ -565,18 +565,18 @@ export default struct Cleardata {
               })
             Row() {
               Checkbox({
-                name: 'previewNouse',
+                name: 'tempFileNouse',
                 group: 'nouse'
               })
                 .shape(CheckBoxShape.ROUNDED_SQUARE)
                 .margin({
                   right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                 })
-                .select(this.previewNouse!!)
+                .select(this.tempFileNouse!!)
               Column() {
-                Text('预览临时文件')
+                Text('临时文件')
                   .fontWeight(FontWeight.Medium)
-                Text('预览临时文件')
+                Text('应用使用、运行过程中产生的临时文件')
                   .fontColor($r('sys.color.font_secondary'))
                   .fontSize($r('sys.float.ohos_id_text_size_body2'))
                   .margin({
@@ -597,18 +597,18 @@ export default struct Cleardata {
               })
             Row() {
               Checkbox({
-                name: 'disallowScreenshotCommonSettingNouse',
+                name: 'commonSettingNouse',
                 group: 'nouse'
               })
                 .shape(CheckBoxShape.ROUNDED_SQUARE)
                 .margin({
                   right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                 })
-                .select(this.disallowScreenshotCommonSettingNouse!!)
+                .select(this.commonSettingNouse!!)
               Column() {
-                Text('敏感页面禁止截、录屏通用设置')
+                Text('无用通用设置')
                   .fontWeight(FontWeight.Medium)
-                Text('敏感页面禁止截、录屏通用设置')
+                Text('敏感页面禁止截、录屏等')
                   .fontColor($r('sys.color.font_secondary'))
                   .fontSize($r('sys.float.ohos_id_text_size_body2'))
                   .margin({
@@ -638,33 +638,27 @@ export default struct Cleardata {
           .role(ButtonRole.ERROR)
           .onClick(() => {
             this.nouse.forEach((item) => {
-              if (item === 'previewNouse') {
-                try {
-                  const oldPreviewDir = this.context.tempDir
-                  const newPreviewDir = this.context.tempDir + '/preview'
-                  const oldfilenames = fileIo.listFileSync(oldPreviewDir)
-                  const newfilenames = fileIo.listFileSync(newPreviewDir)
-                  for (let i = 0; i < oldfilenames.length; i++) {
-                    if (oldfilenames[i] !== 'preview') {
-                      fileIo.unlinkSync(oldPreviewDir + '/' + oldfilenames[i])
-                    }
+              if (item === 'tempFileNouse') {
+                const tempDir = this.context.tempDir
+                fileIo.listFileSync(tempDir).forEach((item) => {
+                  const path = tempDir + '/' + item
+                  const isDirectory = fileIo.statSync(path)
+                  if (!isDirectory) {
+                    fileIo.unlinkSync(path)
                   }
-                  for (let i = 0; i < newfilenames.length; i++) {
-                    fileIo.unlinkSync(newPreviewDir + '/' + newfilenames[i])
+                  if (isDirectory) {
+                    fileIo.rmdirSync(path)
                   }
-                } catch (err) {
-                  if (err.code !== 13900002) {
-                    promptAction.openToast({
-                      message: '发生错误，错误码：' + err.code
-                    })
-                  }
-                }
+                })
               }
-              if (item === 'disallowScreenshotCommonSettingNouse') {
+              if (item === 'commonSettingNouse') {
                 const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
                   name: 'commonSetting'
                 })
-                commonSettingDataPreferences.deleteSync('disallowScreenshot')
+                const keys = ['disallowScreenshot', 'cellularDataDownloadRemind']
+                keys.forEach((item) => {
+                  commonSettingDataPreferences.deleteSync(item)
+                })
               }
             })
             promptAction.openToast({

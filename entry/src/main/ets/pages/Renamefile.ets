@@ -1,3 +1,4 @@
+import { common } from '@kit.AbilityKit'
 import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { dsmRequest } from '../common/Request'
 
@@ -6,6 +7,7 @@ export default struct Renamefile {
   @Consumer() isShowRenamefileSheet: boolean = false
   @Consumer() editPath: string = ''
   @Consumer() editName: string = ''
+  context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
   build() {
     List() {
@@ -42,6 +44,7 @@ export default struct Renamefile {
               promptAction.openToast({
                 message: '重命名成功'
               })
+              this.context.eventHub.emit('refreshFilelist')
               this.isShowRenamefileSheet = false
             }
           })
