@@ -1,6 +1,6 @@
 @ComponentV2
-export default struct Download {
-  @Consumer() isShowDownloadSheet: boolean = false
+export default struct Progresssheet {
+  @Consumer() isShowProgressSheet: boolean = false
   @Consumer() transferredSize: number = -1
   @Consumer() totalSize: number = -1
   @Local oneSecondBeforeTransferredSize: number = 0
@@ -50,7 +50,7 @@ export default struct Download {
         }
       }
       .margin({
-        top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+        top: $r('sys.float.ohos_id_elements_margin_vertical_l')
       })
 
       ListItem() {
@@ -73,7 +73,7 @@ export default struct Download {
               ]
             })
             if (data.index === 1) {
-              this.isShowDownloadSheet = false
+              this.isShowProgressSheet = false
             }
           })
       }
