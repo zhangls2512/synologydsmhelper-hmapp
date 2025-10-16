@@ -119,8 +119,10 @@ export async function exit(logout: boolean) {
       await appAccountManager.setCustomData(String(accounts[index].id), 'isLogin', 'false')
     }
     if (logout) {
-      await dsmRequest('', 'SYNO.API.Auth', '&method=logout')
-      await remove(accounts[index].id)
+      const res = await dsmRequest('', 'SYNO.API.Auth', '&method=logout')
+      if (res !== 'fail') {
+        await remove(accounts[index].id)
+      }
     }
   }
 }

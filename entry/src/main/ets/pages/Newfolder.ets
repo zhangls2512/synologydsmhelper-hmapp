@@ -1,3 +1,4 @@
+import { common } from '@kit.AbilityKit'
 import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { dsmRequest } from '../common/Request'
 
@@ -6,6 +7,7 @@ export default struct Newfolder {
   @Consumer() isShowNewfolderSheet: boolean = false
   @Consumer() editPath: string = ''
   @Local name: string = ''
+  context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
   build() {
     List() {
@@ -42,6 +44,7 @@ export default struct Newfolder {
               promptAction.openToast({
                 message: '新建文件夹成功'
               })
+              this.context.eventHub.emit('refreshFilelist')
               this.isShowNewfolderSheet = false
             }
           })
