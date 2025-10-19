@@ -1,6 +1,6 @@
 import { common, wantAgent } from '@kit.AbilityKit'
 import { preferences, uniformTypeDescriptor } from '@kit.ArkData'
-import { fastbuffer } from '@kit.ArkTS'
+import { fastbuffer, util } from '@kit.ArkTS'
 import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { backgroundTaskManager } from '@kit.BackgroundTasksKit'
 import { deviceInfo } from '@kit.BasicServicesKit'
@@ -14,8 +14,9 @@ import { hdsEffect } from '@kit.UIDesignKit'
 import { get, getLoginStatus } from '../common/Account'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import { dsmRequest, getDsmApiMaxVersion } from '../common/Request'
-import Progress from './Progress'
 import Newfolder from './Newfolder'
+import Player from './Player'
+import Progress from './Progress'
 import Renamefile from './Renamefile'
 
 interface Time {
@@ -45,6 +46,7 @@ interface ShareLinkItem {
 @ComponentV2
 export default struct Filelist {
   @Provider() isShowNewfolderSheet: boolean = false
+  @Provider() isShowPlayerSheet: boolean = false
   @Provider() isShowProgressSheet: boolean = false
   @Provider() isShowRenamefileSheet: boolean = false
   @Local loading: boolean = false
@@ -62,6 +64,8 @@ export default struct Filelist {
   @Local searchKeyword: string = ''
   @Local copyMovePath: string = ''
   @Local remove: boolean = false
+  @Provider() src: string = ''
+  @Local srcName: string = ''
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
   preferType = 1
   searchDialogControllerProgress = new CustomDialogController({
@@ -235,6 +239,11 @@ export default struct Filelist {
   @Builder
   RenamefileSheetBuilder() {
     Renamefile()
+  }
+
+  @Builder
+  PlayerSheetBuilder() {
+    Player()
   }
 
   @Builder
@@ -660,6 +669,16 @@ export default struct Filelist {
           .margin({
             top: $r('sys.float.ohos_id_elements_margin_vertical_m')
           })
+          .bindSheet(this.isShowPlayerSheet!!, this.PlayerSheetBuilder(), {
+            preferType: this.preferType,
+            title: {
+              title: this.srcName
+            },
+            onDisappear: () => {
+              this.src = ''
+              this.srcName = ''
+            }
+          })
 
           if (this.dirnames.length > 0) {
             ListItem() {
@@ -863,6 +882,36 @@ export default struct Filelist {
                 .width('100%')
                 .onClick(async () => {
                   if (!item.isdir) {
+                    let houzhui = ''
+                    const lastDotIndex = item.name.lastIndexOf('.')
+                    if (lastDotIndex !== -1) {
+                      houzhui = item.name.slice(lastDotIndex + 1)
+                    }
+                    const supportedformats = ['mp4', 'mkv', 'm4a', 'aac', 'mp3', 'ogg', 'wav', 'flac', 'amr', 'ape']
+                    if (supportedformats.includes(houzhui)) {
+                      const dialogControllerProgress = new CustomDialogController({
+                        builder: LoadingDialog({
+                          content: '播放准备中...'
+                        })
+                      })
+                      dialogControllerProgress.open()
+                      const res = await dsmRequest('', 'SYNO.API.Auth.Key',
+                        '&method=grant&allow_api=SYNO.FileStation.Download&allow_methods=["download"]')
+                      dialogControllerProgress.close()
+                      if (res !== 'fail') {
+                        const tid = res['tid'] as string
+                        const accountInfo = await get()
+                        const textEncoder = new util.TextEncoder()
+                        const bytes = textEncoder.encodeInto(item.path)
+                        const dlink = Array.from(bytes).map(byte => byte.toString(16).padStart(2, '0')).join('')
+                        this.src =
+                          accountInfo.path + '/fbdownload/' + item.name.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
+                            '?tid=' + tid + '&mode=open&dlink=' + dlink
+                        this.srcName = item.name
+                        this.isShowPlayerSheet = true
+                      }
+                      return
+                    }
                     if (item.additional.size > Math.pow(1024, 3)) {
                       promptAction.openToast({
                         message: '大小大于 1GB，请长按将其下载到本地后预览'
