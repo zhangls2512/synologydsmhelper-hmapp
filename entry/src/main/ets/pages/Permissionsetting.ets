@@ -37,7 +37,7 @@ struct Permissionsetting {
             .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
             .padding($r('sys.float.ohos_id_corner_radius_mark'))
 
-            Text('系统自动开启此权限，无法手动管理。本应用使用此权限获取并根据网络、Wi-Fi等信息，使用互联网、在后台持续运行、隐私窗口、振动、窗口置顶等能力优化使用体验。通过此权限获取的信息不上传到本应用开发者服务器。')
+            Text('系统自动开启此权限，无法手动管理。本应用使用此权限获取并根据指定类型文件图标、网络、Wi-Fi等信息，使用互联网、在后台持续运行、隐私窗口、振动、窗口置顶等能力优化使用体验。通过此权限获取的信息不上传到本应用开发者服务器。')
               .enableAutoSpacing(true)
               .fontColor($r('sys.color.font_secondary'))
               .fontSize($r('sys.float.ohos_id_text_size_body3'))
