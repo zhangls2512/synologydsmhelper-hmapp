@@ -95,6 +95,9 @@
     ],
     "requestPermissions": [
       {
+        "name": "ohos.permission.GET_FILE_ICON"
+      },
+      {
         "name": "ohos.permission.GET_NETWORK_INFO"
       },
       {
