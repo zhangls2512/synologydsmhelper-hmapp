@@ -121,6 +121,10 @@ struct Index {
       })
       this.backgroundImagePixelMap = this.getBackgroundImage()
     })
+    .onDisAppear(() => {
+      this.context.eventHub.off('refreshIndex')
+      this.context.eventHub.off('clearData')
+    })
     .bindSheet(this.isShowCleardataSheet!!, this.CleardataSheetBuilder(), {
       preferType: this.preferType,
       title: {

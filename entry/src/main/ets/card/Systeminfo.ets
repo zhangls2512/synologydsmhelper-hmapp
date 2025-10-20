@@ -146,5 +146,8 @@ export default struct Systeminfo {
         }
       }, 5000)
     })
+    .onDisAppear(() => {
+      this.context.eventHub.off('refreshCard')
+    })
   }
 }

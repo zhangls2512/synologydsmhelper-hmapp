@@ -5,6 +5,7 @@ import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { backgroundTaskManager } from '@kit.BackgroundTasksKit'
 import { deviceInfo } from '@kit.BasicServicesKit'
 import { fileIo, fileUri, picker } from '@kit.CoreFileKit'
+import { fileManagerService } from '@kit.FileManagerServiceKit'
 import { netBoost } from '@kit.NetworkBoostKit'
 import { notificationManager } from '@kit.NotificationKit'
 import { filePreview } from '@kit.PreviewKit'
@@ -78,6 +79,16 @@ export default struct Filelist {
       content: '下载准备中...'
     })
   })
+
+  getFileTypeIcon(name: string) {
+    let houzhui = ''
+    const lastDotIndex = name.lastIndexOf('.')
+    if (lastDotIndex !== -1) {
+      houzhui = '.' + name.slice(lastDotIndex + 1)
+    }
+    const fileType = uniformTypeDescriptor.getUniformDataTypeByFilenameExtension(houzhui)
+    return fileManagerService.getFileIconSync(fileType)
+  }
 
   getSizeString(size: number) {
     if (size < Math.pow(1024, 1)) {
@@ -823,7 +834,7 @@ export default struct Filelist {
                 }
                 Row() {
                   if (!item.isdir) {
-                    Image($r('app.media.fileicon'))
+                    Image(this.getFileTypeIcon(item.name))
                       .fillColor($r('sys.color.icon_secondary'))
                       .height(24)
                       .margin({
