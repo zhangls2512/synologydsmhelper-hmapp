@@ -2,14 +2,19 @@ import { common } from '@kit.AbilityKit'
 import { privacyManager } from '@kit.AppGalleryKit'
 import { preferences } from '@kit.ArkData'
 import { promptAction } from '@kit.ArkUI'
+import { appAccount } from '@kit.BasicServicesKit'
 import { fileIo, picker } from '@kit.CoreFileKit'
-import { getList, importAccounts } from '../common/Account'
+import { get, getList, getLoginStatus, importAccounts } from '../common/Account'
 import openLink from '../common/Openlink'
+import { checkPermission } from '../common/Permission'
 
 @ComponentV2
 export default struct Setting {
   @Local allService: boolean = false
   @Local agreedPrivacyAgreement: number | undefined = undefined
+  @Local accountDataSync: boolean = false
+  @Local accountDataSyncEnabled: boolean = false
+  @Local isLogin: boolean = false
   @Local accountCount: number = -1
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
   pageInfos = new NavPathStack()
@@ -26,6 +31,14 @@ export default struct Setting {
       promptAction.openToast({
         message: '发生错误，错误码：' + err.code + '，错误信息：' + err.message
       })
+    }
+    const res = await checkPermission('ohos.permission.DISTRIBUTED_DATASYNC')
+    this.accountDataSyncEnabled = res
+    this.isLogin = await getLoginStatus()
+    if (res && this.isLogin) {
+      const accountInfo = await get()
+      const appAccountManager = appAccount.createAppAccountManager()
+      this.accountDataSync = await appAccountManager.checkDataSyncEnabled(String(accountInfo.id))
     }
     const accounts = await getList()
     this.accountCount = accounts.length
@@ -46,6 +59,39 @@ export default struct Setting {
                 right: 12
               })
             Column() {
+              if (this.isLogin) {
+                Row() {
+                  Text('设备间同步')
+                    .fontWeight(FontWeight.Medium)
+                  Blank()
+                  Toggle({
+                    type: ToggleType.Switch,
+                    isOn: this.accountDataSync!!
+                  })
+                    .enabled(this.accountDataSyncEnabled)
+                    .onChange(async (isOn) => {
+                      try {
+                        const accountInfo = await get()
+                        const appAccountManager = appAccount.createAppAccountManager()
+                        appAccountManager.setDataSyncEnabled(String(accountInfo.id), isOn)
+                      } catch (err) {
+                        this.accountDataSync = false
+                        promptAction.openToast({
+                          message: '发生错误，错误码：' + err.code
+                        })
+                      }
+                    })
+                }
+                .borderRadius(12)
+                .padding(12)
+                .width('100%')
+
+                Divider()
+                  .padding({
+                    left: 12,
+                    right: 12
+                  })
+              }
               if (this.accountCount === 0) {
                 Row() {
                   Text('导入')

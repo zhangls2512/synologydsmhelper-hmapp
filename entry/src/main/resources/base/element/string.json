@@ -5,6 +5,10 @@
       "value": "群晖DSM助手"
     },
     {
+      "name": "DISTRIBUTED_DATASYNC_reason",
+      "value": "用于设备间同步账号数据。"
+    },
+    {
       "name": "WRITE_PASTEBOARD_reason",
       "value": "用于写入数据到剪贴板，便于在外部环境使用。"
     },
