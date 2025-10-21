@@ -40,14 +40,19 @@ export default struct Progresssheet {
             .width(40)
           Column() {
             Text('进度：' + Number((this.transferredSize / this.totalSize).toFixed(2)) * 100 + '%')
+              .fontWeight(FontWeight.Medium)
             Text(this.getSizeString(this.transferredSize) + '/' + this.getSizeString(this.totalSize) + ' (' +
             this.getSizeString(this.oneSecondTransferredSize) + '/s)')
+              .fontColor($r('sys.color.font_secondary'))
+              .fontSize($r('sys.float.ohos_id_text_size_body2'))
               .margin({
                 top: $r('sys.float.ohos_id_text_margin_vertical')
               })
           }
           .alignItems(HorizontalAlign.Start)
+          .layoutWeight(1)
         }
+        .justifyContent(FlexAlign.SpaceBetween)
       }
       .margin({
         top: $r('sys.float.ohos_id_elements_margin_vertical_l')

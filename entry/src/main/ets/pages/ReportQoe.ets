@@ -21,111 +21,118 @@ struct ReportQoe {
               Row() {
                 Text('业务类型')
                   .fontWeight(FontWeight.Medium)
-                Blank()
-                Select([
-                  { value: '默认' },
-                  { value: '后台' },
-                  { value: '实时语音' },
-                  { value: '实时视频' },
-                  { value: '语音信令' },
-                  { value: '实时游戏' },
-                  { value: '普通游戏' },
-                  { value: '短视频' },
-                  { value: '长视频' },
-                  { value: '直播主播' },
-                  { value: '直播观看' },
-                  { value: '下载' },
-                  { value: '上传' },
-                  { value: '浏览页面' },
-                  { value: '交易支付、扫码' },
-                  { value: '购物' },
-                  { value: '探测' },
-                  { value: '云业务、云游戏' },
-                  { value: '语音会议' },
-                  { value: '视频会议' },
-                  { value: '音乐、音频' },
-                  { value: '导航定位' },
-                  { value: '秒杀' },
-                  { value: '登录' }
-                ])
-                  .selected(0)
-                  .value('默认')
-                  .onSelect((index) => {
-                    if (index === 0) {
-                      this.serviceType = 'default'
-                    }
-                    if (index === 1) {
-                      this.serviceType = 'background'
-                    }
-                    if (index === 2) {
-                      this.serviceType = 'realtimeVoice'
-                    }
-                    if (index === 3) {
-                      this.serviceType = 'realtimeVideo'
-                    }
-                    if (index === 4) {
-                      this.serviceType = 'default'
-                    }
-                    if (index === 5) {
-                      this.serviceType = 'realtimeGame'
-                    }
-                    if (index === 6) {
-                      this.serviceType = 'normalGame'
-                    }
-                    if (index === 7) {
-                      this.serviceType = 'shortVideo'
-                    }
-                    if (index === 8) {
-                      this.serviceType = 'longVideo'
-                    }
-                    if (index === 9) {
-                      this.serviceType = 'livestreamingAnchor'
-                    }
-                    if (index === 10) {
-                      this.serviceType = 'livestreamingWatcher'
-                    }
-                    if (index === 11) {
-                      this.serviceType = 'download'
-                    }
-                    if (index === 12) {
-                      this.serviceType = 'upload'
-                    }
-                    if (index === 13) {
-                      this.serviceType = 'browser'
-                    }
-                    if (index === 14) {
-                      this.serviceType = 'transaction'
-                    }
-                    if (index === 15) {
-                      this.serviceType = 'shopping'
-                    }
-                    if (index === 16) {
-                      this.serviceType = 'detection'
-                    }
-                    if (index === 17) {
-                      this.serviceType = 'cloudService'
-                    }
-                    if (index === 18) {
-                      this.serviceType = 'voiceConference'
-                    }
-                    if (index === 19) {
-                      this.serviceType = 'videoConference'
-                    }
-                    if (index === 20) {
-                      this.serviceType = 'audio'
-                    }
-                    if (index === 21) {
-                      this.serviceType = 'navigation'
-                    }
-                    if (index === 22) {
-                      this.serviceType = 'seckillService'
-                    }
-                    if (index === 23) {
-                      this.serviceType = 'login'
-                    }
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                   })
+                Column() {
+                  Select([
+                    { value: '默认' },
+                    { value: '后台' },
+                    { value: '实时语音' },
+                    { value: '实时视频' },
+                    { value: '语音信令' },
+                    { value: '实时游戏' },
+                    { value: '普通游戏' },
+                    { value: '短视频' },
+                    { value: '长视频' },
+                    { value: '直播主播' },
+                    { value: '直播观看' },
+                    { value: '下载' },
+                    { value: '上传' },
+                    { value: '浏览页面' },
+                    { value: '交易支付、扫码' },
+                    { value: '购物' },
+                    { value: '探测' },
+                    { value: '云业务、云游戏' },
+                    { value: '语音会议' },
+                    { value: '视频会议' },
+                    { value: '音乐、音频' },
+                    { value: '导航定位' },
+                    { value: '秒杀' },
+                    { value: '登录' }
+                  ])
+                    .selected(0)
+                    .value('默认')
+                    .onSelect((index) => {
+                      if (index === 0) {
+                        this.serviceType = 'default'
+                      }
+                      if (index === 1) {
+                        this.serviceType = 'background'
+                      }
+                      if (index === 2) {
+                        this.serviceType = 'realtimeVoice'
+                      }
+                      if (index === 3) {
+                        this.serviceType = 'realtimeVideo'
+                      }
+                      if (index === 4) {
+                        this.serviceType = 'default'
+                      }
+                      if (index === 5) {
+                        this.serviceType = 'realtimeGame'
+                      }
+                      if (index === 6) {
+                        this.serviceType = 'normalGame'
+                      }
+                      if (index === 7) {
+                        this.serviceType = 'shortVideo'
+                      }
+                      if (index === 8) {
+                        this.serviceType = 'longVideo'
+                      }
+                      if (index === 9) {
+                        this.serviceType = 'livestreamingAnchor'
+                      }
+                      if (index === 10) {
+                        this.serviceType = 'livestreamingWatcher'
+                      }
+                      if (index === 11) {
+                        this.serviceType = 'download'
+                      }
+                      if (index === 12) {
+                        this.serviceType = 'upload'
+                      }
+                      if (index === 13) {
+                        this.serviceType = 'browser'
+                      }
+                      if (index === 14) {
+                        this.serviceType = 'transaction'
+                      }
+                      if (index === 15) {
+                        this.serviceType = 'shopping'
+                      }
+                      if (index === 16) {
+                        this.serviceType = 'detection'
+                      }
+                      if (index === 17) {
+                        this.serviceType = 'cloudService'
+                      }
+                      if (index === 18) {
+                        this.serviceType = 'voiceConference'
+                      }
+                      if (index === 19) {
+                        this.serviceType = 'videoConference'
+                      }
+                      if (index === 20) {
+                        this.serviceType = 'audio'
+                      }
+                      if (index === 21) {
+                        this.serviceType = 'navigation'
+                      }
+                      if (index === 22) {
+                        this.serviceType = 'seckillService'
+                      }
+                      if (index === 23) {
+                        this.serviceType = 'login'
+                      }
+                    })
+                }
+                .alignItems(HorizontalAlign.End)
+                .layoutWeight(1)
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -137,7 +144,10 @@ struct ReportQoe {
               Row() {
                 Text('体验类型')
                   .fontWeight(FontWeight.Medium)
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Select([
                   { value: '良好' },
                   { value: '未知原因' },
@@ -178,6 +188,7 @@ struct ReportQoe {
                   })
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
             }

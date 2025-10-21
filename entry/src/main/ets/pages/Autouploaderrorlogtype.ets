@@ -92,7 +92,10 @@ struct Autouploaderrorlogtype {
                 Text(item.name)
                   .enableAutoSpacing(true)
                   .fontWeight(FontWeight.Medium)
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Toggle({
                   type: ToggleType.Switch,
                   isOn: this.autoUploadErrorLogType.includes(item.value)
@@ -111,6 +114,7 @@ struct Autouploaderrorlogtype {
                   })
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
             })

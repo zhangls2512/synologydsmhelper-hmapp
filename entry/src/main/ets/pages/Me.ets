@@ -51,11 +51,13 @@ export default struct Me {
               Text('登录')
                 .fontSize($r('sys.float.ohos_id_text_size_dialog_tittle'))
                 .fontWeight(FontWeight.Bold)
+                .layoutWeight(1)
             }
             if (this.name) {
               Text(this.name)
                 .fontSize($r('sys.float.ohos_id_text_size_dialog_tittle'))
                 .fontWeight(FontWeight.Bold)
+                .layoutWeight(1)
             }
           }
           .borderRadius(12)
@@ -100,13 +102,17 @@ export default struct Me {
               .width(24)
             Text('切换账号')
               .fontWeight(FontWeight.Medium)
-            Blank()
+              .layoutWeight(1)
+              .margin({
+                right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+              })
             Image($r('app.media.right'))
               .fillColor($r('sys.color.icon_fourth'))
               .height(12)
               .width(12)
           }
           .borderRadius(12)
+          .justifyContent(FlexAlign.SpaceBetween)
           .padding(12)
           .stateStyles({
             normal: {
@@ -148,13 +154,17 @@ export default struct Me {
               .width(24)
             Text('设置')
               .fontWeight(FontWeight.Medium)
-            Blank()
+              .layoutWeight(1)
+              .margin({
+                right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+              })
             Image($r('app.media.right'))
               .fillColor($r('sys.color.icon_fourth'))
               .height(12)
               .width(12)
           }
           .borderRadius(12)
+          .justifyContent(FlexAlign.SpaceBetween)
           .padding(12)
           .stateStyles({
             normal: {

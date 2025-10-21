@@ -22,7 +22,10 @@ struct Recoverysetting {
               Row() {
                 Text('重启时机')
                   .fontWeight(FontWeight.Medium)
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Select([
                   { value: '总是' },
                   { value: 'JS_CRASH' },
@@ -47,6 +50,7 @@ struct Recoverysetting {
                   })
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -58,7 +62,10 @@ struct Recoverysetting {
               Row() {
                 Text('状态保存时机')
                   .fontWeight(FontWeight.Medium)
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Select([
                   { value: '发生故障' },
                   { value: '切入后台' }
@@ -75,6 +82,7 @@ struct Recoverysetting {
                   })
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -86,23 +94,30 @@ struct Recoverysetting {
               Row() {
                 Text('状态保存方式')
                   .fontWeight(FontWeight.Medium)
-                Blank()
-                Select([
-                  { value: '写入到本地文件缓存' },
-                  { value: '先保存在内存中，故障退出时写入到本地文件缓存' }
-                ])
-                  .selected(0)
-                  .value('写入到本地文件缓存')
-                  .onSelect((index) => {
-                    if (index === 0) {
-                      this.saveMode = appRecovery.SaveModeFlag.SAVE_WITH_FILE
-                    }
-                    if (index === 1) {
-                      this.saveMode = appRecovery.SaveModeFlag.SAVE_WITH_SHARED_MEMORY
-                    }
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                   })
+                Column() {
+                  Select([
+                    { value: '写入到本地文件缓存' },
+                    { value: '先保存在内存中，故障退出时写入到本地文件缓存' }
+                  ])
+                    .selected(0)
+                    .value('写入到本地文件缓存')
+                    .onSelect((index) => {
+                      if (index === 0) {
+                        this.saveMode = appRecovery.SaveModeFlag.SAVE_WITH_FILE
+                      }
+                      if (index === 1) {
+                        this.saveMode = appRecovery.SaveModeFlag.SAVE_WITH_SHARED_MEMORY
+                      }
+                    })
+                }
+                .alignItems(HorizontalAlign.End)
+                .layoutWeight(1)
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
             }

@@ -45,13 +45,17 @@ struct Commonsetting {
               .fontWeight(FontWeight.Medium)
               .margin({
                 bottom: 6,
-                left: 12
+                left: 12,
+                right: 12
               })
             Column() {
               Row() {
                 Text('接续')
                   .fontWeight(FontWeight.Medium)
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Toggle({
                   type: ToggleType.Switch,
                   isOn: this.allowContinue!!
@@ -84,6 +88,7 @@ struct Commonsetting {
                   })
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -95,7 +100,10 @@ struct Commonsetting {
               Row() {
                 Text('接续成功后退出')
                   .fontWeight(FontWeight.Medium)
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Toggle({
                   type: ToggleType.Switch,
                   isOn: this.exitAfterContinue!!
@@ -106,6 +114,7 @@ struct Commonsetting {
                   })
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -117,7 +126,10 @@ struct Commonsetting {
               Row() {
                 Text('备份恢复')
                   .fontWeight(FontWeight.Medium)
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Toggle({
                   type: ToggleType.Switch,
                   isOn: this.allowRestore!!
@@ -150,6 +162,7 @@ struct Commonsetting {
                   })
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -161,7 +174,10 @@ struct Commonsetting {
               Row() {
                 Text('接受协同')
                   .fontWeight(FontWeight.Medium)
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Toggle({
                   type: ToggleType.Switch,
                   isOn: this.acceptCollaborate!!
@@ -172,6 +188,7 @@ struct Commonsetting {
                   })
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -183,7 +200,10 @@ struct Commonsetting {
               Row() {
                 Text('侧滑返回时退出')
                   .fontWeight(FontWeight.Medium)
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Toggle({
                   type: ToggleType.Switch,
                   isOn: this.destroyWhenBackPressed!!
@@ -194,6 +214,7 @@ struct Commonsetting {
                   })
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -205,12 +226,15 @@ struct Commonsetting {
               Row() {
                 Text('防窥保护')
                   .fontWeight('medium')
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Text('去设置')
                   .fontColor($r('sys.color.font_secondary'))
                   .fontSize($r('sys.float.ohos_id_text_size_body2'))
                   .margin({
-                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_s')
                   })
                 Image($r('app.media.right'))
                   .fillColor($r('sys.color.icon_fourth'))
@@ -218,6 +242,7 @@ struct Commonsetting {
                   .width(12)
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -257,7 +282,8 @@ struct Commonsetting {
               .fontWeight(FontWeight.Medium)
               .margin({
                 bottom: 6,
-                left: 12
+                left: 12,
+                right: 12
               })
             Column() {
               Row() {
@@ -272,8 +298,11 @@ struct Commonsetting {
                     })
                 }
                 .alignItems(HorizontalAlign.Start)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
 
-                Blank()
                 Select([
                   { value: '跟随系统' },
                   { value: '浅色模式' },
@@ -297,6 +326,7 @@ struct Commonsetting {
                   })
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -309,7 +339,10 @@ struct Commonsetting {
                 Row() {
                   Text('记忆主窗口尺寸')
                     .fontWeight(FontWeight.Medium)
-                  Blank()
+                    .layoutWeight(1)
+                    .margin({
+                      right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                    })
                   Toggle({
                     type: ToggleType.Switch,
                     isOn: this.windowRectAutoSave!!
@@ -342,6 +375,7 @@ struct Commonsetting {
                     })
                 }
                 .borderRadius(12)
+                .justifyContent(FlexAlign.SpaceBetween)
                 .padding(12)
                 .width('100%')
               }
@@ -354,7 +388,10 @@ struct Commonsetting {
                 Row() {
                   Text('窗口置顶')
                     .fontWeight(FontWeight.Medium)
-                  Blank()
+                    .layoutWeight(1)
+                    .margin({
+                      right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                    })
                   Toggle({
                     type: ToggleType.Switch,
                     isOn: this.windowTopmost!!
@@ -367,6 +404,7 @@ struct Commonsetting {
                     })
                 }
                 .borderRadius(12)
+                .justifyContent(FlexAlign.SpaceBetween)
                 .padding(12)
                 .width('100%')
               }
@@ -387,8 +425,11 @@ struct Commonsetting {
                     })
                 }
                 .alignItems(HorizontalAlign.Start)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
 
-                Blank()
                 Toggle({
                   type: ToggleType.Switch,
                   isOn: this.keepScreenOn!!
@@ -399,6 +440,7 @@ struct Commonsetting {
                   })
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -410,13 +452,17 @@ struct Commonsetting {
               Row() {
                 Text('背景图')
                   .fontWeight('medium')
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Image($r('app.media.right'))
                   .fillColor($r('sys.color.icon_fourth'))
                   .height(12)
                   .width(12)
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -532,13 +578,17 @@ struct Commonsetting {
               .fontWeight(FontWeight.Medium)
               .margin({
                 bottom: 6,
-                left: 12
+                left: 12,
+                right: 12
               })
             Column() {
               Row() {
                 Text('流量使用提醒')
                   .fontWeight(FontWeight.Medium)
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Select([
                   { value: '始终' },
                   { value: '大于 200 MB' },
@@ -552,6 +602,7 @@ struct Commonsetting {
                   })
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -563,7 +614,10 @@ struct Commonsetting {
               Row() {
                 Text('启动时检查更新')
                   .fontWeight(FontWeight.Medium)
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Select([
                   { value: '从不' },
                   { value: '非流量下' },
@@ -577,6 +631,7 @@ struct Commonsetting {
                   })
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -588,7 +643,10 @@ struct Commonsetting {
               Row() {
                 Text('链接打开方式')
                   .fontWeight(FontWeight.Medium)
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Select([
                   { value: '系统默认' },
                   { value: '自行选择' }
@@ -601,6 +659,7 @@ struct Commonsetting {
                   })
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
             }

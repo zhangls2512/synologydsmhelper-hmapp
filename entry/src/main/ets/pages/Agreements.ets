@@ -17,13 +17,17 @@ struct Agreements {
             Row() {
               Text('用户服务条款与条件')
                 .fontWeight(FontWeight.Medium)
-              Blank()
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
               Image($r('app.media.right'))
                 .fillColor($r('sys.color.icon_fourth'))
                 .height(12)
                 .width(12)
             }
             .borderRadius(12)
+            .justifyContent(FlexAlign.SpaceBetween)
             .padding(12)
             .stateStyles({
               normal: {

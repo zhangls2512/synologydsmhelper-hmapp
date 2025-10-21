@@ -169,16 +169,17 @@ struct Errorlog {
               Row() {
                 Text('类型')
                   .fontWeight(FontWeight.Medium)
-                  .width('15%')
-                Blank()
-                  .width('5%')
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Text(item.type)
                   .fontColor($r('sys.color.font_secondary'))
                   .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                  .layoutWeight(1)
                   .textAlign(TextAlign.End)
-                  .width('80%')
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -190,16 +191,17 @@ struct Errorlog {
               Row() {
                 Text('内容')
                   .fontWeight(FontWeight.Medium)
-                  .width('15%')
-                Blank()
-                  .width('5%')
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Text(item.content)
                   .fontColor($r('sys.color.font_secondary'))
                   .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                  .layoutWeight(1)
                   .textAlign(TextAlign.End)
-                  .width('80%')
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -222,16 +224,17 @@ struct Errorlog {
               Row() {
                 Text('时间')
                   .fontWeight(FontWeight.Medium)
-                  .width('15%')
-                Blank()
-                  .width('5%')
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Text(item.time)
                   .fontColor($r('sys.color.font_secondary'))
                   .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                  .layoutWeight(1)
                   .textAlign(TextAlign.End)
-                  .width('80%')
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -244,14 +247,17 @@ struct Errorlog {
                 Row() {
                   Text(externalLogItem)
                     .fontWeight(FontWeight.Medium)
-                    .width('90%')
-                  Blank()
+                    .layoutWeight(1)
+                    .margin({
+                      right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                    })
                   Image($r('app.media.right'))
                     .fillColor($r('sys.color.icon_fourth'))
                     .height(12)
                     .width(12)
                 }
                 .borderRadius(12)
+                .justifyContent(FlexAlign.SpaceBetween)
                 .padding(12)
                 .stateStyles({
                   normal: {

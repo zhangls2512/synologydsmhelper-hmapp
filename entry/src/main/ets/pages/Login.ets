@@ -32,16 +32,15 @@ export default struct Login {
             Row() {
               Text('协议')
                 .fontWeight(FontWeight.Medium)
-                .width('15%')
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
               Row() {
                 Radio({
                   value: 'http',
                   group: 'scheme'
                 })
                   .checked(this.scheme === 'http' ? true : false)
-                  .margin({
-                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                  })
                   .onChange((isChecked) => {
                     if (isChecked) {
                       this.scheme = 'http'
@@ -49,42 +48,38 @@ export default struct Login {
                   })
                 Text('http')
                   .margin({
-                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_s')
                   })
-                Row() {
-                  Radio({
-                    value: 'https',
-                    group: 'scheme'
+                Radio({
+                  value: 'https',
+                  group: 'scheme'
+                })
+                  .checked(this.scheme === 'https' ? true : false)
+                  .onChange((isChecked) => {
+                    if (isChecked) {
+                      this.scheme = 'https'
+                    }
                   })
-                    .checked(this.scheme === 'https' ? true : false)
-                    .margin({
-                      right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                    })
-                    .onChange((isChecked) => {
-                      if (isChecked) {
-                        this.scheme = 'https'
-                      }
-                    })
-                  Text('https')
-                    .margin({
-                      right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                    })
-                }
+                Text('https')
               }
-              .width('80%')
+              .layoutWeight(1)
             }
+            .justifyContent(FlexAlign.SpaceBetween)
 
             Row() {
               Text('主机')
                 .fontWeight(FontWeight.Medium)
-                .width('15%')
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
               TextInput({
                 placeholder: '请输入主机',
                 text: this.host!!
               })
                 .enableAutoSpacing(true)
-                .width('80%')
+                .layoutWeight(1)
             }
+            .justifyContent(FlexAlign.SpaceBetween)
             .margin({
               top: $r('sys.float.ohos_id_elements_margin_vertical_m')
             })
@@ -92,16 +87,19 @@ export default struct Login {
             Row() {
               Text('端口')
                 .fontWeight(FontWeight.Medium)
-                .width('15%')
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
               TextInput({
                 placeholder: '请输入端口 (可选)',
                 text: this.port!!
               })
                 .enableAutoSpacing(true)
-                .type(InputType.Number)
+                .layoutWeight(1)
                 .maxLength(5)
-                .width('80%')
+                .type(InputType.Number)
             }
+            .justifyContent(FlexAlign.SpaceBetween)
             .margin({
               top: $r('sys.float.ohos_id_elements_margin_vertical_m')
             })
@@ -114,19 +112,21 @@ export default struct Login {
             .margin({
               top: $r('sys.float.ohos_id_elements_margin_vertical_m')
             })
-            .width('95%')
           Row() {
             Text('账号')
               .fontWeight(FontWeight.Medium)
-              .width('15%')
+              .margin({
+                right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+              })
             TextInput({
               placeholder: '请输入账号',
               text: this.name!!
             })
               .contentType(ContentType.USER_NAME)
               .enableAutoSpacing(true)
-              .width('80%')
+              .layoutWeight(1)
           }
+          .justifyContent(FlexAlign.SpaceBetween)
           .margin({
             top: $r('sys.float.ohos_id_elements_margin_vertical_m')
           })
@@ -134,17 +134,20 @@ export default struct Login {
           Row() {
             Text('密码')
               .fontWeight(FontWeight.Medium)
-              .width('15%')
+              .margin({
+                right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+              })
             TextInput({
               placeholder: '请输入密码',
               text: this.password!!
             })
               .contentType(ContentType.PASSWORD)
               .enableAutoSpacing(true)
+              .layoutWeight(1)
               .maxLength(30)
               .type(InputType.Password)
-              .width('80%')
           }
+          .justifyContent(FlexAlign.SpaceBetween)
           .margin({
             top: $r('sys.float.ohos_id_elements_margin_vertical_m')
           })
@@ -152,16 +155,19 @@ export default struct Login {
           Row() {
             Text('MFA')
               .fontWeight(FontWeight.Medium)
-              .width('15%')
+              .margin({
+                right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+              })
             TextInput({
               placeholder: '请输入MFA (可选)',
               text: this.mfa!!
             })
               .enableAutoSpacing(true)
-              .type(InputType.Number)
+              .layoutWeight(1)
               .maxLength(6)
-              .width('80%')
+              .type(InputType.Number)
           }
+          .justifyContent(FlexAlign.SpaceBetween)
           .margin({
             top: $r('sys.float.ohos_id_elements_margin_vertical_m')
           })
@@ -301,17 +307,13 @@ export default struct Login {
               }
             })
           Row() {
-            Column() {
-              Toggle({
-                type: ToggleType.Checkbox,
-                isOn: this.agree!!
-              })
-            }
-            .margin({
-              right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+            Toggle({
+              type: ToggleType.Checkbox,
+              isOn: this.agree!!
             })
-            .width('10%')
-
+              .margin({
+                right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+              })
             Text() {
               Span('已阅读并同意')
               Span('《群晖DSM助手用户服务条款与条件》')
@@ -344,8 +346,9 @@ export default struct Login {
             }
             .enableAutoSpacing(true)
             .fontSize($r('sys.float.ohos_id_text_size_body3'))
-            .width('85%')
+            .layoutWeight(1)
           }
+          .justifyContent(FlexAlign.SpaceBetween)
           .margin({
             top: $r('sys.float.ohos_id_elements_margin_vertical_l')
           })
