@@ -112,13 +112,17 @@ struct Debugsetting {
               .fontWeight('medium')
               .margin({
                 bottom: 6,
-                left: 12
+                left: 12,
+                right: 12
               })
             Column() {
               Row() {
                 Text('故障展示方式')
                   .fontWeight('medium')
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Select([
                   { value: 'Toast' },
                   { value: 'Dialog' }
@@ -131,6 +135,7 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -142,7 +147,10 @@ struct Debugsetting {
               Row() {
                 Text('保存故障日志')
                   .fontWeight('medium')
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Toggle({
                   type: ToggleType.Switch,
                   isOn: this.saveErrorLog!!
@@ -154,6 +162,7 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -165,7 +174,10 @@ struct Debugsetting {
               Row() {
                 Text('自动上传故障日志')
                   .fontWeight('medium')
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Toggle({
                   type: ToggleType.Switch,
                   isOn: this.autoUploadErrorLog!!
@@ -177,6 +189,7 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -188,13 +201,17 @@ struct Debugsetting {
               Row() {
                 Text('自动上传故障日志类型')
                   .fontWeight('medium')
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Image($r('app.media.right'))
                   .fillColor($r('sys.color.icon_fourth'))
                   .height(12)
                   .width(12)
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -219,13 +236,17 @@ struct Debugsetting {
               Row() {
                 Text('故障日志')
                   .fontWeight('medium')
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Image($r('app.media.right'))
                   .fillColor($r('sys.color.icon_fourth'))
                   .height(12)
                   .width(12)
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -250,7 +271,10 @@ struct Debugsetting {
               Row() {
                 Text('内存占用级别变化时弹窗')
                   .fontWeight('medium')
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Toggle({
                   type: ToggleType.Switch,
                   isOn: this.showMemoryLevelChange!!
@@ -261,6 +285,7 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -272,7 +297,10 @@ struct Debugsetting {
               Row() {
                 Text('进程缓存后快速启动')
                   .fontWeight('medium')
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Toggle({
                   type: ToggleType.Switch,
                   isOn: this.processCache!!
@@ -305,6 +333,7 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -316,7 +345,10 @@ struct Debugsetting {
               Row() {
                 Text('电池电量低阈值')
                   .fontWeight('medium')
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Select([
                   { value: '满' },
                   { value: '高' },
@@ -334,6 +366,7 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
             }
@@ -355,20 +388,25 @@ struct Debugsetting {
               .fontWeight('medium')
               .margin({
                 bottom: 6,
-                left: 12
+                left: 12,
+                right: 12
               })
             Column() {
               Row() {
                 Text('沙箱文件删除工具')
                   .fontColor($r('sys.color.warning'))
                   .fontWeight('medium')
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Image($r('app.media.right'))
                   .fillColor($r('sys.color.icon_fourth'))
                   .height(12)
                   .width(12)
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -394,13 +432,17 @@ struct Debugsetting {
                 Text('清除全部数据并退出')
                   .fontColor($r('sys.color.warning'))
                   .fontWeight('medium')
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Image($r('app.media.right'))
                   .fillColor($r('sys.color.icon_fourth'))
                   .height(12)
                   .width(12)
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -442,13 +484,17 @@ struct Debugsetting {
                 Text('终止所有进程并退出')
                   .fontColor($r('sys.color.warning'))
                   .fontWeight('medium')
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Image($r('app.media.right'))
                   .fillColor($r('sys.color.icon_fourth'))
                   .height(12)
                   .width(12)
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -502,19 +548,24 @@ struct Debugsetting {
               .fontWeight('medium')
               .margin({
                 bottom: 6,
-                left: 12
+                left: 12,
+                right: 12
               })
             Column() {
               Row() {
                 Text('重启当前进程')
                   .fontWeight('medium')
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Image($r('app.media.right'))
                   .fillColor($r('sys.color.icon_fourth'))
                   .height(12)
                   .width(12)
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -537,13 +588,17 @@ struct Debugsetting {
               Row() {
                 Text('保存当前状态')
                   .fontWeight('medium')
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Image($r('app.media.right'))
                   .fillColor($r('sys.color.icon_fourth'))
                   .height(12)
                   .width(12)
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -571,13 +626,17 @@ struct Debugsetting {
               Row() {
                 Text('设置')
                   .fontWeight('medium')
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Image($r('app.media.right'))
                   .fillColor($r('sys.color.icon_fourth'))
                   .height(12)
                   .width(12)
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -612,13 +671,17 @@ struct Debugsetting {
               .fontWeight('medium')
               .margin({
                 bottom: 6,
-                left: 12
+                left: 12,
+                right: 12
               })
             Column() {
               Row() {
                 Text('可用状态变化时弹窗')
                   .fontWeight('medium')
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Toggle({
                   type: ToggleType.Switch,
                   isOn: this.showNetAvailableStatusChange!!
@@ -629,6 +692,7 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -640,7 +704,10 @@ struct Debugsetting {
               Row() {
                 Text('阻塞状态变化时弹窗')
                   .fontWeight('medium')
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Toggle({
                   type: ToggleType.Switch,
                   isOn: this.showNetBlockStatusChange!!
@@ -651,6 +718,7 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -662,7 +730,10 @@ struct Debugsetting {
               Row() {
                 Text('丢失时弹窗')
                   .fontWeight('medium')
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Toggle({
                   type: ToggleType.Switch,
                   isOn: this.showNetLost!!
@@ -673,6 +744,7 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -684,7 +756,10 @@ struct Debugsetting {
               Row() {
                 Text('能力变化时弹窗')
                   .fontWeight('medium')
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Toggle({
                   type: ToggleType.Switch,
                   isOn: this.showNetCapabilitiesChange!!
@@ -695,6 +770,7 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -706,7 +782,10 @@ struct Debugsetting {
               Row() {
                 Text('质量变化时弹窗')
                   .fontWeight('medium')
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Toggle({
                   type: ToggleType.Switch,
                   isOn: this.showNetQosChange!!
@@ -717,6 +796,7 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -728,7 +808,10 @@ struct Debugsetting {
               Row() {
                 Text('场景变化时弹窗')
                   .fontWeight('medium')
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Toggle({
                   type: ToggleType.Switch,
                   isOn: this.showNetSceneChange!!
@@ -739,6 +822,7 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -750,7 +834,10 @@ struct Debugsetting {
               Row() {
                 Text('高时延时自动反馈传输体验')
                   .fontWeight('medium')
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Toggle({
                   type: ToggleType.Switch,
                   isOn: this.autoReportHighLatency!!
@@ -761,6 +848,7 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -772,6 +860,7 @@ struct Debugsetting {
               Row() {
                 Text('时延达到')
                   .fontWeight('medium')
+                  .layoutWeight(1)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                   })
@@ -779,12 +868,9 @@ struct Debugsetting {
                   text: this.highLatencyThreshold!!
                 })
                   .enableAutoSpacing(true)
-                  .margin({
-                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                  })
                   .maxLength(4)
                   .type(InputType.Number)
-                  .width('25%')
+                  .width('35%')
                   .onSubmit((enterKey, event) => {
                     this.debugSettingDataPreferences.putSync('highLatencyThreshold', Number(event.text))
                     this.debugSettingDataPreferences.flushSync()
@@ -795,11 +881,13 @@ struct Debugsetting {
                 Text('ms时判定为高时延')
                   .enableAutoSpacing(true)
                   .fontWeight('medium')
+                  .layoutWeight(1)
                   .margin({
-                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                    left: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                   })
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -811,13 +899,17 @@ struct Debugsetting {
               Row() {
                 Text('反馈传输体验')
                   .fontWeight('medium')
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Image($r('app.media.right'))
                   .fillColor($r('sys.color.icon_fourth'))
                   .height(12)
                   .width(12)
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -842,13 +934,17 @@ struct Debugsetting {
               Row() {
                 Text('测试')
                   .fontWeight('medium')
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Image($r('app.media.right'))
                   .fillColor($r('sys.color.icon_fourth'))
                   .height(12)
                   .width(12)
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -883,14 +979,18 @@ struct Debugsetting {
               .fontWeight('medium')
               .margin({
                 bottom: 6,
-                left: 12
+                left: 12,
+                right: 12
               })
             Column() {
               Row() {
                 Text('分段解析HTML优化')
                   .enableAutoSpacing(true)
                   .fontWeight('medium')
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Toggle({
                   type: ToggleType.Switch,
                   isOn: this.optimizeParserBudget!!
@@ -901,6 +1001,7 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -912,7 +1013,10 @@ struct Debugsetting {
               Row() {
                 Text('销毁模式')
                   .fontWeight('medium')
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Select([
                   { value: '普通' },
                   { value: '快速' }
@@ -925,6 +1029,7 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
             }

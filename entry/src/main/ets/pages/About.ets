@@ -85,15 +85,18 @@ struct About {
                   })
               }
               .alignItems(HorizontalAlign.Start)
+              .layoutWeight(1)
+              .margin({
+                right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+              })
 
-              Blank()
               if (!this.updateLoading) {
                 if (this.hasUpdate === -1) {
                   Text('检查更新')
                     .fontColor($r('sys.color.font_secondary'))
                     .fontSize($r('sys.float.ohos_id_text_size_body2'))
                     .margin({
-                      right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                      right: $r('sys.float.ohos_id_elements_margin_horizontal_s')
                     })
                 }
                 if (this.hasUpdate === 0) {
@@ -101,7 +104,7 @@ struct About {
                     .fontColor($r('sys.color.font_secondary'))
                     .fontSize($r('sys.float.ohos_id_text_size_body2'))
                     .margin({
-                      right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                      right: $r('sys.float.ohos_id_elements_margin_horizontal_s')
                     })
                 }
                 if (this.hasUpdate === 1) {
@@ -109,7 +112,7 @@ struct About {
                     .fontColor($r('sys.color.font_emphasize'))
                     .fontSize($r('sys.float.ohos_id_text_size_body2'))
                     .margin({
-                      right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                      right: $r('sys.float.ohos_id_elements_margin_horizontal_s')
                     })
                 }
                 Image($r('app.media.right'))
@@ -124,6 +127,7 @@ struct About {
               }
             }
             .borderRadius(12)
+            .justifyContent(FlexAlign.SpaceBetween)
             .padding(12)
             .stateStyles({
               normal: {
@@ -174,14 +178,18 @@ struct About {
                   })
               }
               .alignItems(HorizontalAlign.Start)
+              .layoutWeight(1)
+              .margin({
+                right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+              })
 
-              Blank()
               Image($r('app.media.right'))
                 .fillColor($r('sys.color.icon_fourth'))
                 .height(12)
                 .width(12)
             }
             .borderRadius(12)
+            .justifyContent(FlexAlign.SpaceBetween)
             .padding(12)
             .stateStyles({
               normal: {
@@ -207,13 +215,17 @@ struct About {
             Row() {
               Text('应用详情')
                 .fontWeight(FontWeight.Medium)
-              Blank()
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
               Image($r('app.media.right'))
                 .fillColor($r('sys.color.icon_fourth'))
                 .height(12)
                 .width(12)
             }
             .borderRadius(12)
+            .justifyContent(FlexAlign.SpaceBetween)
             .padding(12)
             .stateStyles({
               normal: {
@@ -236,13 +248,17 @@ struct About {
             Row() {
               Text('评论应用')
                 .fontWeight(FontWeight.Medium)
-              Blank()
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
               Image($r('app.media.right'))
                 .fillColor($r('sys.color.icon_fourth'))
                 .height(12)
                 .width(12)
             }
             .borderRadius(12)
+            .justifyContent(FlexAlign.SpaceBetween)
             .padding(12)
             .stateStyles({
               normal: {
@@ -265,13 +281,17 @@ struct About {
             Row() {
               Text('意见反馈')
                 .fontWeight(FontWeight.Medium)
-              Blank()
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
               Image($r('app.media.right'))
                 .fillColor($r('sys.color.icon_fourth'))
                 .height(12)
                 .width(12)
             }
             .borderRadius(12)
+            .justifyContent(FlexAlign.SpaceBetween)
             .padding(12)
             .stateStyles({
               normal: {
@@ -324,7 +344,8 @@ struct About {
               .fontWeight(FontWeight.Medium)
               .margin({
                 bottom: 6,
-                left: 12
+                left: 12,
+                right: 12
               })
             Column() {
               Row() {
@@ -339,14 +360,18 @@ struct About {
                     })
                 }
                 .alignItems(HorizontalAlign.Start)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
 
-                Blank()
                 Image($r('app.media.right'))
                   .fillColor($r('sys.color.icon_fourth'))
                   .height(12)
                   .width(12)
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -378,14 +403,18 @@ struct About {
                     })
                 }
                 .alignItems(HorizontalAlign.Start)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
 
-                Blank()
                 Image($r('app.media.right'))
                   .fillColor($r('sys.color.icon_fourth'))
                   .height(12)
                   .width(12)
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -422,14 +451,18 @@ struct About {
                     })
                 }
                 .alignItems(HorizontalAlign.Start)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
 
-                Blank()
                 Image($r('app.media.right'))
                   .fillColor($r('sys.color.icon_fourth'))
                   .height(12)
                   .width(12)
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -462,14 +495,18 @@ struct About {
                     })
                 }
                 .alignItems(HorizontalAlign.Start)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
 
-                Blank()
                 Image($r('app.media.right'))
                   .fillColor($r('sys.color.icon_fourth'))
                   .height(12)
                   .width(12)
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -502,14 +539,18 @@ struct About {
                     })
                 }
                 .alignItems(HorizontalAlign.Start)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
 
-                Blank()
                 Image($r('app.media.right'))
                   .fillColor($r('sys.color.icon_fourth'))
                   .height(12)
                   .width(12)
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -542,7 +583,8 @@ struct About {
               .fontWeight(FontWeight.Medium)
               .margin({
                 bottom: 6,
-                left: 12
+                left: 12,
+                right: 12
               })
             Column() {
               Row() {
@@ -557,14 +599,18 @@ struct About {
                     })
                 }
                 .alignItems(HorizontalAlign.Start)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
 
-                Blank()
                 Image($r('app.media.right'))
                   .fillColor($r('sys.color.icon_fourth'))
                   .height(12)
                   .width(12)
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -596,14 +642,18 @@ struct About {
                     })
                 }
                 .alignItems(HorizontalAlign.Start)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
 
-                Blank()
                 Image($r('app.media.right'))
                   .fillColor($r('sys.color.icon_fourth'))
                   .height(12)
                   .width(12)
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -635,14 +685,18 @@ struct About {
                     })
                 }
                 .alignItems(HorizontalAlign.Start)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
 
-                Blank()
                 Image($r('app.media.right'))
                   .fillColor($r('sys.color.icon_fourth'))
                   .height(12)
                   .width(12)
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {

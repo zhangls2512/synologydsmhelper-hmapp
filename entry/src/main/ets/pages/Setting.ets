@@ -42,20 +42,25 @@ export default struct Setting {
               .fontWeight(FontWeight.Medium)
               .margin({
                 bottom: 6,
-                left: 12
+                left: 12,
+                right: 12
               })
             Column() {
               if (this.accountCount === 0) {
                 Row() {
                   Text('导入')
                     .fontWeight(FontWeight.Medium)
-                  Blank()
+                    .layoutWeight(1)
+                    .margin({
+                      right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                    })
                   Image($r('app.media.right'))
                     .fillColor($r('sys.color.icon_fourth'))
                     .height(12)
                     .width(12)
                 }
                 .borderRadius(12)
+                .justifyContent(FlexAlign.SpaceBetween)
                 .padding(12)
                 .stateStyles({
                   normal: {
@@ -88,13 +93,17 @@ export default struct Setting {
               Row() {
                 Text('导出')
                   .fontWeight(FontWeight.Medium)
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Image($r('app.media.right'))
                   .fillColor($r('sys.color.icon_fourth'))
                   .height(12)
                   .width(12)
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -144,13 +153,17 @@ export default struct Setting {
             Row() {
               Text('通用')
                 .fontWeight(FontWeight.Medium)
-              Blank()
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
               Image($r('app.media.right'))
                 .fillColor($r('sys.color.icon_fourth'))
                 .height(12)
                 .width(12)
             }
             .borderRadius(12)
+            .justifyContent(FlexAlign.SpaceBetween)
             .padding(12)
             .stateStyles({
               normal: {
@@ -180,13 +193,17 @@ export default struct Setting {
             Row() {
               Text('消息通知')
                 .fontWeight(FontWeight.Medium)
-              Blank()
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
               Image($r('app.media.right'))
                 .fillColor($r('sys.color.icon_fourth'))
                 .height(12)
                 .width(12)
             }
             .borderRadius(12)
+            .justifyContent(FlexAlign.SpaceBetween)
             .padding(12)
             .stateStyles({
               normal: {
@@ -219,19 +236,24 @@ export default struct Setting {
               .fontWeight(FontWeight.Medium)
               .margin({
                 bottom: 6,
-                left: 12
+                left: 12,
+                right: 12
               })
             Column() {
               Row() {
                 Text('权限管理')
                   .fontWeight(FontWeight.Medium)
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Image($r('app.media.right'))
                   .fillColor($r('sys.color.icon_fourth'))
                   .height(12)
                   .width(12)
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -261,14 +283,18 @@ export default struct Setting {
                     Text('阅读并签署隐私协议')
                       .fontColor($r('sys.color.font_emphasize'))
                       .fontWeight(FontWeight.Medium)
+                      .layoutWeight(1)
+                      .margin({
+                        right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                      })
                   }
-                  Blank()
                   Image($r('app.media.right'))
                     .fillColor($r('sys.color.icon_fourth'))
                     .height(12)
                     .width(12)
                 }
                 .borderRadius(12)
+                .justifyContent(FlexAlign.SpaceBetween)
                 .padding(12)
                 .stateStyles({
                   normal: {
@@ -289,13 +315,17 @@ export default struct Setting {
                   Text('撤回同意隐私协议')
                     .fontColor($r('sys.color.warning'))
                     .fontWeight(FontWeight.Medium)
-                  Blank()
+                    .layoutWeight(1)
+                    .margin({
+                      right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                    })
                   Image($r('app.media.right'))
                     .fillColor($r('sys.color.icon_fourth'))
                     .height(12)
                     .width(12)
                 }
                 .borderRadius(12)
+                .justifyContent(FlexAlign.SpaceBetween)
                 .padding(12)
                 .stateStyles({
                   normal: {
@@ -330,19 +360,24 @@ export default struct Setting {
               .fontWeight(FontWeight.Medium)
               .margin({
                 bottom: 6,
-                left: 12
+                left: 12,
+                right: 12
               })
             Column() {
               Row() {
                 Text('业务与隐私的声明')
                   .fontWeight(FontWeight.Medium)
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Image($r('app.media.right'))
                   .fillColor($r('sys.color.icon_fourth'))
                   .height(12)
                   .width(12)
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -377,13 +412,17 @@ export default struct Setting {
                 Text('第三方SDK列表')
                   .enableAutoSpacing(true)
                   .fontWeight(FontWeight.Medium)
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Image($r('app.media.right'))
                   .fillColor($r('sys.color.icon_fourth'))
                   .height(12)
                   .width(12)
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -406,13 +445,17 @@ export default struct Setting {
               Row() {
                 Text('已收集个人信息清单')
                   .fontWeight(FontWeight.Medium)
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Image($r('app.media.right'))
                   .fillColor($r('sys.color.icon_fourth'))
                   .height(12)
                   .width(12)
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -437,13 +480,17 @@ export default struct Setting {
               Row() {
                 Text('隐私声明摘要')
                   .fontWeight(FontWeight.Medium)
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Image($r('app.media.right'))
                   .fillColor($r('sys.color.icon_fourth'))
                   .height(12)
                   .width(12)
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -476,18 +523,22 @@ export default struct Setting {
               .fontWeight(FontWeight.Medium)
               .margin({
                 bottom: 6,
-                left: 12
+                left: 12,
+                right: 12
               })
             Column() {
               Row() {
                 Text('应用服务模式')
                   .fontWeight(FontWeight.Medium)
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Text(this.allService ? '全量模式' : '基本模式')
                   .fontColor($r('sys.color.font_secondary'))
                   .fontSize($r('sys.float.ohos_id_text_size_body2'))
                   .margin({
-                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_s')
                   })
                 Image($r('app.media.right'))
                   .fillColor($r('sys.color.icon_fourth'))
@@ -495,6 +546,7 @@ export default struct Setting {
                   .width(12)
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -519,13 +571,17 @@ export default struct Setting {
               Row() {
                 Text('其他')
                   .fontWeight(FontWeight.Medium)
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Image($r('app.media.right'))
                   .fillColor($r('sys.color.icon_fourth'))
                   .height(12)
                   .width(12)
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -557,7 +613,10 @@ export default struct Setting {
             Row() {
               Text('关于')
                 .fontWeight(FontWeight.Medium)
-              Blank()
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
               Text('版本 ')
                 .fontColor($r('sys.color.font_secondary'))
                 .fontSize($r('sys.float.ohos_id_text_size_body2'))
@@ -565,7 +624,7 @@ export default struct Setting {
                 .fontColor($r('sys.color.font_secondary'))
                 .fontSize($r('sys.float.ohos_id_text_size_body2'))
                 .margin({
-                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_s')
                 })
               Image($r('app.media.right'))
                 .fillColor($r('sys.color.icon_fourth'))
@@ -573,6 +632,7 @@ export default struct Setting {
                 .width(12)
             }
             .borderRadius(12)
+            .justifyContent(FlexAlign.SpaceBetween)
             .padding(12)
             .stateStyles({
               normal: {
@@ -597,13 +657,17 @@ export default struct Setting {
             Row() {
               Text('服务协议与规则')
                 .fontWeight(FontWeight.Medium)
-              Blank()
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
               Image($r('app.media.right'))
                 .fillColor($r('sys.color.icon_fourth'))
                 .height(12)
                 .width(12)
             }
             .borderRadius(12)
+            .justifyContent(FlexAlign.SpaceBetween)
             .padding(12)
             .stateStyles({
               normal: {

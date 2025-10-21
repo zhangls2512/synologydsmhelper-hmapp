@@ -42,7 +42,10 @@ export default struct Player {
           Row() {
             Text('倍速')
               .fontWeight(FontWeight.Medium)
-            Blank()
+              .layoutWeight(1)
+              .margin({
+                right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+              })
             Select([
               { value: '0.75x' },
               { value: '1x' },
@@ -71,6 +74,7 @@ export default struct Player {
               })
           }
           .borderRadius(12)
+          .justifyContent(FlexAlign.SpaceBetween)
           .padding(12)
           .width('100%')
 
@@ -82,13 +86,17 @@ export default struct Player {
           Row() {
             Text('静音')
               .fontWeight(FontWeight.Medium)
-            Blank()
+              .layoutWeight(1)
+              .margin({
+                right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+              })
             Toggle({
               type: ToggleType.Switch,
               isOn: this.muted!!
             })
           }
           .borderRadius(12)
+          .justifyContent(FlexAlign.SpaceBetween)
           .padding(12)
           .width('100%')
 
@@ -100,13 +108,17 @@ export default struct Player {
           Row() {
             Text('循环')
               .fontWeight(FontWeight.Medium)
-            Blank()
+              .layoutWeight(1)
+              .margin({
+                right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+              })
             Toggle({
               type: ToggleType.Switch,
               isOn: this.loop!!
             })
           }
           .borderRadius(12)
+          .justifyContent(FlexAlign.SpaceBetween)
           .padding(12)
           .width('100%')
         }

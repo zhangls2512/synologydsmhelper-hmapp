@@ -19,7 +19,6 @@ export default struct Renamefile {
           .defaultFocus(true)
           .enableAutoSpacing(true)
       }
-      .width('95%')
 
       ListItem() {
         Button('重命名')

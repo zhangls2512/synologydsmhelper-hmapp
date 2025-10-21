@@ -22,7 +22,10 @@ struct Permissionsetting {
               Row() {
                 Text('系统授权')
                   .fontWeight(FontWeight.Medium)
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Toggle({
                   type: ToggleType.Switch,
                   isOn: true
@@ -30,6 +33,7 @@ struct Permissionsetting {
                   .enabled(false)
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
             }
@@ -59,7 +63,10 @@ struct Permissionsetting {
               Row() {
                 Text('写入剪贴板')
                   .fontWeight(FontWeight.Medium)
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Toggle({
                   type: ToggleType.Switch,
                   isOn: this.writePasteBoard!!
@@ -70,6 +77,7 @@ struct Permissionsetting {
                   })
               }
               .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
             }
