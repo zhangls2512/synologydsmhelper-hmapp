@@ -167,11 +167,9 @@ export default struct Filelist {
           '&method=list&additional=["size","time"]&folder_path=' + encodeURIComponent(path) + '&sort_by=' + sortBy +
             '&sort_direction=' +
             sortDirection)
+        this.fileArray = []
         if (res !== 'fail') {
           this.fileArray = res['files']
-        }
-        if (res === 'fail') {
-          this.dirnames.pop()
         }
       }
       dialogControllerProgress.close()
@@ -590,16 +588,15 @@ export default struct Filelist {
     Refresh({
       refreshing: $$this.loading
     }) {
-      List() {
-        if (!this.isLogin) {
-          ListItem() {
+      Scroll() {
+        Column() {
+          if (!this.isLogin) {
             Text('未登录账号')
+              .height('100%')
+              .textAlign(TextAlign.Center)
+              .width('100%')
           }
-          .height('100%')
-          .width('100%')
-        }
-        if (this.isLogin) {
-          ListItem() {
+          if (this.isLogin) {
             Row() {
               if (this.dirnames.length > 0) {
                 Column() {
@@ -652,9 +649,7 @@ export default struct Filelist {
             }
             .justifyContent(FlexAlign.SpaceBetween)
             .width('100%')
-          }
 
-          ListItem() {
             Text() {
               ForEach(this.dirnames, (item: string, index) => {
                 if (index !== 0) {
@@ -678,23 +673,21 @@ export default struct Filelist {
               })
             }
             .enableAutoSpacing(true)
-          }
-          .margin({
-            top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-          })
-          .bindSheet(this.isShowPlayerSheet!!, this.PlayerSheetBuilder(), {
-            preferType: this.preferType,
-            title: {
-              title: this.srcName
-            },
-            onDisappear: () => {
-              this.src = ''
-              this.srcName = ''
-            }
-          })
+            .margin({
+              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+            })
+            .bindSheet(this.isShowPlayerSheet!!, this.PlayerSheetBuilder(), {
+              preferType: this.preferType,
+              title: {
+                title: this.srcName
+              },
+              onDisappear: () => {
+                this.src = ''
+                this.srcName = ''
+              }
+            })
 
-          if (this.dirnames.length > 0) {
-            ListItem() {
+            if (this.dirnames.length > 0) {
               Search({
                 placeholder: '请输入搜索关键词',
                 value: this.searchKeyword!!
@@ -704,9 +697,7 @@ export default struct Filelist {
                   this.search()
                 })
             }
-          }
-          if (this.dirnames.length > 0) {
-            ListItem() {
+            if (this.dirnames.length > 0) {
               Row() {
                 Column() {
                   Image($r('app.media.newfolder'))
@@ -818,367 +809,374 @@ export default struct Filelist {
                   })
                 }
               }
+              .margin({
+                bottom: $r('sys.float.ohos_id_elements_margin_vertical_m')
+              })
               .width('100%')
             }
-            .margin({
-              bottom: $r('sys.float.ohos_id_elements_margin_vertical_m')
-            })
-          }
-          ForEach(this.fileArray, (item: FileItem, index) => {
-            ListItem() {
-              Column() {
-                if (index !== 0) {
-                  Divider()
-                    .padding({
-                      left: 38,
-                      right: 6
-                    })
-                }
-                Row() {
-                  Row() {
-                    if (!item.isdir) {
-                      Image(this.getFileTypeIcon(item.name))
-                        .fillColor($r('sys.color.icon_secondary'))
-                        .height(24)
-                        .margin({
-                          right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+            List() {
+              ForEach(this.fileArray, (item: FileItem, index) => {
+                ListItem() {
+                  Column() {
+                    if (index !== 0) {
+                      Divider()
+                        .padding({
+                          left: 38,
+                          right: 6
                         })
-                        .width(24)
                     }
-                    if (item.isdir) {
-                      Image($r('app.media.foldericon'))
-                        .height(24)
-                        .margin({
-                          right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                        })
-                        .width(24)
-                    }
-                    Column() {
-                      Text(item.name)
-                        .enableAutoSpacing(true)
-                        .fontWeight(FontWeight.Medium)
-                        .width('85%')
-                      Text() {
-                        Span(this.getTimeString(item.additional.time.mtime))
-                        if (item.additional.size && !item.isdir) {
-                          Span(' - ' + this.getSizeString(item.additional.size))
+                    Row() {
+                      Row() {
+                        if (!item.isdir) {
+                          Image(this.getFileTypeIcon(item.name))
+                            .fillColor($r('sys.color.icon_secondary'))
+                            .height(24)
+                            .margin({
+                              right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                            })
+                            .width(24)
                         }
-                      }
-                      .fontColor($r('sys.color.font_secondary'))
-                      .fontSize($r('sys.float.ohos_id_text_size_body2'))
-                      .margin({
-                        top: $r('sys.float.ohos_id_text_margin_vertical')
-                      })
-                    }
-                    .alignItems(HorizontalAlign.Start)
-                  }
-                  .layoutWeight(1)
-                  .margin({
-                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                  })
-
-                  Image($r('app.media.right'))
-                    .fillColor($r('sys.color.icon_fourth'))
-                    .height(12)
-                    .width(12)
-                }
-                .borderRadius(12)
-                .justifyContent(FlexAlign.SpaceBetween)
-                .padding({
-                  bottom: 12,
-                  left: 6,
-                  right: 5,
-                  top: 12
-                })
-                .stateStyles({
-                  normal: {
-                    .backgroundColor($r('sys.color.background_secondary'))
-                  },
-                  pressed: {
-                    .backgroundColor($r('sys.color.comp_background_secondary'))
-                  }
-                })
-                .width('100%')
-                .onClick(async () => {
-                  if (!item.isdir) {
-                    let houzhui = ''
-                    const lastDotIndex = item.name.lastIndexOf('.')
-                    if (lastDotIndex !== -1) {
-                      houzhui = item.name.slice(lastDotIndex + 1)
-                    }
-                    const supportedformats = ['mp4', 'mkv', 'm4a', 'aac', 'mp3', 'ogg', 'wav', 'flac', 'amr', 'ape']
-                    if (supportedformats.includes(houzhui)) {
-                      const dialogControllerProgress = new CustomDialogController({
-                        builder: LoadingDialog({
-                          content: '播放准备中...'
-                        })
-                      })
-                      dialogControllerProgress.open()
-                      const res = await dsmRequest('', 'SYNO.API.Auth.Key',
-                        '&method=grant&allow_api=SYNO.FileStation.Download&allow_methods=["download"]')
-                      dialogControllerProgress.close()
-                      if (res !== 'fail') {
-                        const tid = res['tid'] as string
-                        const accountInfo = await get()
-                        const textEncoder = new util.TextEncoder()
-                        const bytes = textEncoder.encodeInto(item.path)
-                        const dlink = Array.from(bytes).map(byte => byte.toString(16).padStart(2, '0')).join('')
-                        this.src =
-                          accountInfo.path + '/fbdownload/' + item.name.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
-                            '?tid=' + tid + '&mode=open&dlink=' + dlink
-                        this.srcName = item.name
-                        this.isShowPlayerSheet = true
-                      }
-                      return
-                    }
-                    if (item.additional.size > Math.pow(1024, 3)) {
-                      promptAction.openToast({
-                        message: '大小大于 1GB，请长按将其下载到本地后预览'
-                      })
-                      return
-                    }
-                    if (getCurrentNetworkBearerType() === 0) {
-                      const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-                        name: 'commonSetting'
-                      })
-                      const cellularDataUseRemind =
-                        commonSettingDataPreferences.getSync('cellularDataUseRemind', 0)
-                      if (cellularDataUseRemind === 0 ||
-                        (cellularDataUseRemind === 1 && item.additional.size > 200 * Math.pow(1024, 2))) {
-                        const promptAction = this.getUIContext().getPromptAction()
-                        const data = await promptAction.showDialog({
-                          title: '流量使用提醒',
-                          message: '当前正在使用流量上网，下载此文件将消耗约 ' +
-                          this.getSizeString(item.additional.size) +
-                            ' 流量，确定下载？',
-                          buttons: [
-                            {
-                              text: '取消',
-                              color: $r('sys.color.font_primary')
-                            },
-                            {
-                              text: '确定',
-                              color: $r('sys.color.font_emphasize')
+                        if (item.isdir) {
+                          Image($r('app.media.foldericon'))
+                            .height(24)
+                            .margin({
+                              right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                            })
+                            .width(24)
+                        }
+                        Column() {
+                          Text(item.name)
+                            .enableAutoSpacing(true)
+                            .fontWeight(FontWeight.Medium)
+                            .width('85%')
+                          Text() {
+                            Span(this.getTimeString(item.additional.time.mtime))
+                            if (item.additional.size && !item.isdir) {
+                              Span(' - ' + this.getSizeString(item.additional.size))
                             }
-                          ]
-                        })
-                        if (data.index === 0) {
+                          }
+                          .fontColor($r('sys.color.font_secondary'))
+                          .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                          .margin({
+                            top: $r('sys.float.ohos_id_text_margin_vertical')
+                          })
+                        }
+                        .alignItems(HorizontalAlign.Start)
+                      }
+                      .layoutWeight(1)
+                      .margin({
+                        right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                      })
+
+                      Image($r('app.media.right'))
+                        .fillColor($r('sys.color.icon_fourth'))
+                        .height(12)
+                        .width(12)
+                    }
+                    .borderRadius(12)
+                    .justifyContent(FlexAlign.SpaceBetween)
+                    .padding({
+                      bottom: 12,
+                      left: 6,
+                      right: 5,
+                      top: 12
+                    })
+                    .stateStyles({
+                      normal: {
+                        .backgroundColor($r('sys.color.background_secondary'))
+                      },
+                      pressed: {
+                        .backgroundColor($r('sys.color.comp_background_secondary'))
+                      }
+                    })
+                    .width('100%')
+                    .onClick(async () => {
+                      if (!item.isdir) {
+                        let houzhui = ''
+                        const lastDotIndex = item.name.lastIndexOf('.')
+                        if (lastDotIndex !== -1) {
+                          houzhui = item.name.slice(lastDotIndex + 1)
+                        }
+                        const supportedformats = ['mp4', 'mkv', 'm4a', 'aac', 'mp3', 'ogg', 'wav', 'flac', 'amr', 'ape']
+                        if (supportedformats.includes(houzhui)) {
+                          const dialogControllerProgress = new CustomDialogController({
+                            builder: LoadingDialog({
+                              content: '播放准备中...'
+                            })
+                          })
+                          dialogControllerProgress.open()
+                          const res = await dsmRequest('', 'SYNO.API.Auth.Key',
+                            '&method=grant&allow_api=SYNO.FileStation.Download&allow_methods=["download"]')
+                          dialogControllerProgress.close()
+                          if (res !== 'fail') {
+                            const tid = res['tid'] as string
+                            const accountInfo = await get()
+                            const textEncoder = new util.TextEncoder()
+                            const bytes = textEncoder.encodeInto(item.path)
+                            const dlink = Array.from(bytes).map(byte => byte.toString(16).padStart(2, '0')).join('')
+                            this.src =
+                              accountInfo.path + '/fbdownload/' +
+                              item.name.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
+                                '?tid=' + tid + '&mode=open&dlink=' + dlink
+                            this.srcName = item.name
+                            this.isShowPlayerSheet = true
+                          }
                           return
                         }
-                      }
-                    }
-                    try {
-                      const previewDir = this.context.tempDir + '/preview'
-                      if (!fileIo.accessSync(previewDir)) {
-                        fileIo.mkdirSync(previewDir)
-                      }
-                      const filePath = previewDir + '/' + item.name
-                      this.prepareDownloadDialogControllerProgress.open()
-                      const version = await getDsmApiMaxVersion('', 'SYNO.FileStation.Download')
-                      this.prepareDownloadDialogControllerProgress.close()
-                      if (version !== 'fail') {
-                        const wandAgent = await wantAgent.getWantAgent({
-                          wants: [
-                            {
-                              bundleName: 'com.songjy.synologydsmhelper',
-                              abilityName: 'EntryAbility'
+                        if (item.additional.size > Math.pow(1024, 3)) {
+                          promptAction.openToast({
+                            message: '大小大于 1GB，请长按将其下载到本地后预览'
+                          })
+                          return
+                        }
+                        if (getCurrentNetworkBearerType() === 0) {
+                          const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+                            name: 'commonSetting'
+                          })
+                          const cellularDataUseRemind =
+                            commonSettingDataPreferences.getSync('cellularDataUseRemind', 0)
+                          if (cellularDataUseRemind === 0 ||
+                            (cellularDataUseRemind === 1 && item.additional.size > 200 * Math.pow(1024, 2))) {
+                            const promptAction = this.getUIContext().getPromptAction()
+                            const data = await promptAction.showDialog({
+                              title: '流量使用提醒',
+                              message: '当前正在使用流量上网，下载此文件将消耗约 ' +
+                              this.getSizeString(item.additional.size) +
+                                ' 流量，确定下载？',
+                              buttons: [
+                                {
+                                  text: '取消',
+                                  color: $r('sys.color.font_primary')
+                                },
+                                {
+                                  text: '确定',
+                                  color: $r('sys.color.font_emphasize')
+                                }
+                              ]
+                            })
+                            if (data.index === 0) {
+                              return
                             }
-                          ],
-                          actionType: wantAgent.OperationType.START_ABILITY,
-                          requestCode: 0,
-                          wantAgentFlags: [wantAgent.WantAgentFlags.UPDATE_PRESENT_FLAG]
-                        })
-                        const continuousTaskNotificationInfo =
-                          await backgroundTaskManager.startBackgroundRunning(this.context, ['dataTransfer'], wandAgent)
-                        const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
-                        const fileStream = fileIo.fdopenStreamSync(file.fd, 'w+')
-                        netBoost.setSceneDesc({
-                          scene: 'download',
-                          sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
-                        })
-                        const accountInfo = await get()
-                        const session = rcp.createSession({
-                          requestConfiguration: {
-                            transfer: {
-                              timeout: {
-                                transferMs: 0
-                              }
-                            },
-                            tracing: {
-                              httpEventsHandler: {
-                                onDataReceive: async (incomingData) => {
-                                  fileStream.writeSync(incomingData)
-                                  this.transferredSize = this.transferredSize + incomingData.byteLength
-                                  try {
-                                    await notificationManager.publish({
-                                      content: {
-                                        notificationContentType: notificationManager.ContentType.NOTIFICATION_CONTENT_SYSTEM_LIVE_VIEW,
-                                        systemLiveView: {
-                                          typeCode: 8,
-                                          title: '正在下载文件：' + item.name,
-                                          text: '进度：' +
-                                            Number((this.transferredSize / this.totalSize).toFixed(2)) * 100 +
-                                            '% (' + this.getSizeString(this.transferredSize) + '/' +
-                                          this.getSizeString(this.totalSize) + ')'
-                                        }
-                                      },
-                                      id: continuousTaskNotificationInfo.notificationId,
-                                      notificationSlotType: notificationManager.SlotType.LIVE_VIEW,
-                                      template: {
-                                        name: 'downloadTemplate',
-                                        data: {
-                                          title: '正在下载文件，进度：' +
-                                            Number((this.transferredSize / this.totalSize).toFixed(2)) * 100 + '%',
-                                          fileName: item.name,
-                                          progressValue: Number((this.transferredSize / this.totalSize).toFixed(2)) *
-                                            100
-                                        }
-                                      }
-                                    })
-                                  } catch (err) {
-                                    if (err.code !== 1600009 && err.code !== 202) {
-                                      promptAction.openToast({
-                                        message: '发生错误，错误码：' + err.code
-                                      })
-                                    }
+                          }
+                        }
+                        try {
+                          const previewDir = this.context.tempDir + '/preview'
+                          if (!fileIo.accessSync(previewDir)) {
+                            fileIo.mkdirSync(previewDir)
+                          }
+                          const filePath = previewDir + '/' + item.name
+                          this.prepareDownloadDialogControllerProgress.open()
+                          const version = await getDsmApiMaxVersion('', 'SYNO.FileStation.Download')
+                          this.prepareDownloadDialogControllerProgress.close()
+                          if (version !== 'fail') {
+                            const wandAgent = await wantAgent.getWantAgent({
+                              wants: [
+                                {
+                                  bundleName: 'com.songjy.synologydsmhelper',
+                                  abilityName: 'EntryAbility'
+                                }
+                              ],
+                              actionType: wantAgent.OperationType.START_ABILITY,
+                              requestCode: 0,
+                              wantAgentFlags: [wantAgent.WantAgentFlags.UPDATE_PRESENT_FLAG]
+                            })
+                            const continuousTaskNotificationInfo =
+                              await backgroundTaskManager.startBackgroundRunning(this.context, ['dataTransfer'],
+                                wandAgent)
+                            const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
+                            const fileStream = fileIo.fdopenStreamSync(file.fd, 'w+')
+                            netBoost.setSceneDesc({
+                              scene: 'download',
+                              sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
+                            })
+                            const accountInfo = await get()
+                            const session = rcp.createSession({
+                              requestConfiguration: {
+                                transfer: {
+                                  timeout: {
+                                    transferMs: 0
                                   }
                                 },
-                                onDataEnd: async () => {
-                                  session.close()
-                                  netBoost.setSceneDesc({
-                                    scene: 'download',
-                                    sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-                                  })
-                                  fileStream.closeSync()
-                                  await backgroundTaskManager.stopBackgroundRunning(this.context)
-                                  this.isShowProgressSheet = false
-                                  this.context.eventHub.off('cancelDownload')
-                                  if (this.transferredSize < item.additional.size * 0.99 &&
-                                    this.transferredSize < item.additional.size - 1) {
-                                    this.transferredSize = -1
-                                    this.totalSize = -1
-                                    promptAction.openToast({
-                                      message: '下载失败'
-                                    })
-                                  }
-                                  if (this.transferredSize >= item.additional.size * 0.99 ||
-                                    this.transferredSize >= item.additional.size - 1) {
-                                    this.transferredSize = -1
-                                    this.totalSize = -1
-                                    const uri = fileUri.getUriFromPath(filePath)
-                                    const canPreview = await filePreview.canPreview(this.context, uri)
-                                    if (!canPreview) {
-                                      promptAction.openToast({
-                                        message: '此类型不支持预览'
+                                tracing: {
+                                  httpEventsHandler: {
+                                    onDataReceive: async (incomingData) => {
+                                      fileStream.writeSync(incomingData)
+                                      this.transferredSize = this.transferredSize + incomingData.byteLength
+                                      try {
+                                        await notificationManager.publish({
+                                          content: {
+                                            notificationContentType: notificationManager.ContentType.NOTIFICATION_CONTENT_SYSTEM_LIVE_VIEW,
+                                            systemLiveView: {
+                                              typeCode: 8,
+                                              title: '正在下载文件：' + item.name,
+                                              text: '进度：' +
+                                                Number((this.transferredSize / this.totalSize).toFixed(2)) * 100 +
+                                                '% (' + this.getSizeString(this.transferredSize) + '/' +
+                                              this.getSizeString(this.totalSize) + ')'
+                                            }
+                                          },
+                                          id: continuousTaskNotificationInfo.notificationId,
+                                          notificationSlotType: notificationManager.SlotType.LIVE_VIEW,
+                                          template: {
+                                            name: 'downloadTemplate',
+                                            data: {
+                                              title: '正在下载文件，进度：' +
+                                                Number((this.transferredSize / this.totalSize).toFixed(2)) * 100 + '%',
+                                              fileName: item.name,
+                                              progressValue: Number((this.transferredSize /
+                                              this.totalSize).toFixed(2)) *
+                                                100
+                                            }
+                                          }
+                                        })
+                                      } catch (err) {
+                                        if (err.code !== 1600009 && err.code !== 202) {
+                                          promptAction.openToast({
+                                            message: '发生错误，错误码：' + err.code
+                                          })
+                                        }
+                                      }
+                                    },
+                                    onDataEnd: async () => {
+                                      session.close()
+                                      netBoost.setSceneDesc({
+                                        scene: 'download',
+                                        sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
                                       })
-                                    }
-                                    if (canPreview) {
-                                      filePreview.openPreview(this.context, {
-                                        title: item.name,
-                                        uri: uri,
-                                        mimeType: ''
-                                      })
+                                      fileStream.closeSync()
+                                      await backgroundTaskManager.stopBackgroundRunning(this.context)
+                                      this.isShowProgressSheet = false
+                                      this.context.eventHub.off('cancelDownload')
+                                      if (this.transferredSize < item.additional.size * 0.99 &&
+                                        this.transferredSize < item.additional.size - 1) {
+                                        this.transferredSize = -1
+                                        this.totalSize = -1
+                                        promptAction.openToast({
+                                          message: '下载失败'
+                                        })
+                                      }
+                                      if (this.transferredSize >= item.additional.size * 0.99 ||
+                                        this.transferredSize >= item.additional.size - 1) {
+                                        this.transferredSize = -1
+                                        this.totalSize = -1
+                                        const uri = fileUri.getUriFromPath(filePath)
+                                        const canPreview = await filePreview.canPreview(this.context, uri)
+                                        if (!canPreview) {
+                                          promptAction.openToast({
+                                            message: '此类型不支持预览'
+                                          })
+                                        }
+                                        if (canPreview) {
+                                          filePreview.openPreview(this.context, {
+                                            title: item.name,
+                                            uri: uri,
+                                            mimeType: ''
+                                          })
+                                        }
+                                      }
                                     }
                                   }
                                 }
+                              },
+                              cookies: {
+                                id: accountInfo.sid,
+                                did: accountInfo.did
+                              }
+                            })
+                            backgroundTaskManager.on('continuousTaskCancel', () => {
+                              session.cancel()
+                              promptAction.openToast({
+                                message: '下载失败'
+                              })
+                            })
+                            this.context.eventHub.on('cancelDownload', () => {
+                              session.cancel()
+                            })
+                            this.totalSize = item.additional.size
+                            this.isShowProgressSheet = true
+                            try {
+                              const response =
+                                await session.get(accountInfo.path +
+                                  '/webapi/entry.cgi?api=SYNO.FileStation.Download&version=' +
+                                  version + '&method=download&mode=download&path=' + encodeURIComponent(item.path))
+                              if (response.statusCode !== 200) {
+                                session.close()
+                                netBoost.setSceneDesc({
+                                  scene: 'download',
+                                  sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                                })
+                                fileStream.closeSync()
+                                await backgroundTaskManager.stopBackgroundRunning(this.context)
+                                this.isShowProgressSheet = false
+                                this.transferredSize = -1
+                                this.totalSize = -1
+                                this.context.eventHub.off('cancelDownload')
+                                promptAction.openToast({
+                                  message: '下载失败，错误码：' + response.statusCode
+                                })
+                              }
+                            } catch (err) {
+                              session.close()
+                              netBoost.setSceneDesc({
+                                scene: 'download',
+                                sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                              })
+                              fileStream.closeSync()
+                              try {
+                                await backgroundTaskManager.stopBackgroundRunning(this.context)
+                              } catch (err) {
+                                if (err.code !== 9800005) {
+                                  promptAction.openToast({
+                                    message: '发生错误，错误码：' + err.code
+                                  })
+                                }
+                              }
+                              this.isShowProgressSheet = false
+                              this.transferredSize = -1
+                              this.totalSize = -1
+                              this.context.eventHub.off('cancelDownload')
+                              if (err.code !== 1007900992) {
+                                promptAction.openToast({
+                                  message: '下载失败，错误码：' + err.code
+                                })
                               }
                             }
-                          },
-                          cookies: {
-                            id: accountInfo.sid,
-                            did: accountInfo.did
-                          }
-                        })
-                        backgroundTaskManager.on('continuousTaskCancel', () => {
-                          session.cancel()
-                          promptAction.openToast({
-                            message: '下载失败'
-                          })
-                        })
-                        this.context.eventHub.on('cancelDownload', () => {
-                          session.cancel()
-                        })
-                        this.totalSize = item.additional.size
-                        this.isShowProgressSheet = true
-                        try {
-                          const response =
-                            await session.get(accountInfo.path +
-                              '/webapi/entry.cgi?api=SYNO.FileStation.Download&version=' +
-                              version + '&method=download&mode=download&path=' + encodeURIComponent(item.path))
-                          if (response.statusCode !== 200) {
-                            session.close()
-                            netBoost.setSceneDesc({
-                              scene: 'download',
-                              sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-                            })
-                            fileStream.closeSync()
-                            await backgroundTaskManager.stopBackgroundRunning(this.context)
-                            this.isShowProgressSheet = false
-                            this.transferredSize = -1
-                            this.totalSize = -1
-                            this.context.eventHub.off('cancelDownload')
-                            promptAction.openToast({
-                              message: '下载失败，错误码：' + response.statusCode
-                            })
                           }
                         } catch (err) {
-                          session.close()
-                          netBoost.setSceneDesc({
-                            scene: 'download',
-                            sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                          promptAction.openToast({
+                            message: '发生错误，错误码：' + err.code
                           })
-                          fileStream.closeSync()
-                          try {
-                            await backgroundTaskManager.stopBackgroundRunning(this.context)
-                          } catch (err) {
-                            if (err.code !== 9800005) {
-                              promptAction.openToast({
-                                message: '发生错误，错误码：' + err.code
-                              })
-                            }
-                          }
-                          this.isShowProgressSheet = false
-                          this.transferredSize = -1
-                          this.totalSize = -1
-                          this.context.eventHub.off('cancelDownload')
-                          if (err.code !== 1007900992) {
-                            promptAction.openToast({
-                              message: '下载失败，错误码：' + err.code
-                            })
-                          }
                         }
                       }
-                    } catch (err) {
-                      promptAction.openToast({
-                        message: '发生错误，错误码：' + err.code
-                      })
-                    }
+                      if (item.isdir) {
+                        this.dirnames.push(item.name)
+                        this.loading = true
+                      }
+                    })
+                    .bindContextMenu(this.MenuBuilder(item), ResponseType.LongPress | ResponseType.RightClick, {
+                      hapticFeedbackMode: HapticFeedbackMode.AUTO
+                    })
+                    .bindSheet(this.isShowProgressSheet!!, this.ProgressSheetBuilder(), {
+                      height: SheetSize.FIT_CONTENT,
+                      preferType: this.preferType,
+                      showClose: false,
+                      onWillDismiss: () => {
+                      },
+                      onDisappear: () => {
+                        this.context.eventHub.emit('cancelDownload')
+                      }
+                    })
                   }
-                  if (item.isdir) {
-                    this.dirnames.push(item.name)
-                    this.loading = true
-                  }
-                })
-                .bindContextMenu(this.MenuBuilder(item), ResponseType.LongPress | ResponseType.RightClick, {
-                  hapticFeedbackMode: HapticFeedbackMode.AUTO
-                })
-                .bindSheet(this.isShowProgressSheet!!, this.ProgressSheetBuilder(), {
-                  height: SheetSize.FIT_CONTENT,
-                  preferType: this.preferType,
-                  showClose: false,
-                  onWillDismiss: () => {
-                  },
-                  onDisappear: () => {
-                    this.context.eventHub.emit('cancelDownload')
-                  }
-                })
-              }
-              .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+                  .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+                }
+              })
             }
-          })
+            .layoutWeight(1)
+          }
         }
+        .alignItems(HorizontalAlign.Start)
+        .height('100%')
       }
-      .height('100%')
       .padding({
         left: $r('sys.float.ohos_id_max_padding_start'),
         right: $r('sys.float.ohos_id_max_padding_end')

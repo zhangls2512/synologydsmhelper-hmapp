@@ -63,7 +63,10 @@ export default struct Setting {
                 Row() {
                   Text('设备间同步')
                     .fontWeight(FontWeight.Medium)
-                  Blank()
+                    .layoutWeight(1)
+                    .margin({
+                      right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                    })
                   Toggle({
                     type: ToggleType.Switch,
                     isOn: this.accountDataSync!!
@@ -83,6 +86,7 @@ export default struct Setting {
                     })
                 }
                 .borderRadius(12)
+                .justifyContent(FlexAlign.SpaceBetween)
                 .padding(12)
                 .width('100%')
 
