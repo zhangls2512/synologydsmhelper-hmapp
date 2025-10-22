@@ -243,6 +243,11 @@ export default struct Filelist {
   }
 
   @Builder
+  PlayerSheetBuilder() {
+    Player()
+  }
+
+  @Builder
   ProgressSheetBuilder() {
     Progress()
   }
@@ -250,11 +255,6 @@ export default struct Filelist {
   @Builder
   RenamefileSheetBuilder() {
     Renamefile()
-  }
-
-  @Builder
-  PlayerSheetBuilder() {
-    Player()
   }
 
   @Builder
@@ -624,31 +624,33 @@ export default struct Filelist {
                   this.loading = true
                 })
               }
-              Blank()
-              Select([
-                { value: '名称' },
-                { value: '大小' },
-                { value: '类型' },
-                { value: '修改日期' }
-              ])
-                .margin({
-                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                })
-                .selected(this.sortByIndex!!)
-                .value(this.sortByValue!!)
-                .onSelect(() => {
-                  this.loading = true
-                })
-              Select([
-                { value: '正序' },
-                { value: '倒序' }
-              ])
-                .selected(this.sortDirectionIndex!!)
-                .value(this.sortDirectionValue!!)
-                .onSelect(() => {
-                  this.loading = true
-                })
+              Row() {
+                Select([
+                  { value: '名称' },
+                  { value: '大小' },
+                  { value: '类型' },
+                  { value: '修改日期' }
+                ])
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                  .selected(this.sortByIndex!!)
+                  .value(this.sortByValue!!)
+                  .onSelect(() => {
+                    this.loading = true
+                  })
+                Select([
+                  { value: '正序' },
+                  { value: '倒序' }
+                ])
+                  .selected(this.sortDirectionIndex!!)
+                  .value(this.sortDirectionValue!!)
+                  .onSelect(() => {
+                    this.loading = true
+                  })
+              }
             }
+            .justifyContent(FlexAlign.SpaceBetween)
             .width('100%')
           }
 
@@ -833,49 +835,55 @@ export default struct Filelist {
                     })
                 }
                 Row() {
-                  if (!item.isdir) {
-                    Image(this.getFileTypeIcon(item.name))
-                      .fillColor($r('sys.color.icon_secondary'))
-                      .height(24)
-                      .margin({
-                        right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                      })
-                      .width(24)
-                  }
-                  if (item.isdir) {
-                    Image($r('app.media.foldericon'))
-                      .height(24)
-                      .margin({
-                        right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                      })
-                      .width(24)
-                  }
-                  Column() {
-                    Text(item.name)
-                      .enableAutoSpacing(true)
-                      .fontWeight(FontWeight.Medium)
-                      .width('85%')
-                    Text() {
-                      Span(this.getTimeString(item.additional.time.mtime))
-                      if (item.additional.size && !item.isdir) {
-                        Span(' - ' + this.getSizeString(item.additional.size))
-                      }
+                  Row() {
+                    if (!item.isdir) {
+                      Image(this.getFileTypeIcon(item.name))
+                        .fillColor($r('sys.color.icon_secondary'))
+                        .height(24)
+                        .margin({
+                          right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                        })
+                        .width(24)
                     }
-                    .fontColor($r('sys.color.font_secondary'))
-                    .fontSize($r('sys.float.ohos_id_text_size_body2'))
-                    .margin({
-                      top: $r('sys.float.ohos_id_text_margin_vertical')
-                    })
+                    if (item.isdir) {
+                      Image($r('app.media.foldericon'))
+                        .height(24)
+                        .margin({
+                          right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                        })
+                        .width(24)
+                    }
+                    Column() {
+                      Text(item.name)
+                        .enableAutoSpacing(true)
+                        .fontWeight(FontWeight.Medium)
+                        .width('85%')
+                      Text() {
+                        Span(this.getTimeString(item.additional.time.mtime))
+                        if (item.additional.size && !item.isdir) {
+                          Span(' - ' + this.getSizeString(item.additional.size))
+                        }
+                      }
+                      .fontColor($r('sys.color.font_secondary'))
+                      .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                      .margin({
+                        top: $r('sys.float.ohos_id_text_margin_vertical')
+                      })
+                    }
+                    .alignItems(HorizontalAlign.Start)
                   }
-                  .alignItems(HorizontalAlign.Start)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
 
-                  Blank()
                   Image($r('app.media.right'))
                     .fillColor($r('sys.color.icon_fourth'))
                     .height(12)
                     .width(12)
                 }
                 .borderRadius(12)
+                .justifyContent(FlexAlign.SpaceBetween)
                 .padding({
                   bottom: 12,
                   left: 6,

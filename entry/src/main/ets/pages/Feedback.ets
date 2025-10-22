@@ -43,7 +43,6 @@ struct Feedback {
                 })
                 .selected(this.contactTypeIndex!!)
                 .value(this.contactType!!)
-                .width('30%')
                 .onSelect((index) => {
                   if (index === 0) {
                     this.contactType = '邮箱'
@@ -62,8 +61,8 @@ struct Feedback {
                 })
                   .contentType(ContentType.EMAIL_ADDRESS)
                   .enableAutoSpacing(true)
+                  .layoutWeight(1)
                   .type(InputType.Email)
-                  .width('65%')
               }
               if (this.contactType === '微信') {
                 TextInput({
@@ -71,8 +70,8 @@ struct Feedback {
                   text: this.contactValue!!
                 })
                   .enableAutoSpacing(true)
+                  .layoutWeight(1)
                   .maxLength(30)
-                  .width('65%')
               }
               if (this.contactType === 'QQ') {
                 TextInput({
@@ -80,11 +79,12 @@ struct Feedback {
                   text: this.contactValue!!
                 })
                   .enableAutoSpacing(true)
+                  .layoutWeight(1)
                   .maxLength(20)
                   .type(InputType.Number)
-                  .width('65%')
               }
             }
+            .justifyContent(FlexAlign.SpaceBetween)
             .margin({
               top: $r('sys.float.ohos_id_elements_margin_vertical_m')
             })

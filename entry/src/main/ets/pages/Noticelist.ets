@@ -86,16 +86,17 @@ export default struct Noticelist {
             Row() {
               Text('层级')
                 .fontWeight(FontWeight.Medium)
-                .width('15%')
-              Blank()
-                .width('5%')
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
               Text(item.level)
                 .fontColor($r('sys.color.font_secondary'))
                 .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                .layoutWeight(1)
                 .textAlign(TextAlign.End)
-                .width('80%')
             }
             .borderRadius(12)
+            .justifyContent(FlexAlign.SpaceBetween)
             .padding(12)
             .width('100%')
 
@@ -107,16 +108,17 @@ export default struct Noticelist {
             Row() {
               Text('类别')
                 .fontWeight(FontWeight.Medium)
-                .width('15%')
-              Blank()
-                .width('5%')
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
               Text(item.className !== '' ? item.className : '未知')
                 .fontColor($r('sys.color.font_secondary'))
                 .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                .layoutWeight(1)
                 .textAlign(TextAlign.End)
-                .width('80%')
             }
             .borderRadius(12)
+            .justifyContent(FlexAlign.SpaceBetween)
             .padding(12)
             .width('100%')
 
@@ -128,16 +130,17 @@ export default struct Noticelist {
             Row() {
               Text('主题')
                 .fontWeight(FontWeight.Medium)
-                .width('15%')
-              Blank()
-                .width('5%')
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
               Text(item.title)
                 .fontColor($r('sys.color.font_secondary'))
                 .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                .layoutWeight(1)
                 .textAlign(TextAlign.End)
-                .width('80%')
             }
             .borderRadius(12)
+            .justifyContent(FlexAlign.SpaceBetween)
             .padding(12)
             .width('100%')
 
@@ -149,16 +152,17 @@ export default struct Noticelist {
             Row() {
               Text('时间')
                 .fontWeight(FontWeight.Medium)
-                .width('15%')
-              Blank()
-                .width('5%')
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
               Text(this.getTime(item.msg[0]))
                 .fontColor($r('sys.color.font_secondary'))
                 .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                .layoutWeight(1)
                 .textAlign(TextAlign.End)
-                .width('80%')
             }
             .borderRadius(12)
+            .justifyContent(FlexAlign.SpaceBetween)
             .padding(12)
             .width('100%')
           }

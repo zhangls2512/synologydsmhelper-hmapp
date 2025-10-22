@@ -33,7 +33,8 @@ struct Infolist {
               .fontWeight(FontWeight.Medium)
               .margin({
                 bottom: 6,
-                left: 12
+                left: 12,
+                right: 12
               })
             Column() {
               Column() {
@@ -175,7 +176,8 @@ struct Infolist {
               .fontWeight(FontWeight.Medium)
               .margin({
                 bottom: 6,
-                left: 12
+                left: 12,
+                right: 12
               })
             Column() {
               Column() {
@@ -302,7 +304,8 @@ struct Infolist {
               .fontWeight(FontWeight.Medium)
               .margin({
                 bottom: 6,
-                left: 12
+                left: 12,
+                right: 12
               })
             Column() {
               Column() {

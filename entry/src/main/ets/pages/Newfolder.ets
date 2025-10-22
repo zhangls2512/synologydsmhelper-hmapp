@@ -19,7 +19,6 @@ export default struct Newfolder {
           .defaultFocus(true)
           .enableAutoSpacing(true)
       }
-      .width('95%')
 
       ListItem() {
         Button('新建')
