@@ -5,12 +5,12 @@
         "name": "release",
         "type": "HarmonyOS",
         "material": {
-          "storeFile": "D:/harmonyproject/群晖DSM助手应用/内部文件/签名材料/synologydsmhelper.p12",
-          "storePassword": "0000001969861284E0A4E034BDEEFD4EF0300A83B581E2A8F726CC010CF57C454F81E4A131A504622F",
-          "keyAlias": "releaseKey",
-          "keyPassword": "000000190B54583C1C054BD6157AAB0C97958963F76E7BA30BAF72DACBDD3B8D90AF34E05EC076BE16",
-          "certpath": "D:/harmonyproject/群晖DSM助手应用/内部文件/签名材料/release-synologydsmhelper.cer",
-          "profile": "D:/harmonyproject/群晖DSM助手应用/内部文件/签名材料/release-synologydsmhelperRelease.p7b",
+          "storeFile": "D:/harmonyproject/内部文件/发布签名材料/keystore.p12",
+          "storePassword": "000000195C12DD78581766951C4A14A8EF547FA599ED4F3FADCD2A726A6754A39C4C94E2BE42310E9F",
+          "keyAlias": "release",
+          "keyPassword": "0000001984A06F2DD1122ECB427C9217BA8AB41E9F05DD1E930B56A57A794CDCDDE59C83C4D9B71366",
+          "certpath": "D:/harmonyproject/内部文件/发布签名材料/songjy.cer",
+          "profile": "D:/harmonyproject/内部文件/发布签名材料/synologydsmhelper.p7b",
           "signAlg": "SHA256withECDSA"
         }
       },

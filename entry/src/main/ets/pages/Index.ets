@@ -1,5 +1,6 @@
 import { common } from '@kit.AbilityKit'
-import { deviceInfo } from '@kit.BasicServicesKit'
+import { preferences } from '@kit.ArkData'
+import { display } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
 import { image } from '@kit.ImageKit'
 import Cardlist from './Cardlist'
@@ -11,11 +12,28 @@ import Cleardata from './Cleardata'
 @ComponentV2
 struct Index {
   @Local backgroundImagePixelMap: PixelMap | undefined = undefined
+  @Local preferType: number = 1
   @Local index: number = 0
   @Local title: string = '首页'
   @Local isShowCleardataSheet: boolean = false
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
-  preferType = 1
+
+  onBackPress() {
+    if (this.index === 1) {
+      const dirnamesDataPreferences = preferences.getPreferencesSync(this.context, {
+        name: 'dirnames'
+      })
+      const dirnames = dirnamesDataPreferences.getSync('dirnames', []) as string[]
+      if (dirnames.length === 0) {
+        return false
+      } else {
+        this.context.eventHub.emit('back')
+        return true
+      }
+    } else {
+      return false
+    }
+  }
 
   getBackgroundImage() {
     const backgroundImagePath = this.context.filesDir + '/media/backgroundimage.png'
@@ -50,7 +68,7 @@ struct Index {
 
   build() {
     Column() {
-      if (deviceInfo.deviceType === 'phone') {
+      if (this.preferType === 0) {
         Text(this.title)
           .fontSize(24)
           .fontWeight(FontWeight.Bold)
@@ -81,8 +99,8 @@ struct Index {
         .tabBar(this.tabBuilder(2, $r('app.media.me'), '我的'))
       }
       .barBackgroundBlurStyle(BlurStyle.Regular)
-      .barPosition(deviceInfo.deviceType === 'phone' ? BarPosition.End : BarPosition.Start)
-      .vertical(deviceInfo.deviceType === 'phone' ? false : true)
+      .barPosition(this.preferType === 0 ? BarPosition.End : BarPosition.Start)
+      .vertical(this.preferType === 0 ? false : true)
       .onAnimationStart((index, targetIndex) => {
         if (targetIndex === 0) {
           this.title = '卡片'
@@ -104,18 +122,45 @@ struct Index {
     .backgroundImageSize(ImageSize.FILL)
     .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     .padding({
-      bottom: 36,
-      top: 12
+      bottom: this.preferType === 0 ? 36 : 0,
+      top: this.preferType === 0 ? 12 : 0
     })
     .onAppear(() => {
+      const currentOrientation = display.getDefaultDisplaySync().orientation
+      if (currentOrientation === display.Orientation.PORTRAIT ||
+        currentOrientation === display.Orientation.PORTRAIT_INVERTED) {
+        this.preferType = 0
+        const currentIndex = this.index
+        this.index = -1
+        this.index = currentIndex
+      }
+      if (currentOrientation === display.Orientation.LANDSCAPE ||
+        currentOrientation === display.Orientation.LANDSCAPE_INVERTED) {
+        this.preferType = 1
+        const currentIndex = this.index
+        this.index = -1
+        this.index = currentIndex
+      }
+      display.on('change', (displayId) => {
+        const orientation = display.getDisplayByIdSync(displayId).orientation
+        if (orientation === display.Orientation.PORTRAIT || orientation === display.Orientation.PORTRAIT_INVERTED) {
+          this.preferType = 0
+          const currentIndex = this.index
+          this.index = -1
+          this.index = currentIndex
+        }
+        if (orientation === display.Orientation.LANDSCAPE || orientation === display.Orientation.LANDSCAPE_INVERTED) {
+          this.preferType = 1
+          const currentIndex = this.index
+          this.index = -1
+          this.index = currentIndex
+        }
+      })
       this.context.eventHub.on('clearData', () => {
         if (!this.isShowCleardataSheet) {
           this.isShowCleardataSheet = true
         }
       })
-      if (deviceInfo.deviceType === 'phone') {
-        this.preferType = 0
-      }
       this.context.eventHub.on('refreshIndex', () => {
         this.backgroundImagePixelMap = this.getBackgroundImage()
       })
@@ -124,6 +169,7 @@ struct Index {
     .onDisAppear(() => {
       this.context.eventHub.off('refreshIndex')
       this.context.eventHub.off('clearData')
+      display.off('change')
     })
     .bindSheet(this.isShowCleardataSheet!!, this.CleardataSheetBuilder(), {
       preferType: this.preferType,

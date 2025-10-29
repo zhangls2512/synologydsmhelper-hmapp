@@ -32,13 +32,17 @@ export default struct Setting {
         message: '发生错误，错误码：' + err.code + '，错误信息：' + err.message
       })
     }
-    const res = await checkPermission('ohos.permission.DISTRIBUTED_DATASYNC')
-    this.accountDataSyncEnabled = res
     this.isLogin = await getLoginStatus()
-    if (res && this.isLogin) {
+    if (this.isLogin) {
       const accountInfo = await get()
       const appAccountManager = appAccount.createAppAccountManager()
-      this.accountDataSync = await appAccountManager.checkDataSyncEnabled(String(accountInfo.id))
+      if (accountInfo.id !== -1) {
+        const res = await checkPermission('ohos.permission.DISTRIBUTED_DATASYNC')
+        this.accountDataSyncEnabled = res
+        if (this.accountDataSyncEnabled) {
+          this.accountDataSync = await appAccountManager.checkDataSyncEnabled(String(accountInfo.id))
+        }
+      }
     }
     const accounts = await getList()
     this.accountCount = accounts.length

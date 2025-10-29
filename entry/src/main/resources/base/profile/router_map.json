@@ -84,6 +84,11 @@
       "name": "Deletefile",
       "pageSourceFile": "src/main/ets/pages/Deletefile.ets",
       "buildFunction": "DeletefileBuilder"
+    },
+    {
+      "name": "License",
+      "pageSourceFile": "src/main/ets/pages/License.ets",
+      "buildFunction": "LicenseBuilder"
     }
   ]
 }
