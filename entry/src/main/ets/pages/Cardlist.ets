@@ -1,6 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
-import { deviceInfo } from '@kit.BasicServicesKit'
+import { display } from '@kit.ArkUI'
 import { hdsEffect } from '@kit.UIDesignKit'
 import { getLoginStatus } from '../common/Account'
 import { dsmRequest } from '../common/Request'
@@ -163,9 +163,24 @@ export default struct Cardlist {
       right: $r('sys.float.ohos_id_max_padding_end')
     })
     .onAppear(() => {
-      if (deviceInfo.deviceType === 'phone') {
+      const currentOrientation = display.getDefaultDisplaySync().orientation
+      if (currentOrientation === display.Orientation.PORTRAIT ||
+        currentOrientation === display.Orientation.PORTRAIT_INVERTED) {
         this.preferType = 0
       }
+      if (currentOrientation === display.Orientation.LANDSCAPE ||
+        currentOrientation === display.Orientation.LANDSCAPE_INVERTED) {
+        this.preferType = 1
+      }
+      display.on('change', (displayId) => {
+        const orientation = display.getDisplayByIdSync(displayId).orientation
+        if (orientation === display.Orientation.PORTRAIT || orientation === display.Orientation.PORTRAIT_INVERTED) {
+          this.preferType = 0
+        }
+        if (orientation === display.Orientation.LANDSCAPE || orientation === display.Orientation.LANDSCAPE_INVERTED) {
+          this.preferType = 1
+        }
+      })
       this.context.eventHub.on('refreshCardlist', () => {
         this.get()
       })
@@ -173,6 +188,7 @@ export default struct Cardlist {
     })
     .onDisAppear(() => {
       this.context.eventHub.off('refreshCardlist')
+      display.off('change')
     })
   }
 }

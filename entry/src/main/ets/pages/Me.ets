@@ -1,6 +1,5 @@
 import { common } from '@kit.AbilityKit'
-import { LoadingDialog } from '@kit.ArkUI'
-import { deviceInfo } from '@kit.BasicServicesKit'
+import { display, LoadingDialog } from '@kit.ArkUI'
 import { hdsEffect } from '@kit.UIDesignKit'
 import { exit, get } from '../common/Account'
 import Accountlist from './Accountlist'
@@ -249,9 +248,24 @@ export default struct Me {
       right: $r('sys.float.ohos_id_max_padding_end')
     })
     .onAppear(() => {
-      if (deviceInfo.deviceType === 'phone') {
+      const currentOrientation = display.getDefaultDisplaySync().orientation
+      if (currentOrientation === display.Orientation.PORTRAIT ||
+        currentOrientation === display.Orientation.PORTRAIT_INVERTED) {
         this.preferType = 0
       }
+      if (currentOrientation === display.Orientation.LANDSCAPE ||
+        currentOrientation === display.Orientation.LANDSCAPE_INVERTED) {
+        this.preferType = 1
+      }
+      display.on('change', (displayId) => {
+        const orientation = display.getDisplayByIdSync(displayId).orientation
+        if (orientation === display.Orientation.PORTRAIT || orientation === display.Orientation.PORTRAIT_INVERTED) {
+          this.preferType = 0
+        }
+        if (orientation === display.Orientation.LANDSCAPE || orientation === display.Orientation.LANDSCAPE_INVERTED) {
+          this.preferType = 1
+        }
+      })
       this.context.eventHub.on('refreshMe', () => {
         this.get()
       })
@@ -259,6 +273,7 @@ export default struct Me {
     })
     .onDisAppear(() => {
       this.context.eventHub.off('refreshMe')
+      display.off('change')
     })
   }
 }
