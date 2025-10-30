@@ -77,6 +77,7 @@
         "startWindowIcon": "$media:layered_image",
         "startWindowBackground": "$color:start_window_background",
         "removeMissionAfterTerminate": true,
+        "orientation": "auto_rotation_restricted",
         "recoverable": true
       }
     ],
