@@ -49,6 +49,7 @@ export default struct Filelist {
   @Provider() isShowPlayerSheet: boolean = false
   @Provider() isShowProgressSheet: boolean = false
   @Provider() isShowRenamefileSheet: boolean = false
+  @Local preferType: number = 1
   @Local loading: boolean = false
   @Local fileArray: FileItem[] = []
   @Local dirnames: string[] = []
@@ -69,7 +70,6 @@ export default struct Filelist {
   @Provider() src: string = ''
   @Local srcName: string = ''
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
-  preferType = 1
   dirnamesDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'dirnames'
   })
@@ -651,7 +651,10 @@ export default struct Filelist {
                 Text('已选择 ' + this.multipleSelectArray.length + ' 项')
                   .fontSize(20)
                   .fontWeight(FontWeight.Bold)
-                Blank()
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Column() {
                   Image($r('app.media.copy'))
                 }
@@ -1428,7 +1431,8 @@ export default struct Filelist {
       }
       .padding({
         left: $r('sys.float.ohos_id_max_padding_start'),
-        right: $r('sys.float.ohos_id_max_padding_end')
+        right: $r('sys.float.ohos_id_max_padding_end'),
+        top: this.preferType === 0 ? 0 : $r('sys.float.ohos_id_default_padding_top')
       })
       .onAppear(() => {
         const currentOrientation = display.getDefaultDisplaySync().orientation
