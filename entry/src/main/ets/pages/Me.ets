@@ -11,9 +11,9 @@ export default struct Me {
   @Provider() isShowLoginSheet: boolean = false
   @Provider() isShowAccountlistSheet: boolean = false
   @Local isShowSettingSheet: boolean = false
+  @Local preferType: number = 1
   @Local name: string = ''
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
-  preferType = 1
 
   async get() {
     const accountInfo = await get()
@@ -245,7 +245,8 @@ export default struct Me {
     }
     .padding({
       left: $r('sys.float.ohos_id_max_padding_start'),
-      right: $r('sys.float.ohos_id_max_padding_end')
+      right: $r('sys.float.ohos_id_max_padding_end'),
+      top: this.preferType === 0 ? 0 : $r('sys.float.ohos_id_default_padding_top')
     })
     .onAppear(() => {
       const currentOrientation = display.getDefaultDisplaySync().orientation

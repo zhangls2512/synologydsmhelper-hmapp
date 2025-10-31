@@ -16,11 +16,11 @@ interface NoticeResponseData {
 export default struct Cardlist {
   @Local isShowCardeditSheet: boolean = false
   @Local isShowNoticelistSheet: boolean = false
+  @Local preferType: number = 1
   @Local isLogin: boolean = false
   @Local cards: string[] = []
   @Local haveNotice: boolean = false
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
-  preferType = 1
 
   async get() {
     this.isLogin = await getLoginStatus()
@@ -160,7 +160,8 @@ export default struct Cardlist {
     }
     .padding({
       left: $r('sys.float.ohos_id_max_padding_start'),
-      right: $r('sys.float.ohos_id_max_padding_end')
+      right: $r('sys.float.ohos_id_max_padding_end'),
+      top: this.preferType === 0 ? 0 : $r('sys.float.ohos_id_default_padding_top')
     })
     .onAppear(() => {
       const currentOrientation = display.getDefaultDisplaySync().orientation
