@@ -1,3 +1,4 @@
+import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { promptAction } from '@kit.ArkUI'
 import { netBoost } from '@kit.NetworkBoostKit'
@@ -27,7 +28,17 @@ export async function getDsmApiMaxVersion(path: string, api: string) {
   if (!requestPath) {
     requestPath = accountInfo.path
   }
+  const context = getContext() as common.UIAbilityContext
+  const debugSettingDataPreferences = preferences.getPreferencesSync(context, {
+    name: 'debugSetting'
+  })
   const session = rcp.createSession({
+    requestConfiguration: {
+      security: {
+        remoteValidation: debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
+          'system') as 'system' | 'skip'
+      }
+    },
     headers: {
       referer: requestPath
     }
@@ -70,7 +81,17 @@ export async function dsmRequest(path: string, api: string, params: string): Pro
   }
   const version = await getDsmApiMaxVersion(path, api)
   if (version !== 'fail') {
+    const context = getContext() as common.UIAbilityContext
+    const debugSettingDataPreferences = preferences.getPreferencesSync(context, {
+      name: 'debugSetting'
+    })
     const session = rcp.createSession({
+      requestConfiguration: {
+        security: {
+          remoteValidation: debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
+            'system') as 'system' | 'skip'
+        }
+      },
       headers: {
         referer: requestPath
       },

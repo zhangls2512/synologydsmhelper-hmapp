@@ -302,7 +302,7 @@ export default class EntryAbility extends UIAbility {
         }
       }
     })
-    const netConnection: connection.NetConnection = connection.createNetConnection()
+    const netConnection = connection.createNetConnection()
     netConnection.register(() => {
     })
     netConnection.on('netAvailable', (data) => {
@@ -478,7 +478,7 @@ export default class EntryAbility extends UIAbility {
   }
 
   onContinue(wantParam: Record<string, Object>) {
-    if (wantParam.version !== 16) {
+    if (wantParam.version !== 17) {
       promptAction.openToast({
         message: '接续失败，原因：目标端应用版本号与发起端不匹配'
       })
