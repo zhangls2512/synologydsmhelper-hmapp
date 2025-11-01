@@ -95,6 +95,9 @@ export default struct Filelist {
     if (lastDotIndex !== -1) {
       houzhui = '.' + name.slice(lastDotIndex + 1)
     }
+    if (houzhui === '.') {
+      houzhui = '.aaa'
+    }
     const fileType = uniformTypeDescriptor.getUniformDataTypeByFilenameExtension(houzhui)
     return fileManagerService.getFileIconSync(fileType)
   }
@@ -361,6 +364,9 @@ export default struct Filelist {
                       sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
                     })
                     const accountInfo = await get()
+                    const debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+                      name: 'debugSetting'
+                    })
                     const session = rcp.createSession({
                       requestConfiguration: {
                         transfer: {
@@ -433,6 +439,10 @@ export default struct Filelist {
                               }
                             }
                           }
+                        },
+                        security: {
+                          remoteValidation: debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
+                            'system') as 'system' | 'skip'
                         }
                       },
                       cookies: {
@@ -1241,6 +1251,9 @@ export default struct Filelist {
                               sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
                             })
                             const accountInfo = await get()
+                            const debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+                              name: 'debugSetting'
+                            })
                             const session = rcp.createSession({
                               requestConfiguration: {
                                 transfer: {
@@ -1327,6 +1340,10 @@ export default struct Filelist {
                                       }
                                     }
                                   }
+                                },
+                                security: {
+                                  remoteValidation: debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
+                                    'system') as 'system' | 'skip'
                                 }
                               },
                               cookies: {
