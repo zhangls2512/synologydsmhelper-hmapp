@@ -18,8 +18,12 @@ export default struct Noticelist {
   @Local loading: boolean = false
 
   getTime(time: string) {
-    const timejson = JSON.parse(time) as object
-    return timejson['%DATE%'] + ' ' + timejson['%TIME%']
+    try {
+      const timejson = JSON.parse(time) as object
+      return timejson['%DATE%'] + ' ' + timejson['%TIME%']
+    } catch {
+      return '未知'
+    }
   }
 
   async get() {

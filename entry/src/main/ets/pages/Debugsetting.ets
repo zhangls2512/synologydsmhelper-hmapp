@@ -25,6 +25,7 @@ struct Debugsetting {
   @Local showNetSceneChange: boolean = false
   @Local autoReportHighLatency: boolean = false
   @Local highLatencyThreshold: string = '200'
+  @Local closeRemoteValidationWhenLinkDsm: boolean = false
   @Local optimizeParserBudget: boolean = true
   @Local destroyModeIndex: number = 0
   @Local destroyModeValue: string = '普通'
@@ -85,7 +86,6 @@ struct Debugsetting {
     this.showNetQosChange = this.debugSettingDataPreferences.getSync('showNetQosChange', false) as boolean
     this.showNetSceneChange = this.debugSettingDataPreferences.getSync('showNetSceneChange', false) as boolean
     this.highLatencyThreshold = String(this.debugSettingDataPreferences.getSync('highLatencyThreshold', 200))
-    this.optimizeParserBudget = this.debugSettingDataPreferences.getSync('optimizeParserBudget', true) as boolean
     const destroyMode = this.debugSettingDataPreferences.getSync('destroyMode', 0)
     this.destroyModeIndex = destroyMode as number
     if (destroyMode === 0) {
@@ -93,6 +93,15 @@ struct Debugsetting {
     }
     if (destroyMode === 1) {
       this.destroyModeValue = '快速'
+    }
+    this.optimizeParserBudget = this.debugSettingDataPreferences.getSync('optimizeParserBudget', true) as boolean
+    const closeRemoteValidationWhenLinkDsm =
+      this.debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm', 'system')
+    if (closeRemoteValidationWhenLinkDsm === 'system') {
+      this.closeRemoteValidationWhenLinkDsm = false
+    }
+    if (closeRemoteValidationWhenLinkDsm === 'skip') {
+      this.closeRemoteValidationWhenLinkDsm = true
     }
     const allService = this.commonSettingDataPreferences.getSync('allService', true)
     this.allService = allService as boolean
@@ -925,6 +934,38 @@ struct Debugsetting {
                   name: 'ReportQoe'
                 })
               })
+
+              Divider()
+                .padding({
+                  left: 12,
+                  right: 12
+                })
+              Row() {
+                Text('连接DSM时跳过SSL验证')
+                  .enableAutoSpacing(true)
+                  .fontWeight('medium')
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                Toggle({
+                  type: ToggleType.Switch,
+                  isOn: this.closeRemoteValidationWhenLinkDsm!!
+                })
+                  .onChange((isOn) => {
+                    if (!isOn) {
+                      this.debugSettingDataPreferences.putSync('closeRemoteValidationWhenLinkDsm', 'system')
+                    }
+                    if (isOn) {
+                      this.debugSettingDataPreferences.putSync('closeRemoteValidationWhenLinkDsm', 'skip')
+                    }
+                    this.debugSettingDataPreferences.flushSync()
+                  })
+              }
+              .borderRadius(12)
+              .justifyContent(FlexAlign.SpaceBetween)
+              .padding(12)
+              .width('100%')
 
               Divider()
                 .padding({
