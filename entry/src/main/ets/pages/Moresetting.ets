@@ -7,6 +7,7 @@ export function MoresettingBuilder() {
 
 @ComponentV2
 struct Moresetting {
+  @Local hoverId: number = -1
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
   build() {
@@ -41,13 +42,22 @@ struct Moresetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor(this.hoverId === 0 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
               .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 0
+                }
+              })
               .onClick(() => {
                 const applicationContext = this.context.getApplicationContext()
                 applicationContext.restartApp({
@@ -79,13 +89,22 @@ struct Moresetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor(this.hoverId === 1 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
               .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 1
+                }
+              })
               .onClick(() => {
                 this.context.terminateSelf()
               })
@@ -119,13 +138,22 @@ struct Moresetting {
             .padding(12)
             .stateStyles({
               normal: {
-                .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                .backgroundColor(this.hoverId === 2 ? $r('sys.color.interactive_hover') :
+                  $r('sys.color.ohos_id_color_card_bg'))
               },
               pressed: {
                 .backgroundColor($r('sys.color.interactive_pressed'))
               }
             })
             .width('100%')
+            .onHover((isHover) => {
+              if (!isHover) {
+                this.hoverId = -1
+              }
+              if (isHover) {
+                this.hoverId = 2
+              }
+            })
             .onClick(() => {
               this.context.eventHub.emit('clearData')
             })

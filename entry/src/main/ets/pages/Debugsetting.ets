@@ -30,6 +30,7 @@ struct Debugsetting {
   @Local destroyModeIndex: number = 0
   @Local destroyModeValue: string = '普通'
   @Local allService: boolean = false
+  @Local hoverId: number = -1
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
   pageInfos = new NavPathStack()
   debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
@@ -224,13 +225,22 @@ struct Debugsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor(this.hoverId === 0 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
               .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 0
+                }
+              })
               .onClick(() => {
                 this.pageInfos.pushPath({
                   name: 'Autouploaderrorlogtype'
@@ -259,13 +269,22 @@ struct Debugsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor(this.hoverId === 1 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
               .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 1
+                }
+              })
               .onClick(() => {
                 this.pageInfos.pushPath({
                   name: 'Errorlog'
@@ -419,13 +438,22 @@ struct Debugsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor(this.hoverId === 2 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
               .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 2
+                }
+              })
               .onClick(() => {
                 this.pageInfos.pushPath({
                   name: 'Deletefile'
@@ -455,13 +483,22 @@ struct Debugsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor(this.hoverId === 3 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
               .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 3
+                }
+              })
               .onClick(async () => {
                 const promptAction = this.getUIContext().getPromptAction()
                 const data = await promptAction.showDialog({
@@ -507,13 +544,22 @@ struct Debugsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor(this.hoverId === 4 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
               .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 4
+                }
+              })
               .onClick(async () => {
                 const promptAction = this.getUIContext().getPromptAction()
                 const data = await promptAction.showActionMenu({
@@ -578,13 +624,22 @@ struct Debugsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor(this.hoverId === 5 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
               .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 5
+                }
+              })
               .onClick(() => {
                 appRecovery.restartApp()
               })
@@ -611,13 +666,22 @@ struct Debugsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor(this.hoverId === 6 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
               .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 6
+                }
+              })
               .onClick(() => {
                 const res = appRecovery.saveAppState()
                 if (res) {
@@ -649,13 +713,22 @@ struct Debugsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor(this.hoverId === 7 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
               .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 7
+                }
+              })
               .onClick(() => {
                 this.pageInfos.pushPath({
                   name: 'Recoverysetting'
@@ -922,13 +995,22 @@ struct Debugsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor(this.hoverId === 8 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
               .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 8
+                }
+              })
               .onClick(() => {
                 this.pageInfos.pushPath({
                   name: 'ReportQoe'
@@ -989,13 +1071,22 @@ struct Debugsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor(this.hoverId === 9 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
               .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 9
+                }
+              })
               .onClick(() => {
                 this.pageInfos.pushPath({
                   name: 'Networktest'

@@ -13,6 +13,7 @@ export default struct Me {
   @Local isShowSettingSheet: boolean = false
   @Local preferType: number = 1
   @Local name: string = ''
+  @Local hoverId: number = -1
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
   async get() {
@@ -63,13 +64,22 @@ export default struct Me {
           .padding(12)
           .stateStyles({
             normal: {
-              .backgroundColor($r('sys.color.comp_background_primary'))
+              .backgroundColor(this.hoverId === 0 ? $r('sys.color.interactive_hover') :
+                $r('sys.color.ohos_id_color_card_bg'))
             },
             pressed: {
-              .backgroundColor($r('sys.color.comp_background_secondary'))
+              .backgroundColor($r('sys.color.interactive_pressed'))
             }
           })
           .width('100%')
+          .onHover((isHover) => {
+            if (!isHover) {
+              this.hoverId = -1
+            }
+            if (isHover) {
+              this.hoverId = 0
+            }
+          })
           .onClick(() => {
             if (!this.name) {
               this.isShowLoginSheet = true
@@ -115,13 +125,22 @@ export default struct Me {
           .padding(12)
           .stateStyles({
             normal: {
-              .backgroundColor($r('sys.color.comp_background_primary'))
+              .backgroundColor(this.hoverId === 1 ? $r('sys.color.interactive_hover') :
+                $r('sys.color.ohos_id_color_card_bg'))
             },
             pressed: {
-              .backgroundColor($r('sys.color.comp_background_secondary'))
+              .backgroundColor($r('sys.color.interactive_pressed'))
             }
           })
           .width('100%')
+          .onHover((isHover) => {
+            if (!isHover) {
+              this.hoverId = -1
+            }
+            if (isHover) {
+              this.hoverId = 1
+            }
+          })
           .onClick(() => {
             this.isShowAccountlistSheet = true
           })
@@ -167,13 +186,22 @@ export default struct Me {
           .padding(12)
           .stateStyles({
             normal: {
-              .backgroundColor($r('sys.color.comp_background_primary'))
+              .backgroundColor(this.hoverId === 2 ? $r('sys.color.interactive_hover') :
+                $r('sys.color.ohos_id_color_card_bg'))
             },
             pressed: {
-              .backgroundColor($r('sys.color.comp_background_secondary'))
+              .backgroundColor($r('sys.color.interactive_pressed'))
             }
           })
           .width('100%')
+          .onHover((isHover) => {
+            if (!isHover) {
+              this.hoverId = -1
+            }
+            if (isHover) {
+              this.hoverId = 2
+            }
+          })
           .onClick(() => {
             this.isShowSettingSheet = true
           })

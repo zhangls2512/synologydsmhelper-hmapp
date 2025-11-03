@@ -15,7 +15,7 @@ export function AboutBuilder() {
 struct About {
   @Local hasUpdate: number = -1
   @Local updateLoading: boolean = false
-  @Local isAgentSupport: boolean = false
+  @Local hoverId: number = -1
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
   pageInfos = new NavPathStack()
   controller: FunctionController = new FunctionController()
@@ -131,13 +131,22 @@ struct About {
             .padding(12)
             .stateStyles({
               normal: {
-                .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                .backgroundColor(this.hoverId === 0 ? $r('sys.color.interactive_hover') :
+                  $r('sys.color.ohos_id_color_card_bg'))
               },
               pressed: {
                 .backgroundColor($r('sys.color.interactive_pressed'))
               }
             })
             .width('100%')
+            .onHover((isHover) => {
+              if (!isHover) {
+                this.hoverId = -1
+              }
+              if (isHover) {
+                this.hoverId = 0
+              }
+            })
             .onClick(async () => {
               try {
                 if (this.hasUpdate !== 1) {
@@ -193,13 +202,22 @@ struct About {
             .padding(12)
             .stateStyles({
               normal: {
-                .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                .backgroundColor(this.hoverId === 1 ? $r('sys.color.interactive_hover') :
+                  $r('sys.color.ohos_id_color_card_bg'))
               },
               pressed: {
                 .backgroundColor($r('sys.color.interactive_pressed'))
               }
             })
             .width('100%')
+            .onHover((isHover) => {
+              if (!isHover) {
+                this.hoverId = -1
+              }
+              if (isHover) {
+                this.hoverId = 1
+              }
+            })
             .onClick(() => {
               this.pageInfos.pushPath({
                 name: 'Webview',
@@ -229,13 +247,22 @@ struct About {
             .padding(12)
             .stateStyles({
               normal: {
-                .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                .backgroundColor(this.hoverId === 2 ? $r('sys.color.interactive_hover') :
+                  $r('sys.color.ohos_id_color_card_bg'))
               },
               pressed: {
                 .backgroundColor($r('sys.color.interactive_pressed'))
               }
             })
             .width('100%')
+            .onHover((isHover) => {
+              if (!isHover) {
+                this.hoverId = -1
+              }
+              if (isHover) {
+                this.hoverId = 2
+              }
+            })
             .onClick(() => {
               this.context.openLink('https://appgallery.huawei.com/app/detail?id=com.songjy.synologydsmhelper')
             })
@@ -262,13 +289,22 @@ struct About {
             .padding(12)
             .stateStyles({
               normal: {
-                .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                .backgroundColor(this.hoverId === 3 ? $r('sys.color.interactive_hover') :
+                  $r('sys.color.ohos_id_color_card_bg'))
               },
               pressed: {
                 .backgroundColor($r('sys.color.interactive_pressed'))
               }
             })
             .width('100%')
+            .onHover((isHover) => {
+              if (!isHover) {
+                this.hoverId = -1
+              }
+              if (isHover) {
+                this.hoverId = 3
+              }
+            })
             .onClick(() => {
               this.context.openLink('https://appgallery.huawei.com/app/detail?id=com.songjy.synologydsmhelper&action=write-review')
             })
@@ -295,13 +331,22 @@ struct About {
             .padding(12)
             .stateStyles({
               normal: {
-                .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                .backgroundColor(this.hoverId === 4 ? $r('sys.color.interactive_hover') :
+                  $r('sys.color.ohos_id_color_card_bg'))
               },
               pressed: {
                 .backgroundColor($r('sys.color.interactive_pressed'))
               }
             })
             .width('100%')
+            .onHover((isHover) => {
+              if (!isHover) {
+                this.hoverId = -1
+              }
+              if (isHover) {
+                this.hoverId = 4
+              }
+            })
             .onClick(() => {
               this.pageInfos.pushPath({
                 name: 'Feedback'
@@ -316,26 +361,31 @@ struct About {
           top: $r('sys.float.ohos_id_elements_margin_vertical_l')
         })
 
-        if (this.isAgentSupport) {
-          ListItem() {
-            FunctionComponent({
-              agentId: 'agent2250c6634775435b9f26182497d7bc1b',
-              options: {
-                title: '智能客服'
-              },
-              controller: this.controller,
-              onError: (err) => {
+        ListItem() {
+          FunctionComponent({
+            agentId: 'agent2250c6634775435b9f26182497d7bc1b',
+            options: {
+              title: '智能客服'
+            },
+            controller: this.controller,
+            onError: (err) => {
+              if (err.code === 1022400014) {
+                promptAction.openToast({
+                  message: '当前小艺版本不支持，请前往应用市场更新小艺'
+                })
+              } else {
                 promptAction.openToast({
                   message: '发生错误，错误码：' + err.code + '，错误信息：' + err.message
                 })
               }
-            })
-          }
-          .margin({
-            top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+            }
           })
-          .width('100%')
         }
+        .margin({
+          top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+        })
+        .width('100%')
+
         ListItem() {
           Column() {
             Text('人工客服')
@@ -375,13 +425,22 @@ struct About {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor(this.hoverId === 5 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
               .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 5
+                }
+              })
               .onClick(() => {
                 call.makeCall('18846496985')
               })
@@ -418,13 +477,22 @@ struct About {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor(this.hoverId === 6 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
               .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 6
+                }
+              })
               .onClick(() => {
                 this.context.startAbilityByType('mail', {
                   email: ['2300990296@qq.com']
@@ -466,13 +534,22 @@ struct About {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor(this.hoverId === 7 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
               .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 7
+                }
+              })
               .onClick(() => {
                 copy('gerenyinsi_z07x17m')
               })
@@ -510,13 +587,22 @@ struct About {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor(this.hoverId === 8 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
               .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 8
+                }
+              })
               .onClick(() => {
                 openLink('https://qm.qq.com/q/9PB8SIWhby')
               })
@@ -554,13 +640,22 @@ struct About {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor(this.hoverId === 9 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
               .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 9
+                }
+              })
               .onClick(() => {
                 this.context.openLink('https://www.chuckfang.com/MeoW/appLinking?channelId=c7c59236fe0543cbacc44855b99a2d43')
               })
@@ -614,13 +709,22 @@ struct About {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor(this.hoverId === 10 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
               .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 10
+                }
+              })
               .onClick(() => {
                 openLink('https://www.zhangls2512.cn/index')
               })
@@ -657,13 +761,22 @@ struct About {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor(this.hoverId === 11 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
               .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 11
+                }
+              })
               .onClick(() => {
                 openLink('https://space.bilibili.com/448824492')
               })
@@ -700,13 +813,22 @@ struct About {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor(this.hoverId === 12 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
               .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 12
+                }
+              })
               .onClick(() => {
                 openLink('https://gitcode.com/xm2512/synologydsmhelper-hmapp')
               })
@@ -753,16 +875,8 @@ struct About {
     }
     .backgroundColor($r('app.color.sheet_background'))
     .title('关于')
-    .onReady(async (context) => {
+    .onReady((context) => {
       this.pageInfos = context.pathStack
-      try {
-        this.isAgentSupport =
-          await this.controller.isAgentSupport(this.context, 'agent2250c6634775435b9f26182497d7bc1b')
-      } catch (err) {
-        promptAction.openToast({
-          message: '发生错误，错误码：' + err.code + '，错误信息：' + err.message
-        })
-      }
     })
   }
 }

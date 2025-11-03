@@ -20,6 +20,7 @@ export function ErrorlogBuilder() {
 @ComponentV2
 struct Errorlog {
   @Local errorLogArray: Item[] = []
+  @Local hoverId: number | string = -1
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
   get() {
@@ -163,7 +164,7 @@ struct Errorlog {
           })
           .width('100%')
         }
-        ForEach(this.errorLogArray, (item: Item) => {
+        ForEach(this.errorLogArray, (item: Item, index) => {
           ListItem() {
             Column() {
               Row() {
@@ -205,13 +206,22 @@ struct Errorlog {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor(this.hoverId === index ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
               .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = index
+                }
+              })
               .onClick(() => {
                 copy(item.content)
               })
@@ -238,7 +248,7 @@ struct Errorlog {
               .padding(12)
               .width('100%')
 
-              ForEach(item.externalLog, (externalLogItem: string) => {
+              ForEach(item.externalLog, (externalLogItem: string, logIndex) => {
                 Divider()
                   .padding({
                     left: 12,
@@ -261,13 +271,22 @@ struct Errorlog {
                 .padding(12)
                 .stateStyles({
                   normal: {
-                    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                    .backgroundColor(this.hoverId === index + ',' + logIndex ? $r('sys.color.interactive_hover') :
+                      $r('sys.color.ohos_id_color_card_bg'))
                   },
                   pressed: {
                     .backgroundColor($r('sys.color.interactive_pressed'))
                   }
                 })
                 .width('100%')
+                .onHover((isHover) => {
+                  if (!isHover) {
+                    this.hoverId = -1
+                  }
+                  if (isHover) {
+                    this.hoverId = index + ',' + logIndex
+                  }
+                })
                 .onClick(async () => {
                   const filestring = read(externalLogItem)
                   if (filestring !== 'fail') {
