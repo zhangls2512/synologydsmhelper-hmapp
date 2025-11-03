@@ -16,6 +16,7 @@ export default struct Setting {
   @Local accountDataSyncEnabled: boolean = false
   @Local isLogin: boolean = false
   @Local accountCount: number = -1
+  @Local hoverId: number = -1
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
   pageInfos = new NavPathStack()
 
@@ -118,13 +119,22 @@ export default struct Setting {
                 .padding(12)
                 .stateStyles({
                   normal: {
-                    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                    .backgroundColor(this.hoverId === 0 ? $r('sys.color.interactive_hover') :
+                      $r('sys.color.ohos_id_color_card_bg'))
                   },
                   pressed: {
                     .backgroundColor($r('sys.color.interactive_pressed'))
                   }
                 })
                 .width('100%')
+                .onHover((isHover) => {
+                  if (!isHover) {
+                    this.hoverId = -1
+                  }
+                  if (isHover) {
+                    this.hoverId = 0
+                  }
+                })
                 .onClick(async () => {
                   const documentSelectOptions = new picker.DocumentSelectOptions()
                   documentSelectOptions.maxSelectNumber = 1
@@ -161,13 +171,22 @@ export default struct Setting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor(this.hoverId === 1 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
               .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 1
+                }
+              })
               .onClick(async () => {
                 try {
                   const documentSaveOptions = new picker.DocumentSaveOptions()
@@ -221,13 +240,22 @@ export default struct Setting {
             .padding(12)
             .stateStyles({
               normal: {
-                .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                .backgroundColor(this.hoverId === 2 ? $r('sys.color.interactive_hover') :
+                  $r('sys.color.ohos_id_color_card_bg'))
               },
               pressed: {
                 .backgroundColor($r('sys.color.interactive_pressed'))
               }
             })
             .width('100%')
+            .onHover((isHover) => {
+              if (!isHover) {
+                this.hoverId = -1
+              }
+              if (isHover) {
+                this.hoverId = 2
+              }
+            })
             .onClick(() => {
               this.pageInfos.pushPath({
                 name: 'Commonsetting'
@@ -261,13 +289,22 @@ export default struct Setting {
             .padding(12)
             .stateStyles({
               normal: {
-                .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                .backgroundColor(this.hoverId === 3 ? $r('sys.color.interactive_hover') :
+                  $r('sys.color.ohos_id_color_card_bg'))
               },
               pressed: {
                 .backgroundColor($r('sys.color.interactive_pressed'))
               }
             })
             .width('100%')
+            .onHover((isHover) => {
+              if (!isHover) {
+                this.hoverId = -1
+              }
+              if (isHover) {
+                this.hoverId = 3
+              }
+            })
             .onClick(() => {
               this.pageInfos.pushPath({
                 name: 'Notice'
@@ -311,13 +348,22 @@ export default struct Setting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor(this.hoverId === 4 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
               .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 4
+                }
+              })
               .onClick(() => {
                 this.pageInfos.pushPath({
                   name: 'Permissionsetting'
@@ -352,13 +398,22 @@ export default struct Setting {
                 .padding(12)
                 .stateStyles({
                   normal: {
-                    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                    .backgroundColor(this.hoverId === 5 ? $r('sys.color.interactive_hover') :
+                      $r('sys.color.ohos_id_color_card_bg'))
                   },
                   pressed: {
                     .backgroundColor($r('sys.color.interactive_pressed'))
                   }
                 })
                 .width('100%')
+                .onHover((isHover) => {
+                  if (!isHover) {
+                    this.hoverId = -1
+                  }
+                  if (isHover) {
+                    this.hoverId = 5
+                  }
+                })
                 .onClick(async () => {
                   await privacyManager.requestAppPrivacyConsent(this.context)
                   this.getSetting()
@@ -383,13 +438,22 @@ export default struct Setting {
                 .padding(12)
                 .stateStyles({
                   normal: {
-                    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                    .backgroundColor(this.hoverId === 6 ? $r('sys.color.interactive_hover') :
+                      $r('sys.color.ohos_id_color_card_bg'))
                   },
                   pressed: {
                     .backgroundColor($r('sys.color.interactive_pressed'))
                   }
                 })
                 .width('100%')
+                .onHover((isHover) => {
+                  if (!isHover) {
+                    this.hoverId = -1
+                  }
+                  if (isHover) {
+                    this.hoverId = 6
+                  }
+                })
                 .onClick(() => {
                   privacyManager.disableService()
                   this.context.terminateSelf()
@@ -435,13 +499,22 @@ export default struct Setting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor(this.hoverId === 7 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
               .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 7
+                }
+              })
               .onClick(() => {
                 try {
                   const appPrivacyLink =
@@ -480,13 +553,22 @@ export default struct Setting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor(this.hoverId === 8 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
               .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 8
+                }
+              })
               .onClick(() => {
                 openLink('https://docs.qq.com/doc/p/142d00b55db803faf04f75a8486617bd4e51b07c')
               })
@@ -513,13 +595,22 @@ export default struct Setting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor(this.hoverId === 9 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
               .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 9
+                }
+              })
               .onClick(() => {
                 this.pageInfos.pushPath({
                   name: 'Infolist'
@@ -548,13 +639,22 @@ export default struct Setting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor(this.hoverId === 10 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
               .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 10
+                }
+              })
               .onClick(() => {
                 openLink('https://docs.qq.com/doc/p/396e155d30adf768c0efcac3d14bebca4876143c')
               })
@@ -604,13 +704,22 @@ export default struct Setting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor(this.hoverId === 11 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
               .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 11
+                }
+              })
               .onClick(() => {
                 this.pageInfos.pushPath({
                   name: 'Servicemode'
@@ -639,13 +748,22 @@ export default struct Setting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor(this.hoverId === 12 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
               .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 12
+                }
+              })
               .onClick(() => {
                 this.pageInfos.pushPath({
                   name: 'Moresetting'
@@ -690,13 +808,22 @@ export default struct Setting {
             .padding(12)
             .stateStyles({
               normal: {
-                .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                .backgroundColor(this.hoverId === 13 ? $r('sys.color.interactive_hover') :
+                  $r('sys.color.ohos_id_color_card_bg'))
               },
               pressed: {
                 .backgroundColor($r('sys.color.interactive_pressed'))
               }
             })
             .width('100%')
+            .onHover((isHover) => {
+              if (!isHover) {
+                this.hoverId = -1
+              }
+              if (isHover) {
+                this.hoverId = 13
+              }
+            })
             .onClick(() => {
               this.pageInfos.pushPath({
                 name: 'About'
@@ -725,13 +852,22 @@ export default struct Setting {
             .padding(12)
             .stateStyles({
               normal: {
-                .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                .backgroundColor(this.hoverId === 14 ? $r('sys.color.interactive_hover') :
+                  $r('sys.color.ohos_id_color_card_bg'))
               },
               pressed: {
                 .backgroundColor($r('sys.color.interactive_pressed'))
               }
             })
             .width('100%')
+            .onHover((isHover) => {
+              if (!isHover) {
+                this.hoverId = -1
+              }
+              if (isHover) {
+                this.hoverId = 14
+              }
+            })
             .onClick(() => {
               this.pageInfos.pushPath({
                 name: 'Agreements'

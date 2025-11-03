@@ -8,6 +8,7 @@ export function InfolistBuilder() {
 
 @ComponentV2
 struct Infolist {
+  @Local hoverId: number = -1
   pageInfos = new NavPathStack()
 
   build() {
@@ -134,13 +135,22 @@ struct Infolist {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor(this.hoverId === 0 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
               .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 0
+                }
+              })
               .onClick(async () => {
                 try {
                   const pushToken = await pushService.getToken()
@@ -281,13 +291,22 @@ struct Infolist {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor(this.hoverId === 1 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
               .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 1
+                }
+              })
               .onClick(() => {
                 this.pageInfos.pushPath({
                   name: 'Errorlog'
