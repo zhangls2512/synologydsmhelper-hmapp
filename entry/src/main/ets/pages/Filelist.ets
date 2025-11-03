@@ -49,14 +49,15 @@ export default struct Filelist {
   @Provider() isShowPlayerSheet: boolean = false
   @Provider() isShowProgressSheet: boolean = false
   @Provider() isShowRenamefileSheet: boolean = false
-  @Local preferType: number = 1
-  @Local loading: boolean = false
-  @Local fileArray: FileItem[] = []
-  @Local dirnames: string[] = []
   @Provider() editPath: string = ''
   @Provider() editName: string = ''
   @Provider() transferredSize: number = -1
   @Provider() totalSize: number = -1
+  @Provider() src: string = ''
+  @Local preferType: number = 1
+  @Local loading: boolean = false
+  @Local fileArray: FileItem[] = []
+  @Local dirnames: string[] = []
   @Local isLogin: boolean = false
   @Local sortByIndex: number = 2
   @Local sortByValue: string = '类型'
@@ -66,10 +67,10 @@ export default struct Filelist {
   @Local multipleSelect: boolean = false
   @Local multipleSelectArray: string[] = []
   @Local copyMovePath: string = ''
-  @Local remove: boolean = false
-  @Provider() src: string = ''
-  @Local srcName: string = ''
+  @Local hoverId: number = -1
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
+  remove = false
+  srcName = ''
   dirnamesDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'dirnames'
   })
@@ -138,6 +139,7 @@ export default struct Filelist {
 
   async get() {
     this.searchKeyword = ''
+    this.hoverId = -1
     this.isLogin = await getLoginStatus()
     if (this.isLogin) {
       const path = this.getPath()
@@ -189,6 +191,7 @@ export default struct Filelist {
   }
 
   async search() {
+    this.hoverId = -1
     this.searchDialogControllerProgress.open()
     const res = await dsmRequest('', 'SYNO.FileStation.Search',
       '&method=start&folder_path=' + encodeURIComponent(JSON.stringify([this.getPath()])) + '&pattern=' +
@@ -622,329 +625,379 @@ export default struct Filelist {
   }
 
   build() {
-    Refresh({
-      refreshing: $$this.loading
-    }) {
-      Scroll() {
-        Column() {
-          if (!this.isLogin) {
-            Text('未登录账号')
-              .height('100%')
-              .textAlign(TextAlign.Center)
-              .width('100%')
-          }
-          if (this.isLogin) {
-            if (this.multipleSelect) {
-              Row() {
-                Column() {
-                  Image($r('app.media.cancel'))
-                }
-                .backgroundColor($r('sys.color.interactive_hover'))
-                .borderRadius(20)
-                .height(40)
-                .margin({
-                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                })
-                .padding(11)
-                .visualEffect(new hdsEffect.HdsEffectBuilder()
-                  .pointLight({
-                    sourceType: hdsEffect.PointLightSourceType.SOFT,
-                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-                  })
-                  .buildEffect())
-                .width(40)
-                .onClick(() => {
-                  this.multipleSelect = false
-                  this.multipleSelectArray = []
-                })
-
-                Text('已选择 ' + this.multipleSelectArray.length + ' 项')
-                  .fontSize(20)
-                  .fontWeight(FontWeight.Bold)
-                  .layoutWeight(1)
-                  .margin({
-                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                  })
-                Column() {
-                  Image($r('app.media.copy'))
-                }
-                .backgroundColor($r('sys.color.interactive_hover'))
-                .borderRadius(20)
-                .height(40)
-                .margin({
-                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                })
-                .padding(11)
-                .visualEffect(new hdsEffect.HdsEffectBuilder()
-                  .pointLight({
-                    sourceType: hdsEffect.PointLightSourceType.SOFT,
-                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-                  })
-                  .buildEffect())
-                .width(40)
-                .onClick(async () => {
-                  const dialogControllerProgress = new CustomDialogController({
-                    builder: LoadingDialog({
-                      content: '复制中...'
-                    })
-                  })
-                  dialogControllerProgress.open()
-                  const startres = await dsmRequest('', 'SYNO.FileStation.CopyMove',
-                    '&method=start&path=' + encodeURIComponent(JSON.stringify(this.multipleSelectArray)) +
-                      '&dest_folder_path=' + encodeURIComponent(this.getPath()) + '&remove_src=false')
-                  if (startres !== 'fail') {
-                    const taskId = startres['taskid'] as string
-                    const statusres =
-                      await dsmRequest('', 'SYNO.FileStation.CopyMove', '&method=status&taskid=' + taskId)
-                    if (statusres !== 'fail') {
-                      dialogControllerProgress.close()
-                      promptAction.openToast({
-                        message: '复制成功'
-                      })
-                      this.multipleSelect = false
-                      this.multipleSelectArray = []
-                      this.loading = true
-                      return
-                    }
-                    promptAction.openToast({
-                      message: '复制任务提交成功但尚未完成，请稍等'
-                    })
-                    this.multipleSelect = false
-                    this.multipleSelectArray = []
-                    this.loading = true
-                  }
-                  dialogControllerProgress.close()
-                  this.multipleSelect = false
-                  this.multipleSelectArray = []
-                  this.loading = true
-                })
-
-                Column() {
-                  Image($r('app.media.move'))
-                }
-                .backgroundColor($r('sys.color.interactive_hover'))
-                .borderRadius(20)
-                .height(40)
-                .margin({
-                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                })
-                .padding(11)
-                .visualEffect(new hdsEffect.HdsEffectBuilder()
-                  .pointLight({
-                    sourceType: hdsEffect.PointLightSourceType.SOFT,
-                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-                  })
-                  .buildEffect())
-                .width(40)
-                .onClick(async () => {
-                  const dialogControllerProgress = new CustomDialogController({
-                    builder: LoadingDialog({
-                      content: '移动中...'
-                    })
-                  })
-                  dialogControllerProgress.open()
-                  const startres = await dsmRequest('', 'SYNO.FileStation.CopyMove',
-                    '&method=start&path=' + encodeURIComponent(JSON.stringify(this.multipleSelectArray)) +
-                      '&dest_folder_path=' + encodeURIComponent(this.getPath()) + '&remove_src=true')
-                  if (startres !== 'fail') {
-                    const taskId = startres['taskid'] as string
-                    const statusres =
-                      await dsmRequest('', 'SYNO.FileStation.CopyMove', '&method=status&taskid=' + taskId)
-                    if (statusres !== 'fail') {
-                      dialogControllerProgress.close()
-                      promptAction.openToast({
-                        message: '移动成功'
-                      })
-                      this.multipleSelect = false
-                      this.multipleSelectArray = []
-                      this.loading = true
-                      return
-                    }
-                    promptAction.openToast({
-                      message: '移动任务提交成功但尚未完成，请稍等'
-                    })
-                    this.multipleSelect = false
-                    this.multipleSelectArray = []
-                    this.loading = true
-                  }
-                  dialogControllerProgress.close()
-                  this.multipleSelect = false
-                  this.multipleSelectArray = []
-                  this.loading = true
-                })
-
-                Column() {
-                  Image($r('app.media.delete'))
-                }
-                .backgroundColor($r('sys.color.interactive_hover'))
-                .borderRadius(20)
-                .height(40)
-                .padding(11)
-                .visualEffect(new hdsEffect.HdsEffectBuilder()
-                  .pointLight({
-                    sourceType: hdsEffect.PointLightSourceType.SOFT,
-                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-                  })
-                  .buildEffect())
-                .width(40)
-                .onClick(async () => {
-                  const promptAction = this.getUIContext().getPromptAction()
-                  const data = await promptAction.showDialog({
-                    title: '提示',
-                    message: '删除成功后无法恢复，确定删除？',
-                    buttons: [
-                      {
-                        text: '取消',
-                        color: $r('sys.color.font_primary')
-                      },
-                      {
-                        text: '删除',
-                        color: $r('sys.color.warning')
-                      }
-                    ]
-                  })
-                  if (data.index === 1) {
-                    this.deleteDialogControllerProgress.open()
-                    const startres = await dsmRequest('', 'SYNO.FileStation.Delete',
-                      '&method=start&path=' + encodeURIComponent(JSON.stringify(this.multipleSelectArray)))
-                    if (startres !== 'fail') {
-                      const taskId = startres['taskid'] as string
-                      const statusres =
-                        await dsmRequest('', 'SYNO.FileStation.Delete', '&method=status&taskid=' + taskId)
-                      if (statusres !== 'fail') {
-                        this.deleteDialogControllerProgress.close()
-                        promptAction.openToast({
-                          message: '删除成功'
-                        })
-                        this.multipleSelect = false
-                        this.multipleSelectArray = []
-                        this.loading = true
-                        return
-                      }
-                      promptAction.openToast({
-                        message: '删除任务提交成功但尚未完成，请稍等'
-                      })
-                      this.loading = true
-                    }
-                    this.deleteDialogControllerProgress.close()
-                    this.multipleSelect = false
-                    this.multipleSelectArray = []
-                    this.loading = true
-                  }
-                })
+    Scroll() {
+      Column() {
+        if (!this.isLogin) {
+          Text('未登录账号')
+            .height('100%')
+            .textAlign(TextAlign.Center)
+            .width('100%')
+        }
+        if (this.isLogin) {
+          if (this.multipleSelect) {
+            Row() {
+              Column() {
+                Image($r('app.media.cancel'))
               }
+              .backgroundColor($r('sys.color.interactive_hover'))
+              .borderRadius(20)
+              .height(40)
               .margin({
-                bottom: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
               })
-              .width('100%')
+              .padding(11)
+              .visualEffect(new hdsEffect.HdsEffectBuilder()
+                .pointLight({
+                  sourceType: hdsEffect.PointLightSourceType.SOFT,
+                  illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                })
+                .buildEffect())
+              .width(40)
+              .onClick(() => {
+                this.multipleSelect = false
+                this.multipleSelectArray = []
+              })
+
+              Text('已选择 ' + this.multipleSelectArray.length + ' 项')
+                .fontSize(20)
+                .fontWeight(FontWeight.Bold)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+              Column() {
+                Image($r('app.media.copy'))
+              }
+              .backgroundColor($r('sys.color.interactive_hover'))
+              .borderRadius(20)
+              .height(40)
+              .margin({
+                right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+              })
+              .padding(11)
+              .visualEffect(new hdsEffect.HdsEffectBuilder()
+                .pointLight({
+                  sourceType: hdsEffect.PointLightSourceType.SOFT,
+                  illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                })
+                .buildEffect())
+              .width(40)
+              .onClick(async () => {
+                const dialogControllerProgress = new CustomDialogController({
+                  builder: LoadingDialog({
+                    content: '复制中...'
+                  })
+                })
+                dialogControllerProgress.open()
+                const startres = await dsmRequest('', 'SYNO.FileStation.CopyMove',
+                  '&method=start&path=' + encodeURIComponent(JSON.stringify(this.multipleSelectArray)) +
+                    '&dest_folder_path=' + encodeURIComponent(this.getPath()) + '&remove_src=false')
+                if (startres !== 'fail') {
+                  const taskId = startres['taskid'] as string
+                  const statusres =
+                    await dsmRequest('', 'SYNO.FileStation.CopyMove', '&method=status&taskid=' + taskId)
+                  if (statusres !== 'fail') {
+                    dialogControllerProgress.close()
+                    promptAction.openToast({
+                      message: '复制成功'
+                    })
+                    this.multipleSelect = false
+                    this.multipleSelectArray = []
+                    this.loading = true
+                    return
+                  }
+                  promptAction.openToast({
+                    message: '复制任务提交成功但尚未完成，请稍等'
+                  })
+                  this.multipleSelect = false
+                  this.multipleSelectArray = []
+                  this.loading = true
+                }
+                dialogControllerProgress.close()
+                this.multipleSelect = false
+                this.multipleSelectArray = []
+                this.loading = true
+              })
+
+              Column() {
+                Image($r('app.media.move'))
+              }
+              .backgroundColor($r('sys.color.interactive_hover'))
+              .borderRadius(20)
+              .height(40)
+              .margin({
+                right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+              })
+              .padding(11)
+              .visualEffect(new hdsEffect.HdsEffectBuilder()
+                .pointLight({
+                  sourceType: hdsEffect.PointLightSourceType.SOFT,
+                  illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                })
+                .buildEffect())
+              .width(40)
+              .onClick(async () => {
+                const dialogControllerProgress = new CustomDialogController({
+                  builder: LoadingDialog({
+                    content: '移动中...'
+                  })
+                })
+                dialogControllerProgress.open()
+                const startres = await dsmRequest('', 'SYNO.FileStation.CopyMove',
+                  '&method=start&path=' + encodeURIComponent(JSON.stringify(this.multipleSelectArray)) +
+                    '&dest_folder_path=' + encodeURIComponent(this.getPath()) + '&remove_src=true')
+                if (startres !== 'fail') {
+                  const taskId = startres['taskid'] as string
+                  const statusres =
+                    await dsmRequest('', 'SYNO.FileStation.CopyMove', '&method=status&taskid=' + taskId)
+                  if (statusres !== 'fail') {
+                    dialogControllerProgress.close()
+                    promptAction.openToast({
+                      message: '移动成功'
+                    })
+                    this.multipleSelect = false
+                    this.multipleSelectArray = []
+                    this.loading = true
+                    return
+                  }
+                  promptAction.openToast({
+                    message: '移动任务提交成功但尚未完成，请稍等'
+                  })
+                  this.multipleSelect = false
+                  this.multipleSelectArray = []
+                  this.loading = true
+                }
+                dialogControllerProgress.close()
+                this.multipleSelect = false
+                this.multipleSelectArray = []
+                this.loading = true
+              })
+
+              Column() {
+                Image($r('app.media.delete'))
+              }
+              .backgroundColor($r('sys.color.interactive_hover'))
+              .borderRadius(20)
+              .height(40)
+              .padding(11)
+              .visualEffect(new hdsEffect.HdsEffectBuilder()
+                .pointLight({
+                  sourceType: hdsEffect.PointLightSourceType.SOFT,
+                  illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                })
+                .buildEffect())
+              .width(40)
+              .onClick(async () => {
+                const promptAction = this.getUIContext().getPromptAction()
+                const data = await promptAction.showDialog({
+                  title: '提示',
+                  message: '删除成功后无法恢复，确定删除？',
+                  buttons: [
+                    {
+                      text: '取消',
+                      color: $r('sys.color.font_primary')
+                    },
+                    {
+                      text: '删除',
+                      color: $r('sys.color.warning')
+                    }
+                  ]
+                })
+                if (data.index === 1) {
+                  this.deleteDialogControllerProgress.open()
+                  const startres = await dsmRequest('', 'SYNO.FileStation.Delete',
+                    '&method=start&path=' + encodeURIComponent(JSON.stringify(this.multipleSelectArray)))
+                  if (startres !== 'fail') {
+                    const taskId = startres['taskid'] as string
+                    const statusres =
+                      await dsmRequest('', 'SYNO.FileStation.Delete', '&method=status&taskid=' + taskId)
+                    if (statusres !== 'fail') {
+                      this.deleteDialogControllerProgress.close()
+                      promptAction.openToast({
+                        message: '删除成功'
+                      })
+                      this.multipleSelect = false
+                      this.multipleSelectArray = []
+                      this.loading = true
+                      return
+                    }
+                    promptAction.openToast({
+                      message: '删除任务提交成功但尚未完成，请稍等'
+                    })
+                    this.loading = true
+                  }
+                  this.deleteDialogControllerProgress.close()
+                  this.multipleSelect = false
+                  this.multipleSelectArray = []
+                  this.loading = true
+                }
+              })
+            }
+            .margin({
+              bottom: $r('sys.float.ohos_id_elements_margin_vertical_m')
+            })
+            .width('100%')
+          }
+          Row() {
+            if (this.dirnames.length > 0) {
+              Column() {
+                Image($r('app.media.back'))
+              }
+              .backgroundColor($r('sys.color.interactive_hover'))
+              .borderRadius(20)
+              .height(40)
+              .margin({
+                right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+              })
+              .padding(11)
+              .visualEffect(new hdsEffect.HdsEffectBuilder()
+                .pointLight({
+                  sourceType: hdsEffect.PointLightSourceType.SOFT,
+                  illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                })
+                .buildEffect())
+              .width(40)
+              .onClick(() => {
+                this.dirnames.pop()
+                this.dirnamesDataPreferences.putSync('dirnames', this.dirnames)
+                this.loading = true
+              })
             }
             Row() {
-              if (this.dirnames.length > 0) {
-                Column() {
-                  Image($r('app.media.back'))
-                }
-                .backgroundColor($r('sys.color.interactive_hover'))
-                .borderRadius(20)
-                .height(40)
+              Select([
+                { value: '名称' },
+                { value: '大小' },
+                { value: '类型' },
+                { value: '修改日期' }
+              ])
                 .margin({
                   right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                 })
-                .padding(11)
-                .visualEffect(new hdsEffect.HdsEffectBuilder()
-                  .pointLight({
-                    sourceType: hdsEffect.PointLightSourceType.SOFT,
-                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-                  })
-                  .buildEffect())
-                .width(40)
-                .onClick(() => {
-                  this.dirnames.pop()
-                  this.dirnamesDataPreferences.putSync('dirnames', this.dirnames)
+                .selected(this.sortByIndex!!)
+                .value(this.sortByValue!!)
+                .onSelect(() => {
                   this.loading = true
                 })
-              }
-              Row() {
-                Select([
-                  { value: '名称' },
-                  { value: '大小' },
-                  { value: '类型' },
-                  { value: '修改日期' }
-                ])
-                  .margin({
-                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                  })
-                  .selected(this.sortByIndex!!)
-                  .value(this.sortByValue!!)
-                  .onSelect(() => {
-                    this.loading = true
-                  })
-                Select([
-                  { value: '正序' },
-                  { value: '倒序' }
-                ])
-                  .selected(this.sortDirectionIndex!!)
-                  .value(this.sortDirectionValue!!)
-                  .onSelect(() => {
-                    this.loading = true
-                  })
-              }
+              Select([
+                { value: '正序' },
+                { value: '倒序' }
+              ])
+                .selected(this.sortDirectionIndex!!)
+                .value(this.sortDirectionValue!!)
+                .onSelect(() => {
+                  this.loading = true
+                })
             }
-            .justifyContent(FlexAlign.SpaceBetween)
-            .width('100%')
+          }
+          .justifyContent(FlexAlign.SpaceBetween)
+          .width('100%')
 
-            Text() {
-              ForEach(this.dirnames, (item: string, index) => {
-                if (index !== 0) {
-                  Span('/ ')
-                }
-                if (index === 0) {
-                  Span('根目录')
-                    .fontColor($r('sys.color.font_emphasize'))
-                    .onClick(() => {
-                      this.dirnames = []
-                      this.dirnamesDataPreferences.putSync('dirnames', this.dirnames)
-                      this.loading = true
-                    })
-                  Span(' / ')
-                }
-                Span(item + ' ')
+          Text() {
+            ForEach(this.dirnames, (item: string, index) => {
+              if (index !== 0) {
+                Span('/ ')
+              }
+              if (index === 0) {
+                Span('根目录')
                   .fontColor($r('sys.color.font_emphasize'))
                   .onClick(() => {
-                    this.dirnames = this.dirnames.slice(0, index + 1)
+                    this.dirnames = []
                     this.dirnamesDataPreferences.putSync('dirnames', this.dirnames)
                     this.loading = true
                   })
-              })
-            }
-            .enableAutoSpacing(true)
-            .margin({
-              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-            })
-            .bindSheet(this.isShowPlayerSheet!!, this.PlayerSheetBuilder(), {
-              preferType: this.preferType,
-              title: {
-                title: this.srcName
-              },
-              onDisappear: () => {
-                this.src = ''
-                this.srcName = ''
+                Span(' / ')
               }
-            })
-
-            if (this.dirnames.length > 0) {
-              Search({
-                placeholder: '请输入搜索关键词',
-                value: this.searchKeyword!!
-              })
-                .searchButton('搜索')
-                .onSubmit(() => {
-                  this.search()
+              Span(item + ' ')
+                .fontColor($r('sys.color.font_emphasize'))
+                .onClick(() => {
+                  this.dirnames = this.dirnames.slice(0, index + 1)
+                  this.dirnamesDataPreferences.putSync('dirnames', this.dirnames)
+                  this.loading = true
                 })
+            })
+          }
+          .enableAutoSpacing(true)
+          .margin({
+            top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+          })
+          .bindSheet(this.isShowPlayerSheet!!, this.PlayerSheetBuilder(), {
+            preferType: this.preferType,
+            title: {
+              title: this.srcName
+            },
+            onDisappear: () => {
+              this.src = ''
+              this.srcName = ''
             }
-            if (this.dirnames.length > 0) {
-              Row() {
+          })
+
+          if (this.dirnames.length > 0) {
+            Search({
+              placeholder: '请输入搜索关键词',
+              value: this.searchKeyword!!
+            })
+              .searchButton('搜索')
+              .onSubmit(() => {
+                this.search()
+              })
+          }
+          if (this.dirnames.length > 0) {
+            Row() {
+              Column() {
+                Image($r('app.media.newfolder'))
+              }
+              .backgroundColor($r('sys.color.interactive_hover'))
+              .borderRadius(20)
+              .height(40)
+              .padding(11)
+              .visualEffect(new hdsEffect.HdsEffectBuilder()
+                .pointLight({
+                  sourceType: hdsEffect.PointLightSourceType.SOFT,
+                  illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                })
+                .buildEffect())
+              .width(40)
+              .onClick(() => {
+                this.editPath = this.getPath()
+                this.isShowNewfolderSheet = true
+              })
+              .bindSheet(this.isShowNewfolderSheet!!, this.NewfolderSheetBuilder(), {
+                height: SheetSize.FIT_CONTENT,
+                preferType: this.preferType,
+                title: {
+                  title: '新建文件夹'
+                },
+                onDisappear: () => {
+                  this.editPath = ''
+                }
+              })
+
+              if (this.copyMovePath) {
+                Blank()
                 Column() {
-                  Image($r('app.media.newfolder'))
+                  Image($r('app.media.close'))
+                }
+                .backgroundColor($r('sys.color.interactive_hover'))
+                .borderRadius(20)
+                .height(40)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+                .padding(11)
+                .visualEffect(new hdsEffect.HdsEffectBuilder()
+                  .pointLight({
+                    sourceType: hdsEffect.PointLightSourceType.SOFT,
+                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                  })
+                  .buildEffect())
+                .width(40)
+                .onClick(() => {
+                  this.copyMovePath = ''
+                  this.remove = false
+                })
+
+                Column() {
+                  Image($r('app.media.confirm'))
                 }
                 .backgroundColor($r('sys.color.interactive_hover'))
                 .borderRadius(20)
@@ -957,106 +1010,56 @@ export default struct Filelist {
                   })
                   .buildEffect())
                 .width(40)
-                .onClick(() => {
-                  this.editPath = this.getPath()
-                  this.isShowNewfolderSheet = true
-                })
-                .bindSheet(this.isShowNewfolderSheet!!, this.NewfolderSheetBuilder(), {
-                  height: SheetSize.FIT_CONTENT,
-                  preferType: this.preferType,
-                  title: {
-                    title: '新建文件夹'
-                  },
-                  onDisappear: () => {
-                    this.editPath = ''
+                .onClick(async () => {
+                  let text = ''
+                  if (!this.remove) {
+                    text = '复制'
                   }
-                })
-
-                if (this.copyMovePath) {
-                  Blank()
-                  Column() {
-                    Image($r('app.media.close'))
+                  if (this.remove) {
+                    text = '移动'
                   }
-                  .backgroundColor($r('sys.color.interactive_hover'))
-                  .borderRadius(20)
-                  .height(40)
-                  .margin({
-                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  const dialogControllerProgress = new CustomDialogController({
+                    builder: LoadingDialog({
+                      content: text + '中...'
+                    })
                   })
-                  .padding(11)
-                  .visualEffect(new hdsEffect.HdsEffectBuilder()
-                    .pointLight({
-                      sourceType: hdsEffect.PointLightSourceType.SOFT,
-                      illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-                    })
-                    .buildEffect())
-                  .width(40)
-                  .onClick(() => {
-                    this.copyMovePath = ''
-                    this.remove = false
-                  })
-
-                  Column() {
-                    Image($r('app.media.confirm'))
-                  }
-                  .backgroundColor($r('sys.color.interactive_hover'))
-                  .borderRadius(20)
-                  .height(40)
-                  .padding(11)
-                  .visualEffect(new hdsEffect.HdsEffectBuilder()
-                    .pointLight({
-                      sourceType: hdsEffect.PointLightSourceType.SOFT,
-                      illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-                    })
-                    .buildEffect())
-                  .width(40)
-                  .onClick(async () => {
-                    let text = ''
-                    if (!this.remove) {
-                      text = '复制'
-                    }
-                    if (this.remove) {
-                      text = '移动'
-                    }
-                    const dialogControllerProgress = new CustomDialogController({
-                      builder: LoadingDialog({
-                        content: text + '中...'
-                      })
-                    })
-                    dialogControllerProgress.open()
-                    const startres = await dsmRequest('', 'SYNO.FileStation.CopyMove',
-                      '&method=start&path=' + encodeURIComponent(JSON.stringify([this.copyMovePath])) +
-                        '&dest_folder_path=' + encodeURIComponent(this.getPath()) + '&remove_src' + this.remove)
-                    if (startres !== 'fail') {
-                      const taskId = startres['taskid'] as string
-                      const statusres =
-                        await dsmRequest('', 'SYNO.FileStation.CopyMove', '&method=status&taskid=' + taskId)
-                      if (statusres !== 'fail') {
-                        dialogControllerProgress.close()
-                        promptAction.openToast({
-                          message: text + '成功'
-                        })
-                        this.copyMovePath = ''
-                        this.remove = false
-                        this.loading = true
-                        return
-                      }
+                  dialogControllerProgress.open()
+                  const startres = await dsmRequest('', 'SYNO.FileStation.CopyMove',
+                    '&method=start&path=' + encodeURIComponent(JSON.stringify([this.copyMovePath])) +
+                      '&dest_folder_path=' + encodeURIComponent(this.getPath()) + '&remove_src=' + this.remove)
+                  if (startres !== 'fail') {
+                    const taskId = startres['taskid'] as string
+                    const statusres =
+                      await dsmRequest('', 'SYNO.FileStation.CopyMove', '&method=status&taskid=' + taskId)
+                    if (statusres !== 'fail') {
+                      dialogControllerProgress.close()
                       promptAction.openToast({
-                        message: text + '任务提交成功但尚未完成，请稍等'
+                        message: text + '成功'
                       })
                       this.copyMovePath = ''
                       this.remove = false
                       this.loading = true
+                      return
                     }
-                    dialogControllerProgress.close()
-                  })
-                }
+                    promptAction.openToast({
+                      message: text + '任务提交成功但尚未完成，请稍等'
+                    })
+                    this.copyMovePath = ''
+                    this.remove = false
+                    this.loading = true
+                  }
+                  dialogControllerProgress.close()
+                })
               }
-              .margin({
-                bottom: $r('sys.float.ohos_id_elements_margin_vertical_m')
-              })
-              .width('100%')
             }
+            .margin({
+              bottom: $r('sys.float.ohos_id_elements_margin_vertical_m')
+            })
+            .width('100%')
+          }
+          Refresh({
+            refreshing: $$this.loading
+          }) {
             List() {
               ForEach(this.fileArray, (item: FileItem, index) => {
                 ListItem() {
@@ -1144,13 +1147,22 @@ export default struct Filelist {
                     })
                     .stateStyles({
                       normal: {
-                        .backgroundColor($r('sys.color.background_secondary'))
+                        .backgroundColor(this.hoverId === index ? $r('sys.color.interactive_hover') :
+                          $r('sys.color.background_secondary'))
                       },
                       pressed: {
                         .backgroundColor($r('sys.color.comp_background_secondary'))
                       }
                     })
                     .width('100%')
+                    .onHover((isHover) => {
+                      if (!isHover) {
+                        this.hoverId = -1
+                      }
+                      if (isHover) {
+                        this.hoverId = index
+                      }
+                    })
                     .onClick(async () => {
                       if (!item.isdir) {
                         let houzhui = ''
@@ -1422,9 +1434,10 @@ export default struct Filelist {
                         this.loading = true
                       }
                     })
-                    .bindContextMenu(this.MenuBuilder(item), ResponseType.LongPress | ResponseType.RightClick, {
+                    .bindContextMenu(this.MenuBuilder(item), ResponseType.LongPress, {
                       hapticFeedbackMode: HapticFeedbackMode.AUTO
                     })
+                    .bindContextMenu(this.MenuBuilder(item), ResponseType.RightClick)
                     .bindSheet(this.isShowProgressSheet!!, this.ProgressSheetBuilder(), {
                       height: SheetSize.FIT_CONTENT,
                       preferType: this.preferType,
@@ -1440,66 +1453,66 @@ export default struct Filelist {
                 }
               })
             }
-            .layoutWeight(1)
           }
+          .layoutWeight(1)
+          .onRefreshing(async () => {
+            await this.get()
+            this.loading = false
+          })
         }
-        .alignItems(HorizontalAlign.Start)
-        .height('100%')
       }
-      .padding({
-        left: $r('sys.float.ohos_id_max_padding_start'),
-        right: $r('sys.float.ohos_id_max_padding_end'),
-        top: this.preferType === 0 ? 0 : $r('sys.float.ohos_id_default_padding_top')
-      })
-      .onAppear(() => {
-        const currentOrientation = display.getDefaultDisplaySync().orientation
-        if (currentOrientation === display.Orientation.PORTRAIT ||
-          currentOrientation === display.Orientation.PORTRAIT_INVERTED) {
+      .alignItems(HorizontalAlign.Start)
+      .height('100%')
+    }
+    .padding({
+      left: $r('sys.float.ohos_id_max_padding_start'),
+      right: $r('sys.float.ohos_id_max_padding_end'),
+      top: this.preferType === 0 ? 0 : $r('sys.float.ohos_id_default_padding_top')
+    })
+    .onAppear(() => {
+      const currentOrientation = display.getDefaultDisplaySync().orientation
+      if (currentOrientation === display.Orientation.PORTRAIT ||
+        currentOrientation === display.Orientation.PORTRAIT_INVERTED) {
+        this.preferType = 0
+      }
+      if (currentOrientation === display.Orientation.LANDSCAPE ||
+        currentOrientation === display.Orientation.LANDSCAPE_INVERTED) {
+        this.preferType = 1
+      }
+      display.on('change', (displayId) => {
+        const orientation = display.getDisplayByIdSync(displayId).orientation
+        if (orientation === display.Orientation.PORTRAIT || orientation === display.Orientation.PORTRAIT_INVERTED) {
           this.preferType = 0
         }
-        if (currentOrientation === display.Orientation.LANDSCAPE ||
-          currentOrientation === display.Orientation.LANDSCAPE_INVERTED) {
+        if (orientation === display.Orientation.LANDSCAPE || orientation === display.Orientation.LANDSCAPE_INVERTED) {
           this.preferType = 1
         }
-        display.on('change', (displayId) => {
-          const orientation = display.getDisplayByIdSync(displayId).orientation
-          if (orientation === display.Orientation.PORTRAIT || orientation === display.Orientation.PORTRAIT_INVERTED) {
-            this.preferType = 0
-          }
-          if (orientation === display.Orientation.LANDSCAPE || orientation === display.Orientation.LANDSCAPE_INVERTED) {
-            this.preferType = 1
-          }
-        })
-        this.context.eventHub.on('refreshFilelist', () => {
-          this.loading = true
-        })
-        this.context.eventHub.on('back', () => {
-          this.dirnames.pop()
-          this.dirnamesDataPreferences.putSync('dirnames', this.dirnames)
-          this.loading = true
-        })
+      })
+      this.context.eventHub.on('refreshFilelist', () => {
+        this.get()
+      })
+      this.context.eventHub.on('back', () => {
+        this.dirnames.pop()
+        this.dirnamesDataPreferences.putSync('dirnames', this.dirnames)
         this.loading = true
       })
-      .onDisAppear(() => {
-        this.context.eventHub.off('refreshFilelist')
-        this.context.eventHub.off('back')
-        display.off('change')
-      })
-      .bindSheet(this.isShowRenamefileSheet!!, this.RenamefileSheetBuilder(), {
-        height: SheetSize.FIT_CONTENT,
-        preferType: this.preferType,
-        title: {
-          title: '重命名'
-        },
-        onDisappear: () => {
-          this.editPath = ''
-          this.editName = ''
-        }
-      })
-    }
-    .onRefreshing(async () => {
-      await this.get()
-      this.loading = false
+      this.get()
+    })
+    .onDisAppear(() => {
+      this.context.eventHub.off('refreshFilelist')
+      this.context.eventHub.off('back')
+      display.off('change')
+    })
+    .bindSheet(this.isShowRenamefileSheet!!, this.RenamefileSheetBuilder(), {
+      height: SheetSize.FIT_CONTENT,
+      preferType: this.preferType,
+      title: {
+        title: '重命名'
+      },
+      onDisappear: () => {
+        this.editPath = ''
+        this.editName = ''
+      }
     })
   }
 }

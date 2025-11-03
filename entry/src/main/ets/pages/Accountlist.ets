@@ -5,6 +5,7 @@ import { AccountInfo, getList, remove, set } from '../common/Account'
 export default struct Accountlist {
   @Consumer() isShowAccountlistSheet: boolean = false
   @Local accountArray: AccountInfo[] = []
+  @Local hoverId: number = -1
 
   @Builder
   MenuBuilder(item: AccountInfo) {
@@ -78,13 +79,22 @@ export default struct Accountlist {
             .padding(12)
             .stateStyles({
               normal: {
-                .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                .backgroundColor(this.hoverId === 0 ? $r('sys.color.interactive_hover') :
+                  $r('sys.color.ohos_id_color_card_bg'))
               },
               pressed: {
                 .backgroundColor($r('sys.color.interactive_pressed'))
               }
             })
             .width('100%')
+            .onHover((isHover) => {
+              if (!isHover) {
+                this.hoverId = -1
+              }
+              if (isHover) {
+                this.hoverId = 0
+              }
+            })
             .onClick(async () => {
               if (item.isLogin === 'true') {
                 promptAction.openToast({
@@ -104,9 +114,10 @@ export default struct Accountlist {
               })
               this.isShowAccountlistSheet = false
             })
-            .bindContextMenu(this.MenuBuilder(item), ResponseType.LongPress | ResponseType.RightClick, {
+            .bindContextMenu(this.MenuBuilder(item), ResponseType.LongPress, {
               hapticFeedbackMode: HapticFeedbackMode.AUTO
             })
+            .bindContextMenu(this.MenuBuilder(item), ResponseType.RightClick)
           })
         }
         .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
