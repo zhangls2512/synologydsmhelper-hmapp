@@ -17,7 +17,7 @@ struct License {
     { property: '主体类型', value: '个人' },
     { property: '开办者名称', value: '张轩铭' },
     { property: '注册地公安机关', value: '萨尔图区网安大队' },
-    { property: '注册时间', value: '未知' }
+    { property: '注册时间', value: '2025-11-05' }
   ]
 
   build() {
