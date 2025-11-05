@@ -388,8 +388,7 @@ struct Commonsetting {
                 .justifyContent(FlexAlign.SpaceBetween)
                 .padding(12)
                 .width('100%')
-              }
-              if (deviceInfo.deviceType !== 'phone') {
+
                 Divider()
                   .padding({
                     left: 12,

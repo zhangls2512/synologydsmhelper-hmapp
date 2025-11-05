@@ -56,7 +56,7 @@ export async function getDsmApiMaxVersion(path: string, api: string) {
         return res.data[api].maxVersion as number
       }
       promptAction.openToast({
-        message: '接口调用失败，错误码：' + res.error?.code
+        message: '接口调用失败，错误码：' + res.error.code
       })
       return 'fail'
     }
@@ -112,7 +112,7 @@ export async function dsmRequest(path: string, api: string, params: string): Pro
         if (res.success) {
           return res.data
         }
-        if (res.error?.code === 106 || res.error?.code === 107 || res.error?.code === 119) {
+        if (res.error.code === 106 || res.error.code === 107 || res.error.code === 119) {
           netBoost.setSceneDesc({
             scene: 'login',
             sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
@@ -140,8 +140,11 @@ export async function dsmRequest(path: string, api: string, params: string): Pro
           })
           return 'fail'
         }
+        if (res.error.code === 150) {
+          return await dsmRequest(path, api, params)
+        }
         promptAction.openToast({
-          message: '接口调用失败，错误码：' + res.error?.code
+          message: '接口调用失败，错误码：' + res.error.code
         })
         return 'fail'
       }
