@@ -23,6 +23,9 @@ struct Commonsetting {
   @Local windowRectAutoSave: boolean = false
   @Local windowTopmost: boolean = false
   @Local keepScreenOn: boolean = false
+  @Local filePreviewTypeIndex: number = 0
+  @Local filePreviewTypeValue: string = '系统预览服务'
+  @Local onlinePreviewMedia: boolean = false
   @Local cellularDataUseRemindIndex: number = 0
   @Local cellularDataUseRemindValue: string = '始终'
   @Local checkVersionUpdateIndex: number = 1
@@ -579,6 +582,86 @@ struct Commonsetting {
 
         ListItem() {
           Column() {
+            Text('文件')
+              .fontColor($r('sys.color.font_secondary'))
+              .fontSize($r('sys.float.ohos_id_text_size_body2'))
+              .fontWeight(FontWeight.Medium)
+              .margin({
+                bottom: 6,
+                left: 12,
+                right: 12
+              })
+            Column() {
+              Row() {
+                Text('预览方式')
+                  .fontWeight(FontWeight.Medium)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                Select([
+                  { value: '系统预览服务' },
+                  { value: '自行选择' }
+                ])
+                  .selected(this.filePreviewTypeIndex!!)
+                  .value(this.filePreviewTypeValue!!)
+                  .onSelect((index) => {
+                    this.commonSettingDataPreferences.putSync('filePreviewType', index)
+                    this.commonSettingDataPreferences.flushSync()
+                  })
+              }
+              .borderRadius(12)
+              .padding(12)
+              .width('100%')
+
+              Divider()
+                .padding({
+                  left: 12,
+                  right: 12
+                })
+              Row() {
+                Column() {
+                  Text('在线预览音、视频')
+                    .fontWeight(FontWeight.Medium)
+                  Text('目前仅支持mp4、mkv、m4a、aac、mp3、ogg、wav、flac、amr、ape格式')
+                    .enableAutoSpacing(true)
+                    .fontColor($r('sys.color.font_secondary'))
+                    .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                    .margin({
+                      top: $r('sys.float.ohos_id_text_margin_vertical')
+                    })
+                }
+                .alignItems(HorizontalAlign.Start)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+
+                Toggle({
+                  type: ToggleType.Switch,
+                  isOn: this.onlinePreviewMedia!!
+                })
+                  .onChange((isOn) => {
+                    this.commonSettingDataPreferences.putSync('onlinePreviewMedia', isOn)
+                    this.commonSettingDataPreferences.flushSync()
+                  })
+              }
+              .borderRadius(12)
+              .padding(12)
+              .width('100%')
+            }
+            .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+            .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+            .padding($r('sys.float.ohos_id_corner_radius_mark'))
+          }
+          .alignItems(HorizontalAlign.Start)
+        }
+        .margin({
+          top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+        })
+
+        ListItem() {
+          Column() {
             Text('更多')
               .fontColor($r('sys.color.font_secondary'))
               .fontSize($r('sys.float.ohos_id_text_size_body2'))
@@ -707,6 +790,15 @@ struct Commonsetting {
       this.windowTopmost = this.commonSettingDataPreferences.getSync('windowTopmost', false) as boolean
       const lastWindow = await window.getLastWindow(this.context)
       this.keepScreenOn = lastWindow.getWindowProperties().isKeepScreenOn
+      const filePreviewType = this.commonSettingDataPreferences.getSync('filePreviewType', 0)
+      this.filePreviewTypeIndex = filePreviewType as number
+      if (filePreviewType === 0) {
+        this.filePreviewTypeValue = '系统预览服务'
+      }
+      if (filePreviewType === 1) {
+        this.filePreviewTypeValue = '自行选择'
+      }
+      this.onlinePreviewMedia = this.commonSettingDataPreferences.getSync('onlinePreviewMedia', true) as boolean
       const cellularDataUseRemind = this.commonSettingDataPreferences.getSync('cellularDataUseRemind', 0)
       this.cellularDataUseRemindIndex = cellularDataUseRemind as number
       if (cellularDataUseRemind === 0) {

@@ -1,4 +1,4 @@
-import { common, wantAgent } from '@kit.AbilityKit'
+import { common, wantAgent, wantConstant } from '@kit.AbilityKit'
 import { preferences, uniformTypeDescriptor } from '@kit.ArkData'
 import { fastbuffer, util } from '@kit.ArkTS'
 import { display, LoadingDialog, promptAction } from '@kit.ArkUI'
@@ -1160,13 +1160,17 @@ export default struct Filelist {
                     })
                     .onClick(async () => {
                       if (!item.isdir) {
+                        const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+                          name: 'commonSetting'
+                        })
                         let houzhui = ''
                         const lastDotIndex = item.name.lastIndexOf('.')
                         if (lastDotIndex !== -1) {
                           houzhui = item.name.slice(lastDotIndex + 1)
                         }
                         const supportedformats = ['mp4', 'mkv', 'm4a', 'aac', 'mp3', 'ogg', 'wav', 'flac', 'amr', 'ape']
-                        if (supportedformats.includes(houzhui)) {
+                        if (supportedformats.includes(houzhui) &&
+                        commonSettingDataPreferences.getSync('onlinePreviewMedia', true)) {
                           const dialogControllerProgress = new CustomDialogController({
                             builder: LoadingDialog({
                               content: '播放准备中...'
@@ -1198,11 +1202,7 @@ export default struct Filelist {
                           return
                         }
                         if (getCurrentNetworkBearerType() === 0) {
-                          const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-                            name: 'commonSetting'
-                          })
-                          const cellularDataUseRemind =
-                            commonSettingDataPreferences.getSync('cellularDataUseRemind', 0)
+                          const cellularDataUseRemind = commonSettingDataPreferences.getSync('cellularDataUseRemind', 0)
                           if (cellularDataUseRemind === 0 ||
                             (cellularDataUseRemind === 1 && item.additional.size > 200 * Math.pow(1024, 2))) {
                             const promptAction = this.getUIContext().getPromptAction()
@@ -1331,17 +1331,31 @@ export default struct Filelist {
                                         this.transferredSize = -1
                                         this.totalSize = -1
                                         const uri = fileUri.getUriFromPath(filePath)
-                                        const canPreview = await filePreview.canPreview(this.context, uri)
-                                        if (!canPreview) {
-                                          promptAction.openToast({
-                                            message: '此类型不支持预览'
-                                          })
+                                        const filePreviewType =
+                                          commonSettingDataPreferences.getSync('filePreviewType', 0)
+                                        if (filePreviewType === 0) {
+                                          const canPreview = await filePreview.canPreview(this.context, uri)
+                                          if (!canPreview) {
+                                            promptAction.openToast({
+                                              message: '此类型不支持预览'
+                                            })
+                                          }
+                                          if (canPreview) {
+                                            filePreview.openPreview(this.context, {
+                                              title: item.name,
+                                              uri: uri,
+                                              mimeType: ''
+                                            })
+                                          }
                                         }
-                                        if (canPreview) {
-                                          filePreview.openPreview(this.context, {
-                                            title: item.name,
+                                        if (filePreviewType === 1) {
+                                          this.context.startAbility({
+                                            action: 'ohos.want.action.viewData',
                                             uri: uri,
-                                            mimeType: ''
+                                            parameters: {
+                                              'ohos.ability.params.showDefaultPicker': true
+                                            },
+                                            flags: wantConstant.Flags.FLAG_AUTH_READ_URI_PERMISSION
                                           })
                                         }
                                       }
