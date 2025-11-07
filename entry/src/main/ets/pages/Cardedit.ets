@@ -61,7 +61,6 @@ export default struct Cardeditsetting {
                 })
             }
             .borderRadius(12)
-            .justifyContent(FlexAlign.SpaceBetween)
             .padding(12)
             .width('100%')
           })

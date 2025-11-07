@@ -52,7 +52,6 @@ export default struct Progresssheet {
           .alignItems(HorizontalAlign.Start)
           .layoutWeight(1)
         }
-        .justifyContent(FlexAlign.SpaceBetween)
       }
       .margin({
         top: $r('sys.float.ohos_id_elements_margin_vertical_l')

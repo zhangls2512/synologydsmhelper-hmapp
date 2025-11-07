@@ -145,7 +145,6 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -172,7 +171,6 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -199,7 +197,6 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -221,7 +218,6 @@ struct Debugsetting {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -265,7 +261,6 @@ struct Debugsetting {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -313,7 +308,6 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -361,7 +355,6 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -394,7 +387,6 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
             }
@@ -434,7 +426,6 @@ struct Debugsetting {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -479,7 +470,6 @@ struct Debugsetting {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -540,7 +530,6 @@ struct Debugsetting {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -620,7 +609,6 @@ struct Debugsetting {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -662,7 +650,6 @@ struct Debugsetting {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -709,7 +696,6 @@ struct Debugsetting {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -774,7 +760,6 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -800,7 +785,6 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -826,7 +810,6 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -852,7 +835,6 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -878,7 +860,6 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -904,7 +885,6 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -930,7 +910,6 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -969,7 +948,6 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -991,7 +969,6 @@ struct Debugsetting {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -1045,7 +1022,6 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -1067,7 +1043,6 @@ struct Debugsetting {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -1133,7 +1108,6 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -1161,7 +1135,6 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
             }

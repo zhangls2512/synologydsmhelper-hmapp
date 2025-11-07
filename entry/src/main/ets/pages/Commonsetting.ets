@@ -89,7 +89,6 @@ struct Commonsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -115,7 +114,6 @@ struct Commonsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -163,7 +161,6 @@ struct Commonsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -189,7 +186,6 @@ struct Commonsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -215,7 +211,6 @@ struct Commonsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -243,7 +238,6 @@ struct Commonsetting {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -336,7 +330,6 @@ struct Commonsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -385,7 +378,6 @@ struct Commonsetting {
                     })
                 }
                 .borderRadius(12)
-                .justifyContent(FlexAlign.SpaceBetween)
                 .padding(12)
                 .width('100%')
 
@@ -413,7 +405,6 @@ struct Commonsetting {
                     })
                 }
                 .borderRadius(12)
-                .justifyContent(FlexAlign.SpaceBetween)
                 .padding(12)
                 .width('100%')
               }
@@ -449,7 +440,6 @@ struct Commonsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -471,7 +461,6 @@ struct Commonsetting {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -620,7 +609,6 @@ struct Commonsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -649,7 +637,6 @@ struct Commonsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -677,7 +664,6 @@ struct Commonsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
             }

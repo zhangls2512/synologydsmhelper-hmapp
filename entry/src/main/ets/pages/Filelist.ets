@@ -139,7 +139,6 @@ export default struct Filelist {
 
   async get() {
     this.searchKeyword = ''
-    this.hoverId = -1
     this.isLogin = await getLoginStatus()
     if (this.isLogin) {
       const path = this.getPath()
@@ -191,7 +190,6 @@ export default struct Filelist {
   }
 
   async search() {
-    this.hoverId = -1
     this.searchDialogControllerProgress.open()
     const res = await dsmRequest('', 'SYNO.FileStation.Search',
       '&method=start&folder_path=' + encodeURIComponent(JSON.stringify([this.getPath()])) + '&pattern=' +
@@ -1072,61 +1070,59 @@ export default struct Filelist {
                         })
                     }
                     Row() {
-                      Row() {
-                        if (this.multipleSelect && this.dirnames.length > 0) {
-                          Toggle({
-                            type: ToggleType.Checkbox,
-                            isOn: this.multipleSelectArray.some(selectItem => selectItem === item.path)
-                          })
-                            .margin({
-                              right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                            })
-                            .onChange((isOn) => {
-                              if (!isOn) {
-                                this.multipleSelectArray.splice(this.multipleSelectArray.findIndex(selectItem => selectItem ===
-                                item.path), 1)
-                              }
-                              if (isOn) {
-                                this.multipleSelectArray.push(item.path)
-                              }
-                            })
-                        }
-                        if (!item.isdir) {
-                          Image(this.getFileTypeIcon(item.name))
-                            .fillColor($r('sys.color.icon_secondary'))
-                            .height(24)
-                            .margin({
-                              right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                            })
-                            .width(24)
-                        }
-                        if (item.isdir) {
-                          Image($r('app.media.foldericon'))
-                            .height(24)
-                            .margin({
-                              right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                            })
-                            .width(24)
-                        }
-                        Column() {
-                          Text(item.name)
-                            .enableAutoSpacing(true)
-                            .fontWeight(FontWeight.Medium)
-                            .width('85%')
-                          Text() {
-                            Span(this.getTimeString(item.additional.time.mtime))
-                            if (item.additional.size && !item.isdir) {
-                              Span(' - ' + this.getSizeString(item.additional.size))
-                            }
-                          }
-                          .fontColor($r('sys.color.font_secondary'))
-                          .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                      if (this.multipleSelect && this.dirnames.length > 0) {
+                        Toggle({
+                          type: ToggleType.Checkbox,
+                          isOn: this.multipleSelectArray.some(selectItem => selectItem === item.path)
+                        })
                           .margin({
-                            top: $r('sys.float.ohos_id_text_margin_vertical')
+                            right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                           })
-                        }
-                        .alignItems(HorizontalAlign.Start)
+                          .onChange((isOn) => {
+                            if (!isOn) {
+                              this.multipleSelectArray.splice(this.multipleSelectArray.findIndex(selectItem => selectItem ===
+                              item.path), 1)
+                            }
+                            if (isOn) {
+                              this.multipleSelectArray.push(item.path)
+                            }
+                          })
                       }
+                      if (!item.isdir) {
+                        Image(this.getFileTypeIcon(item.name))
+                          .fillColor($r('sys.color.icon_secondary'))
+                          .height(24)
+                          .margin({
+                            right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                          })
+                          .width(24)
+                      }
+                      if (item.isdir) {
+                        Image($r('app.media.foldericon'))
+                          .height(24)
+                          .margin({
+                            right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                          })
+                          .width(24)
+                      }
+                      Column() {
+                        Text(item.name)
+                          .enableAutoSpacing(true)
+                          .fontWeight(FontWeight.Medium)
+                          .width('85%')
+                        Text() {
+                          Span(this.getTimeString(item.additional.time.mtime))
+                          if (item.additional.size && !item.isdir) {
+                            Span(' - ' + this.getSizeString(item.additional.size))
+                          }
+                        }
+                        .fontColor($r('sys.color.font_secondary'))
+                        .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                        .margin({
+                          top: $r('sys.float.ohos_id_text_margin_vertical')
+                        })
+                      }
+                      .alignItems(HorizontalAlign.Start)
                       .layoutWeight(1)
                       .margin({
                         right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -1138,7 +1134,6 @@ export default struct Filelist {
                         .width(12)
                     }
                     .borderRadius(12)
-                    .justifyContent(FlexAlign.SpaceBetween)
                     .padding({
                       bottom: 12,
                       left: 6,

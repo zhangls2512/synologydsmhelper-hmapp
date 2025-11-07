@@ -43,7 +43,6 @@ struct Notice {
                   .enabled(false)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
             }
@@ -148,7 +147,6 @@ struct Notice {
                       })
                   }
                   .borderRadius(12)
-                  .justifyContent(FlexAlign.SpaceBetween)
                   .padding(12)
                   .width('100%')
                 })

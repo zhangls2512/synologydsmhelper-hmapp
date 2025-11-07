@@ -121,7 +121,6 @@ export default struct Me {
               .width(12)
           }
           .borderRadius(12)
-          .justifyContent(FlexAlign.SpaceBetween)
           .padding(12)
           .stateStyles({
             normal: {
@@ -182,7 +181,6 @@ export default struct Me {
               .width(12)
           }
           .borderRadius(12)
-          .justifyContent(FlexAlign.SpaceBetween)
           .padding(12)
           .stateStyles({
             normal: {

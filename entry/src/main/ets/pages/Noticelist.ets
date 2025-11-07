@@ -100,7 +100,6 @@ export default struct Noticelist {
                 .textAlign(TextAlign.End)
             }
             .borderRadius(12)
-            .justifyContent(FlexAlign.SpaceBetween)
             .padding(12)
             .width('100%')
 
@@ -122,7 +121,6 @@ export default struct Noticelist {
                 .textAlign(TextAlign.End)
             }
             .borderRadius(12)
-            .justifyContent(FlexAlign.SpaceBetween)
             .padding(12)
             .width('100%')
 
@@ -144,7 +142,6 @@ export default struct Noticelist {
                 .textAlign(TextAlign.End)
             }
             .borderRadius(12)
-            .justifyContent(FlexAlign.SpaceBetween)
             .padding(12)
             .width('100%')
 
@@ -166,7 +163,6 @@ export default struct Noticelist {
                 .textAlign(TextAlign.End)
             }
             .borderRadius(12)
-            .justifyContent(FlexAlign.SpaceBetween)
             .padding(12)
             .width('100%')
           }
