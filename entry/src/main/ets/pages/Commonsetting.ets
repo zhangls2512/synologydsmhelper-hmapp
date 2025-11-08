@@ -26,6 +26,7 @@ struct Commonsetting {
   @Local filePreviewTypeIndex: number = 0
   @Local filePreviewTypeValue: string = '系统预览服务'
   @Local onlinePreviewMedia: boolean = false
+  @Local selectFileDownloadPath: boolean = false
   @Local showAccountlistSheetAfterAppLaunch: boolean = false
   @Local cacheApiVersion: boolean = false
   @Local cellularDataUseRemindIndex: number = 0
@@ -651,6 +652,32 @@ struct Commonsetting {
               .borderRadius(12)
               .padding(12)
               .width('100%')
+
+              Divider()
+                .padding({
+                  left: 12,
+                  right: 12
+                })
+              Row() {
+                Text('自定义下载位置')
+                  .fontWeight(FontWeight.Medium)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+
+                Toggle({
+                  type: ToggleType.Switch,
+                  isOn: this.selectFileDownloadPath!!
+                })
+                  .onChange((isOn) => {
+                    this.commonSettingDataPreferences.putSync('selectFileDownloadPath', isOn)
+                    this.commonSettingDataPreferences.flushSync()
+                  })
+              }
+              .borderRadius(12)
+              .padding(12)
+              .width('100%')
             }
             .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
             .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
@@ -863,6 +890,8 @@ struct Commonsetting {
         this.filePreviewTypeValue = '自行选择'
       }
       this.onlinePreviewMedia = this.commonSettingDataPreferences.getSync('onlinePreviewMedia', true) as boolean
+      this.selectFileDownloadPath =
+        this.commonSettingDataPreferences.getSync('selectFileDownloadPath', false) as boolean
       this.showAccountlistSheetAfterAppLaunch =
         this.commonSettingDataPreferences.getSync('showAccountlistSheetAfterAppLaunch', false) as boolean
       this.cacheApiVersion = this.commonSettingDataPreferences.getSync('cacheApiVersion', false) as boolean
