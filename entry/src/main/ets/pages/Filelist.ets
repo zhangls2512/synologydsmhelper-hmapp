@@ -298,10 +298,10 @@ export default struct Filelist {
             content: '下载'
           })
             .onClick(async () => {
+              const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+                name: 'commonSetting'
+              })
               if (getCurrentNetworkBearerType() === 0) {
-                const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-                  name: 'commonSetting'
-                })
                 const cellularDataUseRemind = commonSettingDataPreferences.getSync('cellularDataUseRemind', 0)
                 if (cellularDataUseRemind === 0 ||
                   (cellularDataUseRemind === 1 && item.additional.size > 200 * Math.pow(1024, 2))) {
@@ -328,19 +328,31 @@ export default struct Filelist {
               }
               try {
                 const documentSaveOptions = new picker.DocumentSaveOptions()
-                const lastDotIndex = item.name.lastIndexOf('.')
-                if (lastDotIndex !== -1) {
-                  documentSaveOptions.newFileNames = [item.name.substring(0, lastDotIndex)]
-                  documentSaveOptions.fileSuffixChoices = ['.' + item.name.substring(lastDotIndex + 1)]
+                const selectFileDownloadPath = commonSettingDataPreferences.getSync('selectFileDownloadPath', false)
+                if (!selectFileDownloadPath) {
+                  documentSaveOptions.pickerMode = picker.DocumentPickerMode.DOWNLOAD
                 }
-                if (lastDotIndex === -1) {
-                  documentSaveOptions.newFileNames = [item.name]
-                  documentSaveOptions.fileSuffixChoices = ['']
+                if (selectFileDownloadPath) {
+                  const lastDotIndex = item.name.lastIndexOf('.')
+                  if (lastDotIndex !== -1) {
+                    documentSaveOptions.newFileNames = [item.name.substring(0, lastDotIndex)]
+                    documentSaveOptions.fileSuffixChoices = ['.' + item.name.substring(lastDotIndex + 1)]
+                  }
+                  if (lastDotIndex === -1) {
+                    documentSaveOptions.newFileNames = [item.name]
+                    documentSaveOptions.fileSuffixChoices = ['']
+                  }
                 }
                 const documentViewPicker = new picker.DocumentViewPicker(this.context)
                 const uris = await documentViewPicker.save(documentSaveOptions)
                 if (uris.length === 1) {
-                  const filePath = uris[0]
+                  let filePath = ''
+                  if (!selectFileDownloadPath) {
+                    filePath = new fileUri.FileUri(uris[0] + '/' + item.name).path
+                  }
+                  if (selectFileDownloadPath) {
+                    filePath = uris[0]
+                  }
                   this.prepareDownloadDialogControllerProgress.open()
                   const version = await getDsmApiMaxVersion('', 'SYNO.FileStation.Download')
                   this.prepareDownloadDialogControllerProgress.close()
@@ -422,16 +434,14 @@ export default struct Filelist {
                               await backgroundTaskManager.stopBackgroundRunning(this.context)
                               this.isShowProgressSheet = false
                               this.context.eventHub.off('cancelDownload')
-                              if (this.transferredSize < item.additional.size * 0.99 &&
-                                this.transferredSize < item.additional.size - 1) {
+                              if (this.transferredSize !== item.additional.size - 1) {
                                 this.transferredSize = -1
                                 this.totalSize = -1
                                 promptAction.openToast({
                                   message: '下载失败'
                                 })
                               }
-                              if (this.transferredSize >= item.additional.size * 0.99 ||
-                                this.transferredSize >= item.additional.size - 1) {
+                              if (this.transferredSize === item.additional.size - 1) {
                                 this.transferredSize = -1
                                 this.totalSize = -1
                                 promptAction.openToast({
@@ -445,6 +455,9 @@ export default struct Filelist {
                           remoteValidation: debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
                             'system') as 'system' | 'skip'
                         }
+                      },
+                      headers: {
+                        referer: accountInfo.path
                       },
                       cookies: {
                         id: accountInfo.sid,
@@ -1318,16 +1331,14 @@ export default struct Filelist {
                                       await backgroundTaskManager.stopBackgroundRunning(this.context)
                                       this.isShowProgressSheet = false
                                       this.context.eventHub.off('cancelDownload')
-                                      if (this.transferredSize < item.additional.size * 0.99 &&
-                                        this.transferredSize < item.additional.size - 1) {
+                                      if (this.transferredSize !== item.additional.size - 1) {
                                         this.transferredSize = -1
                                         this.totalSize = -1
                                         promptAction.openToast({
                                           message: '下载失败'
                                         })
                                       }
-                                      if (this.transferredSize >= item.additional.size * 0.99 ||
-                                        this.transferredSize >= item.additional.size - 1) {
+                                      if (this.transferredSize === item.additional.size - 1) {
                                         this.transferredSize = -1
                                         this.totalSize = -1
                                         const uri = fileUri.getUriFromPath(filePath)
@@ -1366,6 +1377,9 @@ export default struct Filelist {
                                   remoteValidation: debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
                                     'system') as 'system' | 'skip'
                                 }
+                              },
+                              headers: {
+                                referer: accountInfo.path
                               },
                               cookies: {
                                 id: accountInfo.sid,
