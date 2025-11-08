@@ -16,7 +16,7 @@ import { netQuality } from '@kit.NetworkBoostKit'
 import { connection } from '@kit.NetworkKit'
 import { notificationManager } from '@kit.NotificationKit'
 import { hiAppEvent } from '@kit.PerformanceAnalysisKit'
-import { importAccounts } from '../common/Account'
+import { getList, importAccounts } from '../common/Account'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import openLink from '../common/Openlink'
 import { developerRequest } from '../common/Request'
@@ -450,6 +450,12 @@ export default class EntryAbility extends UIAbility {
         })
       }
     }
+    const showAccountlistSheetAfterAppLaunch =
+      commonSettingDataPreferences.getSync('showAccountlistSheetAfterAppLaunch', false)
+    const accounts = await getList()
+    if (showAccountlistSheetAfterAppLaunch && accounts.length > 1) {
+      this.context.eventHub.emit('accountList')
+    }
     this.appInit(want)
   }
 
@@ -478,7 +484,7 @@ export default class EntryAbility extends UIAbility {
   }
 
   onContinue(wantParam: Record<string, Object>) {
-    if (wantParam.version !== 19) {
+    if (wantParam.version !== 20) {
       promptAction.openToast({
         message: '接续失败，原因：目标端应用版本号与发起端不匹配'
       })

@@ -119,7 +119,7 @@ struct Debugsetting {
             Text('基础')
               .fontColor($r('sys.color.font_secondary'))
               .fontSize($r('sys.float.ohos_id_text_size_body2'))
-              .fontWeight('medium')
+              .fontWeight(FontWeight.Medium)
               .margin({
                 bottom: 6,
                 left: 12,
@@ -128,7 +128,7 @@ struct Debugsetting {
             Column() {
               Row() {
                 Text('故障展示方式')
-                  .fontWeight('medium')
+                  .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -145,7 +145,6 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -156,7 +155,7 @@ struct Debugsetting {
                 })
               Row() {
                 Text('保存故障日志')
-                  .fontWeight('medium')
+                  .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -172,7 +171,6 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -183,7 +181,7 @@ struct Debugsetting {
                 })
               Row() {
                 Text('自动上传故障日志')
-                  .fontWeight('medium')
+                  .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -199,7 +197,6 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -210,7 +207,7 @@ struct Debugsetting {
                 })
               Row() {
                 Text('自动上传故障日志类型')
-                  .fontWeight('medium')
+                  .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -221,7 +218,6 @@ struct Debugsetting {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -254,7 +250,7 @@ struct Debugsetting {
                 })
               Row() {
                 Text('故障日志')
-                  .fontWeight('medium')
+                  .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -265,7 +261,6 @@ struct Debugsetting {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -298,7 +293,7 @@ struct Debugsetting {
                 })
               Row() {
                 Text('内存占用级别变化时弹窗')
-                  .fontWeight('medium')
+                  .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -313,7 +308,6 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -324,7 +318,7 @@ struct Debugsetting {
                 })
               Row() {
                 Text('进程缓存后快速启动')
-                  .fontWeight('medium')
+                  .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -361,7 +355,6 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -372,7 +365,7 @@ struct Debugsetting {
                 })
               Row() {
                 Text('电池电量低阈值')
-                  .fontWeight('medium')
+                  .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -394,7 +387,6 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
             }
@@ -413,7 +405,7 @@ struct Debugsetting {
             Text('应用')
               .fontColor($r('sys.color.font_secondary'))
               .fontSize($r('sys.float.ohos_id_text_size_body2'))
-              .fontWeight('medium')
+              .fontWeight(FontWeight.Medium)
               .margin({
                 bottom: 6,
                 left: 12,
@@ -423,7 +415,7 @@ struct Debugsetting {
               Row() {
                 Text('沙箱文件删除工具')
                   .fontColor($r('sys.color.warning'))
-                  .fontWeight('medium')
+                  .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -434,7 +426,6 @@ struct Debugsetting {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -468,7 +459,7 @@ struct Debugsetting {
               Row() {
                 Text('清除全部数据并退出')
                   .fontColor($r('sys.color.warning'))
-                  .fontWeight('medium')
+                  .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -479,7 +470,6 @@ struct Debugsetting {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -529,7 +519,7 @@ struct Debugsetting {
               Row() {
                 Text('终止所有进程并退出')
                   .fontColor($r('sys.color.warning'))
-                  .fontWeight('medium')
+                  .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -540,7 +530,6 @@ struct Debugsetting {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -600,7 +589,7 @@ struct Debugsetting {
             Text('应用恢复')
               .fontColor($r('sys.color.font_secondary'))
               .fontSize($r('sys.float.ohos_id_text_size_body2'))
-              .fontWeight('medium')
+              .fontWeight(FontWeight.Medium)
               .margin({
                 bottom: 6,
                 left: 12,
@@ -609,7 +598,7 @@ struct Debugsetting {
             Column() {
               Row() {
                 Text('重启当前进程')
-                  .fontWeight('medium')
+                  .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -620,7 +609,6 @@ struct Debugsetting {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -651,7 +639,7 @@ struct Debugsetting {
                 })
               Row() {
                 Text('保存当前状态')
-                  .fontWeight('medium')
+                  .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -662,7 +650,6 @@ struct Debugsetting {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -698,7 +685,7 @@ struct Debugsetting {
                 })
               Row() {
                 Text('设置')
-                  .fontWeight('medium')
+                  .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -709,7 +696,6 @@ struct Debugsetting {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -750,7 +736,7 @@ struct Debugsetting {
             Text('网络')
               .fontColor($r('sys.color.font_secondary'))
               .fontSize($r('sys.float.ohos_id_text_size_body2'))
-              .fontWeight('medium')
+              .fontWeight(FontWeight.Medium)
               .margin({
                 bottom: 6,
                 left: 12,
@@ -759,7 +745,7 @@ struct Debugsetting {
             Column() {
               Row() {
                 Text('可用状态变化时弹窗')
-                  .fontWeight('medium')
+                  .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -774,7 +760,6 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -785,7 +770,7 @@ struct Debugsetting {
                 })
               Row() {
                 Text('阻塞状态变化时弹窗')
-                  .fontWeight('medium')
+                  .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -800,7 +785,6 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -811,7 +795,7 @@ struct Debugsetting {
                 })
               Row() {
                 Text('丢失时弹窗')
-                  .fontWeight('medium')
+                  .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -826,7 +810,6 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -837,7 +820,7 @@ struct Debugsetting {
                 })
               Row() {
                 Text('能力变化时弹窗')
-                  .fontWeight('medium')
+                  .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -852,7 +835,6 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -863,7 +845,7 @@ struct Debugsetting {
                 })
               Row() {
                 Text('质量变化时弹窗')
-                  .fontWeight('medium')
+                  .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -878,7 +860,6 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -889,7 +870,7 @@ struct Debugsetting {
                 })
               Row() {
                 Text('场景变化时弹窗')
-                  .fontWeight('medium')
+                  .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -904,7 +885,6 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -915,7 +895,7 @@ struct Debugsetting {
                 })
               Row() {
                 Text('高时延时自动反馈传输体验')
-                  .fontWeight('medium')
+                  .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -930,7 +910,6 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -941,7 +920,7 @@ struct Debugsetting {
                 })
               Row() {
                 Text('时延达到')
-                  .fontWeight('medium')
+                  .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -962,14 +941,13 @@ struct Debugsetting {
                   })
                 Text('ms时判定为高时延')
                   .enableAutoSpacing(true)
-                  .fontWeight('medium')
+                  .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
                     left: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -980,7 +958,7 @@ struct Debugsetting {
                 })
               Row() {
                 Text('反馈传输体验')
-                  .fontWeight('medium')
+                  .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -991,7 +969,6 @@ struct Debugsetting {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -1025,7 +1002,7 @@ struct Debugsetting {
               Row() {
                 Text('连接DSM时跳过SSL验证')
                   .enableAutoSpacing(true)
-                  .fontWeight('medium')
+                  .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -1045,7 +1022,6 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -1056,7 +1032,7 @@ struct Debugsetting {
                 })
               Row() {
                 Text('测试')
-                  .fontWeight('medium')
+                  .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -1067,7 +1043,6 @@ struct Debugsetting {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -1108,7 +1083,7 @@ struct Debugsetting {
             Text('Webview')
               .fontColor($r('sys.color.font_secondary'))
               .fontSize($r('sys.float.ohos_id_text_size_body2'))
-              .fontWeight('medium')
+              .fontWeight(FontWeight.Medium)
               .margin({
                 bottom: 6,
                 left: 12,
@@ -1118,7 +1093,7 @@ struct Debugsetting {
               Row() {
                 Text('分段解析HTML优化')
                   .enableAutoSpacing(true)
-                  .fontWeight('medium')
+                  .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -1133,7 +1108,6 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -1144,7 +1118,7 @@ struct Debugsetting {
                 })
               Row() {
                 Text('销毁模式')
-                  .fontWeight('medium')
+                  .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -1161,7 +1135,6 @@ struct Debugsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
             }

@@ -1,3 +1,4 @@
+import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import { AccountInfo, getList, remove, set } from '../common/Account'
 
@@ -6,6 +7,7 @@ export default struct Accountlist {
   @Consumer() isShowAccountlistSheet: boolean = false
   @Local accountArray: AccountInfo[] = []
   @Local hoverId: number = -1
+  context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
   @Builder
   MenuBuilder(item: AccountInfo) {
@@ -34,6 +36,7 @@ export default struct Accountlist {
             await remove(item.id)
             this.accountArray = await getList()
             if (item.isLogin === 'true') {
+              this.context.eventHub.emit('refreshMe')
               this.isShowAccountlistSheet = false
             }
           }
@@ -112,6 +115,9 @@ export default struct Accountlist {
               promptAction.openToast({
                 message: '登录成功'
               })
+              this.context.eventHub.emit('refreshCardlist')
+              this.context.eventHub.emit('refreshFilelist')
+              this.context.eventHub.emit('refreshMe')
               this.isShowAccountlistSheet = false
             })
             .bindContextMenu(this.MenuBuilder(item), ResponseType.LongPress, {

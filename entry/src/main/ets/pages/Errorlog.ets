@@ -180,7 +180,6 @@ struct Errorlog {
                   .textAlign(TextAlign.End)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -202,7 +201,6 @@ struct Errorlog {
                   .textAlign(TextAlign.End)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -244,7 +242,6 @@ struct Errorlog {
                   .textAlign(TextAlign.End)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -267,7 +264,6 @@ struct Errorlog {
                     .width(12)
                 }
                 .borderRadius(12)
-                .justifyContent(FlexAlign.SpaceBetween)
                 .padding(12)
                 .stateStyles({
                   normal: {

@@ -91,7 +91,6 @@ export default struct Setting {
                     })
                 }
                 .borderRadius(12)
-                .justifyContent(FlexAlign.SpaceBetween)
                 .padding(12)
                 .width('100%')
 
@@ -115,7 +114,6 @@ export default struct Setting {
                     .width(12)
                 }
                 .borderRadius(12)
-                .justifyContent(FlexAlign.SpaceBetween)
                 .padding(12)
                 .stateStyles({
                   normal: {
@@ -167,7 +165,6 @@ export default struct Setting {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -236,7 +233,6 @@ export default struct Setting {
                 .width(12)
             }
             .borderRadius(12)
-            .justifyContent(FlexAlign.SpaceBetween)
             .padding(12)
             .stateStyles({
               normal: {
@@ -285,7 +281,6 @@ export default struct Setting {
                 .width(12)
             }
             .borderRadius(12)
-            .justifyContent(FlexAlign.SpaceBetween)
             .padding(12)
             .stateStyles({
               normal: {
@@ -344,7 +339,6 @@ export default struct Setting {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -394,7 +388,6 @@ export default struct Setting {
                     .width(12)
                 }
                 .borderRadius(12)
-                .justifyContent(FlexAlign.SpaceBetween)
                 .padding(12)
                 .stateStyles({
                   normal: {
@@ -434,7 +427,6 @@ export default struct Setting {
                     .width(12)
                 }
                 .borderRadius(12)
-                .justifyContent(FlexAlign.SpaceBetween)
                 .padding(12)
                 .stateStyles({
                   normal: {
@@ -495,7 +487,6 @@ export default struct Setting {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -549,7 +540,6 @@ export default struct Setting {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -591,7 +581,6 @@ export default struct Setting {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -635,7 +624,6 @@ export default struct Setting {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -700,7 +688,6 @@ export default struct Setting {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -744,7 +731,6 @@ export default struct Setting {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -804,7 +790,6 @@ export default struct Setting {
                 .width(12)
             }
             .borderRadius(12)
-            .justifyContent(FlexAlign.SpaceBetween)
             .padding(12)
             .stateStyles({
               normal: {
@@ -848,7 +833,6 @@ export default struct Setting {
                 .width(12)
             }
             .borderRadius(12)
-            .justifyContent(FlexAlign.SpaceBetween)
             .padding(12)
             .stateStyles({
               normal: {

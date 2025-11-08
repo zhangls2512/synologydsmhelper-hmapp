@@ -1,5 +1,4 @@
 import { common } from '@kit.AbilityKit'
-import { FunctionComponent, FunctionController } from '@kit.AgentFrameworkKit'
 import { updateManager } from '@kit.AppGalleryKit'
 import { promptAction } from '@kit.ArkUI'
 import { call } from '@kit.TelephonyKit'
@@ -18,7 +17,6 @@ struct About {
   @Local hoverId: number = -1
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
   pageInfos = new NavPathStack()
-  controller: FunctionController = new FunctionController()
 
   build() {
     NavDestination() {
@@ -127,7 +125,6 @@ struct About {
               }
             }
             .borderRadius(12)
-            .justifyContent(FlexAlign.SpaceBetween)
             .padding(12)
             .stateStyles({
               normal: {
@@ -198,7 +195,6 @@ struct About {
                 .width(12)
             }
             .borderRadius(12)
-            .justifyContent(FlexAlign.SpaceBetween)
             .padding(12)
             .stateStyles({
               normal: {
@@ -243,7 +239,6 @@ struct About {
                 .width(12)
             }
             .borderRadius(12)
-            .justifyContent(FlexAlign.SpaceBetween)
             .padding(12)
             .stateStyles({
               normal: {
@@ -285,7 +280,6 @@ struct About {
                 .width(12)
             }
             .borderRadius(12)
-            .justifyContent(FlexAlign.SpaceBetween)
             .padding(12)
             .stateStyles({
               normal: {
@@ -327,7 +321,6 @@ struct About {
                 .width(12)
             }
             .borderRadius(12)
-            .justifyContent(FlexAlign.SpaceBetween)
             .padding(12)
             .stateStyles({
               normal: {
@@ -360,31 +353,6 @@ struct About {
         .margin({
           top: $r('sys.float.ohos_id_elements_margin_vertical_l')
         })
-
-        ListItem() {
-          FunctionComponent({
-            agentId: 'agent2250c6634775435b9f26182497d7bc1b',
-            options: {
-              title: '智能客服'
-            },
-            controller: this.controller,
-            onError: (err) => {
-              if (err.code === 1022400014) {
-                promptAction.openToast({
-                  message: '当前小艺版本不支持，请前往应用市场更新小艺'
-                })
-              } else {
-                promptAction.openToast({
-                  message: '发生错误，错误码：' + err.code + '，错误信息：' + err.message
-                })
-              }
-            }
-          })
-        }
-        .margin({
-          top: $r('sys.float.ohos_id_elements_margin_vertical_l')
-        })
-        .width('100%')
 
         ListItem() {
           Column() {
@@ -421,7 +389,6 @@ struct About {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -473,7 +440,6 @@ struct About {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -530,7 +496,6 @@ struct About {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -583,7 +548,6 @@ struct About {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -636,7 +600,6 @@ struct About {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -705,7 +668,6 @@ struct About {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -757,7 +719,6 @@ struct About {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -809,7 +770,6 @@ struct About {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
