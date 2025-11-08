@@ -26,6 +26,8 @@ struct Commonsetting {
   @Local filePreviewTypeIndex: number = 0
   @Local filePreviewTypeValue: string = '系统预览服务'
   @Local onlinePreviewMedia: boolean = false
+  @Local showAccountlistSheetAfterAppLaunch: boolean = false
+  @Local cacheApiVersion: boolean = false
   @Local cellularDataUseRemindIndex: number = 0
   @Local cellularDataUseRemindValue: string = '始终'
   @Local checkVersionUpdateIndex: number = 1
@@ -224,7 +226,7 @@ struct Commonsetting {
                 })
               Row() {
                 Text('防窥保护')
-                  .fontWeight('medium')
+                  .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -453,7 +455,7 @@ struct Commonsetting {
                 })
               Row() {
                 Text('背景图')
-                  .fontWeight('medium')
+                  .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -673,6 +675,68 @@ struct Commonsetting {
               })
             Column() {
               Row() {
+                Text('应用启动后拉起切换账号弹窗')
+                  .fontWeight(FontWeight.Medium)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                Toggle({
+                  type: ToggleType.Switch,
+                  isOn: this.showAccountlistSheetAfterAppLaunch!!
+                })
+                  .onChange((isOn) => {
+                    this.commonSettingDataPreferences.putSync('showAccountlistSheetAfterAppLaunch', isOn)
+                    this.commonSettingDataPreferences.flushSync()
+                  })
+              }
+              .borderRadius(12)
+              .padding(12)
+              .width('100%')
+
+              Divider()
+                .padding({
+                  left: 12,
+                  right: 12
+                })
+              Row() {
+                Column() {
+                  Text('缓存API版本号')
+                    .enableAutoSpacing(true)
+                    .fontWeight(FontWeight.Medium)
+                  Text('开启有助于降低请求耗时，但API版本更新后可能会产生兼容性问题')
+                    .enableAutoSpacing(true)
+                    .fontColor($r('sys.color.font_secondary'))
+                    .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                    .margin({
+                      top: $r('sys.float.ohos_id_text_margin_vertical')
+                    })
+                }
+                .alignItems(HorizontalAlign.Start)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+
+                Toggle({
+                  type: ToggleType.Switch,
+                  isOn: this.cacheApiVersion!!
+                })
+                  .onChange((isOn) => {
+                    this.commonSettingDataPreferences.putSync('cacheApiVersion', isOn)
+                    this.commonSettingDataPreferences.flushSync()
+                  })
+              }
+              .borderRadius(12)
+              .padding(12)
+              .width('100%')
+
+              Divider()
+                .padding({
+                  left: 12,
+                  right: 12
+                })
+              Row() {
                 Text('流量使用提醒')
                   .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
@@ -799,6 +863,9 @@ struct Commonsetting {
         this.filePreviewTypeValue = '自行选择'
       }
       this.onlinePreviewMedia = this.commonSettingDataPreferences.getSync('onlinePreviewMedia', true) as boolean
+      this.showAccountlistSheetAfterAppLaunch =
+        this.commonSettingDataPreferences.getSync('showAccountlistSheetAfterAppLaunch', false) as boolean
+      this.cacheApiVersion = this.commonSettingDataPreferences.getSync('cacheApiVersion', false) as boolean
       const cellularDataUseRemind = this.commonSettingDataPreferences.getSync('cellularDataUseRemind', 0)
       this.cellularDataUseRemindIndex = cellularDataUseRemind as number
       if (cellularDataUseRemind === 0) {

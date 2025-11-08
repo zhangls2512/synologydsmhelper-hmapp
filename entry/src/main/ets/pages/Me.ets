@@ -2,6 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { display, LoadingDialog } from '@kit.ArkUI'
 import { hdsEffect } from '@kit.UIDesignKit'
 import { exit, get } from '../common/Account'
+import { dsmRequest } from '../common/Request'
 import Accountlist from './Accountlist'
 import Login from './Login'
 import Setting from './Setting'
@@ -15,6 +16,11 @@ export default struct Me {
   @Local name: string = ''
   @Local hoverId: number = -1
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
+  dialogControllerProgress = new CustomDialogController({
+    builder: LoadingDialog({
+      content: '加载中...'
+    })
+  })
 
   async get() {
     const accountInfo = await get()
@@ -148,9 +154,6 @@ export default struct Me {
             preferType: this.preferType,
             title: {
               title: '切换账号'
-            },
-            onDisappear: () => {
-              this.get()
             }
           })
         }
@@ -159,6 +162,166 @@ export default struct Me {
         .padding($r('sys.float.ohos_id_corner_radius_mark'))
       }
 
+      if (this.name) {
+        ListItem() {
+          Column() {
+            Text('系统')
+              .fontColor($r('sys.color.font_secondary'))
+              .fontSize($r('sys.float.ohos_id_text_size_body2'))
+              .fontWeight(FontWeight.Medium)
+              .margin({
+                bottom: 6,
+                left: 12,
+                right: 12
+              })
+            Column() {
+              Row() {
+                Image($r('app.media.reboot'))
+                  .height(24)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                  .width(24)
+                Text('重启')
+                  .fontWeight(FontWeight.Medium)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                Image($r('app.media.right'))
+                  .fillColor($r('sys.color.icon_fourth'))
+                  .height(12)
+                  .width(12)
+              }
+              .borderRadius(12)
+              .padding(12)
+              .stateStyles({
+                normal: {
+                  .backgroundColor(this.hoverId === 2 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
+                },
+                pressed: {
+                  .backgroundColor($r('sys.color.interactive_pressed'))
+                }
+              })
+              .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 2
+                }
+              })
+              .onClick(async () => {
+                const promptAction = this.getUIContext().getPromptAction()
+                const data = await promptAction.showDialog({
+                  title: '提示',
+                  message: '确定重启？',
+                  buttons: [
+                    {
+                      text: '取消',
+                      color: $r('sys.color.font_primary')
+                    },
+                    {
+                      text: '确定',
+                      color: $r('sys.color.font_emphasize')
+                    }
+                  ]
+                })
+                if (data.index === 1) {
+                  this.dialogControllerProgress.open()
+                  const res = await dsmRequest('', 'SYNO.Core.System', '&method=reboot', 2)
+                  this.dialogControllerProgress.close()
+                  if (res !== 'fail') {
+                    promptAction.openToast({
+                      message: '重启命令发送成功'
+                    })
+                  }
+                }
+              })
+
+              Divider()
+                .padding({
+                  left: 12,
+                  right: 12
+                })
+              Row() {
+                Image($r('app.media.shutdown'))
+                  .height(24)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                  .width(24)
+                Text('关机')
+                  .fontWeight(FontWeight.Medium)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                Image($r('app.media.right'))
+                  .fillColor($r('sys.color.icon_fourth'))
+                  .height(12)
+                  .width(12)
+              }
+              .borderRadius(12)
+              .padding(12)
+              .stateStyles({
+                normal: {
+                  .backgroundColor(this.hoverId === 3 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
+                },
+                pressed: {
+                  .backgroundColor($r('sys.color.interactive_pressed'))
+                }
+              })
+              .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 3
+                }
+              })
+              .onClick(async () => {
+                const promptAction = this.getUIContext().getPromptAction()
+                const data = await promptAction.showDialog({
+                  title: '提示',
+                  message: '确定关机？',
+                  buttons: [
+                    {
+                      text: '取消',
+                      color: $r('sys.color.font_primary')
+                    },
+                    {
+                      text: '确定',
+                      color: $r('sys.color.warning')
+                    }
+                  ]
+                })
+                if (data.index === 1) {
+                  this.dialogControllerProgress.open()
+                  const res = await dsmRequest('', 'SYNO.Core.System', '&method=shutdown', 2)
+                  this.dialogControllerProgress.close()
+                  if (res !== 'fail') {
+                    promptAction.openToast({
+                      message: '关机命令发送成功'
+                    })
+                  }
+                }
+              })
+            }
+            .backgroundColor($r('sys.color.comp_background_primary'))
+            .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+            .padding($r('sys.float.ohos_id_corner_radius_mark'))
+          }
+          .alignItems(HorizontalAlign.Start)
+        }
+        .margin({
+          top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+        })
+      }
       ListItem() {
         Column() {
           Row() {
@@ -184,7 +347,7 @@ export default struct Me {
           .padding(12)
           .stateStyles({
             normal: {
-              .backgroundColor(this.hoverId === 2 ? $r('sys.color.interactive_hover') :
+              .backgroundColor(this.hoverId === 4 ? $r('sys.color.interactive_hover') :
                 $r('sys.color.ohos_id_color_card_bg'))
             },
             pressed: {
@@ -197,7 +360,7 @@ export default struct Me {
               this.hoverId = -1
             }
             if (isHover) {
-              this.hoverId = 2
+              this.hoverId = 4
             }
           })
           .onClick(() => {

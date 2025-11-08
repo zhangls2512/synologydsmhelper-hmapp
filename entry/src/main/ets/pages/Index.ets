@@ -7,10 +7,12 @@ import Cardlist from './Cardlist'
 import Filelist from './Filelist'
 import Me from './Me'
 import Cleardata from './Cleardata'
+import Accountlist from './Accountlist'
 
 @Entry
 @ComponentV2
 struct Index {
+  @Provider() isShowAccountlistSheet: boolean = false
   @Local backgroundImagePixelMap: PixelMap | undefined = undefined
   @Local preferType: number = 1
   @Local index: number = 0
@@ -66,6 +68,11 @@ struct Index {
     Cleardata()
   }
 
+  @Builder
+  AccountlistSheetBuilder() {
+    Accountlist()
+  }
+
   build() {
     Column() {
       if (this.preferType === 0) {
@@ -85,6 +92,13 @@ struct Index {
             .height('100%')
         }
         .tabBar(this.tabBuilder(0, $r('app.media.card'), '卡片'))
+        .bindSheet(this.isShowAccountlistSheet!!, this.AccountlistSheetBuilder(), {
+          height: SheetSize.FIT_CONTENT,
+          preferType: this.preferType,
+          title: {
+            title: '切换账号'
+          }
+        })
 
         TabContent() {
           Filelist()
@@ -161,6 +175,11 @@ struct Index {
           this.isShowCleardataSheet = true
         }
       })
+      this.context.eventHub.on('accountList', () => {
+        if (!this.isShowAccountlistSheet) {
+          this.isShowAccountlistSheet = true
+        }
+      })
       this.context.eventHub.on('refreshIndex', () => {
         this.backgroundImagePixelMap = this.getBackgroundImage()
       })
@@ -168,6 +187,7 @@ struct Index {
     })
     .onDisAppear(() => {
       this.context.eventHub.off('refreshIndex')
+      this.context.eventHub.off('accountList')
       this.context.eventHub.off('clearData')
       display.off('change')
     })

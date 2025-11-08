@@ -16,7 +16,7 @@ import { netQuality } from '@kit.NetworkBoostKit'
 import { connection } from '@kit.NetworkKit'
 import { notificationManager } from '@kit.NotificationKit'
 import { hiAppEvent } from '@kit.PerformanceAnalysisKit'
-import { importAccounts } from '../common/Account'
+import { getList, importAccounts } from '../common/Account'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import openLink from '../common/Openlink'
 import { developerRequest } from '../common/Request'
@@ -449,6 +449,12 @@ export default class EntryAbility extends UIAbility {
           message: '发生错误，错误码：' + err.code + '，错误信息：' + err.message
         })
       }
+    }
+    const showAccountlistSheetAfterAppLaunch =
+      commonSettingDataPreferences.getSync('showAccountlistSheetAfterAppLaunch', false)
+    const accounts = await getList()
+    if (showAccountlistSheetAfterAppLaunch && accounts.length > 1) {
+      this.context.eventHub.emit('accountList')
     }
     this.appInit(want)
   }
