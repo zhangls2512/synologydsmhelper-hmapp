@@ -1,4 +1,4 @@
-import { common, wantAgent } from '@kit.AbilityKit'
+import { common, wantAgent, wantConstant } from '@kit.AbilityKit'
 import { preferences, uniformTypeDescriptor } from '@kit.ArkData'
 import { fastbuffer, util } from '@kit.ArkTS'
 import { display, LoadingDialog, promptAction } from '@kit.ArkUI'
@@ -139,7 +139,6 @@ export default struct Filelist {
 
   async get() {
     this.searchKeyword = ''
-    this.hoverId = -1
     this.isLogin = await getLoginStatus()
     if (this.isLogin) {
       const path = this.getPath()
@@ -191,7 +190,6 @@ export default struct Filelist {
   }
 
   async search() {
-    this.hoverId = -1
     this.searchDialogControllerProgress.open()
     const res = await dsmRequest('', 'SYNO.FileStation.Search',
       '&method=start&folder_path=' + encodeURIComponent(JSON.stringify([this.getPath()])) + '&pattern=' +
@@ -1072,61 +1070,59 @@ export default struct Filelist {
                         })
                     }
                     Row() {
-                      Row() {
-                        if (this.multipleSelect && this.dirnames.length > 0) {
-                          Toggle({
-                            type: ToggleType.Checkbox,
-                            isOn: this.multipleSelectArray.some(selectItem => selectItem === item.path)
-                          })
-                            .margin({
-                              right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                            })
-                            .onChange((isOn) => {
-                              if (!isOn) {
-                                this.multipleSelectArray.splice(this.multipleSelectArray.findIndex(selectItem => selectItem ===
-                                item.path), 1)
-                              }
-                              if (isOn) {
-                                this.multipleSelectArray.push(item.path)
-                              }
-                            })
-                        }
-                        if (!item.isdir) {
-                          Image(this.getFileTypeIcon(item.name))
-                            .fillColor($r('sys.color.icon_secondary'))
-                            .height(24)
-                            .margin({
-                              right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                            })
-                            .width(24)
-                        }
-                        if (item.isdir) {
-                          Image($r('app.media.foldericon'))
-                            .height(24)
-                            .margin({
-                              right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                            })
-                            .width(24)
-                        }
-                        Column() {
-                          Text(item.name)
-                            .enableAutoSpacing(true)
-                            .fontWeight(FontWeight.Medium)
-                            .width('85%')
-                          Text() {
-                            Span(this.getTimeString(item.additional.time.mtime))
-                            if (item.additional.size && !item.isdir) {
-                              Span(' - ' + this.getSizeString(item.additional.size))
-                            }
-                          }
-                          .fontColor($r('sys.color.font_secondary'))
-                          .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                      if (this.multipleSelect && this.dirnames.length > 0) {
+                        Toggle({
+                          type: ToggleType.Checkbox,
+                          isOn: this.multipleSelectArray.some(selectItem => selectItem === item.path)
+                        })
                           .margin({
-                            top: $r('sys.float.ohos_id_text_margin_vertical')
+                            right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                           })
-                        }
-                        .alignItems(HorizontalAlign.Start)
+                          .onChange((isOn) => {
+                            if (!isOn) {
+                              this.multipleSelectArray.splice(this.multipleSelectArray.findIndex(selectItem => selectItem ===
+                              item.path), 1)
+                            }
+                            if (isOn) {
+                              this.multipleSelectArray.push(item.path)
+                            }
+                          })
                       }
+                      if (!item.isdir) {
+                        Image(this.getFileTypeIcon(item.name))
+                          .fillColor($r('sys.color.icon_secondary'))
+                          .height(24)
+                          .margin({
+                            right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                          })
+                          .width(24)
+                      }
+                      if (item.isdir) {
+                        Image($r('app.media.foldericon'))
+                          .height(24)
+                          .margin({
+                            right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                          })
+                          .width(24)
+                      }
+                      Column() {
+                        Text(item.name)
+                          .enableAutoSpacing(true)
+                          .fontWeight(FontWeight.Medium)
+                          .width('85%')
+                        Text() {
+                          Span(this.getTimeString(item.additional.time.mtime))
+                          if (item.additional.size && !item.isdir) {
+                            Span(' - ' + this.getSizeString(item.additional.size))
+                          }
+                        }
+                        .fontColor($r('sys.color.font_secondary'))
+                        .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                        .margin({
+                          top: $r('sys.float.ohos_id_text_margin_vertical')
+                        })
+                      }
+                      .alignItems(HorizontalAlign.Start)
                       .layoutWeight(1)
                       .margin({
                         right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -1138,7 +1134,6 @@ export default struct Filelist {
                         .width(12)
                     }
                     .borderRadius(12)
-                    .justifyContent(FlexAlign.SpaceBetween)
                     .padding({
                       bottom: 12,
                       left: 6,
@@ -1165,13 +1160,17 @@ export default struct Filelist {
                     })
                     .onClick(async () => {
                       if (!item.isdir) {
+                        const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+                          name: 'commonSetting'
+                        })
                         let houzhui = ''
                         const lastDotIndex = item.name.lastIndexOf('.')
                         if (lastDotIndex !== -1) {
                           houzhui = item.name.slice(lastDotIndex + 1)
                         }
                         const supportedformats = ['mp4', 'mkv', 'm4a', 'aac', 'mp3', 'ogg', 'wav', 'flac', 'amr', 'ape']
-                        if (supportedformats.includes(houzhui)) {
+                        if (supportedformats.includes(houzhui) &&
+                        commonSettingDataPreferences.getSync('onlinePreviewMedia', true)) {
                           const dialogControllerProgress = new CustomDialogController({
                             builder: LoadingDialog({
                               content: '播放准备中...'
@@ -1203,11 +1202,7 @@ export default struct Filelist {
                           return
                         }
                         if (getCurrentNetworkBearerType() === 0) {
-                          const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-                            name: 'commonSetting'
-                          })
-                          const cellularDataUseRemind =
-                            commonSettingDataPreferences.getSync('cellularDataUseRemind', 0)
+                          const cellularDataUseRemind = commonSettingDataPreferences.getSync('cellularDataUseRemind', 0)
                           if (cellularDataUseRemind === 0 ||
                             (cellularDataUseRemind === 1 && item.additional.size > 200 * Math.pow(1024, 2))) {
                             const promptAction = this.getUIContext().getPromptAction()
@@ -1336,17 +1331,31 @@ export default struct Filelist {
                                         this.transferredSize = -1
                                         this.totalSize = -1
                                         const uri = fileUri.getUriFromPath(filePath)
-                                        const canPreview = await filePreview.canPreview(this.context, uri)
-                                        if (!canPreview) {
-                                          promptAction.openToast({
-                                            message: '此类型不支持预览'
-                                          })
+                                        const filePreviewType =
+                                          commonSettingDataPreferences.getSync('filePreviewType', 0)
+                                        if (filePreviewType === 0) {
+                                          const canPreview = await filePreview.canPreview(this.context, uri)
+                                          if (!canPreview) {
+                                            promptAction.openToast({
+                                              message: '此类型不支持预览'
+                                            })
+                                          }
+                                          if (canPreview) {
+                                            filePreview.openPreview(this.context, {
+                                              title: item.name,
+                                              uri: uri,
+                                              mimeType: ''
+                                            })
+                                          }
                                         }
-                                        if (canPreview) {
-                                          filePreview.openPreview(this.context, {
-                                            title: item.name,
+                                        if (filePreviewType === 1) {
+                                          this.context.startAbility({
+                                            action: 'ohos.want.action.viewData',
                                             uri: uri,
-                                            mimeType: ''
+                                            parameters: {
+                                              'ohos.ability.params.showDefaultPicker': true
+                                            },
+                                            flags: wantConstant.Flags.FLAG_AUTH_READ_URI_PERMISSION
                                           })
                                         }
                                       }

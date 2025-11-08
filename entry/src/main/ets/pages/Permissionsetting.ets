@@ -36,7 +36,6 @@ struct Permissionsetting {
                   .enabled(false)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
             }
@@ -77,7 +76,6 @@ struct Permissionsetting {
                   .enabled(false)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
             }
@@ -139,7 +137,6 @@ struct Permissionsetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
             }

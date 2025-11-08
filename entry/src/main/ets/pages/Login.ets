@@ -64,7 +64,6 @@ export default struct Login {
               }
               .layoutWeight(1)
             }
-            .justifyContent(FlexAlign.SpaceBetween)
 
             Row() {
               Text('主机')
@@ -79,7 +78,6 @@ export default struct Login {
                 .enableAutoSpacing(true)
                 .layoutWeight(1)
             }
-            .justifyContent(FlexAlign.SpaceBetween)
             .margin({
               top: $r('sys.float.ohos_id_elements_margin_vertical_m')
             })
@@ -99,7 +97,6 @@ export default struct Login {
                 .maxLength(5)
                 .type(InputType.Number)
             }
-            .justifyContent(FlexAlign.SpaceBetween)
             .margin({
               top: $r('sys.float.ohos_id_elements_margin_vertical_m')
             })
@@ -126,7 +123,6 @@ export default struct Login {
               .enableAutoSpacing(true)
               .layoutWeight(1)
           }
-          .justifyContent(FlexAlign.SpaceBetween)
           .margin({
             top: $r('sys.float.ohos_id_elements_margin_vertical_m')
           })
@@ -147,7 +143,6 @@ export default struct Login {
               .maxLength(30)
               .type(InputType.Password)
           }
-          .justifyContent(FlexAlign.SpaceBetween)
           .margin({
             top: $r('sys.float.ohos_id_elements_margin_vertical_m')
           })
@@ -167,7 +162,6 @@ export default struct Login {
               .maxLength(6)
               .type(InputType.Number)
           }
-          .justifyContent(FlexAlign.SpaceBetween)
           .margin({
             top: $r('sys.float.ohos_id_elements_margin_vertical_m')
           })
@@ -348,7 +342,6 @@ export default struct Login {
             .fontSize($r('sys.float.ohos_id_text_size_body3'))
             .layoutWeight(1)
           }
-          .justifyContent(FlexAlign.SpaceBetween)
           .margin({
             top: $r('sys.float.ohos_id_elements_margin_vertical_l')
           })

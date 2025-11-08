@@ -1,10 +1,22 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { promptAction } from '@kit.ArkUI'
+import { fileIo } from '@kit.CoreFileKit'
 import { netBoost } from '@kit.NetworkBoostKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { get, set } from './Account'
+import { read } from './File'
 import { ResponseData } from '../pages/Login'
+
+interface ApiVersionItem {
+  name: string,
+  version: number
+}
+
+interface ApiVersionCacheItem {
+  path: string,
+  apiVersion: ApiVersionItem[]
+}
 
 interface Error {
   code: number
@@ -22,6 +34,32 @@ interface DeveloperErrorResponse {
   errFix: string
 }
 
+function getCacheApiVersion(path: string, api: string) {
+  const context = getContext() as common.UIAbilityContext
+  const filePath = context.cacheDir + '/apiversion.txt'
+  if (!fileIo.accessSync(filePath)) {
+    return -1
+  } else {
+    const filestring = read(filePath)
+    let apiVersionCache: ApiVersionCacheItem[] = []
+    if (filestring) {
+      apiVersionCache = JSON.parse(filestring) as ApiVersionCacheItem[]
+    }
+    const pathIndex = apiVersionCache.findIndex(item => item.path === path)
+    if (pathIndex === -1) {
+      return -1
+    } else {
+      const pathApiVersionCache = apiVersionCache[pathIndex].apiVersion
+      const apiVersionIndex = pathApiVersionCache.findIndex(item => item.name === api)
+      if (apiVersionIndex === -1) {
+        return -1
+      } else {
+        return pathApiVersionCache[apiVersionIndex].version
+      }
+    }
+  }
+}
+
 export async function getDsmApiMaxVersion(path: string, api: string) {
   const accountInfo = await get()
   let requestPath = path
@@ -29,6 +67,14 @@ export async function getDsmApiMaxVersion(path: string, api: string) {
     requestPath = accountInfo.path
   }
   const context = getContext() as common.UIAbilityContext
+  const commonSettingDataPreferences = preferences.getPreferencesSync(context, {
+    name: 'commonSetting'
+  })
+  const cacheApiVersion = getCacheApiVersion(requestPath, api)
+  const cacheApiVersionSetting = commonSettingDataPreferences.getSync('cacheApiVersion', false)
+  if (cacheApiVersionSetting && cacheApiVersion !== -1) {
+    return cacheApiVersion
+  }
   const debugSettingDataPreferences = preferences.getPreferencesSync(context, {
     name: 'debugSetting'
   })
@@ -53,7 +99,42 @@ export async function getDsmApiMaxVersion(path: string, api: string) {
       }
       const res = JSON.parse(body) as DsmResponse
       if (res.success) {
-        return res.data[api].maxVersion as number
+        const version = res.data[api].maxVersion as number
+        if (cacheApiVersionSetting) {
+          const filePath = context.cacheDir + '/apiversion.txt'
+          const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
+          const filestring = read(filePath)
+          let apiVersionCache: ApiVersionCacheItem[] = []
+          if (filestring) {
+            apiVersionCache = JSON.parse(filestring) as ApiVersionCacheItem[]
+          }
+          const pathIndex = apiVersionCache.findIndex(item => item.path === requestPath)
+          if (pathIndex === -1) {
+            apiVersionCache.push({
+              path: requestPath,
+              apiVersion: [
+                {
+                  name: api,
+                  version: version
+                }
+              ]
+            })
+          } else {
+            const pathApiVersionCache = apiVersionCache[pathIndex].apiVersion
+            const apiVersionIndex = pathApiVersionCache.findIndex(item => item.name === api)
+            if (apiVersionIndex === -1) {
+              pathApiVersionCache.push({
+                name: api,
+                version: version
+              })
+            } else {
+              pathApiVersionCache[apiVersionIndex].version = version
+            }
+          }
+          fileIo.writeSync(file.fd, JSON.stringify(apiVersionCache))
+          fileIo.closeSync(file)
+        }
+        return version
       }
       promptAction.openToast({
         message: '接口调用失败，错误码：' + res.error.code
@@ -73,94 +154,100 @@ export async function getDsmApiMaxVersion(path: string, api: string) {
   }
 }
 
-export async function dsmRequest(path: string, api: string, params: string): Promise<string | object> {
+export async function dsmRequest(path: string, api: string, params: string,
+  version?: number): Promise<string | object> {
   const accountInfo = await get()
   let requestPath = path
   if (!requestPath) {
     requestPath = accountInfo.path
   }
-  const version = await getDsmApiMaxVersion(path, api)
-  if (version !== 'fail') {
-    const context = getContext() as common.UIAbilityContext
-    const debugSettingDataPreferences = preferences.getPreferencesSync(context, {
-      name: 'debugSetting'
-    })
-    const session = rcp.createSession({
-      requestConfiguration: {
-        security: {
-          remoteValidation: debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
-            'system') as 'system' | 'skip'
-        }
-      },
-      headers: {
-        referer: requestPath
-      },
-      cookies: {
-        id: accountInfo.sid,
-        did: accountInfo.did
-      }
-    })
-    try {
-      const response = await session.get(requestPath + '/webapi/entry.cgi?api=' + api + '&version=' + version + params)
-      session.close()
-      if (response.statusCode === 200) {
-        let body = ''
-        if (response.toString()) {
-          body = response.toString() as string
-        }
-        const res = JSON.parse(body) as DsmResponse
-        if (res.success) {
-          return res.data
-        }
-        if (res.error.code === 106 || res.error.code === 107 || res.error.code === 119) {
-          netBoost.setSceneDesc({
-            scene: 'login',
-            sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
-          })
-          const loginres = await dsmRequest(accountInfo.path, 'SYNO.API.Auth',
-            '&method=login&account=' + encodeURIComponent(accountInfo.name) + '&passwd=' +
-            encodeURIComponent(accountInfo.password))
-          netBoost.setSceneDesc({
-            scene: 'login',
-            sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-          })
-          if (loginres !== 'fail') {
-            const data = loginres as ResponseData
-            await set({
-              path: accountInfo.path,
-              name: data.account,
-              password: accountInfo.password,
-              sid: data.sid,
-              did: data.device_id
-            })
-            return await dsmRequest(path, api, params)
-          }
-          promptAction.openToast({
-            message: '登录态失效，请重新登录'
-          })
-          return 'fail'
-        }
-        if (res.error.code === 150) {
-          return await dsmRequest(path, api, params)
-        }
-        promptAction.openToast({
-          message: '接口调用失败，错误码：' + res.error.code
-        })
-        return 'fail'
-      }
-      promptAction.openToast({
-        message: 'DSM 请求失败，错误码：' + response.statusCode
-      })
-      return 'fail'
-    } catch (err) {
-      session.close()
-      promptAction.openToast({
-        message: 'DSM 请求失败，错误码：' + err.code
-      })
+  let apiVersion = version
+  if (!apiVersion) {
+    const maxVersion = await getDsmApiMaxVersion(path, api)
+    if (maxVersion !== 'fail') {
+      apiVersion = maxVersion
+    } else {
       return 'fail'
     }
   }
-  return 'fail'
+  const context = getContext() as common.UIAbilityContext
+  const debugSettingDataPreferences = preferences.getPreferencesSync(context, {
+    name: 'debugSetting'
+  })
+  const session = rcp.createSession({
+    requestConfiguration: {
+      security: {
+        remoteValidation: debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
+          'system') as 'system' | 'skip'
+      }
+    },
+    headers: {
+      referer: requestPath
+    },
+    cookies: {
+      id: accountInfo.sid,
+      did: accountInfo.did
+    }
+  })
+  try {
+    const response = await session.get(requestPath + '/webapi/entry.cgi?api=' + api + '&version=' + apiVersion + params)
+    session.close()
+    if (response.statusCode === 200) {
+      let body = ''
+      if (response.toString()) {
+        body = response.toString() as string
+      }
+      const res = JSON.parse(body) as DsmResponse
+      if (res.success) {
+        return res.data
+      }
+      if (res.error.code === 106 || res.error.code === 107 || res.error.code === 119) {
+        netBoost.setSceneDesc({
+          scene: 'login',
+          sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
+        })
+        const loginres = await dsmRequest(accountInfo.path, 'SYNO.API.Auth',
+          '&method=login&account=' + encodeURIComponent(accountInfo.name) + '&passwd=' +
+          encodeURIComponent(accountInfo.password))
+        netBoost.setSceneDesc({
+          scene: 'login',
+          sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+        })
+        if (loginres !== 'fail') {
+          const data = loginres as ResponseData
+          await set({
+            path: accountInfo.path,
+            name: data.account,
+            password: accountInfo.password,
+            sid: data.sid,
+            did: data.device_id
+          })
+          return await dsmRequest(path, api, params, version)
+        }
+        promptAction.openToast({
+          message: '登录态失效，请重新登录'
+        })
+        return 'fail'
+      }
+      if (res.error.code === 150) {
+        return await dsmRequest(path, api, params)
+      }
+      promptAction.openToast({
+        message: '接口调用失败，错误码：' + res.error.code
+      })
+      return 'fail'
+    }
+    promptAction.openToast({
+      message: 'DSM 请求失败，错误码：' + response.statusCode
+    })
+    return 'fail'
+  } catch (err) {
+    session.close()
+    promptAction.openToast({
+      message: 'DSM 请求失败，错误码：' + err.code
+    })
+    return 'fail'
+  }
 }
 
 export async function developerRequest(path: string, body: rcp.RequestContent) {

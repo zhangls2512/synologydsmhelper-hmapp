@@ -74,7 +74,6 @@ export default struct Player {
               })
           }
           .borderRadius(12)
-          .justifyContent(FlexAlign.SpaceBetween)
           .padding(12)
           .width('100%')
 
@@ -96,7 +95,6 @@ export default struct Player {
             })
           }
           .borderRadius(12)
-          .justifyContent(FlexAlign.SpaceBetween)
           .padding(12)
           .width('100%')
 
@@ -118,7 +116,6 @@ export default struct Player {
             })
           }
           .borderRadius(12)
-          .justifyContent(FlexAlign.SpaceBetween)
           .padding(12)
           .width('100%')
         }

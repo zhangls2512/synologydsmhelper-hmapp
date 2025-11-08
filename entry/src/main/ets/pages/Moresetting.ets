@@ -38,7 +38,6 @@ struct Moresetting {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -85,7 +84,6 @@ struct Moresetting {
                   .width(12)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .stateStyles({
                 normal: {
@@ -134,7 +132,6 @@ struct Moresetting {
                 .width(12)
             }
             .borderRadius(12)
-            .justifyContent(FlexAlign.SpaceBetween)
             .padding(12)
             .stateStyles({
               normal: {

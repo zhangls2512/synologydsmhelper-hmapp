@@ -132,7 +132,6 @@ struct ReportQoe {
                 .layoutWeight(1)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -188,7 +187,6 @@ struct ReportQoe {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
             }

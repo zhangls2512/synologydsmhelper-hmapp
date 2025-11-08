@@ -50,7 +50,6 @@ struct Recoverysetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -82,7 +81,6 @@ struct Recoverysetting {
                   })
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
 
@@ -117,7 +115,6 @@ struct Recoverysetting {
                 .layoutWeight(1)
               }
               .borderRadius(12)
-              .justifyContent(FlexAlign.SpaceBetween)
               .padding(12)
               .width('100%')
             }

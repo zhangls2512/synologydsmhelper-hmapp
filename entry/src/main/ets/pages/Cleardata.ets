@@ -16,6 +16,7 @@ export default struct Cleardata {
   @Local allCache: boolean = false
   @Local appCache: boolean = false
   @Local webviewCache: boolean = false
+  @Local apiVersionCache: boolean = false
   @Local log: string[] = []
   @Local allLog: boolean = false
   @Local errorLog: boolean = false
@@ -249,6 +250,27 @@ export default struct Cleardata {
             .borderRadius(12)
             .padding(12)
             .width('100%')
+
+            Divider()
+              .padding({
+                left: 12,
+                right: 12
+              })
+            Row() {
+              Checkbox({
+                name: 'apiVersionCache',
+                group: 'cache'
+              })
+                .select(this.apiVersionCache!!)
+                .shape(CheckBoxShape.ROUNDED_SQUARE)
+              Text('API版本号')
+                .enableAutoSpacing(true)
+                .fontWeight(FontWeight.Medium)
+                .layoutWeight(1)
+            }
+            .borderRadius(12)
+            .padding(12)
+            .width('100%')
           }
           .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
           .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
@@ -319,6 +341,12 @@ export default struct Cleardata {
                 }
                 if (item === 'webviewCache') {
                   webview.WebviewController.removeAllCache(true)
+                }
+                if (item === 'apiVersionCache') {
+                  const filePath = this.context.cacheDir + '/apiversion.txt'
+                  if (fileIo.accessSync(filePath)) {
+                    fileIo.unlinkSync(filePath)
+                  }
                 }
               })
               promptAction.openToast({
