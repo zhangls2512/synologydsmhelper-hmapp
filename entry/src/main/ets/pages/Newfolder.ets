@@ -5,9 +5,10 @@ import { dsmRequest } from '../common/Request'
 @ComponentV2
 export default struct Newfolder {
   @Consumer() isShowNewfolderSheet: boolean = false
-  @Consumer() editPath: string = ''
+  @Param editPath: string = ''
   @Local name: string = ''
-  context = this.getUIContext().getHostContext() as common.UIAbilityContext
+  UIContext = this.getUIContext()
+  context = this.UIContext.getHostContext() as common.UIAbilityContext
 
   build() {
     List() {
@@ -35,7 +36,7 @@ export default struct Newfolder {
               })
             })
             dialogControllerProgress.open()
-            const res = await dsmRequest('', 'SYNO.FileStation.CreateFolder',
+            const res = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.CreateFolder',
               '&method=create&folder_path=' + encodeURIComponent(this.editPath) + '&name=' +
               encodeURIComponent(this.name))
             dialogControllerProgress.close()

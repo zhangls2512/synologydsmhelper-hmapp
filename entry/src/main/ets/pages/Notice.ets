@@ -21,7 +21,8 @@ struct Notice {
   @Local noticeArray: NoticeItem[] = []
   @Local pushToken: string = ''
   @Local loading: boolean = false
-  context = this.getUIContext().getHostContext() as common.UIAbilityContext
+  UIContext = this.getUIContext()
+  context = this.UIContext.getHostContext() as common.UIAbilityContext
 
   build() {
     NavDestination() {
@@ -134,7 +135,7 @@ struct Notice {
                           })
                         })
                         dialogControllerProgress.open()
-                        const res = await developerRequest('/product/updatePushStatus', {
+                        const res = await developerRequest(this.context, this.UIContext, '/product/updatePushStatus', {
                           id: item._id,
                           pushToken: this.pushToken
                         })
@@ -179,7 +180,7 @@ struct Notice {
         })
       }
       this.loading = true
-      const res = await developerRequest('/product/getPushList', {
+      const res = await developerRequest(this.context, this.UIContext, '/product/getPushList', {
         product: 'synologydsmhelper',
         pushToken: this.pushToken
       })

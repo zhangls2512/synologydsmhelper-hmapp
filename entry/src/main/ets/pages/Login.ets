@@ -1,3 +1,4 @@
+import { common } from '@kit.AbilityKit'
 import { privacyManager } from '@kit.AppGalleryKit'
 import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { netBoost } from '@kit.NetworkBoostKit'
@@ -23,6 +24,8 @@ export default struct Login {
   @Local password: string = ''
   @Local mfa: string = ''
   @Local agree: boolean = false
+  UIContext = this.getUIContext()
+  context = this.UIContext.getHostContext() as common.UIAbilityContext
 
   build() {
     List() {
@@ -225,7 +228,7 @@ export default struct Login {
                   scene: 'login',
                   sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
                 })
-                res = await dsmRequest(path, 'SYNO.API.Auth',
+                res = await dsmRequest(this.context, this.UIContext, path, 'SYNO.API.Auth',
                   '&method=login&account=' + encodeURIComponent(this.name) + '&passwd=' +
                   encodeURIComponent(this.password) + '&otp_code=' + this.mfa)
               }
@@ -254,7 +257,7 @@ export default struct Login {
                         scene: 'login',
                         sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
                       })
-                      res = await dsmRequest(path, 'SYNO.API.Auth',
+                      res = await dsmRequest(this.context, this.UIContext, path, 'SYNO.API.Auth',
                         '&method=login&account=' + encodeURIComponent(this.name) + '&passwd=' +
                         encodeURIComponent(this.password) + '&otp_code=' + this.mfa)
                     } else {
@@ -287,7 +290,7 @@ export default struct Login {
               dialogControllerProgress.close()
               if (res !== 'fail') {
                 const data = res as ResponseData
-                await set({
+                await set(this.context, this.UIContext, {
                   path: path,
                   name: data.account,
                   password: this.password,
@@ -316,7 +319,7 @@ export default struct Login {
                   try {
                     const appPrivacyLink =
                       privacyManager.getAppPrivacyMgmtInfo().privacyInfo.find(item => item.type === 2)
-                    openLink(appPrivacyLink?.url as string)
+                    openLink(this.context, appPrivacyLink?.url as string)
                   } catch (err) {
                     promptAction.openToast({
                       message: '发生错误，错误码：' + err.code + '，错误信息：' + err.message
@@ -329,7 +332,7 @@ export default struct Login {
                   try {
                     const appPrivacyLink =
                       privacyManager.getAppPrivacyMgmtInfo().privacyInfo.find(item => item.type === 1)
-                    openLink(appPrivacyLink?.url as string)
+                    openLink(this.context, appPrivacyLink?.url as string)
                   } catch (err) {
                     promptAction.openToast({
                       message: '发生错误，错误码：' + err.code + '，错误信息：' + err.message

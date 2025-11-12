@@ -23,7 +23,7 @@ export default struct Cleardata {
   @Local nouse: string[] = []
   @Local allNouse: boolean = false
   @Local tempFileNouse: boolean = false
-  @Local commonSettingNouse: boolean = false
+  @Local settingNouse: boolean = false
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
   build() {
@@ -524,12 +524,12 @@ export default struct Cleardata {
               })
             Row() {
               Checkbox({
-                name: 'commonSettingNouse',
+                name: 'settingNouse',
                 group: 'nouse'
               })
-                .select(this.commonSettingNouse!!)
+                .select(this.settingNouse!!)
                 .shape(CheckBoxShape.ROUNDED_SQUARE)
-              Text('无用通用设置')
+              Text('无用设置')
                 .fontWeight(FontWeight.Medium)
                 .layoutWeight(1)
             }
@@ -566,13 +566,20 @@ export default struct Cleardata {
                   }
                 })
               }
-              if (item === 'commonSettingNouse') {
+              if (item === 'settingNouse') {
                 const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
                   name: 'commonSetting'
                 })
-                const keys = ['disallowScreenshot', 'cellularDataDownloadRemind']
-                keys.forEach((item) => {
+                const commonKeys = ['disallowScreenshot', 'cellularDataDownloadRemind']
+                commonKeys.forEach((item) => {
                   commonSettingDataPreferences.deleteSync(item)
+                })
+                const debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+                  name: 'debugSetting'
+                })
+                const debugKeys = ['lowBatteryCapacityLevel']
+                debugKeys.forEach((item) => {
+                  debugSettingDataPreferences.deleteSync(item)
                 })
               }
             })

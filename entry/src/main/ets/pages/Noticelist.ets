@@ -1,3 +1,4 @@
+import { common } from '@kit.AbilityKit'
 import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { dsmRequest } from '../common/Request'
 
@@ -16,6 +17,8 @@ interface NoticeResponseData {
 export default struct Noticelist {
   @Local notices: NoticeItem[] = []
   @Local loading: boolean = false
+  UIContext = this.getUIContext()
+  context = this.UIContext.getHostContext() as common.UIAbilityContext
 
   getTime(time: string) {
     try {
@@ -28,7 +31,7 @@ export default struct Noticelist {
 
   async get() {
     this.loading = true
-    const res = await dsmRequest('', 'SYNO.Core.DSMNotify', '&method=notify&action=load')
+    const res = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Core.DSMNotify', '&method=notify&action=load')
     this.loading = false
     if (res !== 'fail') {
       const noticeres = res as NoticeResponseData
@@ -59,7 +62,8 @@ export default struct Noticelist {
                 })
               })
               dialogControllerProgress.open()
-              const res = await dsmRequest('', 'SYNO.Core.DSMNotify', '&method=notify&action=apply&clean=all')
+              const res = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Core.DSMNotify',
+                '&method=notify&action=apply&clean=all')
               dialogControllerProgress.close()
               if (res !== 'fail') {
                 promptAction.openToast({

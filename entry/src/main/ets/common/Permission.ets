@@ -1,5 +1,4 @@
 import { abilityAccessCtrl, Permissions } from '@kit.AbilityKit'
-import { promptAction } from '@kit.ArkUI'
 
 export function getPermission(permission: Permissions) {
   const atManager = abilityAccessCtrl.createAtManager()
@@ -10,13 +9,12 @@ export function getPermission(permission: Permissions) {
   return false
 }
 
-export async function checkPermission(permission: Permissions) {
+export async function checkPermission(context: Context, UIContext: UIContext, permission: Permissions) {
   const atManager = abilityAccessCtrl.createAtManager()
   const status = atManager.getSelfPermissionStatus(permission)
   if (status === 0) {
     return true
   }
-  const context = getContext()
   if (status === 1) {
     const res = await atManager.requestPermissionsFromUser(context, [permission])
     const authResult = res.authResults[0]
@@ -31,6 +29,7 @@ export async function checkPermission(permission: Permissions) {
       return true
     }
   }
+  const promptAction = UIContext.getPromptAction()
   promptAction.showDialog({
     title: '提示',
     message: '请允许授权以使用此功能',

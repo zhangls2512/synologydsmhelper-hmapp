@@ -8,7 +8,6 @@
     "hvigor.incremental.optimization": true,
     "hvigor.task.schedule.optimization": true,
     "ohos.arkCompile.noEmitJs": true,
-    "ohos.arkCompile.singleFileEmit": true,
     "ohos.byteCodeHar.integratedOptimization": true,
     "ohos.compile.lib.entryfile": true,
     "ohos.dependencies.types.enable": true,

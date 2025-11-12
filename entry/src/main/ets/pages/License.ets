@@ -1,3 +1,4 @@
+import { common } from '@kit.AbilityKit'
 import openLink from '../common/Openlink'
 
 interface Item {
@@ -12,6 +13,7 @@ export function LicenseBuilder() {
 
 @ComponentV2
 struct License {
+  context = this.getUIContext().getHostContext() as common.UIAbilityContext
   gabaInfoArray: Item[] = [
     { property: '名称', value: '群晖DSM助手' },
     { property: '主体类型', value: '个人' },
@@ -29,7 +31,7 @@ struct License {
             Span('黑ICP备2024023054号-10A')
               .fontColor($r('sys.color.font_emphasize'))
               .onClick(() => {
-                openLink('https://beian.miit.gov.cn/#/Integrated/recordQuery')
+                openLink(this.context, 'https://beian.miit.gov.cn/#/Integrated/recordQuery')
               })
           }
           .enableAutoSpacing(true)
@@ -44,7 +46,7 @@ struct License {
               .fontColor($r('sys.color.font_emphasize'))
               .fontWeight(FontWeight.Bold)
               .onClick(() => {
-                openLink('https://beian.mps.gov.cn/#/query/appSearch')
+                openLink(this.context, 'https://beian.mps.gov.cn/#/query/appSearch')
               })
             Flex({
               alignItems: ItemAlign.Stretch,

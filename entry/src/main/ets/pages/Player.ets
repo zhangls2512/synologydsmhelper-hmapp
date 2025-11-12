@@ -3,7 +3,7 @@ import { promptAction } from '@kit.ArkUI'
 @ComponentV2
 export default struct Player {
   @Consumer() isShowPlayerSheet: boolean = false
-  @Consumer() src: string = ''
+  @Param src: string = ''
   @Local progressRate: PlaybackSpeed = PlaybackSpeed.Speed_Forward_1_00_X
   @Local progressRateIndex: number = 1
   @Local progressRateValue: string = '1x'

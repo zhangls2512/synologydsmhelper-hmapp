@@ -5,16 +5,18 @@ import { dsmRequest } from '../common/Request'
 @ComponentV2
 export default struct Renamefile {
   @Consumer() isShowRenamefileSheet: boolean = false
-  @Consumer() editPath: string = ''
-  @Consumer() editName: string = ''
-  context = this.getUIContext().getHostContext() as common.UIAbilityContext
+  @Param editPath: string = ''
+  @Param editName: string = ''
+  @Local name: string = ''
+  UIContext = this.getUIContext()
+  context = this.UIContext.getHostContext() as common.UIAbilityContext
 
   build() {
     List() {
       ListItem() {
         TextInput({
           placeholder: '请输入名称',
-          text: this.editName!!
+          text: this.name!!
         })
           .defaultFocus(true)
           .enableAutoSpacing(true)
@@ -23,7 +25,7 @@ export default struct Renamefile {
       ListItem() {
         Button('重命名')
           .onClick(async () => {
-            if (!this.editName) {
+            if (!this.name) {
               promptAction.openToast({
                 message: '请输入名称'
               })
@@ -35,9 +37,9 @@ export default struct Renamefile {
               })
             })
             dialogControllerProgress.open()
-            const res = await dsmRequest('', 'SYNO.FileStation.Rename',
+            const res = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.Rename',
               '&method=rename&path=' + encodeURIComponent(JSON.stringify([this.editPath])) + '&name=' +
-              encodeURIComponent(this.editName))
+              encodeURIComponent(this.name))
             dialogControllerProgress.close()
             if (res !== 'fail') {
               promptAction.openToast({
@@ -57,6 +59,9 @@ export default struct Renamefile {
       bottom: $r('sys.float.ohos_id_default_padding_bottom_fixed'),
       left: $r('sys.float.ohos_id_max_padding_start'),
       right: $r('sys.float.ohos_id_max_padding_end')
+    })
+    .onAppear(() => {
+      this.name = this.editName
     })
   }
 }

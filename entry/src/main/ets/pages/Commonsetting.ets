@@ -24,7 +24,7 @@ struct Commonsetting {
   @Local windowTopmost: boolean = false
   @Local keepScreenOn: boolean = false
   @Local filePreviewTypeIndex: number = 0
-  @Local filePreviewTypeValue: string = '系统预览服务'
+  @Local filePreviewTypeValue: string = '系统预览'
   @Local onlinePreviewMedia: boolean = false
   @Local selectFileDownloadPath: boolean = false
   @Local showAccountlistSheetAfterAppLaunch: boolean = false
@@ -603,7 +603,7 @@ struct Commonsetting {
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                   })
                 Select([
-                  { value: '系统预览服务' },
+                  { value: '系统预览' },
                   { value: '自行选择' }
                 ])
                   .selected(this.filePreviewTypeIndex!!)
@@ -884,7 +884,7 @@ struct Commonsetting {
       const filePreviewType = this.commonSettingDataPreferences.getSync('filePreviewType', 0)
       this.filePreviewTypeIndex = filePreviewType as number
       if (filePreviewType === 0) {
-        this.filePreviewTypeValue = '系统预览服务'
+        this.filePreviewTypeValue = '系统预览'
       }
       if (filePreviewType === 1) {
         this.filePreviewTypeValue = '自行选择'
