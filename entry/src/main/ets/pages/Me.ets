@@ -72,10 +72,10 @@ export default struct Me {
           .stateStyles({
             normal: {
               .backgroundColor(this.hoverId === 0 ? $r('sys.color.interactive_hover') :
-                $r('sys.color.ohos_id_color_card_bg'))
+                $r('sys.color.comp_background_primary'))
             },
             pressed: {
-              .backgroundColor($r('sys.color.interactive_pressed'))
+              .backgroundColor($r('sys.color.comp_background_secondary'))
             }
           })
           .width('100%')
@@ -132,10 +132,10 @@ export default struct Me {
           .stateStyles({
             normal: {
               .backgroundColor(this.hoverId === 1 ? $r('sys.color.interactive_hover') :
-                $r('sys.color.ohos_id_color_card_bg'))
+                $r('sys.color.comp_background_primary'))
             },
             pressed: {
-              .backgroundColor($r('sys.color.interactive_pressed'))
+              .backgroundColor($r('sys.color.comp_background_secondary'))
             }
           })
           .width('100%')
@@ -199,10 +199,10 @@ export default struct Me {
               .stateStyles({
                 normal: {
                   .backgroundColor(this.hoverId === 2 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                    $r('sys.color.comp_background_primary'))
                 },
                 pressed: {
-                  .backgroundColor($r('sys.color.interactive_pressed'))
+                  .backgroundColor($r('sys.color.comp_background_secondary'))
                 }
               })
               .width('100%')
@@ -271,10 +271,10 @@ export default struct Me {
               .stateStyles({
                 normal: {
                   .backgroundColor(this.hoverId === 3 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                    $r('sys.color.comp_background_primary'))
                 },
                 pressed: {
-                  .backgroundColor($r('sys.color.interactive_pressed'))
+                  .backgroundColor($r('sys.color.comp_background_secondary'))
                 }
               })
               .width('100%')
@@ -351,10 +351,10 @@ export default struct Me {
           .stateStyles({
             normal: {
               .backgroundColor(this.hoverId === 4 ? $r('sys.color.interactive_hover') :
-                $r('sys.color.ohos_id_color_card_bg'))
+                $r('sys.color.comp_background_primary'))
             },
             pressed: {
-              .backgroundColor($r('sys.color.interactive_pressed'))
+              .backgroundColor($r('sys.color.comp_background_secondary'))
             }
           })
           .width('100%')
