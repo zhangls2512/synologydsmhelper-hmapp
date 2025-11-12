@@ -28,7 +28,8 @@ interface SystemInfo {
 export default struct Systeminfo {
   @Local systeminfo: SystemInfo | undefined = undefined
   @Local status: string = 'fail'
-  context = this.getUIContext().getHostContext() as common.UIAbilityContext
+  UIContext = this.getUIContext()
+  context = this.UIContext.getHostContext() as common.UIAbilityContext
 
   build() {
     Column() {
@@ -134,7 +135,7 @@ export default struct Systeminfo {
         const isLogin = await getLoginStatus()
         if ((cardSettingDataPreferences.getSync('cards', []) as string[]).includes('systeminfo') &&
           this.status !== 'fail' && isLogin) {
-          const res = await dsmRequest('', 'SYNO.Core.System', '&method=info')
+          const res = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Core.System', '&method=info')
           if (res !== 'fail') {
             this.systeminfo = res as SystemInfo
             this.status = 'success'

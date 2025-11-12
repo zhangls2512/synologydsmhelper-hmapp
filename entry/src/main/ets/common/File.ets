@@ -19,3 +19,20 @@ export function read(path: string) {
     return 'fail'
   }
 }
+
+export function write(path: string, content: string) {
+  try {
+    const lastSlashIndex = path.lastIndexOf('/')
+    const dir = path.substring(0, lastSlashIndex)
+    if (!fileIo.accessSync(dir)) {
+      fileIo.mkdirSync(dir, true)
+    }
+    const file = fileIo.openSync(path, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
+    fileIo.writeSync(file.fd, content)
+    fileIo.closeSync(file)
+  } catch (err) {
+    promptAction.openToast({
+      message: '发生错误，错误码：' + err.code
+    })
+  }
+}

@@ -1,4 +1,3 @@
-import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { promptAction } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
@@ -34,8 +33,7 @@ interface DeveloperErrorResponse {
   errFix: string
 }
 
-function getCacheApiVersion(path: string, api: string) {
-  const context = getContext() as common.UIAbilityContext
+function getCacheApiVersion(context: Context, path: string, api: string) {
   const filePath = context.cacheDir + '/apiversion.txt'
   if (!fileIo.accessSync(filePath)) {
     return -1
@@ -60,17 +58,16 @@ function getCacheApiVersion(path: string, api: string) {
   }
 }
 
-export async function getDsmApiMaxVersion(path: string, api: string) {
+export async function getDsmApiMaxVersion(context: Context, path: string, api: string) {
   const accountInfo = await get()
   let requestPath = path
   if (!requestPath) {
     requestPath = accountInfo.path
   }
-  const context = getContext() as common.UIAbilityContext
   const commonSettingDataPreferences = preferences.getPreferencesSync(context, {
     name: 'commonSetting'
   })
-  const cacheApiVersion = getCacheApiVersion(requestPath, api)
+  const cacheApiVersion = getCacheApiVersion(context, requestPath, api)
   const cacheApiVersionSetting = commonSettingDataPreferences.getSync('cacheApiVersion', false)
   if (cacheApiVersionSetting && cacheApiVersion !== -1) {
     return cacheApiVersion
@@ -154,7 +151,7 @@ export async function getDsmApiMaxVersion(path: string, api: string) {
   }
 }
 
-export async function dsmRequest(path: string, api: string, params: string,
+export async function dsmRequest(context: Context, UIContext: UIContext, path: string, api: string, params: string,
   version?: number): Promise<string | object> {
   const accountInfo = await get()
   let requestPath = path
@@ -163,14 +160,13 @@ export async function dsmRequest(path: string, api: string, params: string,
   }
   let apiVersion = version
   if (!apiVersion) {
-    const maxVersion = await getDsmApiMaxVersion(path, api)
+    const maxVersion = await getDsmApiMaxVersion(context, path, api)
     if (maxVersion !== 'fail') {
       apiVersion = maxVersion
     } else {
       return 'fail'
     }
   }
-  const context = getContext() as common.UIAbilityContext
   const debugSettingDataPreferences = preferences.getPreferencesSync(context, {
     name: 'debugSetting'
   })
@@ -206,7 +202,7 @@ export async function dsmRequest(path: string, api: string, params: string,
           scene: 'login',
           sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
         })
-        const loginres = await dsmRequest(accountInfo.path, 'SYNO.API.Auth',
+        const loginres = await dsmRequest(context, UIContext, accountInfo.path, 'SYNO.API.Auth',
           '&method=login&account=' + encodeURIComponent(accountInfo.name) + '&passwd=' +
           encodeURIComponent(accountInfo.password))
         netBoost.setSceneDesc({
@@ -215,14 +211,14 @@ export async function dsmRequest(path: string, api: string, params: string,
         })
         if (loginres !== 'fail') {
           const data = loginres as ResponseData
-          await set({
+          await set(context, UIContext, {
             path: accountInfo.path,
             name: data.account,
             password: accountInfo.password,
             sid: data.sid,
             did: data.device_id
           })
-          return await dsmRequest(path, api, params, version)
+          return await dsmRequest(context, UIContext, path, api, params, version)
         }
         promptAction.openToast({
           message: '登录态失效，请重新登录'
@@ -230,7 +226,7 @@ export async function dsmRequest(path: string, api: string, params: string,
         return 'fail'
       }
       if (res.error.code === 150) {
-        return await dsmRequest(path, api, params)
+        return await dsmRequest(context, UIContext, path, api, params)
       }
       promptAction.openToast({
         message: '接口调用失败，错误码：' + res.error.code
@@ -250,8 +246,8 @@ export async function dsmRequest(path: string, api: string, params: string,
   }
 }
 
-export async function developerRequest(path: string, body: rcp.RequestContent) {
-  const context = getContext()
+export async function developerRequest(context: Context, UIContext: UIContext, path: string, body: rcp.RequestContent) {
+  const promptAction = UIContext.getPromptAction()
   const commonSettingDataPreferences = preferences.getPreferencesSync(context, {
     name: 'commonSetting'
   })

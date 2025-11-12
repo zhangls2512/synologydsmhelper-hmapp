@@ -1,3 +1,4 @@
+import { common } from '@kit.AbilityKit'
 import { privacyManager } from '@kit.AppGalleryKit'
 import { promptAction } from '@kit.ArkUI'
 import openLink from '../common/Openlink'
@@ -10,6 +11,7 @@ export function AgreementsBuilder() {
 @ComponentV2
 struct Agreements {
   @Local hoverId: number = -1
+  context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
   build() {
     NavDestination() {
@@ -51,7 +53,7 @@ struct Agreements {
             .onClick(() => {
               try {
                 const appPrivacyLink = privacyManager.getAppPrivacyMgmtInfo().privacyInfo.find(item => item.type === 2)
-                openLink(appPrivacyLink?.url as string)
+                openLink(this.context, appPrivacyLink?.url as string)
               } catch (err) {
                 promptAction.openToast({
                   message: '发生错误，错误码：' + err.code + '，错误信息：' + err.message

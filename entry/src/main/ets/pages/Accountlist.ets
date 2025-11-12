@@ -1,13 +1,32 @@
 import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
+import { rcp } from '@kit.RemoteCommunicationKit'
 import { AccountInfo, getList, remove, set } from '../common/Account'
 
 @ComponentV2
 export default struct Accountlist {
   @Consumer() isShowAccountlistSheet: boolean = false
   @Local accountArray: AccountInfo[] = []
+  @Local pathConnectionStatusArray: string[] = []
   @Local hoverId: number = -1
-  context = this.getUIContext().getHostContext() as common.UIAbilityContext
+  UIContext = this.getUIContext()
+  context = this.UIContext.getHostContext() as common.UIAbilityContext
+
+  async ping(path: string) {
+    const session = rcp.createSession()
+    try {
+      const response = await session.get(path + '/webapi/entry.cgi')
+      session.close()
+      if (response.statusCode === 200) {
+        return true
+      } else {
+        return false
+      }
+    } catch {
+      session.close()
+      return false
+    }
+  }
 
   @Builder
   MenuBuilder(item: AccountInfo) {
@@ -66,6 +85,36 @@ export default struct Accountlist {
                 })
             }
             Row() {
+              if (this.pathConnectionStatusArray[index] === 'connecting') {
+                Circle({
+                  height: 16,
+                  width: 16
+                })
+                  .fill(Color.Orange)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+              }
+              if (this.pathConnectionStatusArray[index] === 'connected') {
+                Circle({
+                  height: 16,
+                  width: 16
+                })
+                  .fill(Color.Green)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+              }
+              if (this.pathConnectionStatusArray[index] === 'disconnected') {
+                Circle({
+                  height: 16,
+                  width: 16
+                })
+                  .fill(Color.Red)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+              }
               Column() {
                 Text(item.name)
                   .fontWeight(FontWeight.Medium)
@@ -77,6 +126,7 @@ export default struct Accountlist {
                   })
               }
               .alignItems(HorizontalAlign.Start)
+              .layoutWeight(1)
             }
             .borderRadius(12)
             .padding(12)
@@ -100,12 +150,10 @@ export default struct Accountlist {
             })
             .onClick(async () => {
               if (item.isLogin === 'true') {
-                promptAction.openToast({
-                  message: '已登录此账号，无需重复登录'
-                })
+                this.isShowAccountlistSheet = false
                 return
               }
-              await set({
+              await set(this.context, this.UIContext, {
                 path: item.path,
                 name: item.name,
                 password: item.password,
@@ -141,6 +189,16 @@ export default struct Accountlist {
     })
     .onAppear(async () => {
       this.accountArray = await getList()
+      this.pathConnectionStatusArray = Array(this.accountArray.length).fill('connecting')
+      this.accountArray.forEach(async (item, index) => {
+        const connectionStatus = await this.ping(item.path)
+        if (!connectionStatus) {
+          this.pathConnectionStatusArray[index] = 'disconnected'
+        }
+        if (connectionStatus) {
+          this.pathConnectionStatusArray[index] = 'connected'
+        }
+      })
     })
   }
 }

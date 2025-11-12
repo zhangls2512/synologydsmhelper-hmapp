@@ -21,8 +21,8 @@ interface InAccountInfo {
   did: string
 }
 
-export async function set(accountInfo: InAccountInfo) {
-  await exit(false)
+export async function set(context: Context, UIContext: UIContext, accountInfo: InAccountInfo) {
+  await exit(context, UIContext, false)
   const accounts = await getList()
   let accountIndex = -1
   accounts.forEach((item, index) => {
@@ -110,7 +110,7 @@ export async function getList(): Promise<AccountInfo[]> {
   return appAccounts
 }
 
-export async function exit(logout: boolean) {
+export async function exit(context: Context, UIContext: UIContext, logout: boolean) {
   const accounts = await getList()
   const index = accounts.findIndex(item => item.isLogin === 'true')
   if (index !== -1) {
@@ -119,7 +119,7 @@ export async function exit(logout: boolean) {
       await appAccountManager.setCustomData(String(accounts[index].id), 'isLogin', 'false')
     }
     if (logout) {
-      const res = await dsmRequest('', 'SYNO.API.Auth', '&method=logout')
+      const res = await dsmRequest(context, UIContext, '', 'SYNO.API.Auth', '&method=logout')
       if (res !== 'fail') {
         await remove(accounts[index].id)
       }
@@ -138,7 +138,7 @@ export async function remove(id: number) {
   }
 }
 
-export async function importAccounts(uri: string) {
+export async function importAccounts(context: Context, UIContext: UIContext, uri: string) {
   try {
     const array = await getList()
     if (array.length > 0) {
@@ -150,7 +150,7 @@ export async function importAccounts(uri: string) {
     const filestring = read(uri)
     const accounts = JSON.parse(filestring) as AccountInfo[]
     const promises = accounts.map(async (item) => {
-      await set({
+      await set(context, UIContext, {
         path: item.path,
         name: item.name,
         password: item.password,

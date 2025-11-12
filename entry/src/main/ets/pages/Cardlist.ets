@@ -20,7 +20,8 @@ export default struct Cardlist {
   @Local isLogin: boolean = false
   @Local cards: string[] = []
   @Local haveNotice: boolean = false
-  context = this.getUIContext().getHostContext() as common.UIAbilityContext
+  UIContext = this.getUIContext()
+  context = this.UIContext.getHostContext() as common.UIAbilityContext
 
   async get() {
     this.isLogin = await getLoginStatus()
@@ -30,7 +31,8 @@ export default struct Cardlist {
     this.cards = cardSettingDataPreferences.getSync('cards', []) as string[]
     this.context.eventHub.emit('refreshCard')
     if (this.isLogin) {
-      const res = await dsmRequest('', 'SYNO.Core.DSMNotify', '&method=notify&action=load')
+      const res =
+        await dsmRequest(this.context, this.UIContext, '', 'SYNO.Core.DSMNotify', '&method=notify&action=load')
       if (res !== 'fail') {
         const noticeres = res as NoticeResponseData
         if (noticeres.total === 0) {

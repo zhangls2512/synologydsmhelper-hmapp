@@ -15,7 +15,8 @@ export default struct Me {
   @Local preferType: number = 1
   @Local name: string = ''
   @Local hoverId: number = -1
-  context = this.getUIContext().getHostContext() as common.UIAbilityContext
+  UIContext = this.getUIContext()
+  context = this.UIContext.getHostContext() as common.UIAbilityContext
   dialogControllerProgress = new CustomDialogController({
     builder: LoadingDialog({
       content: '加载中...'
@@ -231,7 +232,8 @@ export default struct Me {
                 })
                 if (data.index === 1) {
                   this.dialogControllerProgress.open()
-                  const res = await dsmRequest('', 'SYNO.Core.System', '&method=reboot', 2)
+                  const res =
+                    await dsmRequest(this.context, this.UIContext, '', 'SYNO.Core.System', '&method=reboot', 2)
                   this.dialogControllerProgress.close()
                   if (res !== 'fail') {
                     promptAction.openToast({
@@ -302,7 +304,8 @@ export default struct Me {
                 })
                 if (data.index === 1) {
                   this.dialogControllerProgress.open()
-                  const res = await dsmRequest('', 'SYNO.Core.System', '&method=shutdown', 2)
+                  const res =
+                    await dsmRequest(this.context, this.UIContext, '', 'SYNO.Core.System', '&method=shutdown', 2)
                   this.dialogControllerProgress.close()
                   if (res !== 'fail') {
                     promptAction.openToast({
@@ -414,11 +417,11 @@ export default struct Me {
                   })
                 })
                 dialogControllerProgress.open()
-                await exit(true)
+                await exit(this.context, this.UIContext, true)
                 dialogControllerProgress.close()
               }
               if (data.index === 1) {
-                await exit(false)
+                await exit(this.context, this.UIContext, false)
               }
               promptAction.openToast({
                 message: '退出成功'

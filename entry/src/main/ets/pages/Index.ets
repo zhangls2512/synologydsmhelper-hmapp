@@ -3,6 +3,7 @@ import { preferences } from '@kit.ArkData'
 import { display } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
 import { image } from '@kit.ImageKit'
+import { importAccounts } from '../common/Account'
 import Cardlist from './Cardlist'
 import Filelist from './Filelist'
 import Me from './Me'
@@ -18,7 +19,8 @@ struct Index {
   @Local index: number = 0
   @Local title: string = '首页'
   @Local isShowCleardataSheet: boolean = false
-  context = this.getUIContext().getHostContext() as common.UIAbilityContext
+  UIContext = this.getUIContext()
+  context = this.UIContext.getHostContext() as common.UIAbilityContext
 
   onBackPress() {
     if (this.index === 1) {
@@ -140,6 +142,19 @@ struct Index {
       top: this.preferType === 0 ? 12 : 0
     })
     .onAppear(() => {
+      this.context.eventHub.on('clearData', () => {
+        if (!this.isShowCleardataSheet) {
+          this.isShowCleardataSheet = true
+        }
+      })
+      this.context.eventHub.on('wantUri', (wantUri: string) => {
+        importAccounts(this.context, this.UIContext, wantUri)
+      })
+      this.context.eventHub.on('accountList', () => {
+        if (!this.isShowAccountlistSheet) {
+          this.isShowAccountlistSheet = true
+        }
+      })
       const currentOrientation = display.getDefaultDisplaySync().orientation
       if (currentOrientation === display.Orientation.PORTRAIT ||
         currentOrientation === display.Orientation.PORTRAIT_INVERTED) {
@@ -170,16 +185,6 @@ struct Index {
           this.index = currentIndex
         }
       })
-      this.context.eventHub.on('clearData', () => {
-        if (!this.isShowCleardataSheet) {
-          this.isShowCleardataSheet = true
-        }
-      })
-      this.context.eventHub.on('accountList', () => {
-        if (!this.isShowAccountlistSheet) {
-          this.isShowAccountlistSheet = true
-        }
-      })
       this.context.eventHub.on('refreshIndex', () => {
         this.backgroundImagePixelMap = this.getBackgroundImage()
       })
@@ -188,6 +193,7 @@ struct Index {
     .onDisAppear(() => {
       this.context.eventHub.off('refreshIndex')
       this.context.eventHub.off('accountList')
+      this.context.eventHub.off('wantUri')
       this.context.eventHub.off('clearData')
       display.off('change')
     })
