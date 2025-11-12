@@ -416,11 +416,13 @@ export default class EntryAbility extends UIAbility {
     if (colorMode === 2) {
       applicationContext.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_DARK)
     }
-    const debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-      name: 'debugSetting'
-    })
-    const processCache = debugSettingDataPreferences.getSync('processCache', true) as boolean
-    applicationContext.setSupportedProcessCache(processCache)
+    if (deviceInfo.deviceType === 'phone' || deviceInfo.deviceType === '2in1') {
+      const debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+        name: 'debugSetting'
+      })
+      const processCache = debugSettingDataPreferences.getSync('processCache', true) as boolean
+      applicationContext.setSupportedProcessCache(processCache)
+    }
     if (getCurrentNetworkBearerType() !== -1) {
       const checkVersionUpdate = commonSettingDataPreferences.getSync('checkVersionUpdate', 1)
       try {
@@ -476,7 +478,7 @@ export default class EntryAbility extends UIAbility {
   }
 
   onContinue(wantParam: Record<string, Object>) {
-    if (wantParam.version !== 22) {
+    if (wantParam.version !== 23) {
       promptAction.openToast({
         message: '接续失败，原因：目标端应用版本号与发起端不匹配'
       })

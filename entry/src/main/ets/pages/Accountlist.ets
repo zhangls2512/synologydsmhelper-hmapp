@@ -12,22 +12,6 @@ export default struct Accountlist {
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
 
-  async ping(path: string) {
-    const session = rcp.createSession()
-    try {
-      const response = await session.get(path + '/webapi/entry.cgi')
-      session.close()
-      if (response.statusCode === 200) {
-        return true
-      } else {
-        return false
-      }
-    } catch {
-      session.close()
-      return false
-    }
-  }
-
   @Builder
   MenuBuilder(item: AccountInfo) {
     Menu() {
@@ -191,12 +175,18 @@ export default struct Accountlist {
       this.accountArray = await getList()
       this.pathConnectionStatusArray = Array(this.accountArray.length).fill('connecting')
       this.accountArray.forEach(async (item, index) => {
-        const connectionStatus = await this.ping(item.path)
-        if (!connectionStatus) {
+        const session = rcp.createSession()
+        try {
+          const response = await session.get(item.path + '/webapi/entry.cgi')
+          session.close()
+          if (response.statusCode === 200) {
+            this.pathConnectionStatusArray[index] = 'connected'
+          } else {
+            this.pathConnectionStatusArray[index] = 'disconnected'
+          }
+        } catch {
+          session.close()
           this.pathConnectionStatusArray[index] = 'disconnected'
-        }
-        if (connectionStatus) {
-          this.pathConnectionStatusArray[index] = 'connected'
         }
       })
     })
