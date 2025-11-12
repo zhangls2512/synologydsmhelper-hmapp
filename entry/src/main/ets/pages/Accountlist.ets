@@ -7,7 +7,8 @@ export default struct Accountlist {
   @Consumer() isShowAccountlistSheet: boolean = false
   @Local accountArray: AccountInfo[] = []
   @Local hoverId: number = -1
-  context = this.getUIContext().getHostContext() as common.UIAbilityContext
+  UIContext = this.getUIContext()
+  context = this.UIContext.getHostContext() as common.UIAbilityContext
 
   @Builder
   MenuBuilder(item: AccountInfo) {
@@ -100,12 +101,10 @@ export default struct Accountlist {
             })
             .onClick(async () => {
               if (item.isLogin === 'true') {
-                promptAction.openToast({
-                  message: '已登录此账号，无需重复登录'
-                })
+                this.isShowAccountlistSheet = false
                 return
               }
-              await set({
+              await set(this.context, this.UIContext, {
                 path: item.path,
                 name: item.name,
                 password: item.password,

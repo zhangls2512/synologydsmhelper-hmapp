@@ -21,7 +21,8 @@ export function ErrorlogBuilder() {
 struct Errorlog {
   @Local errorLogArray: Item[] = []
   @Local hoverId: number | string = -1
-  context = this.getUIContext().getHostContext() as common.UIAbilityContext
+  UIContext = this.getUIContext()
+  context = this.UIContext.getHostContext() as common.UIAbilityContext
 
   get() {
     try {
@@ -221,7 +222,7 @@ struct Errorlog {
                 }
               })
               .onClick(() => {
-                copy(item.content)
+                copy(this.context, this.UIContext, item.content)
               })
 
               Divider()
@@ -302,7 +303,7 @@ struct Errorlog {
                       ]
                     })
                     if (data.index === 1) {
-                      copy(filestring)
+                      copy(this.context, this.UIContext, filestring)
                     }
                   }
                 })

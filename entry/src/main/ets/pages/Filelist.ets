@@ -49,11 +49,8 @@ export default struct Filelist {
   @Provider() isShowPlayerSheet: boolean = false
   @Provider() isShowProgressSheet: boolean = false
   @Provider() isShowRenamefileSheet: boolean = false
-  @Provider() editPath: string = ''
-  @Provider() editName: string = ''
   @Provider() transferredSize: number = -1
   @Provider() totalSize: number = -1
-  @Provider() src: string = ''
   @Local preferType: number = 1
   @Local loading: boolean = false
   @Local fileArray: FileItem[] = []
@@ -66,13 +63,23 @@ export default struct Filelist {
   @Local searchKeyword: string = ''
   @Local multipleSelect: boolean = false
   @Local multipleSelectArray: string[] = []
+  @Local src: string = ''
   @Local copyMovePath: string = ''
+  @Local editPath: string = ''
+  @Local editName: string = ''
   @Local hoverId: number = -1
-  context = this.getUIContext().getHostContext() as common.UIAbilityContext
+  UIContext = this.getUIContext()
+  context = this.UIContext.getHostContext() as common.UIAbilityContext
   remove = false
   srcName = ''
   dirnamesDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'dirnames'
+  })
+  commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+    name: 'commonSetting'
+  })
+  debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+    name: 'debugSetting'
   })
   searchDialogControllerProgress = new CustomDialogController({
     builder: LoadingDialog({
@@ -169,14 +176,14 @@ export default struct Filelist {
       })
       dialogControllerProgress.open()
       if (!path) {
-        const res = await dsmRequest('', 'SYNO.FileStation.List',
+        const res = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.List',
           '&method=list_share&additional=["size","time"]&sort_by=' + sortBy + '&sort_direction=' + sortDirection)
         if (res !== 'fail') {
           this.fileArray = res['shares']
         }
       }
       if (path) {
-        const res = await dsmRequest('', 'SYNO.FileStation.List',
+        const res = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.List',
           '&method=list&additional=["size","time"]&folder_path=' + encodeURIComponent(path) + '&sort_by=' + sortBy +
             '&sort_direction=' +
             sortDirection)
@@ -191,7 +198,7 @@ export default struct Filelist {
 
   async search() {
     this.searchDialogControllerProgress.open()
-    const res = await dsmRequest('', 'SYNO.FileStation.Search',
+    const res = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.Search',
       '&method=start&folder_path=' + encodeURIComponent(JSON.stringify([this.getPath()])) + '&pattern=' +
       encodeURIComponent(this.searchKeyword))
     if (res !== 'fail') {
@@ -224,7 +231,7 @@ export default struct Filelist {
     if (this.sortDirectionValue === '倒序') {
       sortDirection = 'DESC'
     }
-    const res = await dsmRequest('', 'SYNO.FileStation.Search',
+    const res = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.Search',
       '&method=list&additional=["size","time"]&taskid=' + taskId + '&sort_by=' + sortBy + '&sort_direction=' +
         sortDirection)
     if (res !== 'fail') {
@@ -250,12 +257,16 @@ export default struct Filelist {
 
   @Builder
   NewfolderSheetBuilder() {
-    Newfolder()
+    Newfolder({
+      editPath: this.editPath
+    })
   }
 
   @Builder
   PlayerSheetBuilder() {
-    Player()
+    Player({
+      src: this.src
+    })
   }
 
   @Builder
@@ -265,7 +276,10 @@ export default struct Filelist {
 
   @Builder
   RenamefileSheetBuilder() {
-    Renamefile()
+    Renamefile({
+      editPath: this.editPath,
+      editName: this.editName
+    })
   }
 
   @Builder
@@ -298,11 +312,8 @@ export default struct Filelist {
             content: '下载'
           })
             .onClick(async () => {
-              const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-                name: 'commonSetting'
-              })
               if (getCurrentNetworkBearerType() === 0) {
-                const cellularDataUseRemind = commonSettingDataPreferences.getSync('cellularDataUseRemind', 0)
+                const cellularDataUseRemind = this.commonSettingDataPreferences.getSync('cellularDataUseRemind', 0)
                 if (cellularDataUseRemind === 0 ||
                   (cellularDataUseRemind === 1 && item.additional.size > 200 * Math.pow(1024, 2))) {
                   const promptAction = this.getUIContext().getPromptAction()
@@ -328,7 +339,8 @@ export default struct Filelist {
               }
               try {
                 const documentSaveOptions = new picker.DocumentSaveOptions()
-                const selectFileDownloadPath = commonSettingDataPreferences.getSync('selectFileDownloadPath', false)
+                const selectFileDownloadPath =
+                  this.commonSettingDataPreferences.getSync('selectFileDownloadPath', false)
                 if (!selectFileDownloadPath) {
                   documentSaveOptions.pickerMode = picker.DocumentPickerMode.DOWNLOAD
                 }
@@ -354,7 +366,7 @@ export default struct Filelist {
                     filePath = uris[0]
                   }
                   this.prepareDownloadDialogControllerProgress.open()
-                  const version = await getDsmApiMaxVersion('', 'SYNO.FileStation.Download')
+                  const version = await getDsmApiMaxVersion(this.context, '', 'SYNO.FileStation.Download')
                   this.prepareDownloadDialogControllerProgress.close()
                   if (version !== 'fail') {
                     const wandAgent = await wantAgent.getWantAgent({
@@ -377,9 +389,6 @@ export default struct Filelist {
                       sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
                     })
                     const accountInfo = await get()
-                    const debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-                      name: 'debugSetting'
-                    })
                     const session = rcp.createSession({
                       requestConfiguration: {
                         transfer: {
@@ -452,7 +461,7 @@ export default struct Filelist {
                           }
                         },
                         security: {
-                          remoteValidation: debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
+                          remoteValidation: this.debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
                             'system') as 'system' | 'skip'
                         }
                       },
@@ -542,7 +551,7 @@ export default struct Filelist {
               })
             })
             dialogControllerProgress.open()
-            const res = await dsmRequest('', 'SYNO.FileStation.Sharing',
+            const res = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.Sharing',
               '&method=create&path=' + encodeURIComponent(JSON.stringify([item.path])))
             dialogControllerProgress.close()
             if (res !== 'fail') {
@@ -610,11 +619,12 @@ export default struct Filelist {
             })
             if (data.index === 1) {
               this.deleteDialogControllerProgress.open()
-              const startres =
-                await dsmRequest('', 'SYNO.FileStation.Delete', '&method=start&path=' + encodeURIComponent(item.path))
+              const startres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.Delete',
+                '&method=start&path=' + encodeURIComponent(item.path))
               if (startres !== 'fail') {
                 const taskId = startres['taskid'] as string
-                const statusres = await dsmRequest('', 'SYNO.FileStation.Delete', '&method=status&taskid=' + taskId)
+                const statusres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.Delete',
+                  '&method=status&taskid=' + taskId)
                 if (statusres !== 'fail') {
                   this.deleteDialogControllerProgress.close()
                   promptAction.openToast({
@@ -700,13 +710,13 @@ export default struct Filelist {
                   })
                 })
                 dialogControllerProgress.open()
-                const startres = await dsmRequest('', 'SYNO.FileStation.CopyMove',
+                const startres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.CopyMove',
                   '&method=start&path=' + encodeURIComponent(JSON.stringify(this.multipleSelectArray)) +
                     '&dest_folder_path=' + encodeURIComponent(this.getPath()) + '&remove_src=false')
                 if (startres !== 'fail') {
                   const taskId = startres['taskid'] as string
-                  const statusres =
-                    await dsmRequest('', 'SYNO.FileStation.CopyMove', '&method=status&taskid=' + taskId)
+                  const statusres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.CopyMove',
+                    '&method=status&taskid=' + taskId)
                   if (statusres !== 'fail') {
                     dialogControllerProgress.close()
                     promptAction.openToast({
@@ -754,13 +764,13 @@ export default struct Filelist {
                   })
                 })
                 dialogControllerProgress.open()
-                const startres = await dsmRequest('', 'SYNO.FileStation.CopyMove',
+                const startres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.CopyMove',
                   '&method=start&path=' + encodeURIComponent(JSON.stringify(this.multipleSelectArray)) +
                     '&dest_folder_path=' + encodeURIComponent(this.getPath()) + '&remove_src=true')
                 if (startres !== 'fail') {
                   const taskId = startres['taskid'] as string
-                  const statusres =
-                    await dsmRequest('', 'SYNO.FileStation.CopyMove', '&method=status&taskid=' + taskId)
+                  const statusres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.CopyMove',
+                    '&method=status&taskid=' + taskId)
                   if (statusres !== 'fail') {
                     dialogControllerProgress.close()
                     promptAction.openToast({
@@ -816,12 +826,12 @@ export default struct Filelist {
                 })
                 if (data.index === 1) {
                   this.deleteDialogControllerProgress.open()
-                  const startres = await dsmRequest('', 'SYNO.FileStation.Delete',
+                  const startres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.Delete',
                     '&method=start&path=' + encodeURIComponent(JSON.stringify(this.multipleSelectArray)))
                   if (startres !== 'fail') {
                     const taskId = startres['taskid'] as string
-                    const statusres =
-                      await dsmRequest('', 'SYNO.FileStation.Delete', '&method=status&taskid=' + taskId)
+                    const statusres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.Delete',
+                      '&method=status&taskid=' + taskId)
                     if (statusres !== 'fail') {
                       this.deleteDialogControllerProgress.close()
                       promptAction.openToast({
@@ -1035,13 +1045,13 @@ export default struct Filelist {
                     })
                   })
                   dialogControllerProgress.open()
-                  const startres = await dsmRequest('', 'SYNO.FileStation.CopyMove',
+                  const startres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.CopyMove',
                     '&method=start&path=' + encodeURIComponent(JSON.stringify([this.copyMovePath])) +
                       '&dest_folder_path=' + encodeURIComponent(this.getPath()) + '&remove_src=' + this.remove)
                   if (startres !== 'fail') {
                     const taskId = startres['taskid'] as string
-                    const statusres =
-                      await dsmRequest('', 'SYNO.FileStation.CopyMove', '&method=status&taskid=' + taskId)
+                    const statusres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.CopyMove',
+                      '&method=status&taskid=' + taskId)
                     if (statusres !== 'fail') {
                       dialogControllerProgress.close()
                       promptAction.openToast({
@@ -1173,9 +1183,6 @@ export default struct Filelist {
                     })
                     .onClick(async () => {
                       if (!item.isdir) {
-                        const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-                          name: 'commonSetting'
-                        })
                         let houzhui = ''
                         const lastDotIndex = item.name.lastIndexOf('.')
                         if (lastDotIndex !== -1) {
@@ -1183,14 +1190,14 @@ export default struct Filelist {
                         }
                         const supportedformats = ['mp4', 'mkv', 'm4a', 'aac', 'mp3', 'ogg', 'wav', 'flac', 'amr', 'ape']
                         if (supportedformats.includes(houzhui) &&
-                        commonSettingDataPreferences.getSync('onlinePreviewMedia', true)) {
+                        this.commonSettingDataPreferences.getSync('onlinePreviewMedia', true)) {
                           const dialogControllerProgress = new CustomDialogController({
                             builder: LoadingDialog({
                               content: '播放准备中...'
                             })
                           })
                           dialogControllerProgress.open()
-                          const res = await dsmRequest('', 'SYNO.API.Auth.Key',
+                          const res = await dsmRequest(this.context, this.UIContext, '', 'SYNO.API.Auth.Key',
                             '&method=grant&allow_api=SYNO.FileStation.Download&allow_methods=["download"]')
                           dialogControllerProgress.close()
                           if (res !== 'fail') {
@@ -1215,7 +1222,8 @@ export default struct Filelist {
                           return
                         }
                         if (getCurrentNetworkBearerType() === 0) {
-                          const cellularDataUseRemind = commonSettingDataPreferences.getSync('cellularDataUseRemind', 0)
+                          const cellularDataUseRemind =
+                            this.commonSettingDataPreferences.getSync('cellularDataUseRemind', 0)
                           if (cellularDataUseRemind === 0 ||
                             (cellularDataUseRemind === 1 && item.additional.size > 200 * Math.pow(1024, 2))) {
                             const promptAction = this.getUIContext().getPromptAction()
@@ -1247,7 +1255,7 @@ export default struct Filelist {
                           }
                           const filePath = previewDir + '/' + item.name
                           this.prepareDownloadDialogControllerProgress.open()
-                          const version = await getDsmApiMaxVersion('', 'SYNO.FileStation.Download')
+                          const version = await getDsmApiMaxVersion(this.context, '', 'SYNO.FileStation.Download')
                           this.prepareDownloadDialogControllerProgress.close()
                           if (version !== 'fail') {
                             const wandAgent = await wantAgent.getWantAgent({
@@ -1271,9 +1279,6 @@ export default struct Filelist {
                               sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
                             })
                             const accountInfo = await get()
-                            const debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-                              name: 'debugSetting'
-                            })
                             const session = rcp.createSession({
                               requestConfiguration: {
                                 transfer: {
@@ -1343,7 +1348,7 @@ export default struct Filelist {
                                         this.totalSize = -1
                                         const uri = fileUri.getUriFromPath(filePath)
                                         const filePreviewType =
-                                          commonSettingDataPreferences.getSync('filePreviewType', 0)
+                                          this.commonSettingDataPreferences.getSync('filePreviewType', 0)
                                         if (filePreviewType === 0) {
                                           const canPreview = await filePreview.canPreview(this.context, uri)
                                           if (!canPreview) {
@@ -1374,7 +1379,7 @@ export default struct Filelist {
                                   }
                                 },
                                 security: {
-                                  remoteValidation: debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
+                                  remoteValidation: this.debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
                                     'system') as 'system' | 'skip'
                                 }
                               },

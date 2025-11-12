@@ -17,7 +17,8 @@ export default struct Setting {
   @Local isLogin: boolean = false
   @Local accountCount: number = -1
   @Local hoverId: number = -1
-  context = this.getUIContext().getHostContext() as common.UIAbilityContext
+  UIContext = this.getUIContext()
+  context = this.UIContext.getHostContext() as common.UIAbilityContext
   pageInfos = new NavPathStack()
 
   async getSetting() {
@@ -38,7 +39,7 @@ export default struct Setting {
       const accountInfo = await get()
       const appAccountManager = appAccount.createAppAccountManager()
       if (accountInfo.id !== -1) {
-        const res = await checkPermission('ohos.permission.DISTRIBUTED_DATASYNC')
+        const res = await checkPermission(this.context, this.UIContext, 'ohos.permission.DISTRIBUTED_DATASYNC')
         this.accountDataSyncEnabled = res
         if (this.accountDataSyncEnabled) {
           this.accountDataSync = await appAccountManager.checkDataSyncEnabled(String(accountInfo.id))
@@ -141,7 +142,7 @@ export default struct Setting {
                   const uris = await documentViewPicker.select(documentSelectOptions)
                   if (uris.length === 1) {
                     const uri = uris[0]
-                    await importAccounts(uri)
+                    await importAccounts(this.context, this.UIContext, uri)
                     this.getSetting()
                   }
                 })
@@ -560,7 +561,7 @@ export default struct Setting {
                 }
               })
               .onClick(() => {
-                openLink('https://docs.qq.com/doc/p/142d00b55db803faf04f75a8486617bd4e51b07c')
+                openLink(this.context, 'https://docs.qq.com/doc/p/142d00b55db803faf04f75a8486617bd4e51b07c')
               })
 
               Divider()
@@ -644,7 +645,7 @@ export default struct Setting {
                 }
               })
               .onClick(() => {
-                openLink('https://docs.qq.com/doc/p/396e155d30adf768c0efcac3d14bebca4876143c')
+                openLink(this.context, 'https://docs.qq.com/doc/p/396e155d30adf768c0efcac3d14bebca4876143c')
               })
             }
             .backgroundColor($r('sys.color.ohos_id_color_card_bg'))

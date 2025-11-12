@@ -1,8 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 
-export default function openLink(link: string) {
-  const context = getContext() as common.UIAbilityContext
+export default function openLink(context: common.UIAbilityContext, link: string) {
   const commonSettingDataPreferences = preferences.getPreferencesSync(context, {
     name: 'commonSetting'
   })

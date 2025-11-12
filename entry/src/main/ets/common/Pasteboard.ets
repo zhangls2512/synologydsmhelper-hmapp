@@ -11,39 +11,34 @@ async function writePasteBoard(text: string) {
   })
 }
 
-export default async function copy(text: string, requirePermission: boolean = true) {
-  if (!requirePermission) {
+export default async function copy(context: Context, UIContext: UIContext, text: string) {
+  const permissionSettingDataPreferences = preferences.getPreferencesSync(context, {
+    name: 'permissionSetting'
+  })
+  const canWritePasteBoard = permissionSettingDataPreferences.getSync('writePasteBoard', false)
+  if (canWritePasteBoard) {
     writePasteBoard(text)
   }
-  if (requirePermission) {
-    const context = getContext()
-    const permissionSettingDataPreferences = preferences.getPreferencesSync(context, {
-      name: 'permissionSetting'
+  if (!canWritePasteBoard) {
+    const promptAction = UIContext.getPromptAction()
+    const data = await promptAction.showDialog({
+      title: '允许“群晖 DSM 助手”写入剪贴板？',
+      message: $r('app.string.WRITE_PASTEBOARD_reason'),
+      buttons: [
+        {
+          text: '禁止',
+          color: $r('sys.color.warning')
+        },
+        {
+          text: '允许',
+          color: $r('sys.color.font_emphasize')
+        }
+      ]
     })
-    const canWritePasteBoard = permissionSettingDataPreferences.getSync('writePasteBoard', false)
-    if (canWritePasteBoard) {
+    if (data.index === 1) {
+      permissionSettingDataPreferences.putSync('writePasteBoard', true)
+      permissionSettingDataPreferences.flushSync()
       writePasteBoard(text)
-    }
-    if (!canWritePasteBoard) {
-      const data = await promptAction.showDialog({
-        title: '允许“群晖 DSM 助手”写入剪贴板？',
-        message: $r('app.string.WRITE_PASTEBOARD_reason'),
-        buttons: [
-          {
-            text: '禁止',
-            color: $r('sys.color.warning')
-          },
-          {
-            text: '允许',
-            color: $r('sys.color.font_emphasize')
-          }
-        ]
-      })
-      if (data.index === 1) {
-        permissionSettingDataPreferences.putSync('writePasteBoard', true)
-        permissionSettingDataPreferences.flushSync()
-        writePasteBoard(text)
-      }
     }
   }
 }

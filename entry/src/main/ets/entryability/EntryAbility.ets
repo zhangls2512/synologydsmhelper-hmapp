@@ -1,6 +1,7 @@
 import {
   AbilityConstant,
   appRecovery,
+  common,
   ConfigurationConstant,
   errorManager,
   UIAbility,
@@ -16,7 +17,7 @@ import { netQuality } from '@kit.NetworkBoostKit'
 import { connection } from '@kit.NetworkKit'
 import { notificationManager } from '@kit.NotificationKit'
 import { hiAppEvent } from '@kit.PerformanceAnalysisKit'
-import { getList, importAccounts } from '../common/Account'
+import { getList, getLoginStatus } from '../common/Account'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import openLink from '../common/Openlink'
 import { developerRequest } from '../common/Request'
@@ -30,23 +31,27 @@ export default class EntryAbility extends UIAbility {
   async appInit(want: Want) {
     await notificationManager.setBadgeNumber(0)
     if (want.parameters?.noticeUrl) {
-      openLink(want.parameters.noticeUrl as string)
+      openLink(this.context, want.parameters.noticeUrl as string)
     }
     if (want.parameters?.menuHandler === 'clickMenu') {
       const uriList = want.parameters.uriList as string[]
       const fileUri = uriList[0] as string
-      await importAccounts(fileUri)
+      this.context.eventHub.emit('wantUri', fileUri)
     }
     if (want.uri) {
       if (want.uri === 'storage:///clearcache') {
         this.context.eventHub.emit('clearData')
       } else {
-        await importAccounts(want.uri)
+        this.context.eventHub.emit('wantUri', want.uri)
       }
     }
   }
 
   async windowInit(windowStage: window.WindowStage) {
+    await windowStage.loadContent('pages/Index')
+    const UIContext = windowStage.getMainWindowSync().getUIContext()
+    const context = UIContext.getHostContext() as common.UIAbilityContext
+    const promptAction = UIContext.getPromptAction()
     const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
       name: 'commonSetting'
     })
@@ -54,7 +59,6 @@ export default class EntryAbility extends UIAbility {
       const windowRectAutoSave = commonSettingDataPreferences.getSync('windowRectAutoSave', false) as boolean
       await windowStage.setWindowRectAutoSave(windowRectAutoSave)
     }
-    await windowStage.loadContent('pages/Index')
     if (deviceInfo.deviceType === '2in1') {
       const lastWindow = await window.getLastWindow(this.context)
       const windowTopmost = commonSettingDataPreferences.getSync('windowTopmost', false) as boolean
@@ -71,38 +75,9 @@ export default class EntryAbility extends UIAbility {
         }
       }
     }
-  }
-
-  async onCreate(want: Want) {
-    appRecovery.enableAppRecovery(appRecovery.RestartFlag.RESTART_WHEN_APP_FREEZE)
-    const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-      name: 'commonSetting'
-    })
-    const allowContinue = commonSettingDataPreferences.getSync('allowContinue', true)
-    if (!allowContinue) {
-      await this.context.setMissionContinueState(AbilityConstant.ContinueState.INACTIVE)
-    }
-    if (allowContinue) {
-      await this.context.setMissionContinueState(AbilityConstant.ContinueState.ACTIVE)
-    }
-    const allowRestore = commonSettingDataPreferences.getSync('allowRestore', true) as boolean
-    this.context.setRestoreEnabled(allowRestore)
-    const applicationContext = this.context.getApplicationContext()
-    const colorMode = commonSettingDataPreferences.getSync('colorMode', 0)
-    if (colorMode === 0) {
-      applicationContext.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET)
-    }
-    if (colorMode === 1) {
-      applicationContext.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT)
-    }
-    if (colorMode === 2) {
-      applicationContext.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_DARK)
-    }
     const debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
       name: 'debugSetting'
     })
-    const processCache = debugSettingDataPreferences.getSync('processCache', true) as boolean
-    applicationContext.setSupportedProcessCache(processCache)
     const filesDir = this.context.filesDir
     errorManager.on('error', {
       onUnhandledException(errMsg) {
@@ -157,7 +132,7 @@ export default class EntryAbility extends UIAbility {
             'RESOURCE_OVERLIMIT',
             'ADDRESS_SANITIZER'
           ]) as string[]).includes('JS_ERROR')) {
-            const res = await developerRequest('/debug/newErrorLog', {
+            const res = await developerRequest(context, UIContext, '/debug/newErrorLog', {
               product: 'synologydsmhelper',
               object: object
             })
@@ -228,7 +203,7 @@ export default class EntryAbility extends UIAbility {
             'RESOURCE_OVERLIMIT',
             'ADDRESS_SANITIZER'
           ]) as string[]).includes('JS_ERROR')) {
-            const res = await developerRequest('/debug/newErrorLog', {
+            const res = await developerRequest(context, UIContext, '/debug/newErrorLog', {
               product: 'synologydsmhelper',
               object: object
             })
@@ -280,7 +255,7 @@ export default class EntryAbility extends UIAbility {
               'RESOURCE_OVERLIMIT',
               'ADDRESS_SANITIZER'
             ]) as string[]).includes(item.name)) {
-              const res = await developerRequest('/debug/newErrorLog', {
+              const res = await developerRequest(context, UIContext, '/debug/newErrorLog', {
                 product: 'synologydsmhelper',
                 object: item
               })
@@ -435,6 +410,38 @@ export default class EntryAbility extends UIAbility {
         }
       }
     })
+  }
+
+  async onCreate(want: Want) {
+    appRecovery.enableAppRecovery(appRecovery.RestartFlag.RESTART_WHEN_APP_FREEZE)
+    const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+      name: 'commonSetting'
+    })
+    const allowContinue = commonSettingDataPreferences.getSync('allowContinue', true)
+    if (!allowContinue) {
+      await this.context.setMissionContinueState(AbilityConstant.ContinueState.INACTIVE)
+    }
+    if (allowContinue) {
+      await this.context.setMissionContinueState(AbilityConstant.ContinueState.ACTIVE)
+    }
+    const allowRestore = commonSettingDataPreferences.getSync('allowRestore', true) as boolean
+    this.context.setRestoreEnabled(allowRestore)
+    const applicationContext = this.context.getApplicationContext()
+    const colorMode = commonSettingDataPreferences.getSync('colorMode', 0)
+    if (colorMode === 0) {
+      applicationContext.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET)
+    }
+    if (colorMode === 1) {
+      applicationContext.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT)
+    }
+    if (colorMode === 2) {
+      applicationContext.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_DARK)
+    }
+    const debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+      name: 'debugSetting'
+    })
+    const processCache = debugSettingDataPreferences.getSync('processCache', true) as boolean
+    applicationContext.setSupportedProcessCache(processCache)
     if (getCurrentNetworkBearerType() !== -1) {
       const checkVersionUpdate = commonSettingDataPreferences.getSync('checkVersionUpdate', 1)
       try {
@@ -453,8 +460,14 @@ export default class EntryAbility extends UIAbility {
     const showAccountlistSheetAfterAppLaunch =
       commonSettingDataPreferences.getSync('showAccountlistSheetAfterAppLaunch', false)
     const accounts = await getList()
-    if (showAccountlistSheetAfterAppLaunch && accounts.length > 1) {
-      this.context.eventHub.emit('accountList')
+    const isLogin = await getLoginStatus()
+    if (showAccountlistSheetAfterAppLaunch) {
+      if (!isLogin && accounts.length !== 0) {
+        this.context.eventHub.emit('accountList')
+      }
+      if (isLogin && accounts.length > 1) {
+        this.context.eventHub.emit('accountList')
+      }
     }
     this.appInit(want)
   }
@@ -484,7 +497,7 @@ export default class EntryAbility extends UIAbility {
   }
 
   onContinue(wantParam: Record<string, Object>) {
-    if (wantParam.version !== 21) {
+    if (wantParam.version !== 22) {
       promptAction.openToast({
         message: '接续失败，原因：目标端应用版本号与发起端不匹配'
       })
