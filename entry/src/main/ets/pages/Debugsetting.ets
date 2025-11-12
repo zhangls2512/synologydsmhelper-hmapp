@@ -13,6 +13,7 @@ struct Debugsetting {
   @Local globalErrorShowTypeIndex: number = 0
   @Local globalErrorShowTypeValue: string = 'Toast'
   @Local saveErrorLog: boolean = false
+  @Local deleteErrorLogBeforeUpdateTimeWhenAppLaunch: boolean = false
   @Local autoUploadErrorLog: boolean = false
   @Local showMemoryLevelChange: boolean = false
   @Local processCache: boolean = false
@@ -49,6 +50,8 @@ struct Debugsetting {
       this.globalErrorShowTypeValue = 'Dialog'
     }
     this.saveErrorLog = this.debugSettingDataPreferences.getSync('saveErrorLog', true) as boolean
+    this.deleteErrorLogBeforeUpdateTimeWhenAppLaunch =
+      this.debugSettingDataPreferences.getSync('deleteErrorLogBeforeUpdateTimeWhenAppLaunch', true) as boolean
     this.autoUploadErrorLog = this.debugSettingDataPreferences.getSync('autoUploadErrorLog', true) as boolean
     this.showMemoryLevelChange = this.debugSettingDataPreferences.getSync('showMemoryLevelChange', false) as boolean
     this.processCache = this.debugSettingDataPreferences.getSync('processCache', true) as boolean
@@ -143,6 +146,32 @@ struct Debugsetting {
                   .enabled(this.allService)
                   .onChange((isOn) => {
                     this.debugSettingDataPreferences.putSync('saveErrorLog', isOn)
+                    this.debugSettingDataPreferences.flushSync()
+                  })
+              }
+              .borderRadius(12)
+              .padding(12)
+              .width('100%')
+
+              Divider()
+                .padding({
+                  left: 12,
+                  right: 12
+                })
+              Row() {
+                Text('应用启动时清理历史版本故障日志')
+                  .fontWeight(FontWeight.Medium)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                Toggle({
+                  type: ToggleType.Switch,
+                  isOn: this.deleteErrorLogBeforeUpdateTimeWhenAppLaunch!!
+                })
+                  .enabled(this.allService)
+                  .onChange((isOn) => {
+                    this.debugSettingDataPreferences.putSync('deleteErrorLogBeforeUpdateTimeWhenAppLaunch', isOn)
                     this.debugSettingDataPreferences.flushSync()
                   })
               }
