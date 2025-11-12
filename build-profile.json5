@@ -3,7 +3,6 @@
     "signingConfigs": [
       {
         "name": "release",
-        "type": "HarmonyOS",
         "material": {
           "storeFile": "D:/harmonyproject/内部文件/发布签名材料/keystore.p12",
           "storePassword": "000000195C12DD78581766951C4A14A8EF547FA599ED4F3FADCD2A726A6754A39C4C94E2BE42310E9F",
@@ -16,7 +15,6 @@
       },
       {
         "name": "debug",
-        "type": "HarmonyOS",
         "material": {
           "storeFile": "C:\\Users\\zls25\\.ohos\\config\\debug_synologydsmhelperhmapp_Ex1mAlsEleTUrK2Mt9RtAHQ-X3YSsN0n-_K3gkNxl2A=.p12",
           "storePassword": "0000001AE93DE3BDFC6B3572DE0264363B9F36C6405A77CCE40C80142A71A0F73C0B4A599D965776835F",
@@ -29,7 +27,6 @@
       },
       {
         "name": "debugsjy",
-        "type": "HarmonyOS",
         "material": {
           "storeFile": "C:\\Users\\Lenovo\\.ohos\\config\\debugsjy_synologydsmhelper_z1YKi4fCiPF-syFZjEJ_7sZs93FKZupePDYcs9zyO48=.p12",
           "storePassword": "0000001B6C54D46FEC204C0D2521E7758DD9BD1A788A54BD6F87BEDFFAA5CF7B7DCD881A42C00D0E08C02B",
@@ -45,7 +42,11 @@
       {
         "name": "default",
         "signingConfig": "debug",
+        "compatibleSdkVersion": "6.0.0(20)",
         "buildOption": {
+          "packOptions": {
+            "fastBuildApp": true
+          },
           "resOptions": {
             "resCompileThreads": 32
           },
@@ -61,12 +62,12 @@
             "noExternalImportByPath": true,
             "useNormalizedOHMUrl": true,
             "caseSensitiveCheck": true,
-            "harLocalDependencyCheck": true
-          }
+            "harLocalDependencyCheck": true,
+            "enableStrictCheckOHModule": true
+          },
+          "preloadSystemSo": true
         },
-        "runtimeOS": "HarmonyOS",
-        "compatibleSdkVersion": "6.0.0(20)",
-        "targetSdkVersion": "6.0.0(20)"
+        "runtimeOS": "HarmonyOS"
       }
     ]
   },
