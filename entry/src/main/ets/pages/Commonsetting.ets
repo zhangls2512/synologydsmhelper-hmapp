@@ -894,7 +894,7 @@ struct Commonsetting {
         this.commonSettingDataPreferences.getSync('selectFileDownloadPath', false) as boolean
       this.showAccountlistSheetAfterAppLaunch =
         this.commonSettingDataPreferences.getSync('showAccountlistSheetAfterAppLaunch', false) as boolean
-      this.cacheApiVersion = this.commonSettingDataPreferences.getSync('cacheApiVersion', false) as boolean
+      this.cacheApiVersion = this.commonSettingDataPreferences.getSync('cacheApiVersion', true) as boolean
       const cellularDataUseRemind = this.commonSettingDataPreferences.getSync('cellularDataUseRemind', 0)
       this.cellularDataUseRemindIndex = cellularDataUseRemind as number
       if (cellularDataUseRemind === 0) {

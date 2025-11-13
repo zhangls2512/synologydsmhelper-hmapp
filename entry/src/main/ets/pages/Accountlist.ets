@@ -2,6 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { AccountInfo, getList, remove, set } from '../common/Account'
+import { getDnsServer } from '../common/Dnsserver'
 
 @ComponentV2
 export default struct Accountlist {
@@ -175,7 +176,13 @@ export default struct Accountlist {
       this.accountArray = await getList()
       this.pathConnectionStatusArray = Array(this.accountArray.length).fill('connecting')
       this.accountArray.forEach(async (item, index) => {
-        const session = rcp.createSession()
+        const session = rcp.createSession({
+          requestConfiguration: {
+            dns: {
+              dnsRules: getDnsServer(this.context)
+            }
+          }
+        })
         try {
           const response = await session.get(item.path + '/webapi/entry.cgi')
           session.close()

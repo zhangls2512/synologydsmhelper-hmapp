@@ -975,37 +975,6 @@ struct Debugsetting {
                   right: 12
                 })
               Row() {
-                Text('连接DSM时跳过SSL验证')
-                  .enableAutoSpacing(true)
-                  .fontWeight(FontWeight.Medium)
-                  .layoutWeight(1)
-                  .margin({
-                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                  })
-                Toggle({
-                  type: ToggleType.Switch,
-                  isOn: this.closeRemoteValidationWhenLinkDsm!!
-                })
-                  .onChange((isOn) => {
-                    if (!isOn) {
-                      this.debugSettingDataPreferences.putSync('closeRemoteValidationWhenLinkDsm', 'system')
-                    }
-                    if (isOn) {
-                      this.debugSettingDataPreferences.putSync('closeRemoteValidationWhenLinkDsm', 'skip')
-                    }
-                    this.debugSettingDataPreferences.flushSync()
-                  })
-              }
-              .borderRadius(12)
-              .padding(12)
-              .width('100%')
-
-              Divider()
-                .padding({
-                  left: 12,
-                  right: 12
-                })
-              Row() {
                 Text('测试')
                   .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
@@ -1042,6 +1011,80 @@ struct Debugsetting {
                   name: 'Networktest'
                 })
               })
+
+              Divider()
+                .padding({
+                  left: 12,
+                  right: 12
+                })
+              Row() {
+                Text('自定义 DNS 服务器')
+                  .fontWeight(FontWeight.Medium)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                Image($r('app.media.right'))
+                  .fillColor($r('sys.color.icon_fourth'))
+                  .height(12)
+                  .width(12)
+              }
+              .borderRadius(12)
+              .padding(12)
+              .stateStyles({
+                normal: {
+                  .backgroundColor(this.hoverId === 10 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
+                },
+                pressed: {
+                  .backgroundColor($r('sys.color.interactive_pressed'))
+                }
+              })
+              .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 10
+                }
+              })
+              .onClick(() => {
+                this.pageInfos.pushPath({
+                  name: 'Dnsserver'
+                })
+              })
+
+              Divider()
+                .padding({
+                  left: 12,
+                  right: 12
+                })
+              Row() {
+                Text('连接DSM时跳过SSL验证')
+                  .enableAutoSpacing(true)
+                  .fontWeight(FontWeight.Medium)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                Toggle({
+                  type: ToggleType.Switch,
+                  isOn: this.closeRemoteValidationWhenLinkDsm!!
+                })
+                  .onChange((isOn) => {
+                    if (!isOn) {
+                      this.debugSettingDataPreferences.putSync('closeRemoteValidationWhenLinkDsm', 'system')
+                    }
+                    if (isOn) {
+                      this.debugSettingDataPreferences.putSync('closeRemoteValidationWhenLinkDsm', 'skip')
+                    }
+                    this.debugSettingDataPreferences.flushSync()
+                  })
+              }
+              .borderRadius(12)
+              .padding(12)
+              .width('100%')
             }
             .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
             .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))

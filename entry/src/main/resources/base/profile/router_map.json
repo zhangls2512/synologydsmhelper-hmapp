@@ -89,6 +89,11 @@
       "name": "License",
       "pageSourceFile": "src/main/ets/pages/License.ets",
       "buildFunction": "LicenseBuilder"
+    },
+    {
+      "name": "Dnsserver",
+      "pageSourceFile": "src/main/ets/pages/Dnsserver.ets",
+      "buildFunction": "DnsserverBuilder"
     }
   ]
 }

@@ -4,7 +4,8 @@ import { fileIo } from '@kit.CoreFileKit'
 import { netBoost } from '@kit.NetworkBoostKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { get, set } from './Account'
-import { read } from './File'
+import { getDnsServer } from './Dnsserver'
+import { read, write } from './File'
 import { ResponseData } from '../pages/Login'
 
 interface ApiVersionItem {
@@ -68,7 +69,7 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
     name: 'commonSetting'
   })
   const cacheApiVersion = getCacheApiVersion(context, requestPath, api)
-  const cacheApiVersionSetting = commonSettingDataPreferences.getSync('cacheApiVersion', false)
+  const cacheApiVersionSetting = commonSettingDataPreferences.getSync('cacheApiVersion', true)
   if (cacheApiVersionSetting && cacheApiVersion !== -1) {
     return cacheApiVersion
   }
@@ -77,6 +78,9 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
   })
   const session = rcp.createSession({
     requestConfiguration: {
+      dns: {
+        dnsRules: getDnsServer(context)
+      },
       security: {
         remoteValidation: debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
           'system') as 'system' | 'skip'
@@ -99,10 +103,9 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
         const version = res.data[api].maxVersion as number
         if (cacheApiVersionSetting) {
           const filePath = context.cacheDir + '/apiversion.txt'
-          const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
           const filestring = read(filePath)
           let apiVersionCache: ApiVersionCacheItem[] = []
-          if (filestring) {
+          if (filestring !== 'fail') {
             apiVersionCache = JSON.parse(filestring) as ApiVersionCacheItem[]
           }
           const pathIndex = apiVersionCache.findIndex(item => item.path === requestPath)
@@ -128,8 +131,7 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
               pathApiVersionCache[apiVersionIndex].version = version
             }
           }
-          fileIo.writeSync(file.fd, JSON.stringify(apiVersionCache))
-          fileIo.closeSync(file)
+          write(filePath, JSON.stringify(apiVersionCache))
         }
         return version
       }
@@ -172,6 +174,9 @@ export async function dsmRequest(context: Context, UIContext: UIContext, path: s
   })
   const session = rcp.createSession({
     requestConfiguration: {
+      dns: {
+        dnsRules: getDnsServer(context)
+      },
       security: {
         remoteValidation: debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
           'system') as 'system' | 'skip'
@@ -265,7 +270,13 @@ export async function developerRequest(context: Context, UIContext: UIContext, p
     })
     return 'fail'
   }
-  const session = rcp.createSession()
+  const session = rcp.createSession({
+    requestConfiguration: {
+      dns: {
+        dnsRules: getDnsServer(context)
+      }
+    }
+  })
   try {
     const response = await session.post('https://api.zhangls2512.cn' + path, body)
     session.close()

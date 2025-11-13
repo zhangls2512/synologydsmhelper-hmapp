@@ -4,6 +4,7 @@ import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { netBoost } from '@kit.NetworkBoostKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { set } from '../common/Account'
+import { getDnsServer } from '../common/Dnsserver'
 import openLink from '../common/Openlink'
 import { dsmRequest } from '../common/Request'
 
@@ -184,7 +185,7 @@ export default struct Login {
                   return
                 }
               }
-              let port = '0'
+              let port = ''
               if (!this.port) {
                 if (this.scheme === 'http') {
                   port = '5000'
@@ -233,7 +234,13 @@ export default struct Login {
                   encodeURIComponent(this.password) + '&otp_code=' + this.mfa)
               }
               if (this.quickConnectId) {
-                const session = rcp.createSession()
+                const session = rcp.createSession({
+                  requestConfiguration: {
+                    dns: {
+                      dnsRules: getDnsServer(this.context)
+                    }
+                  }
+                })
                 try {
                   const response = await session.post('https://global.quickconnect.cn/Serv.php', JSON.stringify([
                     {
