@@ -1,6 +1,7 @@
 import {
   AbilityConstant,
   appRecovery,
+  bundleManager,
   common,
   ConfigurationConstant,
   errorManager,
@@ -12,6 +13,7 @@ import { updateManager } from '@kit.AppGalleryKit'
 import { preferences } from '@kit.ArkData'
 import { promptAction, window } from '@kit.ArkUI'
 import { deviceInfo } from '@kit.BasicServicesKit'
+import { fileIo } from '@kit.CoreFileKit'
 import { netQuality } from '@kit.NetworkBoostKit'
 import { connection } from '@kit.NetworkKit'
 import { notificationManager } from '@kit.NotificationKit'
@@ -146,7 +148,7 @@ export default class EntryAbility extends UIAbility {
       }
     })
     errorManager.on('unhandledRejection', async (err: Error) => {
-      if (err.message !== 'cancel') {
+      if (err.message !== 'cancel' && err.message !== 'Internal error. Can not get delegate.') {
         if (debugSettingDataPreferences.getSync('globalErrorShowType', 0) === 0) {
           promptAction.openToast({
             message: 'js 运行异常，错误名称：' + err.name + '，错误信息：' + err.message + '，错误堆栈：' + err.stack
@@ -373,12 +375,11 @@ export default class EntryAbility extends UIAbility {
                     'undefined'
           const isLastPredictionValid = data.weakSignalPrediction?.isLastPredictionValid ? '是' : '否'
           promptAction.showDialog({
-            title: '网络质量变化',
+            title: '网络场景变化',
             message: '数据路径：' + pathType + '\n场景类型：' + scene +
               '\n建议的数传策略：' + dataSpeedSimpleAction + '\n最近一次的弱信号预测是否有效：' + isLastPredictionValid +
               '\n预计多长时间进入弱信号：' + data.weakSignalPrediction?.startTime + ' s\n预计在弱信号区域停留时长：' +
-              data.weakSignalPrediction?.duration +
-              ' s',
+              data.weakSignalPrediction?.duration + ' s',
             buttons: [
               {
                 text: '确定',
@@ -416,12 +417,32 @@ export default class EntryAbility extends UIAbility {
     if (colorMode === 2) {
       applicationContext.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_DARK)
     }
+    const debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+      name: 'debugSetting'
+    })
     if (deviceInfo.deviceType === 'phone' || deviceInfo.deviceType === '2in1') {
-      const debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-        name: 'debugSetting'
-      })
       const processCache = debugSettingDataPreferences.getSync('processCache', true) as boolean
       applicationContext.setSupportedProcessCache(processCache)
+    }
+    if (debugSettingDataPreferences.getSync('deleteErrorLogBeforeUpdateTimeWhenAppLaunch', true)) {
+      const bundleInfo = bundleManager.getBundleInfoForSelfSync(bundleManager.BundleFlag.GET_BUNDLE_INFO_DEFAULT)
+      const updateTime = bundleInfo.updateTime
+      try {
+        const errorLogFileName = fileIo.listFileSync(this.context.filesDir + '/log/error/')
+        const errorLogFilePath = errorLogFileName.map(item => this.context.filesDir + '/log/error/' + item)
+        errorLogFilePath.map((item) => {
+          const time = Number(item.replace(this.context.filesDir + '/log/error/', '').replace('.txt', ''))
+          if (time < updateTime) {
+            fileIo.unlinkSync(item)
+          }
+        })
+      } catch (err) {
+        if (err.code !== 13900002) {
+          promptAction.openToast({
+            message: '发生错误，错误码：' + err.code
+          })
+        }
+      }
     }
     if (getCurrentNetworkBearerType() !== -1) {
       const checkVersionUpdate = commonSettingDataPreferences.getSync('checkVersionUpdate', 1)
@@ -478,7 +499,7 @@ export default class EntryAbility extends UIAbility {
   }
 
   onContinue(wantParam: Record<string, Object>) {
-    if (wantParam.version !== 23) {
+    if (wantParam.version !== 24) {
       promptAction.openToast({
         message: '接续失败，原因：目标端应用版本号与发起端不匹配'
       })
