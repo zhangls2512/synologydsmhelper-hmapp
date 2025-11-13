@@ -1,5 +1,6 @@
 import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { rcp } from '@kit.RemoteCommunicationKit'
+import { getDnsServer } from '../common/Dnsserver'
 
 interface Response {
   errCode: number,
@@ -21,6 +22,7 @@ struct Networktest {
   @Local timeStamp: number = -1
   @Local httpVersion: string = ''
   @Local totalTimeMs: number = -1
+  context = this.getUIContext().getHostContext()
 
   build() {
     NavDestination() {
@@ -35,7 +37,13 @@ struct Networktest {
                   })
                 })
                 dialogControllerProgress.open()
-                const session = rcp.createSession()
+                const session = rcp.createSession({
+                  requestConfiguration: {
+                    dns: {
+                      dnsRules: getDnsServer(this.context)
+                    }
+                  }
+                })
                 try {
                   const startTime = Date.now()
                   const response = await session.get('https://api.zhangls2512.cn/test')

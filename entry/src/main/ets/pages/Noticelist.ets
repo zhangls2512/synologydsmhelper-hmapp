@@ -2,6 +2,11 @@ import { common } from '@kit.AbilityKit'
 import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { dsmRequest } from '../common/Request'
 
+interface NoticeString {
+  msg: string,
+  title: string
+}
+
 interface NoticeItem {
   level: string,
   className: string,
@@ -32,10 +37,25 @@ export default struct Noticelist {
   async get() {
     this.loading = true
     const res = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Core.DSMNotify', '&method=notify&action=load')
-    this.loading = false
     if (res !== 'fail') {
-      const noticeres = res as NoticeResponseData
-      this.notices = noticeres.items
+      const resa =
+        await dsmRequest(this.context, this.UIContext, '', 'SYNO.Core.DSMNotify.Strings', '&method=get&lang=chs')
+      this.loading = false
+      if (resa !== 'fail') {
+        const noticeres = res as NoticeResponseData
+        const noticeString = resa as Record<string, NoticeString>
+        this.notices = noticeres.items.map((item): NoticeItem => {
+          return {
+            level: item.level,
+            className: noticeString[item.title].title,
+            msg: item.msg,
+            title: noticeString[item.title].msg
+          }
+        })
+      }
+    }
+    if (res === 'fail') {
+      this.loading = false
     }
   }
 
@@ -97,7 +117,10 @@ export default struct Noticelist {
                 .margin({
                   right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                 })
-              Text(item.level)
+              Text(item.level === 'NOTIFICATION_INFO' ? '信息' :
+                item.level === 'NOTIFICATION_WARN' ? '警告' :
+                  item.level === 'NOTIFICATION_ERROR' ? '重要' :
+                    '未知')
                 .fontColor($r('sys.color.font_secondary'))
                 .fontSize($r('sys.float.ohos_id_text_size_body2'))
                 .layoutWeight(1)
