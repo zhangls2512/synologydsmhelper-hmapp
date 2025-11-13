@@ -12,6 +12,7 @@ import { rcp } from '@kit.RemoteCommunicationKit'
 import { systemShare } from '@kit.ShareKit'
 import { hdsEffect } from '@kit.UIDesignKit'
 import { get, getLoginStatus } from '../common/Account'
+import { getDnsServer } from '../common/Dnsserver'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import { dsmRequest, getDsmApiMaxVersion } from '../common/Request'
 import Newfolder from './Newfolder'
@@ -459,6 +460,9 @@ export default struct Filelist {
                               }
                             }
                           }
+                        },
+                        dns: {
+                          dnsRules: getDnsServer(this.context)
                         },
                         security: {
                           remoteValidation: this.debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
@@ -1377,6 +1381,9 @@ export default struct Filelist {
                                       }
                                     }
                                   }
+                                },
+                                dns: {
+                                  dnsRules: getDnsServer(this.context)
                                 },
                                 security: {
                                   remoteValidation: this.debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
