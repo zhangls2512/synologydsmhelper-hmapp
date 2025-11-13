@@ -2,7 +2,7 @@ import { util } from '@kit.ArkTS'
 import { promptAction } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
 
-export function read(path: string) {
+export function read(path: string, ignoreNotexist = false) {
   try {
     const file = fileIo.openSync(path)
     const size = fileIo.statSync(file.fd).size
@@ -13,9 +13,16 @@ export function read(path: string) {
     fileIo.closeSync(file)
     return filestring
   } catch (err) {
-    promptAction.openToast({
-      message: '发生错误，错误码：' + err.code
-    })
+    if (err.code !== 13900002) {
+      promptAction.openToast({
+        message: '发生错误，错误码：' + err.code
+      })
+    }
+    if (err.code === 13900002 && !ignoreNotexist) {
+      promptAction.openToast({
+        message: '发生错误，错误码：' + err.code
+      })
+    }
     return 'fail'
   }
 }

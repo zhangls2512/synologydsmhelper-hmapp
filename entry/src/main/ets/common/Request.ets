@@ -39,9 +39,9 @@ function getCacheApiVersion(context: Context, path: string, api: string) {
   if (!fileIo.accessSync(filePath)) {
     return -1
   } else {
-    const filestring = read(filePath)
+    const filestring = read(filePath, true)
     let apiVersionCache: ApiVersionCacheItem[] = []
-    if (filestring) {
+    if (filestring !== 'fail') {
       apiVersionCache = JSON.parse(filestring) as ApiVersionCacheItem[]
     }
     const pathIndex = apiVersionCache.findIndex(item => item.path === path)
@@ -103,7 +103,7 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
         const version = res.data[api].maxVersion as number
         if (cacheApiVersionSetting) {
           const filePath = context.cacheDir + '/apiversion.txt'
-          const filestring = read(filePath)
+          const filestring = read(filePath, true)
           let apiVersionCache: ApiVersionCacheItem[] = []
           if (filestring !== 'fail') {
             apiVersionCache = JSON.parse(filestring) as ApiVersionCacheItem[]
