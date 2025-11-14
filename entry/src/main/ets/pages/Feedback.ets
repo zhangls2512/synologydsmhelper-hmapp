@@ -98,32 +98,30 @@ struct Feedback {
         })
 
         ListItem() {
-          Column() {
-            Button('提交')
-              .enabled(this.content !== '')
-              .onClick(async () => {
-                const dialogControllerProgress = new CustomDialogController({
-                  builder: LoadingDialog({
-                    content: '提交中...'
-                  })
+          Button('提交')
+            .enabled(this.content !== '')
+            .width('100%')
+            .onClick(async () => {
+              const dialogControllerProgress = new CustomDialogController({
+                builder: LoadingDialog({
+                  content: '提交中...'
                 })
-                dialogControllerProgress.open()
-                const res = await developerRequest(this.context, this.UIContext, '/debug/sendFeedbackEmail', {
-                  product: 'synologydsmhelper',
-                  content: this.content,
-                  contactType: this.contactType,
-                  contactValue: this.contactValue
-                })
-                dialogControllerProgress.close()
-                if (res !== 'fail') {
-                  promptAction.openToast({
-                    message: '提交成功'
-                  })
-                  this.pageInfos.pop()
-                }
               })
-          }
-          .width('100%')
+              dialogControllerProgress.open()
+              const res = await developerRequest(this.context, this.UIContext, '/debug/sendFeedbackEmail', {
+                product: 'synologydsmhelper',
+                content: this.content,
+                contactType: this.contactType,
+                contactValue: this.contactValue
+              })
+              dialogControllerProgress.close()
+              if (res !== 'fail') {
+                promptAction.openToast({
+                  message: '提交成功'
+                })
+                this.pageInfos.pop()
+              }
+            })
         }
         .margin({
           top: $r('sys.float.ohos_id_elements_margin_vertical_l')

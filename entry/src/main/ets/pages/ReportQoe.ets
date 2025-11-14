@@ -198,6 +198,7 @@ struct ReportQoe {
               .margin({
                 top: $r('sys.float.ohos_id_elements_margin_vertical_l')
               })
+              .width('100%')
               .onClick(() => {
                 netQuality.reportQoe({
                   serviceType: this.serviceType,

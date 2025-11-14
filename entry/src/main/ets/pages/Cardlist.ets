@@ -3,6 +3,7 @@ import { preferences } from '@kit.ArkData'
 import { display } from '@kit.ArkUI'
 import { hdsEffect } from '@kit.UIDesignKit'
 import { getLoginStatus } from '../common/Account'
+import { getPreferType, getPreferTypeByDisplayId } from '../common/Prefertype'
 import { dsmRequest } from '../common/Request'
 import Cardedit from './Cardedit'
 import Noticelist from './Noticelist'
@@ -70,13 +71,20 @@ export default struct Cardlist {
             Column() {
               Image($r('app.media.edit'))
             }
-            .backgroundColor($r('sys.color.interactive_hover'))
             .borderRadius(20)
             .height(40)
             .margin({
               right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
             })
             .padding(11)
+            .stateStyles({
+              normal: {
+                .backgroundColor($r('sys.color.interactive_hover'))
+              },
+              pressed: {
+                .backgroundColor($r('sys.color.interactive_pressed'))
+              }
+            })
             .visualEffect(new hdsEffect.HdsEffectBuilder()
               .pointLight({
                 sourceType: hdsEffect.PointLightSourceType.SOFT,
@@ -109,10 +117,17 @@ export default struct Cardlist {
               Column() {
                 Image($r('app.media.notice'))
               }
-              .backgroundColor($r('sys.color.interactive_hover'))
               .borderRadius(20)
               .height(40)
               .padding(11)
+              .stateStyles({
+                normal: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
+                },
+                pressed: {
+                  .backgroundColor($r('sys.color.interactive_pressed'))
+                }
+              })
               .visualEffect(new hdsEffect.HdsEffectBuilder()
                 .pointLight({
                   sourceType: hdsEffect.PointLightSourceType.SOFT,
@@ -166,23 +181,9 @@ export default struct Cardlist {
       top: this.preferType === 0 ? 0 : $r('sys.float.ohos_id_default_padding_top')
     })
     .onAppear(() => {
-      const currentOrientation = display.getDefaultDisplaySync().orientation
-      if (currentOrientation === display.Orientation.PORTRAIT ||
-        currentOrientation === display.Orientation.PORTRAIT_INVERTED) {
-        this.preferType = 0
-      }
-      if (currentOrientation === display.Orientation.LANDSCAPE ||
-        currentOrientation === display.Orientation.LANDSCAPE_INVERTED) {
-        this.preferType = 1
-      }
+      this.preferType = getPreferType()
       display.on('change', (displayId) => {
-        const orientation = display.getDisplayByIdSync(displayId).orientation
-        if (orientation === display.Orientation.PORTRAIT || orientation === display.Orientation.PORTRAIT_INVERTED) {
-          this.preferType = 0
-        }
-        if (orientation === display.Orientation.LANDSCAPE || orientation === display.Orientation.LANDSCAPE_INVERTED) {
-          this.preferType = 1
-        }
+        this.preferType = getPreferTypeByDisplayId(displayId)
       })
       this.context.eventHub.on('refreshCardlist', () => {
         this.get()

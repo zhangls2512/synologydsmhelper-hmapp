@@ -81,153 +81,45 @@ export default class EntryAbility extends UIAbility {
       name: 'debugSetting'
     })
     const filesDir = this.context.filesDir
-    errorManager.on('error', {
-      onUnhandledException(errMsg) {
-        if (debugSettingDataPreferences.getSync('globalErrorShowType', 0) === 0) {
-          promptAction.openToast({
-            message: 'js 运行异常：' + errMsg
-          })
-        }
-      },
-      async onException(err) {
-        if (debugSettingDataPreferences.getSync('globalErrorShowType', 0) === 1) {
-          let message = '名称：' + err.name + '\n信息：' + err.message
-          if (typeof (err.stack) === 'string') {
-            message = message + '\n堆栈：' + err.stack
-          }
-          promptAction.showDialog({
-            title: 'js 运行异常',
-            message: message,
-            buttons: [
-              {
-                text: '确定',
-                color: $r('sys.color.font_emphasize')
-              }
-            ]
-          })
-        }
-        const object: JsErrorObject = {
-          name: 'JS_ERROR',
-          info: {
-            name: err.name,
-            message: err.message,
-            stack: err.stack
-          }
-        }
-        if (debugSettingDataPreferences.getSync('saveErrorLog', true)) {
-          write(filesDir + '/log/error/' + Date.now() + '.txt', JSON.stringify(object))
-        }
-        if (debugSettingDataPreferences.getSync('autoUploadErrorLog', true) &&
-        commonSettingDataPreferences.getSync('allService', true)) {
-          if ((debugSettingDataPreferences.getSync('autoUploadErrorLogType', [
-            'JS_ERROR',
-            'APP_CRASH',
-            'APP_FREEZE',
-            'APP_KILLED',
-            'RESOURCE_OVERLIMIT',
-            'ADDRESS_SANITIZER'
-          ]) as string[]).includes('JS_ERROR')) {
-            const res = await developerRequest(context, UIContext, '/debug/newErrorLog', {
-              product: 'synologydsmhelper',
-              object: object
+    try {
+      errorManager.on('error', {
+        async onUnhandledException(errMsg) {
+          if (debugSettingDataPreferences.getSync('globalErrorShowType', 0) === 0) {
+            await promptAction.openToast({
+              message: 'js 运行异常：' + errMsg
             })
-            if (res !== 'fail') {
-              promptAction.showDialog({
-                title: '提示',
-                message: '故障日志自动上传成功，故障类型：JS_ERROR。建议您依次进入“我的”>“设置”>“关于”，附带联系方式提交意见反馈或联系人工客服，便于开发者排查、处理问题。',
-                buttons: [
-                  {
-                    text: '确定',
-                    color: $r('sys.color.font_emphasize')
-                  }
-                ]
-              })
+          }
+        },
+        async onException(err) {
+          if (debugSettingDataPreferences.getSync('globalErrorShowType', 0) === 1) {
+            let message = '名称：' + err.name + '\n信息：' + err.message
+            if (typeof (err.stack) === 'string') {
+              message = message + '\n堆栈：' + err.stack
+            }
+            await promptAction.showDialog({
+              title: 'js 运行异常',
+              message: message,
+              buttons: [
+                {
+                  text: '确定',
+                  color: $r('sys.color.font_emphasize')
+                }
+              ]
+            })
+          }
+          const object: JsErrorObject = {
+            name: 'JS_ERROR',
+            info: {
+              name: err.name,
+              message: err.message,
+              stack: err.stack
             }
           }
-        }
-      }
-    })
-    errorManager.on('unhandledRejection', async (err: Error) => {
-      if (err.message !== 'cancel' && err.message !== 'Internal error. Can not get delegate.') {
-        if (debugSettingDataPreferences.getSync('globalErrorShowType', 0) === 0) {
-          promptAction.openToast({
-            message: 'js 运行异常，错误名称：' + err.name + '，错误信息：' + err.message + '，错误堆栈：' + err.stack
-          })
-        }
-        if (debugSettingDataPreferences.getSync('globalErrorShowType', 0) === 1) {
-          let message = '名称：' + err.name + '\n信息：' + err.message
-          if (typeof (err.stack) === 'string') {
-            message = message + '\n堆栈：' + err.stack
+          if (debugSettingDataPreferences.getSync('saveErrorLog', true)) {
+            write(filesDir + '/log/error/' + Date.now() + '.txt', JSON.stringify(object))
           }
-          promptAction.showDialog({
-            title: 'js 运行异常',
-            message: message,
-            buttons: [
-              {
-                text: '确定',
-                color: $r('sys.color.font_emphasize')
-              }
-            ]
-          })
-        }
-        const object: JsErrorObject = {
-          name: 'JS_ERROR',
-          info: {
-            name: err.name,
-            message: err.message,
-            stack: err.stack
-          }
-        }
-        if (debugSettingDataPreferences.getSync('saveErrorLog', true)) {
-          write(filesDir + '/log/error/' + Date.now() + '.txt', JSON.stringify(object))
-        }
-        if (debugSettingDataPreferences.getSync('autoUploadErrorLog', true) &&
-        commonSettingDataPreferences.getSync('allService', true)) {
-          if ((debugSettingDataPreferences.getSync('autoUploadErrorLogType', [
-            'JS_ERROR',
-            'APP_CRASH',
-            'APP_FREEZE',
-            'APP_KILLED',
-            'RESOURCE_OVERLIMIT',
-            'ADDRESS_SANITIZER'
-          ]) as string[]).includes('JS_ERROR')) {
-            const res = await developerRequest(context, UIContext, '/debug/newErrorLog', {
-              product: 'synologydsmhelper',
-              object: object
-            })
-            if (res !== 'fail') {
-              promptAction.showDialog({
-                title: '提示',
-                message: '故障日志自动上传成功，故障类型：JS_ERROR。建议您依次进入“我的”>“设置”>“关于”，附带联系方式提交意见反馈或联系人工客服，便于开发者排查、处理问题。',
-                buttons: [
-                  {
-                    text: '确定',
-                    color: $r('sys.color.font_emphasize')
-                  }
-                ]
-              })
-            }
-          }
-        }
-      }
-    })
-    hiAppEvent.addWatcher({
-      name: 'watcher',
-      appEventFilters: [
-        {
-          domain: hiAppEvent.domain.OS,
-          eventTypes: [hiAppEvent.EventType.FAULT]
-        }
-      ],
-      onReceive: (domain, appEventGroups) => {
-        if (debugSettingDataPreferences.getSync('saveErrorLog', true)) {
-          appEventGroups.forEach((item) => {
-            write(filesDir + '/log/error/' + Date.now() + '.txt', JSON.stringify(item))
-          })
-        }
-        if (debugSettingDataPreferences.getSync('autoUploadErrorLog', true) &&
-        commonSettingDataPreferences.getSync('allService', true)) {
-          appEventGroups.map(async (item) => {
+          if (debugSettingDataPreferences.getSync('autoUploadErrorLog', true) &&
+          commonSettingDataPreferences.getSync('allService', true)) {
             if ((debugSettingDataPreferences.getSync('autoUploadErrorLogType', [
               'JS_ERROR',
               'APP_CRASH',
@@ -235,16 +127,15 @@ export default class EntryAbility extends UIAbility {
               'APP_KILLED',
               'RESOURCE_OVERLIMIT',
               'ADDRESS_SANITIZER'
-            ]) as string[]).includes(item.name)) {
+            ]) as string[]).includes('JS_ERROR')) {
               const res = await developerRequest(context, UIContext, '/debug/newErrorLog', {
                 product: 'synologydsmhelper',
-                object: item
+                object: object
               })
               if (res !== 'fail') {
-                promptAction.showDialog({
+                await promptAction.showDialog({
                   title: '提示',
-                  message: '故障日志自动上传成功，故障类型：' + item.name +
-                    '。建议您依次进入“我的”>“设置”>“关于”，附带联系方式提交意见反馈或联系人工客服，便于开发者排查、处理问题。',
+                  message: '故障日志自动上传成功，故障类型：JS_ERROR。建议您依次进入“我的”>“设置”>“关于”，附带联系方式提交意见反馈或联系人工客服，便于开发者排查、处理问题。',
                   buttons: [
                     {
                       text: '确定',
@@ -254,10 +145,122 @@ export default class EntryAbility extends UIAbility {
                 })
               }
             }
-          })
+          }
         }
-      }
-    })
+      })
+      errorManager.on('unhandledRejection', async (err: Error) => {
+        if (err.message !== 'cancel') {
+          if (debugSettingDataPreferences.getSync('globalErrorShowType', 0) === 0) {
+            await promptAction.openToast({
+              message: 'js 运行异常，错误名称：' + err.name + '，错误信息：' + err.message + '，错误堆栈：' + err.stack
+            })
+          }
+          if (debugSettingDataPreferences.getSync('globalErrorShowType', 0) === 1) {
+            let message = '名称：' + err.name + '\n信息：' + err.message
+            if (typeof (err.stack) === 'string') {
+              message = message + '\n堆栈：' + err.stack
+            }
+            await promptAction.showDialog({
+              title: 'js 运行异常',
+              message: message,
+              buttons: [
+                {
+                  text: '确定',
+                  color: $r('sys.color.font_emphasize')
+                }
+              ]
+            })
+          }
+          const object: JsErrorObject = {
+            name: 'JS_ERROR',
+            info: {
+              name: err.name,
+              message: err.message,
+              stack: err.stack
+            }
+          }
+          if (debugSettingDataPreferences.getSync('saveErrorLog', true)) {
+            write(filesDir + '/log/error/' + Date.now() + '.txt', JSON.stringify(object))
+          }
+          if (debugSettingDataPreferences.getSync('autoUploadErrorLog', true) &&
+          commonSettingDataPreferences.getSync('allService', true)) {
+            if ((debugSettingDataPreferences.getSync('autoUploadErrorLogType', [
+              'JS_ERROR',
+              'APP_CRASH',
+              'APP_FREEZE',
+              'APP_KILLED',
+              'RESOURCE_OVERLIMIT',
+              'ADDRESS_SANITIZER'
+            ]) as string[]).includes('JS_ERROR')) {
+              const res = await developerRequest(context, UIContext, '/debug/newErrorLog', {
+                product: 'synologydsmhelper',
+                object: object
+              })
+              if (res !== 'fail') {
+                await promptAction.showDialog({
+                  title: '提示',
+                  message: '故障日志自动上传成功，故障类型：JS_ERROR。建议您依次进入“我的”>“设置”>“关于”，附带联系方式提交意见反馈或联系人工客服，便于开发者排查、处理问题。',
+                  buttons: [
+                    {
+                      text: '确定',
+                      color: $r('sys.color.font_emphasize')
+                    }
+                  ]
+                })
+              }
+            }
+          }
+        }
+      })
+      hiAppEvent.addWatcher({
+        name: 'watcher',
+        appEventFilters: [
+          {
+            domain: hiAppEvent.domain.OS,
+            eventTypes: [hiAppEvent.EventType.FAULT]
+          }
+        ],
+        onReceive: (domain, appEventGroups) => {
+          if (debugSettingDataPreferences.getSync('saveErrorLog', true)) {
+            appEventGroups.forEach((item) => {
+              write(filesDir + '/log/error/' + Date.now() + '.txt', JSON.stringify(item))
+            })
+          }
+          if (debugSettingDataPreferences.getSync('autoUploadErrorLog', true) &&
+          commonSettingDataPreferences.getSync('allService', true)) {
+            appEventGroups.map(async (item) => {
+              if ((debugSettingDataPreferences.getSync('autoUploadErrorLogType', [
+                'JS_ERROR',
+                'APP_CRASH',
+                'APP_FREEZE',
+                'APP_KILLED',
+                'RESOURCE_OVERLIMIT',
+                'ADDRESS_SANITIZER'
+              ]) as string[]).includes(item.name)) {
+                const res = await developerRequest(context, UIContext, '/debug/newErrorLog', {
+                  product: 'synologydsmhelper',
+                  object: item
+                })
+                if (res !== 'fail') {
+                  await promptAction.showDialog({
+                    title: '提示',
+                    message: '故障日志自动上传成功，故障类型：' + item.name +
+                      '。建议您依次进入“我的”>“设置”>“关于”，附带联系方式提交意见反馈或联系人工客服，便于开发者排查、处理问题。',
+                    buttons: [
+                      {
+                        text: '确定',
+                        color: $r('sys.color.font_emphasize')
+                      }
+                    ]
+                  })
+                }
+              }
+            })
+          }
+        }
+      })
+    } catch {
+    }
     const netConnection = connection.createNetConnection()
     netConnection.register(() => {
     })
@@ -499,7 +502,7 @@ export default class EntryAbility extends UIAbility {
   }
 
   onContinue(wantParam: Record<string, Object>) {
-    if (wantParam.version !== 25) {
+    if (wantParam.version !== 26) {
       promptAction.openToast({
         message: '接续失败，原因：目标端应用版本号与发起端不匹配'
       })
