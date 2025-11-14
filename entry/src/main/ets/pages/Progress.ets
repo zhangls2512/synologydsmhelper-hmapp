@@ -60,6 +60,7 @@ export default struct Progresssheet {
       ListItem() {
         Button('取消')
           .role(ButtonRole.ERROR)
+          .width('100%')
           .onClick(async () => {
             const promptAction = this.getUIContext().getPromptAction()
             const data = await promptAction.showDialog({
@@ -84,7 +85,6 @@ export default struct Progresssheet {
       .margin({
         top: $r('sys.float.ohos_id_elements_margin_vertical_l')
       })
-      .width('100%')
     }
     .padding({
       bottom: $r('sys.float.ohos_id_default_padding_bottom_fixed'),

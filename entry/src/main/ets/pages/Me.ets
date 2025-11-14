@@ -1,7 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { display, LoadingDialog } from '@kit.ArkUI'
-import { hdsEffect } from '@kit.UIDesignKit'
 import { exit, get } from '../common/Account'
+import { getPreferType, getPreferTypeByDisplayId } from '../common/Prefertype'
 import { dsmRequest } from '../common/Request'
 import Accountlist from './Accountlist'
 import Login from './Login'
@@ -387,14 +387,8 @@ export default struct Me {
       if (this.name) {
         ListItem() {
           Button('退出登录')
-            .buttonStyle(ButtonStyleMode.NORMAL)
-            .fontColor($r('sys.color.warning'))
-            .visualEffect(new hdsEffect.HdsEffectBuilder()
-              .pointLight({
-                sourceType: hdsEffect.PointLightSourceType.SOFT,
-                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-              })
-              .buildEffect())
+            .role(ButtonRole.ERROR)
+            .width('100%')
             .onClick(async () => {
               const promptAction = this.getUIContext().getPromptAction()
               const data = await promptAction.showActionMenu({
@@ -432,7 +426,6 @@ export default struct Me {
         .margin({
           top: $r('sys.float.ohos_id_elements_margin_vertical_l')
         })
-        .width('100%')
       }
     }
     .padding({
@@ -441,23 +434,9 @@ export default struct Me {
       top: this.preferType === 0 ? 0 : $r('sys.float.ohos_id_default_padding_top')
     })
     .onAppear(() => {
-      const currentOrientation = display.getDefaultDisplaySync().orientation
-      if (currentOrientation === display.Orientation.PORTRAIT ||
-        currentOrientation === display.Orientation.PORTRAIT_INVERTED) {
-        this.preferType = 0
-      }
-      if (currentOrientation === display.Orientation.LANDSCAPE ||
-        currentOrientation === display.Orientation.LANDSCAPE_INVERTED) {
-        this.preferType = 1
-      }
+      this.preferType = getPreferType()
       display.on('change', (displayId) => {
-        const orientation = display.getDisplayByIdSync(displayId).orientation
-        if (orientation === display.Orientation.PORTRAIT || orientation === display.Orientation.PORTRAIT_INVERTED) {
-          this.preferType = 0
-        }
-        if (orientation === display.Orientation.LANDSCAPE || orientation === display.Orientation.LANDSCAPE_INVERTED) {
-          this.preferType = 1
-        }
+        this.preferType = getPreferTypeByDisplayId(displayId)
       })
       this.context.eventHub.on('refreshMe', () => {
         this.get()

@@ -126,6 +126,7 @@ struct Recoverysetting {
               .margin({
                 top: $r('sys.float.ohos_id_elements_margin_vertical_l')
               })
+              .width('100%')
               .onClick(() => {
                 appRecovery.enableAppRecovery(this.restart, this.saveOccasion, this.saveMode)
                 promptAction.openToast({

@@ -30,6 +30,7 @@ struct Networktest {
         ListItem() {
           Column() {
             Button('测试')
+              .width('100%')
               .onClick(async () => {
                 const dialogControllerProgress = new CustomDialogController({
                   builder: LoadingDialog({

@@ -1,4 +1,5 @@
 import { preferences } from '@kit.ArkData'
+import { promptAction } from '@kit.ArkUI'
 
 @Builder
 export function DnsserverBuilder() {
@@ -8,8 +9,9 @@ export function DnsserverBuilder() {
 @ComponentV2
 struct Dnsserver {
   @Local ip: string = ''
-  @Local port: string = ''
+  @Local port: string = '53'
   context = this.getUIContext().getHostContext()
+  pageInfos = new NavPathStack()
   debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'debugSetting'
   })
@@ -32,10 +34,6 @@ struct Dnsserver {
               .enableAutoSpacing(true)
               .layoutWeight(1)
               .maxLength(39)
-              .onChange((value) => {
-                this.debugSettingDataPreferences.putSync('dnsserverip', value)
-                this.debugSettingDataPreferences.flushSync()
-              })
           }
         }
         .margin({
@@ -50,26 +48,52 @@ struct Dnsserver {
                 right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
               })
             TextInput({
-              placeholder: '请输入端口 (可选)',
+              placeholder: '请输入端口',
               text: this.port!!
             })
               .type(InputType.Number)
               .layoutWeight(1)
               .maxLength(5)
-              .onChange((value) => {
-                if (!value) {
-                  this.debugSettingDataPreferences.deleteSync('dnsserverport')
-                }
-                const port = Number(value)
-                if (port >= 0 && port <= 65535 && value) {
-                  this.debugSettingDataPreferences.putSync('dnsserverport', port)
-                  this.debugSettingDataPreferences.flushSync()
-                }
-              })
           }
         }
         .margin({
           top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+        })
+
+        ListItem() {
+          Button('保存')
+            .width('100%')
+            .onClick(() => {
+              if (!this.ip) {
+                this.debugSettingDataPreferences.deleteSync('dnsserverip')
+                this.debugSettingDataPreferences.deleteSync('dnsserverport')
+              }
+              if (this.ip) {
+                if (!this.port) {
+                  promptAction.openToast({
+                    message: '请输入端口'
+                  })
+                  return
+                }
+                const port = Number(this.port)
+                if (!Number.isInteger(port) || port < 0 || port > 65535) {
+                  promptAction.openToast({
+                    message: '请输入有效的端口'
+                  })
+                  return
+                }
+                this.debugSettingDataPreferences.putSync('dnsserverip', this.ip)
+                this.debugSettingDataPreferences.putSync('dnsserverport', port)
+              }
+              this.debugSettingDataPreferences.flushSync()
+              promptAction.openToast({
+                message: '保存成功'
+              })
+              this.pageInfos.pop()
+            })
+        }
+        .margin({
+          top: $r('sys.float.ohos_id_elements_margin_vertical_l')
         })
       }
       .padding({
@@ -80,7 +104,8 @@ struct Dnsserver {
     }
     .backgroundColor($r('app.color.sheet_background'))
     .title('自定义 DNS 服务器')
-    .onAppear(() => {
+    .onReady((context) => {
+      this.pageInfos = context.pathStack
       this.ip = this.debugSettingDataPreferences.getSync('dnsserverip', '') as string
       this.port = String(this.debugSettingDataPreferences.getSync('dnsserverport', 53))
     })
