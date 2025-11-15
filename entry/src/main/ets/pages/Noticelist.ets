@@ -75,6 +75,7 @@ export default struct Noticelist {
         ListItem() {
           Button('清除全部')
             .role(ButtonRole.ERROR)
+            .width('100%')
             .onClick(async () => {
               const dialogControllerProgress = new CustomDialogController({
                 builder: LoadingDialog({
@@ -97,7 +98,6 @@ export default struct Noticelist {
           bottom: $r('sys.float.ohos_id_elements_margin_vertical_m'),
           top: $r('sys.float.ohos_id_elements_margin_vertical_m')
         })
-        .width('100%')
       }
       if (this.notices.length === 0 && !this.loading) {
         ListItem() {

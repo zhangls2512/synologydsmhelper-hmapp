@@ -19,7 +19,7 @@ export default struct Login {
   @Consumer() isShowLoginSheet: boolean = false
   @Local scheme: string = 'http'
   @Local host: string = ''
-  @Local port: string = ''
+  @Local port: string = '5000'
   @Local quickConnectId: string = ''
   @Local name: string = ''
   @Local password: string = ''
@@ -48,6 +48,9 @@ export default struct Login {
                   .onChange((isChecked) => {
                     if (isChecked) {
                       this.scheme = 'http'
+                      if (!this.port || this.port === '5001') {
+                        this.port = '5000'
+                      }
                     }
                   })
                 Text('http')
@@ -62,6 +65,9 @@ export default struct Login {
                   .onChange((isChecked) => {
                     if (isChecked) {
                       this.scheme = 'https'
+                      if (!this.port || this.port === '5000') {
+                        this.port = '5001'
+                      }
                     }
                   })
                 Text('https')
@@ -93,7 +99,7 @@ export default struct Login {
                   right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                 })
               TextInput({
-                placeholder: '请输入端口 (可选)',
+                placeholder: '请输入端口',
                 text: this.port!!
               })
                 .enableAutoSpacing(true)
@@ -185,17 +191,18 @@ export default struct Login {
                   return
                 }
               }
-              let port = ''
               if (!this.port) {
-                if (this.scheme === 'http') {
-                  port = '5000'
-                }
-                if (this.scheme === 'https') {
-                  port = '5001'
-                }
+                promptAction.openToast({
+                  message: '请输入端口'
+                })
+                return
               }
-              if (this.port) {
-                port = this.port
+              const port = Number(this.port)
+              if (!Number.isInteger(port) || port < 0 || port > 65535) {
+                promptAction.openToast({
+                  message: '请输入有效的端口'
+                })
+                return
               }
               if (!this.name) {
                 promptAction.openToast({
@@ -224,7 +231,7 @@ export default struct Login {
               let path = ''
               let res: string | object = ''
               if (!this.quickConnectId) {
-                path = this.scheme + '://' + this.host + ':' + port
+                path = this.scheme + '://' + this.host + ':' + this.port
                 netBoost.setSceneDesc({
                   scene: 'login',
                   sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER

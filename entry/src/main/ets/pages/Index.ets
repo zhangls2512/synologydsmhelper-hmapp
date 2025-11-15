@@ -4,6 +4,7 @@ import { display } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
 import { image } from '@kit.ImageKit'
 import { importAccounts } from '../common/Account'
+import { getPreferType, getPreferTypeByDisplayId } from '../common/Prefertype'
 import Cardlist from './Cardlist'
 import Filelist from './Filelist'
 import Me from './Me'
@@ -155,36 +156,13 @@ struct Index {
           this.isShowAccountlistSheet = true
         }
       })
-      const currentOrientation = display.getDefaultDisplaySync().orientation
-      if (currentOrientation === display.Orientation.PORTRAIT ||
-        currentOrientation === display.Orientation.PORTRAIT_INVERTED) {
-        this.preferType = 0
-        const currentIndex = this.index
-        this.index = -1
-        this.index = currentIndex
-      }
-      if (currentOrientation === display.Orientation.LANDSCAPE ||
-        currentOrientation === display.Orientation.LANDSCAPE_INVERTED) {
-        this.preferType = 1
-        const currentIndex = this.index
-        this.index = -1
-        this.index = currentIndex
-      }
+      this.preferType = getPreferType()
       display.on('change', (displayId) => {
-        const orientation = display.getDisplayByIdSync(displayId).orientation
-        if (orientation === display.Orientation.PORTRAIT || orientation === display.Orientation.PORTRAIT_INVERTED) {
-          this.preferType = 0
-          const currentIndex = this.index
-          this.index = -1
-          this.index = currentIndex
-        }
-        if (orientation === display.Orientation.LANDSCAPE || orientation === display.Orientation.LANDSCAPE_INVERTED) {
-          this.preferType = 1
-          const currentIndex = this.index
-          this.index = -1
-          this.index = currentIndex
-        }
+        this.preferType = getPreferTypeByDisplayId(displayId)
       })
+      const currentIndex = this.index
+      this.index = -1
+      this.index = currentIndex
       this.context.eventHub.on('refreshIndex', () => {
         this.backgroundImagePixelMap = this.getBackgroundImage()
       })
