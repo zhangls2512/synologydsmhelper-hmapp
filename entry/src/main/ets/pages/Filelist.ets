@@ -112,6 +112,13 @@ export default struct Filelist {
     return fileManagerService.getFileIconSync(fileType)
   }
 
+  getTimeString(timestamp: number) {
+    const date = new Date(timestamp * 1000)
+    return date.getFullYear() + '/' + String(date.getMonth() + 1).padStart(2, '0') + '/' +
+    String(date.getDate()).padStart(2, '0') + ' ' + String(date.getHours()).padStart(2, '0') + ':' +
+    String(date.getMinutes()).padStart(2, '0') + ':' + String(date.getSeconds()).padStart(2, '0')
+  }
+
   getSizeString(size: number) {
     if (size < Math.pow(1024, 1)) {
       return size + ' B'
@@ -129,13 +136,6 @@ export default struct Filelist {
       return (size / Math.pow(1024, 4)).toFixed(2) + ' TB'
     }
     return ''
-  }
-
-  getTimeString(timestamp: number) {
-    const date = new Date(timestamp * 1000)
-    return date.getFullYear() + '/' + String(date.getMonth() + 1).padStart(2, '0') + '/' +
-    String(date.getDate()).padStart(2, '0') + ' ' + String(date.getHours()).padStart(2, '0') + ':' +
-    String(date.getMinutes()).padStart(2, '0') + ':' + String(date.getSeconds()).padStart(2, '0')
   }
 
   getPath() {

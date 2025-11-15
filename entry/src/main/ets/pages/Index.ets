@@ -7,6 +7,7 @@ import { importAccounts } from '../common/Account'
 import { getPreferType, getPreferTypeByDisplayId } from '../common/Prefertype'
 import Cardlist from './Cardlist'
 import Filelist from './Filelist'
+import Album from './Album'
 import Me from './Me'
 import Cleardata from './Cleardata'
 import Accountlist from './Accountlist'
@@ -19,9 +20,13 @@ struct Index {
   @Local preferType: number = 1
   @Local index: number = 0
   @Local title: string = '首页'
+  @Local showAlbum: boolean = false
   @Local isShowCleardataSheet: boolean = false
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
+  commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+    name: 'commonSetting'
+  })
 
   onBackPress() {
     if (this.index === 1) {
@@ -40,6 +45,35 @@ struct Index {
     }
   }
 
+  get() {
+    this.backgroundImagePixelMap = this.getBackgroundImage()
+    const oldShowAlbum = this.showAlbum
+    this.showAlbum = this.commonSettingDataPreferences.getSync('showAlbum', false) as boolean
+    if (oldShowAlbum !== this.showAlbum) {
+      if (!oldShowAlbum) {
+        if (this.index === 2) {
+          this.index = 3
+        }
+      }
+      if (oldShowAlbum) {
+        if (this.index === 2) {
+          this.index = 0
+        }
+        if (this.index === 3) {
+          this.index = 2
+        }
+      }
+    }
+  }
+
+  isSelected(index: number) {
+    if (this.index === 0 || this.index === 1 || this.showAlbum) {
+      return this.index === index
+    } else {
+      return this.index === index - 1
+    }
+  }
+
   getBackgroundImage() {
     const backgroundImagePath = this.context.filesDir + '/media/backgroundimage.png'
     const res = fileIo.accessSync(backgroundImagePath)
@@ -54,11 +88,11 @@ struct Index {
   tabBuilder(index: number, image: Resource, title: string) {
     Column() {
       Image(image)
-        .fillColor(this.index === index ? $r('sys.color.icon_emphasize') : $r('sys.color.icon_secondary'))
+        .fillColor(this.isSelected(index) ? $r('sys.color.icon_emphasize') : $r('sys.color.icon_secondary'))
         .height(24)
         .width(24)
       Text(title)
-        .fontColor(this.index === index ? $r('sys.color.font_emphasize') : '')
+        .fontColor(this.isSelected(index) ? $r('sys.color.font_emphasize') : '')
         .fontSize($r('sys.float.ohos_id_text_size_body3'))
         .margin({
           top: 4
@@ -109,11 +143,19 @@ struct Index {
         }
         .tabBar(this.tabBuilder(1, $r('app.media.file'), '文件'))
 
+        if (this.showAlbum) {
+          TabContent() {
+            Album()
+              .height('100%')
+          }
+          .tabBar(this.tabBuilder(2, $r('app.media.album'), '相册'))
+        }
+
         TabContent() {
           Me()
             .height('100%')
         }
-        .tabBar(this.tabBuilder(2, $r('app.media.me'), '我的'))
+        .tabBar(this.tabBuilder(3, $r('app.media.me'), '我的'))
       }
       .barBackgroundBlurStyle(BlurStyle.Regular)
       .barPosition(this.preferType === 0 ? BarPosition.End : BarPosition.Start)
@@ -127,9 +169,21 @@ struct Index {
           this.title = '文件'
           this.context.eventHub.emit('refreshFilelist')
         }
-        if (targetIndex === 2) {
-          this.title = '我的'
-          this.context.eventHub.emit('refreshMe')
+        if (!this.showAlbum) {
+          if (targetIndex === 2) {
+            this.title = '我的'
+            this.context.eventHub.emit('refreshMe')
+          }
+        }
+        if (this.showAlbum) {
+          if (targetIndex === 2) {
+            this.title = '相册'
+            this.context.eventHub.emit('refreshAlbum')
+          }
+          if (targetIndex === 3) {
+            this.title = '我的'
+            this.context.eventHub.emit('refreshMe')
+          }
         }
       })
     }
@@ -148,13 +202,13 @@ struct Index {
           this.isShowCleardataSheet = true
         }
       })
-      this.context.eventHub.on('wantUri', (wantUri: string) => {
-        importAccounts(this.context, this.UIContext, wantUri)
-      })
       this.context.eventHub.on('accountList', () => {
         if (!this.isShowAccountlistSheet) {
           this.isShowAccountlistSheet = true
         }
+      })
+      this.context.eventHub.on('wantUri', (wantUri: string) => {
+        importAccounts(this.context, this.UIContext, wantUri)
       })
       this.preferType = getPreferType()
       display.on('change', (displayId) => {
@@ -164,14 +218,14 @@ struct Index {
       this.index = -1
       this.index = currentIndex
       this.context.eventHub.on('refreshIndex', () => {
-        this.backgroundImagePixelMap = this.getBackgroundImage()
+        this.get()
       })
-      this.backgroundImagePixelMap = this.getBackgroundImage()
+      this.get()
     })
     .onDisAppear(() => {
       this.context.eventHub.off('refreshIndex')
-      this.context.eventHub.off('accountList')
       this.context.eventHub.off('wantUri')
+      this.context.eventHub.off('accountList')
       this.context.eventHub.off('clearData')
       display.off('change')
     })
