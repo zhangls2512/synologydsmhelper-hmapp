@@ -27,6 +27,7 @@ struct Commonsetting {
   @Local filePreviewTypeValue: string = '系统预览'
   @Local onlinePreviewMedia: boolean = false
   @Local selectFileDownloadPath: boolean = false
+  @Local showAlbum: boolean = false
   @Local showAccountlistSheetAfterAppLaunch: boolean = false
   @Local cacheApiVersion: boolean = false
   @Local cellularDataUseRemindIndex: number = 0
@@ -665,7 +666,6 @@ struct Commonsetting {
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                   })
-
                 Toggle({
                   type: ToggleType.Switch,
                   isOn: this.selectFileDownloadPath!!
@@ -673,6 +673,49 @@ struct Commonsetting {
                   .onChange((isOn) => {
                     this.commonSettingDataPreferences.putSync('selectFileDownloadPath', isOn)
                     this.commonSettingDataPreferences.flushSync()
+                  })
+              }
+              .borderRadius(12)
+              .padding(12)
+              .width('100%')
+            }
+            .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+            .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+            .padding($r('sys.float.ohos_id_corner_radius_mark'))
+          }
+          .alignItems(HorizontalAlign.Start)
+        }
+        .margin({
+          top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+        })
+
+        ListItem() {
+          Column() {
+            Text('相册')
+              .fontColor($r('sys.color.font_secondary'))
+              .fontSize($r('sys.float.ohos_id_text_size_body2'))
+              .fontWeight(FontWeight.Medium)
+              .margin({
+                bottom: 6,
+                left: 12,
+                right: 12
+              })
+            Column() {
+              Row() {
+                Text('显示')
+                  .fontWeight(FontWeight.Medium)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                Toggle({
+                  type: ToggleType.Switch,
+                  isOn: this.showAlbum!!
+                })
+                  .onChange((isOn) => {
+                    this.commonSettingDataPreferences.putSync('showAlbum', isOn)
+                    this.commonSettingDataPreferences.flushSync()
+                    this.context.eventHub.emit('refreshIndex')
                   })
               }
               .borderRadius(12)
@@ -892,6 +935,7 @@ struct Commonsetting {
       this.onlinePreviewMedia = this.commonSettingDataPreferences.getSync('onlinePreviewMedia', true) as boolean
       this.selectFileDownloadPath =
         this.commonSettingDataPreferences.getSync('selectFileDownloadPath', false) as boolean
+      this.showAlbum = this.commonSettingDataPreferences.getSync('showAlbum', false) as boolean
       this.showAccountlistSheetAfterAppLaunch =
         this.commonSettingDataPreferences.getSync('showAccountlistSheetAfterAppLaunch', false) as boolean
       this.cacheApiVersion = this.commonSettingDataPreferences.getSync('cacheApiVersion', true) as boolean

@@ -198,7 +198,7 @@ export default struct Login {
                 return
               }
               const port = Number(this.port)
-              if (!Number.isInteger(port) || port < 0 || port > 65535) {
+              if (!Number.isInteger(port) || port <= 0 || port > 65535) {
                 promptAction.openToast({
                   message: '请输入有效的端口'
                 })
