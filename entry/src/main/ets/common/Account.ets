@@ -114,16 +114,11 @@ export async function exit(context: Context, UIContext: UIContext, logout: boole
   const accounts = await getList()
   const index = accounts.findIndex(item => item.isLogin === 'true')
   if (index !== -1) {
-    if (!logout) {
-      const appAccountManager = appAccount.createAppAccountManager()
-      await appAccountManager.setCustomData(String(accounts[index].id), 'isLogin', 'false')
-    }
     if (logout) {
-      const res = await dsmRequest(context, UIContext, '', 'SYNO.API.Auth', '&method=logout')
-      if (res !== 'fail') {
-        await remove(accounts[index].id)
-      }
+      await dsmRequest(context, UIContext, '', 'SYNO.API.Auth', '&method=logout')
     }
+    const appAccountManager = appAccount.createAppAccountManager()
+    await appAccountManager.setCustomData(String(accounts[index].id), 'isLogin', 'false')
   }
 }
 

@@ -67,7 +67,7 @@ struct Networktest {
                     })
                   } else {
                     promptAction.openToast({
-                      message: '请求失败，错误码：' + response.statusCode + '，错误信息：' + response.reasonPhrase
+                      message: 'HTTP 请求失败，状态码：' + response.statusCode
                     })
                   }
                 } catch (err) {
