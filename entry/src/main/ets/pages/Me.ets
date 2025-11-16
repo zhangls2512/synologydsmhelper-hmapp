@@ -153,9 +153,7 @@ export default struct Me {
           .bindSheet(this.isShowAccountlistSheet!!, this.AccountlistSheetBuilder(), {
             height: SheetSize.FIT_CONTENT,
             preferType: this.preferType,
-            title: {
-              title: '切换账号'
-            }
+            showClose: false
           })
         }
         .backgroundColor($r('sys.color.comp_background_primary'))
@@ -438,6 +436,9 @@ export default struct Me {
       display.on('change', (displayId) => {
         this.preferType = getPreferTypeByDisplayId(displayId)
       })
+      this.context.eventHub.on('login', () => {
+        this.isShowLoginSheet = true
+      })
       this.context.eventHub.on('refreshMe', () => {
         this.get()
       })
@@ -445,6 +446,7 @@ export default struct Me {
     })
     .onDisAppear(() => {
       this.context.eventHub.off('refreshMe')
+      this.context.eventHub.off('login')
       display.off('change')
     })
   }

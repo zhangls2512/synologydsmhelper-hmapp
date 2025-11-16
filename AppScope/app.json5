@@ -3,8 +3,8 @@
     "bundleName": "com.songjy.synologydsmhelper",
     "icon": "$media:layered_image",
     "label": "$string:app_name",
-    "versionCode": 26,
-    "versionName": "1.0.3.6",
+    "versionCode": 27,
+    "versionName": "1.1.0.0",
     "multiAppMode": {
       "multiAppModeType": "appClone",
       "maxCount": 5

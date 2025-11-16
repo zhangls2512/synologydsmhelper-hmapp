@@ -1,6 +1,8 @@
 import { common } from '@kit.AbilityKit'
+import { preferences } from '@kit.ArkData'
 import { promptAction } from '@kit.ArkUI'
 import { rcp } from '@kit.RemoteCommunicationKit'
+import { hdsEffect } from '@kit.UIDesignKit'
 import { AccountInfo, getList, remove, set } from '../common/Account'
 import { getDnsServer } from '../common/Dnsserver'
 
@@ -12,6 +14,9 @@ export default struct Accountlist {
   @Local hoverId: number = -1
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
+  commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+    name: 'commonSetting'
+  })
 
   @Builder
   MenuBuilder(item: AccountInfo) {
@@ -50,12 +55,86 @@ export default struct Accountlist {
 
   build() {
     List() {
+      ListItem() {
+        Row() {
+          Text('切换账号')
+            .fontSize($r('sys.float.ohos_id_text_size_dialog_tittle'))
+            .fontWeight(FontWeight.Bold)
+            .layoutWeight(1)
+          Column() {
+            Image($r('app.media.new'))
+          }
+          .borderRadius(20)
+          .height(40)
+          .margin({
+            right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+          })
+          .padding(11)
+          .stateStyles({
+            normal: {
+              .backgroundColor($r('sys.color.interactive_hover'))
+            },
+            pressed: {
+              .backgroundColor($r('sys.color.interactive_pressed'))
+            }
+          })
+          .visualEffect(new hdsEffect.HdsEffectBuilder()
+            .pointLight({
+              sourceType: hdsEffect.PointLightSourceType.SOFT,
+              illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+            })
+            .buildEffect())
+          .width(40)
+          .onClick(() => {
+            this.context.eventHub.emit('login')
+            this.isShowAccountlistSheet = false
+          })
+
+          Column() {
+            Image($r('app.media.cancel'))
+          }
+          .borderRadius(20)
+          .height(40)
+          .padding(11)
+          .stateStyles({
+            normal: {
+              .backgroundColor($r('sys.color.interactive_hover'))
+            },
+            pressed: {
+              .backgroundColor($r('sys.color.interactive_pressed'))
+            }
+          })
+          .visualEffect(new hdsEffect.HdsEffectBuilder()
+            .pointLight({
+              sourceType: hdsEffect.PointLightSourceType.SOFT,
+              illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+            })
+            .buildEffect())
+          .width(40)
+          .onClick(() => {
+            this.isShowAccountlistSheet = false
+          })
+        }
+      }
+      .margin({
+        top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+      })
+      .padding({
+        left: $r('sys.float.ohos_id_default_padding_start'),
+        right: $r('sys.float.ohos_id_default_padding_end')
+      })
+
       if (this.accountArray.length === 0) {
         ListItem() {
           Text('无账号')
         }
         .margin({
-          top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+          top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+        })
+        .padding({
+          bottom: $r('sys.float.ohos_id_default_padding_bottom_fixed'),
+          left: $r('sys.float.ohos_id_max_padding_start'),
+          right: $r('sys.float.ohos_id_max_padding_end')
         })
         .width('100%')
       }
@@ -150,6 +229,9 @@ export default struct Accountlist {
               })
               this.context.eventHub.emit('refreshCardlist')
               this.context.eventHub.emit('refreshFilelist')
+              if (this.commonSettingDataPreferences.getSync('showAlbum', false)) {
+                this.context.eventHub.emit('refreshAlbum')
+              }
               this.context.eventHub.emit('refreshMe')
               this.isShowAccountlistSheet = false
             })
@@ -164,14 +246,14 @@ export default struct Accountlist {
         .padding($r('sys.float.ohos_id_corner_radius_mark'))
       }
       .margin({
-        top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+        top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+      })
+      .padding({
+        bottom: $r('sys.float.ohos_id_default_padding_bottom_fixed'),
+        left: $r('sys.float.ohos_id_max_padding_start'),
+        right: $r('sys.float.ohos_id_max_padding_end')
       })
     }
-    .padding({
-      bottom: $r('sys.float.ohos_id_default_padding_bottom_fixed'),
-      left: $r('sys.float.ohos_id_max_padding_start'),
-      right: $r('sys.float.ohos_id_max_padding_end')
-    })
     .onAppear(async () => {
       this.accountArray = await getList()
       this.pathConnectionStatusArray = Array(this.accountArray.length).fill('connecting')
