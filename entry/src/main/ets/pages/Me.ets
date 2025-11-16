@@ -390,7 +390,7 @@ export default struct Me {
             .onClick(async () => {
               const promptAction = this.getUIContext().getPromptAction()
               const data = await promptAction.showActionMenu({
-                title: '是否注销会话？（注销后无法使用切换账号功能一键登录）',
+                title: '是否注销会话？',
                 buttons: [
                   {
                     text: '是',

@@ -1016,7 +1016,8 @@ struct Debugsetting {
                   right: 12
                 })
               Row() {
-                Text('自定义 DNS 服务器')
+                Text('自定义DNS服务器')
+                  .enableAutoSpacing(true)
                   .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({

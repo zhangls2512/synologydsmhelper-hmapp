@@ -16,6 +16,7 @@ import { getDnsServer } from '../common/Dnsserver'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import { getPreferType, getPreferTypeByDisplayId } from '../common/Prefertype'
 import { dsmRequest, getDsmApiMaxVersion } from '../common/Request'
+import { getSizeString, getTimeString } from '../common/Stringformat'
 import Newfolder from './Newfolder'
 import Player from './Player'
 import Progress from './Progress'
@@ -74,8 +75,8 @@ export default struct Filelist {
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   remove = false
   srcName = ''
-  dirnamesDataPreferences = preferences.getPreferencesSync(this.context, {
-    name: 'dirnames'
+  backDataPreferences = preferences.getPreferencesSync(this.context, {
+    name: 'back'
   })
   commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'commonSetting'
@@ -110,32 +111,6 @@ export default struct Filelist {
     }
     const fileType = uniformTypeDescriptor.getUniformDataTypeByFilenameExtension(houzhui)
     return fileManagerService.getFileIconSync(fileType)
-  }
-
-  getTimeString(timestamp: number) {
-    const date = new Date(timestamp * 1000)
-    return date.getFullYear() + '/' + String(date.getMonth() + 1).padStart(2, '0') + '/' +
-    String(date.getDate()).padStart(2, '0') + ' ' + String(date.getHours()).padStart(2, '0') + ':' +
-    String(date.getMinutes()).padStart(2, '0') + ':' + String(date.getSeconds()).padStart(2, '0')
-  }
-
-  getSizeString(size: number) {
-    if (size < Math.pow(1024, 1)) {
-      return size + ' B'
-    }
-    if (size >= Math.pow(1024, 1) && size < Math.pow(1024, 2)) {
-      return (size / Math.pow(1024, 1)).toFixed(2) + ' KB'
-    }
-    if (size >= Math.pow(1024, 2) && size < Math.pow(1024, 3)) {
-      return (size / Math.pow(1024, 2)).toFixed(2) + ' MB'
-    }
-    if (size >= Math.pow(1024, 3) && size < Math.pow(1024, 4)) {
-      return (size / Math.pow(1024, 3)).toFixed(2) + ' GB'
-    }
-    if (size >= Math.pow(1024, 4)) {
-      return (size / Math.pow(1024, 4)).toFixed(2) + ' TB'
-    }
-    return ''
   }
 
   getPath() {
@@ -321,7 +296,7 @@ export default struct Filelist {
                   const promptAction = this.getUIContext().getPromptAction()
                   const data = await promptAction.showDialog({
                     title: '流量使用提醒',
-                    message: '当前正在使用流量上网，下载此文件将消耗约 ' + this.getSizeString(item.additional.size) +
+                    message: '当前正在使用流量上网，下载此文件将消耗约 ' + getSizeString(item.additional.size) +
                       ' 流量，确定下载？',
                     buttons: [
                       {
@@ -411,8 +386,8 @@ export default struct Filelist {
                                       typeCode: 8,
                                       title: '正在下载文件：' + item.name,
                                       text: '进度：' + Number((this.transferredSize / this.totalSize).toFixed(2)) * 100 +
-                                        '% (' + this.getSizeString(this.transferredSize) + '/' +
-                                      this.getSizeString(this.totalSize) + ')'
+                                        '% (' + getSizeString(this.transferredSize) + '/' +
+                                      getSizeString(this.totalSize) + ')'
                                     }
                                   },
                                   id: continuousTaskNotificationInfo.notificationId,
@@ -507,7 +482,7 @@ export default struct Filelist {
                         this.totalSize = -1
                         this.context.eventHub.off('cancelDownload')
                         promptAction.openToast({
-                          message: '下载失败，错误码：' + response.statusCode
+                          message: 'HTTP 请求失败，状态码：' + response.statusCode
                         })
                       }
                     } catch (err) {
@@ -628,20 +603,23 @@ export default struct Filelist {
                 '&method=start&path=' + encodeURIComponent(item.path))
               if (startres !== 'fail') {
                 const taskId = startres['taskid'] as string
-                const statusres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.Delete',
-                  '&method=status&taskid=' + taskId)
-                if (statusres !== 'fail') {
-                  this.deleteDialogControllerProgress.close()
-                  promptAction.openToast({
-                    message: '删除成功'
-                  })
-                  this.loading = true
-                  return
+                let finished = false
+                while (!finished) {
+                  const statusres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.Delete',
+                    '&method=status&taskid=' + taskId)
+                  if (statusres !== 'fail') {
+                    if (statusres['finished']) {
+                      finished = true
+                      promptAction.openToast({
+                        message: '删除成功'
+                      })
+                      this.loading = true
+                    }
+                  }
+                  if (statusres === 'fail') {
+                    finished = true
+                  }
                 }
-                promptAction.openToast({
-                  message: '删除任务提交成功但尚未完成，请稍等'
-                })
-                this.loading = true
               }
               this.deleteDialogControllerProgress.close()
             }
@@ -723,40 +701,88 @@ export default struct Filelist {
                 .buildEffect())
               .width(40)
               .onClick(async () => {
-                const dialogControllerProgress = new CustomDialogController({
+                const prepareDialogControllerProgress = new CustomDialogController({
                   builder: LoadingDialog({
-                    content: '复制中...'
+                    content: '复制准备中...'
                   })
                 })
-                dialogControllerProgress.open()
+                prepareDialogControllerProgress.open()
                 const startres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.CopyMove',
                   '&method=start&path=' + encodeURIComponent(JSON.stringify(this.multipleSelectArray)) +
                     '&dest_folder_path=' + encodeURIComponent(this.getPath()) + '&remove_src=false')
-                if (startres !== 'fail') {
-                  const taskId = startres['taskid'] as string
-                  const statusres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.CopyMove',
-                    '&method=status&taskid=' + taskId)
-                  if (statusres !== 'fail') {
-                    dialogControllerProgress.close()
-                    promptAction.openToast({
-                      message: '复制成功'
-                    })
-                    this.multipleSelect = false
-                    this.multipleSelectArray = []
-                    this.loading = true
-                    return
-                  }
-                  promptAction.openToast({
-                    message: '复制任务提交成功但尚未完成，请稍等'
-                  })
-                  this.multipleSelect = false
-                  this.multipleSelectArray = []
-                  this.loading = true
-                }
-                dialogControllerProgress.close()
+                prepareDialogControllerProgress.close()
+                const length = this.multipleSelectArray.length
                 this.multipleSelect = false
                 this.multipleSelectArray = []
-                this.loading = true
+                if (startres !== 'fail') {
+                  const taskId = startres['taskid'] as string
+                  promptAction.openToast({
+                    message: '正在复制文件，可在系统通知栏查看进度'
+                  })
+                  let finished = false
+                  const wandAgent = await wantAgent.getWantAgent({
+                    wants: [
+                      {
+                        bundleName: 'com.songjy.synologydsmhelper',
+                        abilityName: 'EntryAbility'
+                      }
+                    ],
+                    actionType: wantAgent.OperationType.START_ABILITY,
+                    requestCode: 0,
+                    wantAgentFlags: [wantAgent.WantAgentFlags.UPDATE_PRESENT_FLAG]
+                  })
+                  const continuousTaskNotificationInfo =
+                    await backgroundTaskManager.startBackgroundRunning(this.context, ['dataTransfer'], wandAgent)
+                  while (!finished) {
+                    const statusres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.CopyMove',
+                      '&method=status&taskid=' + taskId)
+                    if (statusres !== 'fail') {
+                      const transferredSize = statusres['processed_size'] as number
+                      const totalSize = statusres['total'] as number
+                      try {
+                        await notificationManager.publish({
+                          content: {
+                            notificationContentType: notificationManager.ContentType.NOTIFICATION_CONTENT_SYSTEM_LIVE_VIEW,
+                            systemLiveView: {
+                              typeCode: 8,
+                              title: '正在复制文件',
+                              text: '进度：' + Number((transferredSize / totalSize).toFixed(2)) * 100 + '% (' +
+                              getSizeString(transferredSize) + '/' + getSizeString(totalSize) + ')'
+                            }
+                          },
+                          id: continuousTaskNotificationInfo.notificationId,
+                          notificationSlotType: notificationManager.SlotType.LIVE_VIEW,
+                          template: {
+                            name: 'downloadTemplate',
+                            data: {
+                              title: '正在复制文件，进度：' + Number((transferredSize / totalSize).toFixed(2)) * 100 +
+                                '%',
+                              fileName: length + ' 个文件',
+                              progressValue: Number((transferredSize / totalSize).toFixed(2)) * 100
+                            }
+                          }
+                        })
+                      } catch (err) {
+                        if (err.code !== 1600009 && err.code !== 202) {
+                          promptAction.openToast({
+                            message: '发生错误，错误码：' + err.code
+                          })
+                        }
+                      }
+                      if (statusres['finished']) {
+                        finished = true
+                        await backgroundTaskManager.stopBackgroundRunning(this.context)
+                        promptAction.openToast({
+                          message: '复制成功'
+                        })
+                        this.loading = true
+                      }
+                    }
+                    if (statusres === 'fail') {
+                      finished = true
+                    }
+                  }
+                }
               })
 
               Column() {
@@ -793,31 +819,29 @@ export default struct Filelist {
                 const startres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.CopyMove',
                   '&method=start&path=' + encodeURIComponent(JSON.stringify(this.multipleSelectArray)) +
                     '&dest_folder_path=' + encodeURIComponent(this.getPath()) + '&remove_src=true')
-                if (startres !== 'fail') {
-                  const taskId = startres['taskid'] as string
-                  const statusres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.CopyMove',
-                    '&method=status&taskid=' + taskId)
-                  if (statusres !== 'fail') {
-                    dialogControllerProgress.close()
-                    promptAction.openToast({
-                      message: '移动成功'
-                    })
-                    this.multipleSelect = false
-                    this.multipleSelectArray = []
-                    this.loading = true
-                    return
-                  }
-                  promptAction.openToast({
-                    message: '移动任务提交成功但尚未完成，请稍等'
-                  })
-                  this.multipleSelect = false
-                  this.multipleSelectArray = []
-                  this.loading = true
-                }
-                dialogControllerProgress.close()
                 this.multipleSelect = false
                 this.multipleSelectArray = []
-                this.loading = true
+                if (startres !== 'fail') {
+                  const taskId = startres['taskid'] as string
+                  let finished = false
+                  while (!finished) {
+                    const statusres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.CopyMove',
+                      '&method=status&taskid=' + taskId)
+                    if (statusres !== 'fail') {
+                      if (statusres['finished']) {
+                        finished = true
+                        promptAction.openToast({
+                          message: '移动成功'
+                        })
+                        this.loading = true
+                      }
+                    }
+                    if (statusres === 'fail') {
+                      finished = true
+                    }
+                  }
+                }
+                dialogControllerProgress.close()
               })
 
               Column() {
@@ -861,29 +885,29 @@ export default struct Filelist {
                   this.deleteDialogControllerProgress.open()
                   const startres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.Delete',
                     '&method=start&path=' + encodeURIComponent(JSON.stringify(this.multipleSelectArray)))
-                  if (startres !== 'fail') {
-                    const taskId = startres['taskid'] as string
-                    const statusres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.Delete',
-                      '&method=status&taskid=' + taskId)
-                    if (statusres !== 'fail') {
-                      this.deleteDialogControllerProgress.close()
-                      promptAction.openToast({
-                        message: '删除成功'
-                      })
-                      this.multipleSelect = false
-                      this.multipleSelectArray = []
-                      this.loading = true
-                      return
-                    }
-                    promptAction.openToast({
-                      message: '删除任务提交成功但尚未完成，请稍等'
-                    })
-                    this.loading = true
-                  }
-                  this.deleteDialogControllerProgress.close()
                   this.multipleSelect = false
                   this.multipleSelectArray = []
-                  this.loading = true
+                  if (startres !== 'fail') {
+                    const taskId = startres['taskid'] as string
+                    let finished = false
+                    while (!finished) {
+                      const statusres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.Delete',
+                        '&method=status&taskid=' + taskId)
+                      if (statusres !== 'fail') {
+                        if (statusres['finished']) {
+                          finished = true
+                          promptAction.openToast({
+                            message: '删除成功'
+                          })
+                          this.loading = true
+                        }
+                      }
+                      if (statusres === 'fail') {
+                        finished = true
+                      }
+                    }
+                  }
+                  this.deleteDialogControllerProgress.close()
                 }
               })
             }
@@ -920,7 +944,7 @@ export default struct Filelist {
               .width(40)
               .onClick(() => {
                 this.dirnames.pop()
-                this.dirnamesDataPreferences.putSync('dirnames', this.dirnames)
+                this.backDataPreferences.putSync('filelist', this.dirnames.length === 0 ? false : true)
                 this.loading = true
               })
             }
@@ -963,7 +987,7 @@ export default struct Filelist {
                   .fontColor($r('sys.color.font_emphasize'))
                   .onClick(() => {
                     this.dirnames = []
-                    this.dirnamesDataPreferences.putSync('dirnames', this.dirnames)
+                    this.backDataPreferences.putSync('filelist', false)
                     this.loading = true
                   })
                 Span(' / ')
@@ -972,7 +996,7 @@ export default struct Filelist {
                 .fontColor($r('sys.color.font_emphasize'))
                 .onClick(() => {
                   this.dirnames = this.dirnames.slice(0, index + 1)
-                  this.dirnamesDataPreferences.putSync('dirnames', this.dirnames)
+                  this.backDataPreferences.putSync('filelist', this.dirnames.length === 0 ? false : true)
                   this.loading = true
                 })
             })
@@ -1100,37 +1124,89 @@ export default struct Filelist {
                   if (this.remove) {
                     text = '移动'
                   }
-                  const dialogControllerProgress = new CustomDialogController({
+                  const prepareDialogControllerProgress = new CustomDialogController({
                     builder: LoadingDialog({
-                      content: text + '中...'
+                      content: text + '准备中...'
                     })
                   })
-                  dialogControllerProgress.open()
+                  prepareDialogControllerProgress.open()
                   const startres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.CopyMove',
                     '&method=start&path=' + encodeURIComponent(JSON.stringify([this.copyMovePath])) +
                       '&dest_folder_path=' + encodeURIComponent(this.getPath()) + '&remove_src=' + this.remove)
+                  prepareDialogControllerProgress.close()
+                  const lastIndex = this.copyMovePath.lastIndexOf('/')
+                  const fileName = this.copyMovePath.slice(lastIndex + 1)
+                  this.copyMovePath = ''
+                  this.remove = false
                   if (startres !== 'fail') {
                     const taskId = startres['taskid'] as string
-                    const statusres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.CopyMove',
-                      '&method=status&taskid=' + taskId)
-                    if (statusres !== 'fail') {
-                      dialogControllerProgress.close()
-                      promptAction.openToast({
-                        message: text + '成功'
-                      })
-                      this.copyMovePath = ''
-                      this.remove = false
-                      this.loading = true
-                      return
-                    }
                     promptAction.openToast({
-                      message: text + '任务提交成功但尚未完成，请稍等'
+                      message: '正在' + text + '文件，可在系统通知栏查看进度'
                     })
-                    this.copyMovePath = ''
-                    this.remove = false
-                    this.loading = true
+                    let finished = false
+                    const wandAgent = await wantAgent.getWantAgent({
+                      wants: [
+                        {
+                          bundleName: 'com.songjy.synologydsmhelper',
+                          abilityName: 'EntryAbility'
+                        }
+                      ],
+                      actionType: wantAgent.OperationType.START_ABILITY,
+                      requestCode: 0,
+                      wantAgentFlags: [wantAgent.WantAgentFlags.UPDATE_PRESENT_FLAG]
+                    })
+                    const continuousTaskNotificationInfo =
+                      await backgroundTaskManager.startBackgroundRunning(this.context, ['dataTransfer'], wandAgent)
+                    while (!finished) {
+                      const statusres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.CopyMove',
+                        '&method=status&taskid=' + taskId)
+                      if (statusres !== 'fail') {
+                        const transferredSize = statusres['processed_size'] as number
+                        const totalSize = statusres['total'] as number
+                        try {
+                          await notificationManager.publish({
+                            content: {
+                              notificationContentType: notificationManager.ContentType.NOTIFICATION_CONTENT_SYSTEM_LIVE_VIEW,
+                              systemLiveView: {
+                                typeCode: 8,
+                                title: '正在' + text + '文件',
+                                text: '进度：' + Number((transferredSize / totalSize).toFixed(2)) * 100 + '% (' +
+                                getSizeString(transferredSize) + '/' + getSizeString(totalSize) + ')'
+                              }
+                            },
+                            id: continuousTaskNotificationInfo.notificationId,
+                            notificationSlotType: notificationManager.SlotType.LIVE_VIEW,
+                            template: {
+                              name: 'downloadTemplate',
+                              data: {
+                                title: '正在' + text + '文件，进度：' +
+                                  Number((transferredSize / totalSize).toFixed(2)) * 100 + '%',
+                                fileName: fileName,
+                                progressValue: Number((transferredSize / totalSize).toFixed(2)) * 100
+                              }
+                            }
+                          })
+                        } catch (err) {
+                          if (err.code !== 1600009 && err.code !== 202) {
+                            promptAction.openToast({
+                              message: '发生错误，错误码：' + err.code
+                            })
+                          }
+                        }
+                        if (statusres['finished']) {
+                          finished = true
+                          await backgroundTaskManager.stopBackgroundRunning(this.context)
+                          promptAction.openToast({
+                            message: text + '成功'
+                          })
+                          this.loading = true
+                        }
+                      }
+                      if (statusres === 'fail') {
+                        finished = true
+                      }
+                    }
                   }
-                  dialogControllerProgress.close()
                 })
               }
             }
@@ -1195,9 +1271,9 @@ export default struct Filelist {
                           .fontWeight(FontWeight.Medium)
                           .width('85%')
                         Text() {
-                          Span(this.getTimeString(item.additional.time.mtime))
+                          Span(getTimeString(item.additional.time.mtime))
                           if (item.additional.size && !item.isdir) {
-                            Span(' - ' + this.getSizeString(item.additional.size))
+                            Span(' - ' + getSizeString(item.additional.size))
                           }
                         }
                         .fontColor($r('sys.color.font_secondary'))
@@ -1291,8 +1367,7 @@ export default struct Filelist {
                             const data = await promptAction.showDialog({
                               title: '流量使用提醒',
                               message: '当前正在使用流量上网，下载此文件将消耗约 ' +
-                              this.getSizeString(item.additional.size) +
-                                ' 流量，确定下载？',
+                              getSizeString(item.additional.size) + ' 流量，确定下载？',
                               buttons: [
                                 {
                                   text: '取消',
@@ -1361,8 +1436,8 @@ export default struct Filelist {
                                               title: '正在下载文件：' + item.name,
                                               text: '进度：' +
                                                 Number((this.transferredSize / this.totalSize).toFixed(2)) * 100 +
-                                                '% (' + this.getSizeString(this.transferredSize) + '/' +
-                                              this.getSizeString(this.totalSize) + ')'
+                                                '% (' + getSizeString(this.transferredSize) + '/' +
+                                              getSizeString(this.totalSize) + ')'
                                             }
                                           },
                                           id: continuousTaskNotificationInfo.notificationId,
@@ -1484,7 +1559,7 @@ export default struct Filelist {
                                 this.totalSize = -1
                                 this.context.eventHub.off('cancelDownload')
                                 promptAction.openToast({
-                                  message: '下载失败，错误码：' + response.statusCode
+                                  message: 'HTTP 请求失败，状态码：' + response.statusCode
                                 })
                               }
                             } catch (err) {
@@ -1522,7 +1597,7 @@ export default struct Filelist {
                       }
                       if (item.isdir) {
                         this.dirnames.push(item.name)
-                        this.dirnamesDataPreferences.putSync('dirnames', this.dirnames)
+                        this.backDataPreferences.putSync('filelist', true)
                         this.loading = true
                       }
                     })
@@ -1566,19 +1641,19 @@ export default struct Filelist {
       display.on('change', (displayId) => {
         this.preferType = getPreferTypeByDisplayId(displayId)
       })
+      this.context.eventHub.on('backFilelist', () => {
+        this.dirnames.pop()
+        this.backDataPreferences.putSync('filelist', this.dirnames.length === 0 ? false : true)
+        this.loading = true
+      })
       this.context.eventHub.on('refreshFilelist', () => {
         this.get()
-      })
-      this.context.eventHub.on('back', () => {
-        this.dirnames.pop()
-        this.dirnamesDataPreferences.putSync('dirnames', this.dirnames)
-        this.loading = true
       })
       this.get()
     })
     .onDisAppear(() => {
       this.context.eventHub.off('refreshFilelist')
-      this.context.eventHub.off('back')
+      this.context.eventHub.off('backFilelist')
       display.off('change')
     })
     .bindSheet(this.isShowRenamefileSheet!!, this.RenamefileSheetBuilder(), {
