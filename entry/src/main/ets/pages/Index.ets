@@ -27,20 +27,29 @@ struct Index {
   commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'commonSetting'
   })
+  backDataPreferences = preferences.getPreferencesSync(this.context, {
+    name: 'back'
+  })
 
   onBackPress() {
     if (this.index === 1) {
-      const dirnamesDataPreferences = preferences.getPreferencesSync(this.context, {
-        name: 'dirnames'
-      })
-      const dirnames = dirnamesDataPreferences.getSync('dirnames', []) as string[]
-      if (dirnames.length === 0) {
+      const filelist = this.backDataPreferences.getSync('filelist', false)
+      if (!filelist) {
         return false
       } else {
-        this.context.eventHub.emit('back')
+        this.context.eventHub.emit('backFilelist')
         return true
       }
     } else {
+      if (this.index === 2 && this.showAlbum) {
+        const album = this.backDataPreferences.getSync('album', false)
+        if (!album) {
+          return false
+        } else {
+          this.context.eventHub.emit('backAlbum')
+          return true
+        }
+      }
       return false
     }
   }
@@ -150,7 +159,6 @@ struct Index {
           }
           .tabBar(this.tabBuilder(2, $r('app.media.album'), '相册'))
         }
-
         TabContent() {
           Me()
             .height('100%')

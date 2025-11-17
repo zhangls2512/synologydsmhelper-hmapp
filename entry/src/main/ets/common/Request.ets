@@ -141,7 +141,7 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
       return 'fail'
     }
     promptAction.openToast({
-      message: 'DSM 请求失败，错误码：' + response.statusCode
+      message: 'HTTP 请求失败，状态码：' + response.statusCode
     })
     return 'fail'
   } catch (err) {
@@ -239,7 +239,7 @@ export async function dsmRequest(context: Context, UIContext: UIContext, path: s
       return 'fail'
     }
     promptAction.openToast({
-      message: 'DSM 请求失败，错误码：' + response.statusCode
+      message: 'HTTP 请求失败，状态码：' + response.statusCode
     })
     return 'fail'
   } catch (err) {
@@ -303,7 +303,7 @@ export async function developerRequest(context: Context, UIContext: UIContext, p
       return 'fail'
     }
     promptAction.openToast({
-      message: '请求失败，错误码：' + response.statusCode
+      message: 'HTTP 请求失败，状态码：' + response.statusCode
     })
     return 'fail'
   } catch (err) {

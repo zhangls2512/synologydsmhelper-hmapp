@@ -19,7 +19,7 @@ struct Autouploaderrorlogtype {
   })
   typeArray: Type[] = [
     {
-      name: 'js 运行异常',
+      name: 'js运行异常',
       value: 'JS_ERROR'
     },
     {

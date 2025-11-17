@@ -222,14 +222,14 @@ export default struct Login {
                 })
                 return
               }
+              let path = ''
+              let res: string | object = ''
               const dialogControllerProgress = new CustomDialogController({
                 builder: LoadingDialog({
                   content: '登录中...'
                 })
               })
               dialogControllerProgress.open()
-              let path = ''
-              let res: string | object = ''
               if (!this.quickConnectId) {
                 path = this.scheme + '://' + this.host + ':' + this.port
                 netBoost.setSceneDesc({
@@ -239,6 +239,10 @@ export default struct Login {
                 res = await dsmRequest(this.context, this.UIContext, path, 'SYNO.API.Auth',
                   '&method=login&account=' + encodeURIComponent(this.name) + '&passwd=' +
                   encodeURIComponent(this.password) + '&otp_code=' + this.mfa)
+                netBoost.setSceneDesc({
+                  scene: 'login',
+                  sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                })
               }
               if (this.quickConnectId) {
                 const session = rcp.createSession({
@@ -274,6 +278,10 @@ export default struct Login {
                       res = await dsmRequest(this.context, this.UIContext, path, 'SYNO.API.Auth',
                         '&method=login&account=' + encodeURIComponent(this.name) + '&passwd=' +
                         encodeURIComponent(this.password) + '&otp_code=' + this.mfa)
+                      netBoost.setSceneDesc({
+                        scene: 'login',
+                        sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                      })
                     } else {
                       dialogControllerProgress.close()
                       promptAction.openToast({
@@ -284,7 +292,7 @@ export default struct Login {
                   } else {
                     dialogControllerProgress.close()
                     promptAction.openToast({
-                      message: 'QuickConnect 请求失败，错误码：' + response.statusCode
+                      message: 'HTTP 请求失败，状态码：' + response.statusCode
                     })
                     return
                   }
@@ -297,10 +305,6 @@ export default struct Login {
                   return
                 }
               }
-              netBoost.setSceneDesc({
-                scene: 'login',
-                sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-              })
               dialogControllerProgress.close()
               if (res !== 'fail') {
                 const data = res as ResponseData

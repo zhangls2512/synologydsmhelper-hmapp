@@ -1,13 +1,26 @@
 import { common } from '@kit.AbilityKit'
-import { display, LoadingDialog, promptAction, SegmentButtonV2Items, TabSegmentButtonV2 } from '@kit.ArkUI'
-import { get, getLoginStatus } from '../common/Account'
-import { getPreferType, getPreferTypeByDisplayId } from '../common/Prefertype'
+import { preferences } from '@kit.ArkData'
 import { util } from '@kit.ArkTS'
-import { dsmRequest } from '../common/Request'
+import { display, LoadingDialog, promptAction, SegmentButtonV2Items, TabSegmentButtonV2 } from '@kit.ArkUI'
+import { fileIo, fileUri } from '@kit.CoreFileKit'
+import { photoAccessHelper } from '@kit.MediaLibraryKit'
+import { netBoost } from '@kit.NetworkBoostKit'
+import { rcp } from '@kit.RemoteCommunicationKit'
+import { hdsEffect } from '@kit.UIDesignKit'
+import { get, getLoginStatus } from '../common/Account'
+import { getDnsServer } from '../common/Dnsserver'
+import { getCurrentNetworkBearerType } from '../common/Network'
+import { getPreferType, getPreferTypeByDisplayId } from '../common/Prefertype'
+import { dsmRequest, getDsmApiMaxVersion } from '../common/Request'
+import { getSizeString, getTimeString } from '../common/Stringformat'
 
-interface FolderItem {
-  id: number,
-  path: string
+interface Resolution {
+  height: number,
+  width: number
+}
+
+interface PhotoAdditional {
+  resolution: Resolution
 }
 
 interface PhotoItem {
@@ -16,7 +29,9 @@ interface PhotoItem {
   filesize: number,
   time: number,
   folder_id: number,
-  url: string
+  url: string,
+  path: string,
+  resolution: Resolution
 }
 
 interface PhotoResItem {
@@ -24,7 +39,9 @@ interface PhotoResItem {
   filename: string,
   filesize: number,
   time: number,
-  folder_id: number
+  folder_id: number,
+  type: string,
+  additional: PhotoAdditional
 }
 
 interface AlbumItem {
@@ -40,69 +57,89 @@ export default struct Album {
   @Local loading: boolean = false
   @Local photoArray: PhotoItem[] = []
   @Local albumArray: AlbumItem[] = []
+  @Local albumPhotoArray: PhotoItem[] = []
   @Local isLogin: boolean = false
+  @Local previewPhoto: PhotoItem | undefined = undefined
+  @Local previewAlbum: AlbumItem | undefined = undefined
+  @Local isShowInfoSheet: boolean = false
   @Local hoverId: number = -1
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
-  dialogControllerProgress = new CustomDialogController({
+  backDataPreferences = preferences.getPreferencesSync(this.context, {
+    name: 'back'
+  })
+  commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+    name: 'commonSetting'
+  })
+  debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+    name: 'debugSetting'
+  })
+  loadingDialogControllerProgress = new CustomDialogController({
     builder: LoadingDialog({
       content: '加载中...'
     })
   })
+  deleteDialogControllerProgress = new CustomDialogController({
+    builder: LoadingDialog({
+      content: '删除中...'
+    })
+  })
 
-  async get() {
+  async get(refresh: number = 2) {
     this.isLogin = await getLoginStatus()
     if (this.isLogin) {
-      this.dialogControllerProgress.open()
-      const albumres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Album',
-        '&method=list&offset=0&limit=5000&additional=["thumbnail"]')
-      this.dialogControllerProgress.close()
-      if (albumres !== 'fail') {
-        this.albumArray = albumres['list']
-      }
-      this.dialogControllerProgress.open()
-      const res = await dsmRequest(this.context, this.UIContext, '', 'SYNO.API.Auth.Key',
-        '&method=grant&allow_api=SYNO.FileStation.Download&allow_methods=["download"]')
-      this.dialogControllerProgress.close()
-      if (res !== 'fail') {
-        const tid = res['tid'] as string
-        const accountInfo = await get()
-        const textEncoder = new util.TextEncoder()
-        this.dialogControllerProgress.open()
-        const photores = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Item',
+      if (refresh !== 0) {
+        this.albumArray = []
+        this.loadingDialogControllerProgress.open()
+        const albumres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Album',
           '&method=list&offset=0&limit=5000')
-        this.dialogControllerProgress.close()
-        if (photores !== 'fail') {
-          const photos = photores['list'] as PhotoResItem[]
-          const photoArray: PhotoItem[] = []
-          const folderArray: FolderItem[] = []
-          this.dialogControllerProgress.open()
-          for (let i = 0; i < photos.length; i++) {
-            const item = photos[i]
-            const folderIndex = folderArray.findIndex(itema => itema.id === item.folder_id)
-            if (folderIndex !== -1) {
-              photoArray.push({
-                id: item.id,
-                filename: item.filename,
-                filesize: item.filesize,
-                time: item.time,
-                folder_id: item.folder_id,
-                url: accountInfo.path + '/fbdownload/' + item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
-                  '?tid=' + tid + '&mode=open&dlink=' +
-                Array.from(textEncoder.encodeInto(folderArray[folderIndex].path))
-                  .map(byte => byte.toString(16).padStart(2, '0')).join('')
-              })
-            }
-            if (folderIndex === -1) {
-              const folderres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Folder',
-                '&method=get&id=' + item.folder_id)
-              if (folderres !== 'fail') {
-                const folderPath = folderres['folder']['name'] as string
-                const path = '/home/Photos' + folderPath + '/' + item.filename
-                folderArray.push({
-                  id: item.folder_id,
-                  path: path
-                })
+        this.loadingDialogControllerProgress.close()
+        if (albumres !== 'fail') {
+          this.albumArray = albumres['list']
+        }
+      }
+      if (refresh !== 1) {
+        this.photoArray = []
+        this.loadingDialogControllerProgress.open()
+        const res = await dsmRequest(this.context, this.UIContext, '', 'SYNO.API.Auth.Key',
+          '&method=grant&allow_api=SYNO.FileStation.Download&allow_methods=["download"]')
+        this.loadingDialogControllerProgress.close()
+        if (res !== 'fail') {
+          const tid = res['tid'] as string
+          const accountInfo = await get()
+          const textEncoder = new util.TextEncoder()
+          this.loadingDialogControllerProgress.open()
+          const photores = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Item',
+            '&method=list&offset=0&limit=5000&additional=["resolution"]')
+          this.loadingDialogControllerProgress.close()
+          if (photores !== 'fail') {
+            const photos = (photores['list'] as PhotoResItem[]).filter(item => item.type === 'photo')
+            const photoArray: PhotoItem[] = []
+            const folderMap = new Map<number, string>()
+            this.loadingDialogControllerProgress.open()
+            for (let i = 0; i < photos.length; i++) {
+              const item = photos[i]
+              if (!folderMap.has(item.folder_id)) {
+                const folderres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Folder',
+                  '&method=get&id=' + item.folder_id)
+                if (folderres !== 'fail') {
+                  const folderPath = folderres['folder']['name'] as string
+                  const path = '/home/Photos' + folderPath + '/'
+                  folderMap.set(item.folder_id, path)
+                  photoArray.push({
+                    id: item.id,
+                    filename: item.filename,
+                    filesize: item.filesize,
+                    time: item.time,
+                    folder_id: item.folder_id,
+                    url: accountInfo.path + '/fbdownload/' + item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
+                      '?tid=' + tid + '&mode=open&dlink=' + Array.from(textEncoder.encodeInto(path + item.filename))
+                      .map(byte => byte.toString(16).padStart(2, '0')).join(''),
+                    path: path + item.filename,
+                    resolution: item.additional.resolution
+                  })
+                }
+              } else {
                 photoArray.push({
                   id: item.id,
                   filename: item.filename,
@@ -111,15 +148,354 @@ export default struct Album {
                   folder_id: item.folder_id,
                   url: accountInfo.path + '/fbdownload/' + item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
                     '?tid=' + tid + '&mode=open&dlink=' +
-                  Array.from(textEncoder.encodeInto(path)).map(byte => byte.toString(16).padStart(2, '0')).join('')
+                  Array.from(textEncoder.encodeInto(folderMap.get(item.folder_id) + item.filename))
+                    .map(byte => byte.toString(16).padStart(2, '0')).join(''),
+                  path: folderMap.get(item.folder_id) + item.filename,
+                  resolution: item.additional.resolution
                 })
               }
             }
+            this.loadingDialogControllerProgress.close()
+            this.photoArray = photoArray
           }
-          this.dialogControllerProgress.close()
-          this.photoArray = photoArray
         }
       }
+    }
+  }
+
+  async getAlbumPhoto() {
+    this.albumPhotoArray = []
+    this.loadingDialogControllerProgress.open()
+    const res = await dsmRequest(this.context, this.UIContext, '', 'SYNO.API.Auth.Key',
+      '&method=grant&allow_api=SYNO.FileStation.Download&allow_methods=["download"]')
+    this.loadingDialogControllerProgress.close()
+    if (res !== 'fail') {
+      const tid = res['tid'] as string
+      const accountInfo = await get()
+      const textEncoder = new util.TextEncoder()
+      this.loadingDialogControllerProgress.open()
+      const photores = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Item',
+        '&method=list&offset=0&limit=5000&additional=["resolution"]&album_id=' + this.previewAlbum?.id)
+      this.loadingDialogControllerProgress.close()
+      if (photores !== 'fail') {
+        const photos = (photores['list'] as PhotoResItem[]).filter(item => item.type === 'photo')
+        const photoArray: PhotoItem[] = []
+        const folderMap = new Map<number, string>()
+        this.loadingDialogControllerProgress.open()
+        for (let i = 0; i < photos.length; i++) {
+          const item = photos[i]
+          if (!folderMap.has(item.folder_id)) {
+            const folderres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Folder',
+              '&method=get&id=' + item.folder_id)
+            if (folderres !== 'fail') {
+              const folderPath = folderres['folder']['name'] as string
+              const path = '/home/Photos' + folderPath + '/'
+              folderMap.set(item.folder_id, path)
+              photoArray.push({
+                id: item.id,
+                filename: item.filename,
+                filesize: item.filesize,
+                time: item.time,
+                folder_id: item.folder_id,
+                url: accountInfo.path + '/fbdownload/' + item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
+                  '?tid=' + tid + '&mode=open&dlink=' + Array.from(textEncoder.encodeInto(path + item.filename))
+                  .map(byte => byte.toString(16).padStart(2, '0')).join(''),
+                path: path + item.filename,
+                resolution: item.additional.resolution
+              })
+            }
+          } else {
+            photoArray.push({
+              id: item.id,
+              filename: item.filename,
+              filesize: item.filesize,
+              time: item.time,
+              folder_id: item.folder_id,
+              url: accountInfo.path + '/fbdownload/' + item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
+                '?tid=' + tid + '&mode=open&dlink=' +
+              Array.from(textEncoder.encodeInto(folderMap.get(item.folder_id) + item.filename))
+                .map(byte => byte.toString(16).padStart(2, '0')).join(''),
+              path: folderMap.get(item.folder_id) + item.filename,
+              resolution: item.additional.resolution
+            })
+          }
+        }
+        this.loadingDialogControllerProgress.close()
+        this.albumPhotoArray = photoArray
+      }
+    }
+  }
+
+  @Builder
+  InfoSheetBuilder() {
+    List() {
+      ListItem() {
+        if (this.previewPhoto) {
+          Column() {
+            Text() {
+              Span('名称：')
+                .fontWeight(FontWeight.Medium)
+              Span(this.previewPhoto.filename)
+            }
+
+            Text() {
+              Span('时间：')
+                .fontWeight(FontWeight.Medium)
+              Span(getTimeString(this.previewPhoto.time))
+            }
+            .margin({
+              top: $r('sys.float.ohos_id_text_margin_vertical')
+            })
+
+            Text() {
+              Span('大小：')
+                .fontWeight(FontWeight.Medium)
+              Span(getSizeString(this.previewPhoto.filesize))
+            }
+            .margin({
+              top: $r('sys.float.ohos_id_text_margin_vertical')
+            })
+
+            Text() {
+              Span('尺寸：')
+                .fontWeight(FontWeight.Medium)
+              Span(this.previewPhoto.resolution.width + 'x' + this.previewPhoto.resolution.height)
+            }
+            .margin({
+              top: $r('sys.float.ohos_id_text_margin_vertical')
+            })
+
+            Text() {
+              Span('路径：')
+                .fontWeight(FontWeight.Medium)
+              Span(this.previewPhoto.path)
+            }
+            .margin({
+              top: $r('sys.float.ohos_id_text_margin_vertical')
+            })
+          }
+          .alignItems(HorizontalAlign.Start)
+          .margin({
+            top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+          })
+          .padding({
+            bottom: $r('sys.float.ohos_id_default_padding_bottom_fixed'),
+            left: $r('sys.float.ohos_id_max_padding_start'),
+            right: $r('sys.float.ohos_id_max_padding_end')
+          })
+          .width('100%')
+        }
+      }
+    }
+  }
+
+  @Builder
+  MenuBuilder(item: PhotoItem) {
+    Menu() {
+      MenuItem({
+        content: '详情'
+      })
+        .onClick(() => {
+          this.isShowInfoSheet = true
+        })
+      MenuItem({
+        content: '下载'
+      })
+        .onClick(async () => {
+          if (getCurrentNetworkBearerType() === 0) {
+            const cellularDataUseRemind = this.commonSettingDataPreferences.getSync('cellularDataUseRemind', 0)
+            if (cellularDataUseRemind === 0 ||
+              (cellularDataUseRemind === 1 && item.filesize > 200 * Math.pow(1024, 2))) {
+              const promptAction = this.getUIContext().getPromptAction()
+              const data = await promptAction.showDialog({
+                title: '流量使用提醒',
+                message: '当前正在使用流量上网，下载此图片将消耗约 ' + getSizeString(item.filesize) + ' 流量，确定下载？',
+                buttons: [
+                  {
+                    text: '取消',
+                    color: $r('sys.color.font_primary')
+                  },
+                  {
+                    text: '确定',
+                    color: $r('sys.color.font_emphasize')
+                  }
+                ]
+              })
+              if (data.index === 0) {
+                return
+              }
+            }
+          }
+          const dialogControllerProgress = new CustomDialogController({
+            builder: LoadingDialog({
+              content: '下载中...'
+            })
+          })
+          dialogControllerProgress.open()
+          const version = await getDsmApiMaxVersion(this.context, '', 'SYNO.FileStation.Download')
+          if (version !== 'fail') {
+            const dir = this.context.tempDir + '/downloadphoto'
+            if (!fileIo.accessSync(dir)) {
+              fileIo.mkdirSync(dir, true)
+            }
+            const path = dir + '/' + item.filename
+            const file = fileIo.openSync(path, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
+            const fileStream = fileIo.fdopenStreamSync(file.fd, 'w+')
+            netBoost.setSceneDesc({
+              scene: 'download',
+              sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
+            })
+            const accountInfo = await get()
+            const session = rcp.createSession({
+              requestConfiguration: {
+                tracing: {
+                  httpEventsHandler: {
+                    onDataReceive: (incomingData) => {
+                      fileStream.writeSync(incomingData)
+                    },
+                    onDataEnd: async () => {
+                      session.close()
+                      netBoost.setSceneDesc({
+                        scene: 'download',
+                        sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                      })
+                      fileStream.closeSync()
+                      const uri = fileUri.getUriFromPath(path)
+                      let houzhui = ''
+                      const lastDotIndex = item.filename.lastIndexOf('.')
+                      if (lastDotIndex !== -1) {
+                        houzhui = item.filename.slice(lastDotIndex + 1)
+                      }
+                      const phAccessHelper = photoAccessHelper.getPhotoAccessHelper(this.context)
+                      try {
+                        const uris = await phAccessHelper.showAssetsCreationDialog([uri], [{
+                          fileNameExtension: houzhui,
+                          photoType: photoAccessHelper.PhotoType.IMAGE
+                        }])
+                        const srcFile = fileIo.openSync(uri)
+                        const destFile = fileIo.openSync(uris[0], fileIo.OpenMode.WRITE_ONLY)
+                        fileIo.copyFileSync(srcFile.fd, destFile.fd)
+                        fileIo.closeSync(srcFile)
+                        fileIo.closeSync(destFile)
+                        fileIo.unlinkSync(path)
+                        promptAction.openToast({
+                          message: '保存成功'
+                        })
+                      } catch (err) {
+                        if (err.code !== 13900020) {
+                          promptAction.openToast({
+                            message: '发生错误，错误码：' + err.code
+                          })
+                        }
+                      }
+                    }
+                  }
+                },
+                dns: {
+                  dnsRules: getDnsServer(this.context)
+                },
+                security: {
+                  remoteValidation: this.debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
+                    'system') as 'system' | 'skip'
+                }
+              },
+              headers: {
+                referer: accountInfo.path
+              },
+              cookies: {
+                id: accountInfo.sid,
+                did: accountInfo.did
+              }
+            })
+            try {
+              const response =
+                await session.get(accountInfo.path + '/webapi/entry.cgi?api=SYNO.FileStation.Download&version=' +
+                  version + '&method=download&mode=download&path=' + encodeURIComponent(item.path))
+              dialogControllerProgress.close()
+              session.close()
+              netBoost.setSceneDesc({
+                scene: 'download',
+                sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+              })
+              if (response.statusCode !== 200) {
+                session.close()
+                netBoost.setSceneDesc({
+                  scene: 'download',
+                  sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                })
+                fileStream.closeSync()
+                promptAction.openToast({
+                  message: 'HTTP 请求失败，状态码：' + response.statusCode
+                })
+              }
+            } catch (err) {
+              dialogControllerProgress.close()
+              session.close()
+              netBoost.setSceneDesc({
+                scene: 'download',
+                sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+              })
+              fileStream.closeSync()
+              promptAction.openToast({
+                message: '下载失败，错误码：' + err.code
+              })
+            }
+            return
+          }
+          dialogControllerProgress.close()
+        })
+      MenuItem({
+        content: '删除'
+      })
+        .contentFontColor($r('sys.color.warning'))
+        .onClick(async () => {
+          const promptAction = this.getUIContext().getPromptAction()
+          const data = await promptAction.showDialog({
+            title: '提示',
+            message: '删除成功后无法恢复，确定删除？',
+            buttons: [
+              {
+                text: '取消',
+                color: $r('sys.color.font_primary')
+              },
+              {
+                text: '删除',
+                color: $r('sys.color.warning')
+              }
+            ]
+          })
+          if (data.index === 1) {
+            this.deleteDialogControllerProgress.open()
+            const startres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.Delete',
+              '&method=start&path=' + encodeURIComponent(item.path))
+            if (startres !== 'fail') {
+              const taskId = startres['taskid'] as string
+              let finished = false
+              while (!finished) {
+                const statusres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.Delete',
+                  '&method=status&taskid=' + taskId)
+                if (statusres !== 'fail') {
+                  if (statusres['finished']) {
+                    finished = true
+                    promptAction.openToast({
+                      message: '删除成功'
+                    })
+                    this.previewPhoto = undefined
+                    this.backDataPreferences.putSync('album', false)
+                    this.get()
+                    if (this.previewAlbum) {
+                      this.getAlbumPhoto()
+                    }
+                  }
+                }
+                if (statusres === 'fail') {
+                  finished = true
+                }
+              }
+            }
+            this.deleteDialogControllerProgress.close()
+          }
+        })
     }
   }
 
@@ -133,101 +509,297 @@ export default struct Album {
             .width('100%')
         }
         if (this.isLogin) {
-          TabSegmentButtonV2({
-            items: new SegmentButtonV2Items([
-              { text: '照片' },
-              { text: '相册' }
-            ]),
-            selectedIndex: this.selectedIndex!!
-          })
-            .margin({
-              bottom: $r('sys.float.ohos_id_elements_margin_vertical_l')
+          if (!this.previewPhoto && !this.previewAlbum) {
+            TabSegmentButtonV2({
+              items: new SegmentButtonV2Items([
+                { text: '照片' },
+                { text: '相册' }
+              ]),
+              selectedIndex: this.selectedIndex!!
             })
-          Refresh({
-            refreshing: $$this.loading
-          }) {
-            List() {
-              if (this.selectedIndex === 0) {
-                ListItem() {
-                  Flex() {
-                    ForEach(this.photoArray, (item: PhotoItem) => {
-                      Image(item.url)
-                        .aspectRatio(1)
-                        .copyOption(CopyOptions.LocalDevice)
-                        .enableAnalyzer(true)
-                        .width('25%')
-                    })
+              .margin({
+                bottom: $r('sys.float.ohos_id_elements_margin_vertical_l')
+              })
+            Refresh({
+              refreshing: $$this.loading
+            }) {
+              List() {
+                if (this.selectedIndex === 0) {
+                  ListItem() {
+                    Flex({
+                      wrap: FlexWrap.Wrap
+                    }) {
+                      ForEach(this.photoArray, (item: PhotoItem) => {
+                        Image(item.url)
+                          .alt($r('app.media.imageloading'))
+                          .aspectRatio(1)
+                          .copyOption(CopyOptions.LocalDevice)
+                          .width('25%')
+                          .onClick(() => {
+                            this.previewPhoto = item
+                            this.backDataPreferences.putSync('album', true)
+                          })
+                      })
+                    }
                   }
                 }
-              }
-              if (this.selectedIndex === 1) {
-                ListItem() {
-                  Column() {
-                    ForEach(this.albumArray, (item: AlbumItem, index) => {
-                      if (index !== 0) {
-                        Divider()
-                          .padding({
-                            left: 12,
-                            right: 12
-                          })
-                      }
-                      Row() {
-                        Text(item.name)
-                          .fontWeight(FontWeight.Medium)
-                          .layoutWeight(1)
-                          .margin({
-                            right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                          })
-                        Text(String(item.item_count))
-                          .fontColor($r('sys.color.font_secondary'))
-                          .fontSize($r('sys.float.ohos_id_text_size_body2'))
-                          .margin({
-                            right: $r('sys.float.ohos_id_elements_margin_horizontal_s')
-                          })
-                        Image($r('app.media.right'))
-                          .fillColor($r('sys.color.icon_fourth'))
-                          .height(12)
-                          .width(12)
-                      }
-                      .borderRadius(12)
-                      .padding(12)
-                      .stateStyles({
-                        normal: {
-                          .backgroundColor(this.hoverId === index ? $r('sys.color.interactive_hover') :
-                            $r('sys.color.ohos_id_color_card_bg'))
-                        },
-                        pressed: {
-                          .backgroundColor($r('sys.color.interactive_pressed'))
+                if (this.selectedIndex === 1) {
+                  ListItem() {
+                    Column() {
+                      ForEach(this.albumArray, (item: AlbumItem, index) => {
+                        if (index !== 0) {
+                          Divider()
+                            .padding({
+                              left: 12,
+                              right: 12
+                            })
                         }
-                      })
-                      .width('100%')
-                      .onHover((isHover) => {
-                        if (!isHover) {
-                          this.hoverId = -1
+                        Row() {
+                          Text(item.name)
+                            .fontWeight(FontWeight.Medium)
+                            .layoutWeight(1)
+                            .margin({
+                              right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                            })
+                          Text(String(item.item_count))
+                            .fontColor($r('sys.color.font_secondary'))
+                            .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                            .margin({
+                              right: $r('sys.float.ohos_id_elements_margin_horizontal_s')
+                            })
+                          Image($r('app.media.right'))
+                            .fillColor($r('sys.color.icon_fourth'))
+                            .height(12)
+                            .width(12)
                         }
-                        if (isHover) {
-                          this.hoverId = index
-                        }
-                      })
-                      .onClick(() => {
-                        promptAction.openToast({
-                          message: '暂未上线，敬请期待'
+                        .borderRadius(12)
+                        .padding(12)
+                        .stateStyles({
+                          normal: {
+                            .backgroundColor(this.hoverId === index ? $r('sys.color.interactive_hover') :
+                              $r('sys.color.comp_background_primary'))
+                          },
+                          pressed: {
+                            .backgroundColor($r('sys.color.comp_background_secondary'))
+                          }
+                        })
+                        .width('100%')
+                        .onHover((isHover) => {
+                          if (!isHover) {
+                            this.hoverId = -1
+                          }
+                          if (isHover) {
+                            this.hoverId = index
+                          }
+                        })
+                        .onClick(() => {
+                          this.previewAlbum = item
+                          this.backDataPreferences.putSync('album', true)
+                          this.getAlbumPhoto()
                         })
                       })
-                    })
+                    }
+                    .backgroundColor($r('sys.color.comp_background_primary'))
+                    .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+                    .padding($r('sys.float.ohos_id_corner_radius_mark'))
                   }
-                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-                  .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
-                  .padding($r('sys.float.ohos_id_corner_radius_mark'))
                 }
               }
             }
+            .layoutWeight(1)
+            .onRefreshing(async () => {
+              await this.get(this.selectedIndex)
+              this.loading = false
+            })
           }
-          .layoutWeight(1)
-          .onRefreshing(async () => {
-            await this.get()
-            this.loading = false
-          })
+          if (this.previewPhoto) {
+            Column() {
+              Row() {
+                Column() {
+                  Image($r('app.media.back'))
+                }
+                .borderRadius(20)
+                .height(40)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+                .padding(11)
+                .stateStyles({
+                  normal: {
+                    .backgroundColor($r('sys.color.interactive_hover'))
+                  },
+                  pressed: {
+                    .backgroundColor($r('sys.color.interactive_pressed'))
+                  }
+                })
+                .visualEffect(new hdsEffect.HdsEffectBuilder()
+                  .pointLight({
+                    sourceType: hdsEffect.PointLightSourceType.SOFT,
+                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                  })
+                  .buildEffect())
+                .width(40)
+                .onClick(() => {
+                  this.previewPhoto = undefined
+                  this.backDataPreferences.putSync('album', false)
+                })
+
+                Text(this.previewPhoto.filename)
+                  .fontSize($r('sys.float.ohos_id_text_size_dialog_tittle'))
+                  .fontWeight(FontWeight.Bold)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                  .maxLines(1)
+                  .textOverflow({
+                    overflow: TextOverflow.Ellipsis
+                  })
+                Column() {
+                  Image($r('app.media.menu'))
+                }
+                .borderRadius(20)
+                .height(40)
+                .padding(11)
+                .stateStyles({
+                  normal: {
+                    .backgroundColor($r('sys.color.interactive_hover'))
+                  },
+                  pressed: {
+                    .backgroundColor($r('sys.color.interactive_pressed'))
+                  }
+                })
+                .visualEffect(new hdsEffect.HdsEffectBuilder()
+                  .pointLight({
+                    sourceType: hdsEffect.PointLightSourceType.SOFT,
+                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                  })
+                  .buildEffect())
+                .width(40)
+                .bindMenu(this.MenuBuilder(this.previewPhoto))
+              }
+
+              Image(this.previewPhoto.url)
+                .alt($r('app.media.imageloading'))
+                .copyOption(CopyOptions.LocalDevice)
+                .enableAnalyzer(true)
+                .margin({
+                  top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+                })
+                .objectFit(ImageFit.Auto)
+                .gesture(
+                  PanGesture({
+                    direction: PanDirection.Left | PanDirection.Right
+                  })
+                    .onActionEnd((gestureEvent) => {
+                      let photoArray: PhotoItem[] = []
+                      if (!this.previewAlbum) {
+                        photoArray = this.photoArray
+                      }
+                      if (this.previewAlbum) {
+                        photoArray = this.albumPhotoArray
+                      }
+                      const index = photoArray.findIndex(item => item.id === this.previewPhoto?.id)
+                      const maxIndex = photoArray.length - 1
+                      if (gestureEvent.offsetX > 0) {
+                        if (index !== 0) {
+                          this.previewPhoto = photoArray[index - 1]
+                          this.backDataPreferences.putSync('album', true)
+                        }
+                        if (index === 0) {
+                          promptAction.openToast({
+                            message: '已是第一张'
+                          })
+                        }
+                      }
+                      if (gestureEvent.offsetX < 0) {
+                        if (index !== maxIndex) {
+                          this.previewPhoto = photoArray[index + 1]
+                          this.backDataPreferences.putSync('album', true)
+                        }
+                        if (index === maxIndex) {
+                          promptAction.openToast({
+                            message: '已是最后一张'
+                          })
+                        }
+                      }
+                    })
+                )
+                .bindSheet(this.isShowInfoSheet!!, this.InfoSheetBuilder(), {
+                  height: SheetSize.FIT_CONTENT,
+                  preferType: this.preferType,
+                  title: {
+                    title: '图片详情'
+                  }
+                })
+            }
+            .alignItems(HorizontalAlign.Start)
+            .height('100%')
+          }
+          if (this.previewAlbum) {
+            Column() {
+              Row() {
+                Column() {
+                  Image($r('app.media.back'))
+                }
+                .borderRadius(20)
+                .height(40)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+                .padding(11)
+                .stateStyles({
+                  normal: {
+                    .backgroundColor($r('sys.color.interactive_hover'))
+                  },
+                  pressed: {
+                    .backgroundColor($r('sys.color.interactive_pressed'))
+                  }
+                })
+                .visualEffect(new hdsEffect.HdsEffectBuilder()
+                  .pointLight({
+                    sourceType: hdsEffect.PointLightSourceType.SOFT,
+                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                  })
+                  .buildEffect())
+                .width(40)
+                .onClick(() => {
+                  this.previewAlbum = undefined
+                  this.backDataPreferences.putSync('album', false)
+                })
+
+                Text(this.previewAlbum.name)
+                  .fontSize($r('sys.float.ohos_id_text_size_dialog_tittle'))
+                  .fontWeight(FontWeight.Bold)
+                  .layoutWeight(1)
+                  .maxLines(1)
+                  .textOverflow({
+                    overflow: TextOverflow.Ellipsis
+                  })
+              }
+
+              Flex({
+                wrap: FlexWrap.Wrap
+              }) {
+                ForEach(this.albumPhotoArray, (item: PhotoItem) => {
+                  Image(item.url)
+                    .alt($r('app.media.imageloading'))
+                    .aspectRatio(1)
+                    .copyOption(CopyOptions.LocalDevice)
+                    .width('25%')
+                    .onClick(() => {
+                      this.previewPhoto = item
+                      this.backDataPreferences.putSync('album', true)
+                    })
+                })
+              }
+              .margin({
+                top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+              })
+            }
+            .alignItems(HorizontalAlign.Start)
+            .height('100%')
+          }
         }
       }
       .alignItems(HorizontalAlign.Start)
@@ -243,13 +815,31 @@ export default struct Album {
       display.on('change', (displayId) => {
         this.preferType = getPreferTypeByDisplayId(displayId)
       })
+      this.context.eventHub.on('backAlbum', () => {
+        if (this.previewPhoto && !this.previewAlbum) {
+          this.previewPhoto = undefined
+          this.backDataPreferences.putSync('album', false)
+        }
+        if (this.previewPhoto && this.previewAlbum) {
+          this.previewPhoto = undefined
+          return
+        }
+        if (this.previewAlbum) {
+          this.previewAlbum = undefined
+          this.backDataPreferences.putSync('album', false)
+        }
+      })
       this.context.eventHub.on('refreshAlbum', () => {
+        this.previewPhoto = undefined
+        this.previewAlbum = undefined
+        this.backDataPreferences.putSync('album', false)
         this.get()
       })
       this.get()
     })
     .onDisAppear(() => {
       this.context.eventHub.off('refreshAlbum')
+      this.context.eventHub.off('backAlbum')
       display.off('change')
     })
   }

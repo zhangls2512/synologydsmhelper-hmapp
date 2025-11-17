@@ -1,3 +1,5 @@
+import { getSizeString } from '../common/Stringformat'
+
 @ComponentV2
 export default struct Progresssheet {
   @Consumer() isShowProgressSheet: boolean = false
@@ -41,8 +43,8 @@ export default struct Progresssheet {
           Column() {
             Text('进度：' + Number((this.transferredSize / this.totalSize).toFixed(2)) * 100 + '%')
               .fontWeight(FontWeight.Medium)
-            Text(this.getSizeString(this.transferredSize) + '/' + this.getSizeString(this.totalSize) + ' (' +
-            this.getSizeString(this.oneSecondTransferredSize) + '/s)')
+            Text(getSizeString(this.transferredSize) + '/' + getSizeString(this.totalSize) + ' (' +
+            getSizeString(this.oneSecondTransferredSize) + '/s)')
               .fontColor($r('sys.color.font_secondary'))
               .fontSize($r('sys.float.ohos_id_text_size_body2'))
               .margin({
