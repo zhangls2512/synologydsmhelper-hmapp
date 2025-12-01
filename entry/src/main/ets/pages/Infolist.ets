@@ -154,7 +154,7 @@ struct Infolist {
                 try {
                   const pushToken = await pushService.getToken()
                   const promptAction = this.getUIContext().getPromptAction()
-                  promptAction.showDialog({
+                  await promptAction.showDialog({
                     title: 'PushToken',
                     message: pushToken,
                     buttons: [
@@ -165,7 +165,7 @@ struct Infolist {
                     ]
                   })
                 } catch (err) {
-                  promptAction.openToast({
+                  await promptAction.openToast({
                     message: '发生错误，错误码：' + err.code
                   })
                 }

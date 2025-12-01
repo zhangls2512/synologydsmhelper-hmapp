@@ -199,12 +199,12 @@ struct ReportQoe {
                 top: $r('sys.float.ohos_id_elements_margin_vertical_l')
               })
               .width('100%')
-              .onClick(() => {
+              .onClick(async () => {
                 netQuality.reportQoe({
                   serviceType: this.serviceType,
                   qoeType: this.qoeType
                 })
-                promptAction.openToast({
+                await promptAction.openToast({
                   message: '反馈成功'
                 })
                 this.pageInfos.pop()

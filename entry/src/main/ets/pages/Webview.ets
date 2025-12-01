@@ -43,8 +43,8 @@ struct Webview {
           this.controller.setErrorPageEnabled(true)
           this.controller.loadUrl(this.url)
         })
-        .onErrorReceive((event) => {
-          promptAction.openToast({
+        .onErrorReceive(async (event) => {
+          await promptAction.openToast({
             message: '发生错误，错误码：' + event.error.getErrorCode() + '，错误信息：' + event.error.getErrorInfo()
           })
         })

@@ -11,10 +11,6 @@
     {
       "name": "WRITE_PASTEBOARD_reason",
       "value": "用于写入数据到剪贴板，便于在外部环境使用。"
-    },
-    {
-      "name": "menu",
-      "value": "用群晖DSM助手打开"
     }
   ]
 }

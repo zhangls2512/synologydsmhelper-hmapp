@@ -336,7 +336,7 @@ export default struct Album {
           if (version !== 'fail') {
             const dir = this.context.tempDir + '/downloadphoto'
             if (!fileIo.accessSync(dir)) {
-              fileIo.mkdirSync(dir, true)
+              await fileIo.mkdir(dir, true)
             }
             const path = dir + '/' + item.filename
             const file = fileIo.openSync(path, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
@@ -350,8 +350,8 @@ export default struct Album {
               requestConfiguration: {
                 tracing: {
                   httpEventsHandler: {
-                    onDataReceive: (incomingData) => {
-                      fileStream.writeSync(incomingData)
+                    onDataReceive: async (incomingData) => {
+                      await fileStream.write(incomingData)
                     },
                     onDataEnd: async () => {
                       session.close()
@@ -374,16 +374,16 @@ export default struct Album {
                         }])
                         const srcFile = fileIo.openSync(uri)
                         const destFile = fileIo.openSync(uris[0], fileIo.OpenMode.WRITE_ONLY)
-                        fileIo.copyFileSync(srcFile.fd, destFile.fd)
+                        await fileIo.copyFile(srcFile.fd, destFile.fd)
                         fileIo.closeSync(srcFile)
                         fileIo.closeSync(destFile)
-                        fileIo.unlinkSync(path)
-                        promptAction.openToast({
+                        await fileIo.unlink(path)
+                        await promptAction.openToast({
                           message: '保存成功'
                         })
                       } catch (err) {
                         if (err.code !== 13900020) {
-                          promptAction.openToast({
+                          await promptAction.openToast({
                             message: '发生错误，错误码：' + err.code
                           })
                         }
@@ -424,7 +424,7 @@ export default struct Album {
                   sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
                 })
                 fileStream.closeSync()
-                promptAction.openToast({
+                await promptAction.openToast({
                   message: 'HTTP 请求失败，状态码：' + response.statusCode
                 })
               }
@@ -436,7 +436,7 @@ export default struct Album {
                 sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
               })
               fileStream.closeSync()
-              promptAction.openToast({
+              await promptAction.openToast({
                 message: '下载失败，错误码：' + err.code
               })
             }
@@ -477,14 +477,14 @@ export default struct Album {
                 if (statusres !== 'fail') {
                   if (statusres['finished']) {
                     finished = true
-                    promptAction.openToast({
+                    await promptAction.openToast({
                       message: '删除成功'
                     })
                     this.previewPhoto = undefined
                     this.backDataPreferences.putSync('album', false)
-                    this.get()
+                    await this.get()
                     if (this.previewAlbum) {
-                      this.getAlbumPhoto()
+                      await this.getAlbumPhoto()
                     }
                   }
                 }
@@ -535,6 +535,11 @@ export default struct Album {
                           .aspectRatio(1)
                           .copyOption(CopyOptions.LocalDevice)
                           .width('25%')
+                          .onError(async (err) => {
+                            await promptAction.openToast({
+                              message: '发生错误，错误信息：' + err.message
+                            })
+                          })
                           .onClick(() => {
                             this.previewPhoto = item
                             this.backDataPreferences.putSync('album', true)
@@ -592,10 +597,10 @@ export default struct Album {
                             this.hoverId = index
                           }
                         })
-                        .onClick(() => {
+                        .onClick(async () => {
                           this.previewAlbum = item
                           this.backDataPreferences.putSync('album', true)
-                          this.getAlbumPhoto()
+                          await this.getAlbumPhoto()
                         })
                       })
                     }
@@ -691,7 +696,7 @@ export default struct Album {
                   PanGesture({
                     direction: PanDirection.Left | PanDirection.Right
                   })
-                    .onActionEnd((gestureEvent) => {
+                    .onActionEnd(async (gestureEvent) => {
                       let photoArray: PhotoItem[] = []
                       if (!this.previewAlbum) {
                         photoArray = this.photoArray
@@ -707,7 +712,7 @@ export default struct Album {
                           this.backDataPreferences.putSync('album', true)
                         }
                         if (index === 0) {
-                          promptAction.openToast({
+                          await promptAction.openToast({
                             message: '已是第一张'
                           })
                         }
@@ -718,7 +723,7 @@ export default struct Album {
                           this.backDataPreferences.putSync('album', true)
                         }
                         if (index === maxIndex) {
-                          promptAction.openToast({
+                          await promptAction.openToast({
                             message: '已是最后一张'
                           })
                         }
@@ -787,6 +792,11 @@ export default struct Album {
                     .aspectRatio(1)
                     .copyOption(CopyOptions.LocalDevice)
                     .width('25%')
+                    .onError(async (err) => {
+                      await promptAction.openToast({
+                        message: '发生错误，错误信息：' + err.message
+                      })
+                    })
                     .onClick(() => {
                       this.previewPhoto = item
                       this.backDataPreferences.putSync('album', true)
@@ -810,10 +820,10 @@ export default struct Album {
       right: $r('sys.float.ohos_id_max_padding_end'),
       top: this.preferType === 0 ? 0 : $r('sys.float.ohos_id_default_padding_top')
     })
-    .onAppear(() => {
-      this.preferType = getPreferType()
+    .onAppear(async () => {
+      this.preferType = getPreferType(this.UIContext)
       display.on('change', (displayId) => {
-        this.preferType = getPreferTypeByDisplayId(displayId)
+        this.preferType = getPreferTypeByDisplayId(displayId, this.UIContext)
       })
       this.context.eventHub.on('backAlbum', () => {
         if (this.previewPhoto && !this.previewAlbum) {
@@ -829,13 +839,13 @@ export default struct Album {
           this.backDataPreferences.putSync('album', false)
         }
       })
-      this.context.eventHub.on('refreshAlbum', () => {
+      this.context.eventHub.on('refreshAlbum', async () => {
         this.previewPhoto = undefined
         this.previewAlbum = undefined
         this.backDataPreferences.putSync('album', false)
-        this.get()
+        await this.get()
       })
-      this.get()
+      await this.get()
     })
     .onDisAppear(() => {
       this.context.eventHub.off('refreshAlbum')

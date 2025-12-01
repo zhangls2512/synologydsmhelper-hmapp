@@ -101,8 +101,8 @@ export default struct Cardlist {
               title: {
                 title: '编辑卡片'
               },
-              onDisappear: () => {
-                this.get()
+              onDisappear: async () => {
+                await this.get()
               }
             })
 
@@ -143,8 +143,8 @@ export default struct Cardlist {
                 title: {
                   title: '消息'
                 },
-                onDisappear: () => {
-                  this.get()
+                onDisappear: async () => {
+                  await this.get()
                 }
               })
             }
@@ -180,15 +180,15 @@ export default struct Cardlist {
       right: $r('sys.float.ohos_id_max_padding_end'),
       top: this.preferType === 0 ? 0 : $r('sys.float.ohos_id_default_padding_top')
     })
-    .onAppear(() => {
-      this.preferType = getPreferType()
+    .onAppear(async () => {
+      this.preferType = getPreferType(this.UIContext)
       display.on('change', (displayId) => {
-        this.preferType = getPreferTypeByDisplayId(displayId)
+        this.preferType = getPreferTypeByDisplayId(displayId, this.UIContext)
       })
-      this.context.eventHub.on('refreshCardlist', () => {
-        this.get()
+      this.context.eventHub.on('refreshCardlist', async () => {
+        await this.get()
       })
-      this.get()
+      await this.get()
     })
     .onDisAppear(() => {
       this.context.eventHub.off('refreshCardlist')

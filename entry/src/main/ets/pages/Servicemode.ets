@@ -55,7 +55,7 @@ struct Servicemode {
               Span('关于群晖DSM助手与隐私的声明')
                 .fontColor($r('sys.color.font_emphasize'))
                 .fontWeight(FontWeight.Medium)
-                .onClick(() => {
+                .onClick(async () => {
                   try {
                     const appPrivacyLink =
                       privacyManager.getAppPrivacyMgmtInfo().privacyInfo.find(item => item.type === 1)
@@ -64,7 +64,7 @@ struct Servicemode {
                       param: appPrivacyLink?.url
                     })
                   } catch (err) {
-                    promptAction.openToast({
+                    await promptAction.openToast({
                       message: '发生错误，错误码：' + err.code + '，错误信息：' + err.message
                     })
                   }

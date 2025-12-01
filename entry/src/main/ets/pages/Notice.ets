@@ -57,8 +57,8 @@ struct Notice {
               Span('系统设置')
                 .fontColor($r('sys.color.font_emphasize'))
                 .fontWeight(FontWeight.Medium)
-                .onClick(() => {
-                  notificationManager.openNotificationSettings(this.context)
+                .onClick(async () => {
+                  await notificationManager.openNotificationSettings(this.context)
                 })
               Span('管理此开关。')
                 .fontColor($r('sys.color.font_secondary'))
@@ -141,7 +141,7 @@ struct Notice {
                         })
                         dialogControllerProgress.close()
                         if (res !== 'fail') {
-                          promptAction.openToast({
+                          await promptAction.openToast({
                             message: '设置成功'
                           })
                         }
@@ -175,7 +175,7 @@ struct Notice {
       try {
         this.pushToken = await pushService.getToken()
       } catch (err) {
-        promptAction.openToast({
+        await promptAction.openToast({
           message: '发生错误，错误码：' + err.code
         })
       }

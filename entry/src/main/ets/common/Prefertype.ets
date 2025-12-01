@@ -1,13 +1,13 @@
-import { display } from '@kit.ArkUI'
+import { display, UIContext } from '@kit.ArkUI'
 import { deviceInfo } from '@kit.BasicServicesKit'
 
-export function getPreferType() {
+export function getPreferType(UIContext: UIContext) {
   if (deviceInfo.productModel !== 'VDE-AL00' && deviceInfo.productModel !== 'VDE-AL10') {
-    const orientation = display.getDefaultDisplaySync().orientation
-    if (orientation === display.Orientation.PORTRAIT || orientation === display.Orientation.PORTRAIT_INVERTED) {
+    const windowHeightBreakpoint = UIContext.getWindowHeightBreakpoint()
+    if (windowHeightBreakpoint !== HeightBreakpoint.HEIGHT_SM) {
       return 0
     }
-    if (orientation === display.Orientation.LANDSCAPE || orientation === display.Orientation.LANDSCAPE_INVERTED) {
+    if (windowHeightBreakpoint === HeightBreakpoint.HEIGHT_SM) {
       return 1
     }
   }
@@ -29,13 +29,13 @@ export function getPreferType() {
   return -1
 }
 
-export function getPreferTypeByDisplayId(displayId: number) {
+export function getPreferTypeByDisplayId(displayId: number, UIContext: UIContext) {
   if (deviceInfo.productModel !== 'VDE-AL00' && deviceInfo.productModel !== 'VDE-AL10') {
-    const orientation = display.getDisplayByIdSync(displayId).orientation
-    if (orientation === display.Orientation.PORTRAIT || orientation === display.Orientation.PORTRAIT_INVERTED) {
+    const windowHeightBreakpoint = UIContext.getWindowHeightBreakpoint()
+    if (windowHeightBreakpoint !== HeightBreakpoint.HEIGHT_SM) {
       return 0
     }
-    if (orientation === display.Orientation.LANDSCAPE || orientation === display.Orientation.LANDSCAPE_INVERTED) {
+    if (windowHeightBreakpoint === HeightBreakpoint.HEIGHT_SM) {
       return 1
     }
   }

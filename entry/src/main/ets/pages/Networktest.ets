@@ -62,18 +62,18 @@ struct Networktest {
                     this.timeStamp = res.timeStamp
                     this.httpVersion = String(response.httpVersion)
                     this.totalTimeMs = Date.now() - startTime
-                    promptAction.openToast({
+                    await promptAction.openToast({
                       message: '测试完成'
                     })
                   } else {
-                    promptAction.openToast({
+                    await promptAction.openToast({
                       message: 'HTTP 请求失败，状态码：' + response.statusCode
                     })
                   }
                 } catch (err) {
                   session.close()
                   dialogControllerProgress.close()
-                  promptAction.openToast({
+                  await promptAction.openToast({
                     message: '发生错误，错误码：' + err.code
                   })
                 }

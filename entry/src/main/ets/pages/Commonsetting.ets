@@ -264,8 +264,8 @@ struct Commonsetting {
                   this.hoverId = 0
                 }
               })
-              .onClick(() => {
-                this.context.startAbility({
+              .onClick(async () => {
+                await this.context.startAbility({
                   bundleName: 'com.huawei.hmos.settings',
                   abilityName: 'com.huawei.hmos.settings.MainAbility',
                   uri: 'privacy_settings',
@@ -443,7 +443,7 @@ struct Commonsetting {
                 })
                   .onChange(async (isOn) => {
                     const lastWindow = await window.getLastWindow(this.context)
-                    lastWindow.setWindowKeepScreenOn(isOn)
+                    await lastWindow.setWindowKeepScreenOn(isOn)
                   })
               }
               .borderRadius(12)
@@ -499,11 +499,11 @@ struct Commonsetting {
                       isPhotoTakingSupported: false,
                       isOriginalSupported: false
                     })
-                    const fileSource = await fileIo.open(pickerres.photoUris[0])
+                    const fileSource = fileIo.openSync(pickerres.photoUris[0])
                     const imageSource = image.createImageSource(fileSource.fd)
                     const imagePixelMap = await imageSource.createPixelMap()
                     if (!fileIo.accessSync(this.context.filesDir + '/media')) {
-                      fileIo.mkdirSync(this.context.filesDir + '/media')
+                      await fileIo.mkdir(this.context.filesDir + '/media')
                     }
                     const file =
                       fileIo.openSync(backgroundImagePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
@@ -516,7 +516,7 @@ struct Commonsetting {
                     this.context.eventHub.emit('refreshIndex')
                   } catch (err) {
                     if (err.code !== 13900020) {
-                      promptAction.openToast({
+                      await promptAction.openToast({
                         message: '发生错误，错误码：' + err.code
                       })
                     }
@@ -547,7 +547,7 @@ struct Commonsetting {
                         isPhotoTakingSupported: false,
                         isOriginalSupported: false
                       })
-                      const fileSource = await fileIo.open(pickerres.photoUris[0])
+                      const fileSource = fileIo.openSync(pickerres.photoUris[0])
                       const imageSource = image.createImageSource(fileSource.fd)
                       const imagePixelMap = await imageSource.createPixelMap()
                       const file =
@@ -561,14 +561,14 @@ struct Commonsetting {
                       this.context.eventHub.emit('refreshIndex')
                     } catch (err) {
                       if (err.code !== 13900020) {
-                        promptAction.openToast({
+                        await promptAction.openToast({
                           message: '发生错误，错误码：' + err.code
                         })
                       }
                     }
                   }
                   if (data.index === 1) {
-                    fileIo.unlinkSync(backgroundImagePath)
+                    await fileIo.unlink(backgroundImagePath)
                     this.context.eventHub.emit('refreshIndex')
                   }
                 }
@@ -935,7 +935,7 @@ struct Commonsetting {
       this.onlinePreviewMedia = this.commonSettingDataPreferences.getSync('onlinePreviewMedia', true) as boolean
       this.selectFileDownloadPath =
         this.commonSettingDataPreferences.getSync('selectFileDownloadPath', false) as boolean
-      this.showAlbum = this.commonSettingDataPreferences.getSync('showAlbum', false) as boolean
+      this.showAlbum = this.commonSettingDataPreferences.getSync('showAlbum', true) as boolean
       this.showAccountlistSheetAfterAppLaunch =
         this.commonSettingDataPreferences.getSync('showAccountlistSheetAfterAppLaunch', false) as boolean
       this.cacheApiVersion = this.commonSettingDataPreferences.getSync('cacheApiVersion', true) as boolean

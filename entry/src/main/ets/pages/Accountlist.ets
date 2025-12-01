@@ -223,12 +223,12 @@ export default struct Accountlist {
                 sid: item.sid,
                 did: item.did
               })
-              promptAction.openToast({
+              await promptAction.openToast({
                 message: '登录成功'
               })
               this.context.eventHub.emit('refreshCardlist')
               this.context.eventHub.emit('refreshFilelist')
-              if (this.commonSettingDataPreferences.getSync('showAlbum', false)) {
+              if (this.commonSettingDataPreferences.getSync('showAlbum', true)) {
                 this.context.eventHub.emit('refreshAlbum')
               }
               this.context.eventHub.emit('refreshMe')

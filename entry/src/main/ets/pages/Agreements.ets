@@ -50,12 +50,12 @@ struct Agreements {
                 this.hoverId = 0
               }
             })
-            .onClick(() => {
+            .onClick(async () => {
               try {
                 const appPrivacyLink = privacyManager.getAppPrivacyMgmtInfo().privacyInfo.find(item => item.type === 2)
-                openLink(this.context, appPrivacyLink?.url as string)
+                await openLink(this.context, appPrivacyLink?.url as string)
               } catch (err) {
-                promptAction.openToast({
+                await promptAction.openToast({
                   message: '发生错误，错误码：' + err.code + '，错误信息：' + err.message
                 })
               }
