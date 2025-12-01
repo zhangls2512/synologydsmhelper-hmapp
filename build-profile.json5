@@ -42,7 +42,7 @@
       {
         "name": "default",
         "signingConfig": "debug",
-        "compatibleSdkVersion": "6.0.0(20)",
+        "compatibleSdkVersion": "6.0.1(21)",
         "buildOption": {
           "packOptions": {
             "fastBuildApp": true
@@ -62,7 +62,8 @@
             "noExternalImportByPath": true,
             "useNormalizedOHMUrl": true,
             "caseSensitiveCheck": true,
-            "harLocalDependencyCheck": true
+            "harLocalDependencyCheck": true,
+            "enableStrictCheckOHModule": true
           },
           "preloadSystemSo": true
         },

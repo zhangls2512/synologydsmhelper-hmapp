@@ -34,12 +34,12 @@ interface DeveloperErrorResponse {
   errFix: string
 }
 
-function getCacheApiVersion(context: Context, path: string, api: string) {
+async function getCacheApiVersion(context: Context, path: string, api: string) {
   const filePath = context.cacheDir + '/apiversion.txt'
   if (!fileIo.accessSync(filePath)) {
     return -1
   } else {
-    const filestring = read(filePath, true)
+    const filestring = await read(filePath, true)
     let apiVersionCache: ApiVersionCacheItem[] = []
     if (filestring !== 'fail') {
       apiVersionCache = JSON.parse(filestring) as ApiVersionCacheItem[]
@@ -68,7 +68,7 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
   const commonSettingDataPreferences = preferences.getPreferencesSync(context, {
     name: 'commonSetting'
   })
-  const cacheApiVersion = getCacheApiVersion(context, requestPath, api)
+  const cacheApiVersion = await getCacheApiVersion(context, requestPath, api)
   const cacheApiVersionSetting = commonSettingDataPreferences.getSync('cacheApiVersion', true)
   if (cacheApiVersionSetting && cacheApiVersion !== -1) {
     return cacheApiVersion
@@ -103,7 +103,7 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
         const version = res.data[api].maxVersion as number
         if (cacheApiVersionSetting) {
           const filePath = context.cacheDir + '/apiversion.txt'
-          const filestring = read(filePath, true)
+          const filestring = await read(filePath, true)
           let apiVersionCache: ApiVersionCacheItem[] = []
           if (filestring !== 'fail') {
             apiVersionCache = JSON.parse(filestring) as ApiVersionCacheItem[]
@@ -131,23 +131,23 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
               pathApiVersionCache[apiVersionIndex].version = version
             }
           }
-          write(filePath, JSON.stringify(apiVersionCache))
+          await write(filePath, JSON.stringify(apiVersionCache))
         }
         return version
       }
-      promptAction.openToast({
-        message: '接口调用失败，错误码：' + res.error.code
+      await promptAction.openToast({
+        message: 'DSM 接口调用失败，错误码：' + res.error.code
       })
       return 'fail'
     }
-    promptAction.openToast({
+    await promptAction.openToast({
       message: 'HTTP 请求失败，状态码：' + response.statusCode
     })
     return 'fail'
   } catch (err) {
     session.close()
-    promptAction.openToast({
-      message: 'DSM 请求失败，错误码：' + err.code
+    await promptAction.openToast({
+      message: '发生错误，错误码：' + err.code
     })
     return 'fail'
   }
@@ -225,7 +225,7 @@ export async function dsmRequest(context: Context, UIContext: UIContext, path: s
           })
           return await dsmRequest(context, UIContext, path, api, params, version)
         }
-        promptAction.openToast({
+        await promptAction.openToast({
           message: '登录态失效，请重新登录'
         })
         return 'fail'
@@ -233,19 +233,19 @@ export async function dsmRequest(context: Context, UIContext: UIContext, path: s
       if (res.error.code === 150) {
         return await dsmRequest(context, UIContext, path, api, params)
       }
-      promptAction.openToast({
-        message: '接口调用失败，错误码：' + res.error.code
+      await promptAction.openToast({
+        message: 'DSM 接口调用失败，错误码：' + res.error.code
       })
       return 'fail'
     }
-    promptAction.openToast({
+    await promptAction.openToast({
       message: 'HTTP 请求失败，状态码：' + response.statusCode
     })
     return 'fail'
   } catch (err) {
     session.close()
-    promptAction.openToast({
-      message: 'DSM 请求失败，错误码：' + err.code
+    await promptAction.openToast({
+      message: '发生错误，错误码：' + err.code
     })
     return 'fail'
   }
@@ -258,7 +258,7 @@ export async function developerRequest(context: Context, UIContext: UIContext, p
   })
   const allService = commonSettingDataPreferences.getSync('allService', true)
   if (!allService) {
-    promptAction.showDialog({
+    await promptAction.showDialog({
       title: '全量模式未开启',
       message: '全量模式未开启，无法使用在线功能。如需使用在线功能，请前往“我的”>“设置”>“更多”>“应用服务模式”，开启全量模式。',
       buttons: [
@@ -290,7 +290,7 @@ export async function developerRequest(context: Context, UIContext: UIContext, p
         return body
       }
       const res = JSON.parse(body) as DeveloperErrorResponse
-      promptAction.showDialog({
+      await promptAction.showDialog({
         title: '接口调用失败',
         message: '错误码：' + res.errCode + '\n错误信息：' + res.errMsg + '\n修复方法：' + res.errFix,
         buttons: [
@@ -302,13 +302,13 @@ export async function developerRequest(context: Context, UIContext: UIContext, p
       })
       return 'fail'
     }
-    promptAction.openToast({
+    await promptAction.openToast({
       message: 'HTTP 请求失败，状态码：' + response.statusCode
     })
     return 'fail'
   } catch (err) {
     session.close()
-    promptAction.openToast({
+    await promptAction.openToast({
       message: '发生错误，错误码：' + err.code
     })
     return 'fail'

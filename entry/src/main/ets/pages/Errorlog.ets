@@ -24,68 +24,86 @@ struct Errorlog {
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
 
-  get() {
+  async get() {
+    this.errorLogArray = []
     try {
-      const errorLogFileName = fileIo.listFileSync(this.context.filesDir + '/log/error/')
-      const errorLogFilePath = errorLogFileName.map(item => this.context.filesDir + '/log/error/' + item)
-      this.errorLogArray = errorLogFilePath.map((item): Item => {
-        const filestring = read(item)
-        const errorLog = JSON.parse(filestring) as hiAppEvent.AppEventGroup
-        const externalLog: string[] = []
-        if (errorLog.appEventInfos) {
-          errorLog.appEventInfos.forEach((item) => {
-            const external_log = item.params['external_log'] as string[] | undefined
-            if (external_log) {
-              external_log.forEach((item) => {
-                externalLog.push(item)
-              })
-            }
+      const errorLogDir = this.context.filesDir + '/log/error/'
+      const errorLogFileName = await fileIo.listFile(errorLogDir)
+      const errorLogFilePath = errorLogFileName.map(item => errorLogDir + item)
+      for (let i = 0; i < errorLogFilePath.length; i++) {
+        const item = errorLogFilePath[i]
+        const filestring = await read(item)
+        try {
+          const errorLog = JSON.parse(filestring) as hiAppEvent.AppEventGroup
+          const externalLog: string[] = []
+          if (errorLog.appEventInfos) {
+            errorLog.appEventInfos.forEach((item) => {
+              const external_log = item.params['external_log'] as string[] | undefined
+              if (external_log) {
+                external_log.forEach((item) => {
+                  if (item) {
+                    externalLog.push(item)
+                  }
+                })
+              }
+            })
+          }
+          this.errorLogArray.push({
+            type: errorLog.name,
+            content: filestring,
+            time: String(new Date(Number(item.replace(errorLogDir, '').replace('.txt', '')))),
+            externalLog: externalLog
           })
+        } catch {
         }
-        return {
-          type: errorLog.name,
-          content: filestring,
-          time: String(new Date(Number(item.replace(this.context.filesDir + '/log/error/', '').replace('.txt', '')))),
-          externalLog: externalLog
-        }
-      })
+      }
     } catch (err) {
       if (err.code !== 13900002) {
-        promptAction.openToast({
+        await promptAction.openToast({
           message: '发生错误，错误码：' + err.code
         })
       }
     }
   }
 
-  filter(type: string) {
+  async filter(type: string) {
+    this.errorLogArray = []
     try {
-      const errorLogFileName = fileIo.listFileSync(this.context.filesDir + '/log/error')
-      const errorLogFilePath = errorLogFileName.map(item => this.context.filesDir + '/log/error/' + item)
-      this.errorLogArray = errorLogFilePath.map((item): Item => {
-        const filestring = read(item)
-        const errorLog = JSON.parse(filestring) as hiAppEvent.AppEventGroup
-        const externalLog: string[] = []
-        if (errorLog.appEventInfos) {
-          errorLog.appEventInfos.forEach((item) => {
-            const external_log = item.params['external_log'] as string[] | undefined
-            if (external_log) {
-              external_log.forEach((item) => {
-                externalLog.push(item)
-              })
-            }
-          })
+      const errorLogDir = this.context.filesDir + '/log/error/'
+      const errorLogFileName = await fileIo.listFile(errorLogDir)
+      const errorLogFilePath = errorLogFileName.map(item => errorLogDir + item)
+      for (let i = 0; i < errorLogFilePath.length; i++) {
+        const item = errorLogFilePath[i]
+        const filestring = await read(item)
+        try {
+          const errorLog = JSON.parse(filestring) as hiAppEvent.AppEventGroup
+          const externalLog: string[] = []
+          if (errorLog.appEventInfos) {
+            errorLog.appEventInfos.forEach((item) => {
+              const external_log = item.params['external_log'] as string[] | undefined
+              if (external_log) {
+                external_log.forEach((item) => {
+                  if (item) {
+                    externalLog.push(item)
+                  }
+                })
+              }
+            })
+          }
+          if (errorLog.name === type) {
+            this.errorLogArray.push({
+              type: errorLog.name,
+              content: filestring,
+              time: String(new Date(Number(item.replace(errorLogDir, '').replace('.txt', '')))),
+              externalLog: externalLog
+            })
+          }
+        } catch {
         }
-        return {
-          type: errorLog.name,
-          content: filestring,
-          time: String(new Date(Number(item.replace(this.context.filesDir + '/log/error/', '').replace('.txt', '')))),
-          externalLog: externalLog
-        }
-      }).filter(item => item.type === type)
+      }
     } catch (err) {
       if (err.code !== 13900002) {
-        promptAction.openToast({
+        await promptAction.openToast({
           message: '发生错误，错误码：' + err.code
         })
       }
@@ -112,42 +130,42 @@ struct Errorlog {
           ])
             .selected(0)
             .value('全部')
-            .onSelect((index: number) => {
+            .onSelect(async (index: number) => {
               if (index === 0) {
-                this.get()
+                await this.get()
               }
               if (index === 1) {
-                this.filter('JS_ERROR')
+                await this.filter('JS_ERROR')
               }
               if (index === 2) {
-                this.filter('APP_CRASH')
+                await this.filter('APP_CRASH')
               }
               if (index === 3) {
-                this.filter('APP_FREEZE')
+                await this.filter('APP_FREEZE')
               }
               if (index === 4) {
-                this.filter('APP_KILLED')
+                await this.filter('APP_KILLED')
               }
               if (index === 5) {
-                this.filter('APP_LAUNCH')
+                await this.filter('APP_LAUNCH')
               }
               if (index === 6) {
-                this.filter('RESOURCE_OVERLIMIT')
+                await this.filter('RESOURCE_OVERLIMIT')
               }
               if (index === 7) {
-                this.filter('ADDRESS_SANITIZER')
+                await this.filter('ADDRESS_SANITIZER')
               }
               if (index === 8) {
-                this.filter('MAIN_THREAD_JANK')
+                await this.filter('MAIN_THREAD_JANK')
               }
               if (index === 9) {
-                this.filter('SCROLL_JANK')
+                await this.filter('SCROLL_JANK')
               }
               if (index === 10) {
-                this.filter('CPU_USAGE_HIGH')
+                await this.filter('CPU_USAGE_HIGH')
               }
               if (index === 11) {
-                this.filter('BATTERY_USAGE')
+                await this.filter('BATTERY_USAGE')
               }
             })
         }
@@ -221,8 +239,8 @@ struct Errorlog {
                   this.hoverId = index
                 }
               })
-              .onClick(() => {
-                copy(this.context, this.UIContext, item.content)
+              .onClick(async () => {
+                await copy(this.context, this.UIContext, item.content)
               })
 
               Divider()
@@ -285,7 +303,7 @@ struct Errorlog {
                   }
                 })
                 .onClick(async () => {
-                  const filestring = read(externalLogItem)
+                  const filestring = await read(externalLogItem)
                   if (filestring !== 'fail') {
                     const promptAction = this.getUIContext().getPromptAction()
                     const data = await promptAction.showDialog({
@@ -303,7 +321,7 @@ struct Errorlog {
                       ]
                     })
                     if (data.index === 1) {
-                      copy(this.context, this.UIContext, filestring)
+                      await copy(this.context, this.UIContext, filestring)
                     }
                   }
                 })
@@ -326,8 +344,8 @@ struct Errorlog {
     }
     .backgroundColor($r('app.color.sheet_background'))
     .title('故障日志')
-    .onAppear(() => {
-      this.get()
+    .onAppear(async () => {
+      await this.get()
     })
   }
 }

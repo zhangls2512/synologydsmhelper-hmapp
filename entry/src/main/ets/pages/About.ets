@@ -52,7 +52,7 @@ struct About {
                       })
                     }
                     if (data.index === 1) {
-                      promptAction.openToast({
+                      await promptAction.openToast({
                         message: '暂未上线，敬请期待'
                       })
                     }
@@ -153,16 +153,16 @@ struct About {
                   this.updateLoading = false
                   this.hasUpdate = res.updateAvailable
                   if (res.updateAvailable === 1) {
-                    updateManager.showUpdateDialog(this.context)
+                    await updateManager.showUpdateDialog(this.context)
                   }
                 }
                 if (this.hasUpdate === 1) {
-                  updateManager.showUpdateDialog(this.context)
+                  await updateManager.showUpdateDialog(this.context)
                 }
               } catch (err) {
                 this.updateLoading = false
                 this.hasUpdate = -1
-                promptAction.openToast({
+                await promptAction.openToast({
                   message: '发生错误，错误码：' + err.code + '，错误信息：' + err.message
                 })
               }
@@ -269,8 +269,8 @@ struct About {
                 this.hoverId = 2
               }
             })
-            .onClick(() => {
-              openLink(this.context, 'https://docs.qq.com/doc/p/338170d58dcb574b3ae8b5c74a1dc3966aede5f5')
+            .onClick(async () => {
+              await openLink(this.context, 'https://docs.qq.com/doc/p/338170d58dcb574b3ae8b5c74a1dc3966aede5f5')
             })
 
             Divider()
@@ -310,8 +310,8 @@ struct About {
                 this.hoverId = 3
               }
             })
-            .onClick(() => {
-              this.context.openLink('https://appgallery.huawei.com/app/detail?id=com.songjy.synologydsmhelper')
+            .onClick(async () => {
+              await this.context.openLink('https://appgallery.huawei.com/app/detail?id=com.songjy.synologydsmhelper')
             })
 
             Divider()
@@ -351,8 +351,8 @@ struct About {
                 this.hoverId = 4
               }
             })
-            .onClick(() => {
-              this.context.openLink('https://appgallery.huawei.com/app/detail?id=com.songjy.synologydsmhelper&action=write-review')
+            .onClick(async () => {
+              await this.context.openLink('https://appgallery.huawei.com/app/detail?id=com.songjy.synologydsmhelper&action=write-review')
             })
 
             Divider()
@@ -460,8 +460,8 @@ struct About {
                   this.hoverId = 6
                 }
               })
-              .onClick(() => {
-                call.makeCall('18846496985')
+              .onClick(async () => {
+                await call.makeCall('18846496985')
               })
 
               Divider()
@@ -511,8 +511,8 @@ struct About {
                   this.hoverId = 7
                 }
               })
-              .onClick(() => {
-                this.context.startAbilityByType('mail', {
+              .onClick(async () => {
+                await this.context.startAbilityByType('mail', {
                   email: ['2300990296@qq.com']
                 }, {
                   onError: () => {
@@ -567,8 +567,8 @@ struct About {
                   this.hoverId = 8
                 }
               })
-              .onClick(() => {
-                copy(this.context, this.UIContext, 'gerenyinsi_z07x17m')
+              .onClick(async () => {
+                await copy(this.context, this.UIContext, 'gerenyinsi_z07x17m')
               })
 
               Divider()
@@ -619,8 +619,8 @@ struct About {
                   this.hoverId = 9
                 }
               })
-              .onClick(() => {
-                openLink(this.context, 'https://qm.qq.com/q/9PB8SIWhby')
+              .onClick(async () => {
+                await openLink(this.context, 'https://qm.qq.com/q/9PB8SIWhby')
               })
 
               Divider()
@@ -671,8 +671,8 @@ struct About {
                   this.hoverId = 10
                 }
               })
-              .onClick(() => {
-                this.context.openLink('https://www.chuckfang.com/MeoW/appLinking?channelId=c7c59236fe0543cbacc44855b99a2d43')
+              .onClick(async () => {
+                await this.context.openLink('https://www.chuckfang.com/MeoW/appLinking?channelId=c7c59236fe0543cbacc44855b99a2d43')
               })
             }
             .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
@@ -739,8 +739,8 @@ struct About {
                   this.hoverId = 11
                 }
               })
-              .onClick(() => {
-                openLink(this.context, 'https://www.zhangls2512.cn/index')
+              .onClick(async () => {
+                await openLink(this.context, 'https://www.zhangls2512.cn/index')
               })
 
               Divider()
@@ -790,8 +790,8 @@ struct About {
                   this.hoverId = 12
                 }
               })
-              .onClick(() => {
-                openLink(this.context, 'https://space.bilibili.com/448824492')
+              .onClick(async () => {
+                await openLink(this.context, 'https://space.bilibili.com/448824492')
               })
 
               Divider()
@@ -841,8 +841,8 @@ struct About {
                   this.hoverId = 13
                 }
               })
-              .onClick(() => {
-                openLink(this.context, 'https://gitcode.com/xm2512/synologydsmhelper-hmapp')
+              .onClick(async () => {
+                await openLink(this.context, 'https://gitcode.com/xm2512/synologydsmhelper-hmapp')
               })
             }
             .backgroundColor($r('sys.color.ohos_id_color_card_bg'))

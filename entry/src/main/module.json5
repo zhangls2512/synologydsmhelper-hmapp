@@ -49,6 +49,21 @@
           },
           {
             "entities": [
+              "entity.system.default"
+            ],
+            "actions": [
+              "ohos.want.action.sendData"
+            ],
+            "uris": [
+              {
+                "scheme": "file",
+                "utd": "general.plain-text",
+                "maxFileSupported": 1
+              }
+            ]
+          },
+          {
+            "entities": [
               "entity.system.browsable"
             ],
             "actions": [

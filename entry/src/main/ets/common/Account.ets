@@ -1,6 +1,6 @@
 import { promptAction } from '@kit.ArkUI'
 import { appAccount } from '@kit.BasicServicesKit'
-import { read } from './File'
+import { readUri } from './File'
 import { dsmRequest } from './Request'
 
 export interface AccountInfo {
@@ -59,7 +59,7 @@ export async function set(context: Context, UIContext: UIContext, accountInfo: I
         await remove(accounts[oldAccountIndex].id)
       }
     } catch (err) {
-      promptAction.openToast({
+      await promptAction.openToast({
         message: '发生错误，错误码：' + err.code
       })
     }
@@ -127,7 +127,7 @@ export async function remove(id: number) {
   if (accounts.findIndex(item => item.id === id) !== -1) {
     const appAccountManager = appAccount.createAppAccountManager()
     await appAccountManager.removeAccount(String(id))
-    promptAction.openToast({
+    await promptAction.openToast({
       message: '删除成功'
     })
   }
@@ -137,12 +137,12 @@ export async function importAccounts(context: Context, UIContext: UIContext, uri
   try {
     const array = await getList()
     if (array.length > 0) {
-      promptAction.openToast({
+      await promptAction.openToast({
         message: '导入失败，原因：本地存在账号'
       })
       return
     }
-    const filestring = read(uri)
+    const filestring = await readUri(uri)
     const accounts = JSON.parse(filestring) as AccountInfo[]
     const promises = accounts.map(async (item) => {
       await set(context, UIContext, {
@@ -154,11 +154,11 @@ export async function importAccounts(context: Context, UIContext: UIContext, uri
       })
     })
     await Promise.all(promises)
-    promptAction.openToast({
+    await promptAction.openToast({
       message: '导入成功'
     })
   } catch {
-    promptAction.openToast({
+    await promptAction.openToast({
       message: '导入失败'
     })
   }

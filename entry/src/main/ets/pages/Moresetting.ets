@@ -103,8 +103,8 @@ struct Moresetting {
                   this.hoverId = 1
                 }
               })
-              .onClick(() => {
-                this.context.terminateSelf()
+              .onClick(async () => {
+                await this.context.terminateSelf()
               })
             }
             .backgroundColor($r('sys.color.ohos_id_color_card_bg'))

@@ -63,21 +63,21 @@ struct Dnsserver {
         ListItem() {
           Button('保存')
             .width('100%')
-            .onClick(() => {
+            .onClick(async () => {
               if (!this.ip) {
                 this.debugSettingDataPreferences.deleteSync('dnsserverip')
                 this.debugSettingDataPreferences.deleteSync('dnsserverport')
               }
               if (this.ip) {
                 if (!this.port) {
-                  promptAction.openToast({
+                  await promptAction.openToast({
                     message: '请输入端口'
                   })
                   return
                 }
                 const port = Number(this.port)
                 if (!Number.isInteger(port) || port <= 0 || port > 65535) {
-                  promptAction.openToast({
+                  await promptAction.openToast({
                     message: '请输入有效的端口'
                   })
                   return
@@ -86,7 +86,7 @@ struct Dnsserver {
                 this.debugSettingDataPreferences.putSync('dnsserverport', port)
               }
               this.debugSettingDataPreferences.flushSync()
-              promptAction.openToast({
+              await promptAction.openToast({
                 message: '保存成功'
               })
               this.pageInfos.pop()

@@ -26,7 +26,7 @@ export default struct Newfolder {
           .width('100%')
           .onClick(async () => {
             if (!this.name) {
-              promptAction.openToast({
+              await promptAction.openToast({
                 message: '请输入名称'
               })
               return
@@ -42,7 +42,7 @@ export default struct Newfolder {
               encodeURIComponent(this.name))
             dialogControllerProgress.close()
             if (res !== 'fail') {
-              promptAction.openToast({
+              await promptAction.openToast({
                 message: '新建文件夹成功'
               })
               this.context.eventHub.emit('refreshFilelist')

@@ -1,8 +1,10 @@
-import { common } from '@kit.AbilityKit'
+import { bundleManager, common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { promptAction } from '@kit.ArkUI'
 import { webview } from '@kit.ArkWeb'
 import { fileIo } from '@kit.CoreFileKit'
+import { getDirectorySize } from '../common/File'
+import { getSizeString } from '../common/Stringformat'
 
 @ComponentV2
 export default struct Cleardata {
@@ -17,14 +19,32 @@ export default struct Cleardata {
   @Local appCache: boolean = false
   @Local webviewCache: boolean = false
   @Local apiVersionCache: boolean = false
+  @Local apiVersionCacheSize: string = ''
   @Local log: string[] = []
   @Local allLog: boolean = false
   @Local errorLog: boolean = false
+  @Local errorLogSize: string = ''
   @Local nouse: string[] = []
   @Local allNouse: boolean = false
   @Local tempFileNouse: boolean = false
+  @Local tempFileNouseSize: string = ''
   @Local settingNouse: boolean = false
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
+
+  async getSize() {
+    const apiVersionCacheFilePath = this.context.cacheDir + '/apiversion.txt'
+    const apiVersionCacheFileExist = fileIo.accessSync(apiVersionCacheFilePath)
+    if (!apiVersionCacheFileExist) {
+      this.apiVersionCacheSize = getSizeString(0)
+    }
+    if (apiVersionCacheFileExist) {
+      this.apiVersionCacheSize = getSizeString(fileIo.statSync(apiVersionCacheFilePath).size)
+    }
+    const errorLogSize = await getDirectorySize(this.context.filesDir + '/log/error/')
+    this.errorLogSize = getSizeString(errorLogSize)
+    const tempFileNouseSize = await getDirectorySize(this.context.tempDir)
+    this.tempFileNouseSize = getSizeString(tempFileNouseSize)
+  }
 
   build() {
     List() {
@@ -41,6 +61,12 @@ export default struct Cleardata {
             })
           Column() {
             Row() {
+              Text('全部')
+                .fontWeight(FontWeight.Bold)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
               CheckboxGroup({
                 group: 'setting'
               })
@@ -49,9 +75,6 @@ export default struct Cleardata {
                 .onChange((itemName) => {
                   this.setting = itemName.name
                 })
-              Text('全部')
-                .fontWeight(FontWeight.Bold)
-                .layoutWeight(1)
             }
             .borderRadius(12)
             .padding(12)
@@ -63,15 +86,18 @@ export default struct Cleardata {
                 right: 12
               })
             Row() {
+              Text('卡片')
+                .fontWeight(FontWeight.Medium)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
               Checkbox({
                 name: 'cardSetting',
                 group: 'setting'
               })
                 .select(this.cardSetting!!)
                 .shape(CheckBoxShape.ROUNDED_SQUARE)
-              Text('卡片')
-                .fontWeight(FontWeight.Medium)
-                .layoutWeight(1)
             }
             .borderRadius(12)
             .padding(12)
@@ -83,15 +109,18 @@ export default struct Cleardata {
                 right: 12
               })
             Row() {
+              Text('通用')
+                .fontWeight(FontWeight.Medium)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
               Checkbox({
                 name: 'commonSetting',
                 group: 'setting'
               })
                 .select(this.commonSetting!!)
                 .shape(CheckBoxShape.ROUNDED_SQUARE)
-              Text('通用')
-                .fontWeight(FontWeight.Medium)
-                .layoutWeight(1)
             }
             .borderRadius(12)
             .padding(12)
@@ -103,15 +132,18 @@ export default struct Cleardata {
                 right: 12
               })
             Row() {
+              Text('权限')
+                .fontWeight(FontWeight.Medium)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
               Checkbox({
                 name: 'permissionSetting',
                 group: 'setting'
               })
                 .select(this.permissionSetting!!)
                 .shape(CheckBoxShape.ROUNDED_SQUARE)
-              Text('权限')
-                .fontWeight(FontWeight.Medium)
-                .layoutWeight(1)
             }
             .borderRadius(12)
             .padding(12)
@@ -123,15 +155,18 @@ export default struct Cleardata {
                 right: 12
               })
             Row() {
+              Text('调试')
+                .fontWeight(FontWeight.Medium)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
               Checkbox({
                 name: 'debugSetting',
                 group: 'setting'
               })
                 .select(this.debugSetting!!)
                 .shape(CheckBoxShape.ROUNDED_SQUARE)
-              Text('调试')
-                .fontWeight(FontWeight.Medium)
-                .layoutWeight(1)
             }
             .borderRadius(12)
             .padding(12)
@@ -169,10 +204,10 @@ export default struct Cleardata {
               ]
             })
             if (data.index === 1) {
-              this.setting.forEach((item) => {
-                preferences.deletePreferences(this.context, item)
+              this.setting.forEach(async (item) => {
+                await preferences.deletePreferences(this.context, item)
               })
-              promptAction.openToast({
+              await promptAction.openToast({
                 message: '清理成功'
               })
             }
@@ -195,6 +230,12 @@ export default struct Cleardata {
             })
           Column() {
             Row() {
+              Text('全部')
+                .fontWeight(FontWeight.Bold)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
               CheckboxGroup({
                 group: 'cache'
               })
@@ -203,9 +244,6 @@ export default struct Cleardata {
                 .onChange((itemName) => {
                   this.cache = itemName.name
                 })
-              Text('全部')
-                .fontWeight(FontWeight.Bold)
-                .layoutWeight(1)
             }
             .borderRadius(12)
             .padding(12)
@@ -217,15 +255,18 @@ export default struct Cleardata {
                 right: 12
               })
             Row() {
+              Text('应用')
+                .fontWeight(FontWeight.Medium)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
               Checkbox({
                 name: 'appCache',
                 group: 'cache'
               })
                 .select(this.appCache!!)
                 .shape(CheckBoxShape.ROUNDED_SQUARE)
-              Text('应用')
-                .fontWeight(FontWeight.Medium)
-                .layoutWeight(1)
             }
             .borderRadius(12)
             .padding(12)
@@ -237,15 +278,18 @@ export default struct Cleardata {
                 right: 12
               })
             Row() {
+              Text('Webview')
+                .fontWeight(FontWeight.Medium)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
               Checkbox({
                 name: 'webviewCache',
                 group: 'cache'
               })
                 .select(this.webviewCache!!)
                 .shape(CheckBoxShape.ROUNDED_SQUARE)
-              Text('Webview')
-                .fontWeight(FontWeight.Medium)
-                .layoutWeight(1)
             }
             .borderRadius(12)
             .padding(12)
@@ -257,16 +301,25 @@ export default struct Cleardata {
                 right: 12
               })
             Row() {
+              Text('API版本号')
+                .enableAutoSpacing(true)
+                .fontWeight(FontWeight.Medium)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+              Text(this.apiVersionCacheSize)
+                .fontColor($r('sys.color.font_secondary'))
+                .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_s')
+                })
               Checkbox({
                 name: 'apiVersionCache',
                 group: 'cache'
               })
                 .select(this.apiVersionCache!!)
                 .shape(CheckBoxShape.ROUNDED_SQUARE)
-              Text('API版本号')
-                .enableAutoSpacing(true)
-                .fontWeight(FontWeight.Medium)
-                .layoutWeight(1)
             }
             .borderRadius(12)
             .padding(12)
@@ -275,29 +328,6 @@ export default struct Cleardata {
           .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
           .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
           .padding($r('sys.float.ohos_id_corner_radius_mark'))
-
-          Text() {
-            Span('可前往')
-              .fontColor($r('sys.color.font_secondary'))
-            Span('系统设置')
-              .fontColor($r('sys.color.font_emphasize'))
-              .fontWeight(FontWeight.Medium)
-              .onClick(() => {
-                this.context.startAbility({
-                  bundleName: 'com.huawei.hmos.settings',
-                  abilityName: 'com.huawei.hmos.settings.MainAbility',
-                  uri: 'storage_settings'
-                })
-              })
-            Span('清理更多缓存。')
-              .fontColor($r('sys.color.font_secondary'))
-          }
-          .fontSize($r('sys.float.ohos_id_text_size_body3'))
-          .margin({
-            top: 6,
-            left: 12,
-            right: 12
-          })
         }
         .alignItems(HorizontalAlign.Start)
       }
@@ -327,18 +357,9 @@ export default struct Cleardata {
               ]
             })
             if (data.index === 1) {
-              this.cache.forEach((item) => {
+              this.cache.forEach(async (item) => {
                 if (item === 'appCache') {
-                  const cacheDir = this.context.cacheDir
-                  const filenames = fileIo.listFileSync(cacheDir)
-                  for (let i = 0; i < filenames.length; i++) {
-                    const path = cacheDir + '/' + filenames[i]
-                    if (fileIo.statSync(path).isDirectory()) {
-                      fileIo.rmdirSync(path)
-                    } else {
-                      fileIo.unlinkSync(path)
-                    }
-                  }
+                  await bundleManager.cleanBundleCacheFilesForSelf()
                 }
                 if (item === 'webviewCache') {
                   webview.WebviewController.removeAllCache(true)
@@ -346,13 +367,14 @@ export default struct Cleardata {
                 if (item === 'apiVersionCache') {
                   const filePath = this.context.cacheDir + '/apiversion.txt'
                   if (fileIo.accessSync(filePath)) {
-                    fileIo.unlinkSync(filePath)
+                    await fileIo.unlink(filePath)
                   }
                 }
               })
-              promptAction.openToast({
+              await promptAction.openToast({
                 message: '清理成功'
               })
+              await this.getSize()
             }
           })
       }
@@ -373,6 +395,12 @@ export default struct Cleardata {
             })
           Column() {
             Row() {
+              Text('全部')
+                .fontWeight(FontWeight.Bold)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
               CheckboxGroup({
                 group: 'log'
               })
@@ -381,9 +409,6 @@ export default struct Cleardata {
                 .onChange((itemName) => {
                   this.log = itemName.name
                 })
-              Text('全部')
-                .fontWeight(FontWeight.Bold)
-                .layoutWeight(1)
             }
             .borderRadius(12)
             .padding(12)
@@ -395,15 +420,24 @@ export default struct Cleardata {
                 right: 12
               })
             Row() {
+              Text('故障')
+                .fontWeight(FontWeight.Medium)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+              Text(this.errorLogSize)
+                .fontColor($r('sys.color.font_secondary'))
+                .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_s')
+                })
               Checkbox({
                 name: 'errorLog',
                 group: 'log'
               })
                 .select(this.errorLog!!)
                 .shape(CheckBoxShape.ROUNDED_SQUARE)
-              Text('故障')
-                .fontWeight(FontWeight.Medium)
-                .layoutWeight(1)
             }
             .borderRadius(12)
             .padding(12)
@@ -441,26 +475,27 @@ export default struct Cleardata {
               ]
             })
             if (data.index === 1) {
-              this.log.forEach((item) => {
+              this.log.forEach(async (item) => {
                 if (item === 'errorLog') {
                   try {
-                    const errorLogDir = this.context.filesDir + '/log/error'
-                    const filenames = fileIo.listFileSync(errorLogDir)
-                    for (let i = 0; i < filenames.length; i++) {
-                      fileIo.unlinkSync(errorLogDir + '/' + filenames[i])
+                    const errorLogDir = this.context.filesDir + '/log/error/'
+                    const fileNames = await fileIo.listFile(errorLogDir)
+                    for (let i = 0; i < fileNames.length; i++) {
+                      await fileIo.unlink(errorLogDir + fileNames[i])
                     }
                   } catch (err) {
                     if (err.code !== 13900002) {
-                      promptAction.openToast({
+                      await promptAction.openToast({
                         message: '发生错误，错误码：' + err.code
                       })
                     }
                   }
                 }
               })
-              promptAction.openToast({
+              await promptAction.openToast({
                 message: '清理成功'
               })
+              await this.getSize()
             }
           })
       }
@@ -481,6 +516,12 @@ export default struct Cleardata {
             })
           Column() {
             Row() {
+              Text('全部')
+                .fontWeight(FontWeight.Bold)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
               CheckboxGroup({
                 group: 'nouse'
               })
@@ -489,9 +530,6 @@ export default struct Cleardata {
                 .onChange((itemName) => {
                   this.nouse = itemName.name
                 })
-              Text('全部')
-                .fontWeight(FontWeight.Bold)
-                .layoutWeight(1)
             }
             .borderRadius(12)
             .padding(12)
@@ -503,15 +541,24 @@ export default struct Cleardata {
                 right: 12
               })
             Row() {
+              Text('临时文件')
+                .fontWeight(FontWeight.Medium)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+              Text(this.tempFileNouseSize)
+                .fontColor($r('sys.color.font_secondary'))
+                .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_s')
+                })
               Checkbox({
                 name: 'tempFileNouse',
                 group: 'nouse'
               })
                 .select(this.tempFileNouse!!)
                 .shape(CheckBoxShape.ROUNDED_SQUARE)
-              Text('临时文件')
-                .fontWeight(FontWeight.Medium)
-                .layoutWeight(1)
             }
             .borderRadius(12)
             .padding(12)
@@ -523,15 +570,18 @@ export default struct Cleardata {
                 right: 12
               })
             Row() {
+              Text('无用设置')
+                .fontWeight(FontWeight.Medium)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
               Checkbox({
                 name: 'settingNouse',
                 group: 'nouse'
               })
                 .select(this.settingNouse!!)
                 .shape(CheckBoxShape.ROUNDED_SQUARE)
-              Text('无用设置')
-                .fontWeight(FontWeight.Medium)
-                .layoutWeight(1)
             }
             .borderRadius(12)
             .padding(12)
@@ -552,18 +602,19 @@ export default struct Cleardata {
           .enabled(this.nouse.length > 0)
           .role(ButtonRole.ERROR)
           .width('100%')
-          .onClick(() => {
-            this.nouse.forEach((item) => {
+          .onClick(async () => {
+            this.nouse.forEach(async (item) => {
               if (item === 'tempFileNouse') {
                 const tempDir = this.context.tempDir
-                fileIo.listFileSync(tempDir).forEach((item) => {
+                const tempFiles = await fileIo.listFile(tempDir)
+                tempFiles.forEach(async (item) => {
                   const path = tempDir + '/' + item
                   const isDirectory = fileIo.statSync(path)
                   if (!isDirectory) {
-                    fileIo.unlinkSync(path)
+                    await fileIo.unlink(path)
                   }
                   if (isDirectory) {
-                    fileIo.rmdirSync(path)
+                    await fileIo.rmdir(path)
                   }
                 })
               }
@@ -584,9 +635,10 @@ export default struct Cleardata {
                 })
               }
             })
-            promptAction.openToast({
+            await promptAction.openToast({
               message: '清理成功'
             })
+            await this.getSize()
           })
       }
       .margin({
@@ -597,6 +649,9 @@ export default struct Cleardata {
       bottom: $r('sys.float.ohos_id_default_padding_bottom_fixed'),
       left: $r('sys.float.ohos_id_max_padding_start'),
       right: $r('sys.float.ohos_id_max_padding_end')
+    })
+    .onAppear(async () => {
+      await this.getSize()
     })
     .onDisAppear(() => {
       this.context.eventHub.emit('refreshSetting')

@@ -116,7 +116,7 @@ struct Feedback {
               })
               dialogControllerProgress.close()
               if (res !== 'fail') {
-                promptAction.openToast({
+                await promptAction.openToast({
                   message: '提交成功'
                 })
                 this.pageInfos.pop()
