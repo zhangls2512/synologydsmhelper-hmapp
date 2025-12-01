@@ -62,7 +62,7 @@ export async function getDirectorySize(path: string) {
       recursion: true
     })
     for (let i = 0; i < fileNames.length; i++) {
-      const filePath = path + '/' + fileNames[i]
+      const filePath = path + fileNames[i]
       const fileStat = fileIo.statSync(filePath)
       if (!fileStat.isDirectory()) {
         totalSize += fileStat.size
