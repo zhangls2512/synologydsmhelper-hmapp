@@ -3,7 +3,7 @@ import { preferences } from '@kit.ArkData'
 import { promptAction } from '@kit.ArkUI'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { hdsEffect } from '@kit.UIDesignKit'
-import { AccountInfo, getList, remove, set } from '../common/Account'
+import { AccountInfo, getAccountList, removeAccount, setAccount } from '../common/Account'
 import { getDnsServer } from '../common/Dnsserver'
 
 @ComponentV2
@@ -42,8 +42,8 @@ export default struct Accountlist {
             ]
           })
           if (data.index === 1) {
-            await remove(item.id)
-            this.accountArray = await getList()
+            await removeAccount(item.id)
+            this.accountArray = await getAccountList()
             if (item.isLogin === 'true') {
               this.context.eventHub.emit('refreshMe')
               this.isShowAccountlistSheet = false
@@ -216,7 +216,7 @@ export default struct Accountlist {
                 this.isShowAccountlistSheet = false
                 return
               }
-              await set(this.context, this.UIContext, {
+              await setAccount(this.context, this.UIContext, {
                 path: item.path,
                 name: item.name,
                 password: item.password,
@@ -256,7 +256,7 @@ export default struct Accountlist {
       bottom: $r('sys.float.ohos_id_default_padding_bottom_fixed')
     })
     .onAppear(async () => {
-      this.accountArray = await getList()
+      this.accountArray = await getAccountList()
       this.pathConnectionStatusArray = Array(this.accountArray.length).fill('connecting')
       this.accountArray.forEach(async (item, index) => {
         const session = rcp.createSession({

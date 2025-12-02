@@ -3,7 +3,7 @@ import { privacyManager } from '@kit.AppGalleryKit'
 import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { netBoost } from '@kit.NetworkBoostKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
-import { set } from '../common/Account'
+import { setAccount } from '../common/Account'
 import { getDnsServer } from '../common/Dnsserver'
 import openLink from '../common/Openlink'
 import { dsmRequest } from '../common/Request'
@@ -308,7 +308,7 @@ export default struct Login {
               dialogControllerProgress.close()
               if (res !== 'fail') {
                 const data = res as ResponseData
-                await set(this.context, this.UIContext, {
+                await setAccount(this.context, this.UIContext, {
                   path: path,
                   name: data.account,
                   password: this.password,

@@ -4,7 +4,7 @@ import { preferences } from '@kit.ArkData'
 import { promptAction } from '@kit.ArkUI'
 import { appAccount } from '@kit.BasicServicesKit'
 import { fileIo, picker } from '@kit.CoreFileKit'
-import { get, getList, getLoginStatus, importAccounts } from '../common/Account'
+import { getAccountInfo, getAccountList, getLoginStatus, importAccounts } from '../common/Account'
 import openLink from '../common/Openlink'
 import { checkPermission } from '../common/Permission'
 
@@ -36,7 +36,7 @@ export default struct Setting {
     }
     this.isLogin = await getLoginStatus()
     if (this.isLogin) {
-      const accountInfo = await get()
+      const accountInfo = await getAccountInfo()
       const appAccountManager = appAccount.createAppAccountManager()
       if (accountInfo.id !== -1) {
         const res = await checkPermission(this.context, this.UIContext, 'ohos.permission.DISTRIBUTED_DATASYNC')
@@ -46,7 +46,7 @@ export default struct Setting {
         }
       }
     }
-    const accounts = await getList()
+    const accounts = await getAccountList()
     this.accountCount = accounts.length
   }
 
@@ -80,7 +80,7 @@ export default struct Setting {
                     .enabled(this.accountDataSyncEnabled)
                     .onChange(async (isOn) => {
                       try {
-                        const accountInfo = await get()
+                        const accountInfo = await getAccountInfo()
                         const appAccountManager = appAccount.createAppAccountManager()
                         await appAccountManager.setDataSyncEnabled(String(accountInfo.id), isOn)
                       } catch (err) {
@@ -194,7 +194,7 @@ export default struct Setting {
                   const uris = await documentViewPicker.save(documentSaveOptions)
                   const filePath = uris[0]
                   const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
-                  const array = await getList()
+                  const array = await getAccountList()
                   await fileIo.write(file.fd, JSON.stringify(array))
                   fileIo.closeSync(file)
                   await promptAction.openToast({

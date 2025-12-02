@@ -1,6 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { display, LoadingDialog } from '@kit.ArkUI'
-import { exit, get } from '../common/Account'
+import { exitAccount, getAccountInfo } from '../common/Account'
 import { getPreferType, getPreferTypeByDisplayId } from '../common/Prefertype'
 import { dsmRequest } from '../common/Request'
 import Accountlist from './Accountlist'
@@ -24,7 +24,7 @@ export default struct Me {
   })
 
   async get() {
-    const accountInfo = await get()
+    const accountInfo = await getAccountInfo()
     this.name = accountInfo.name
   }
 
@@ -409,11 +409,11 @@ export default struct Me {
                   })
                 })
                 dialogControllerProgress.open()
-                await exit(this.context, this.UIContext, true)
+                await exitAccount(this.context, this.UIContext, true)
                 dialogControllerProgress.close()
               }
               if (data.index === 1) {
-                await exit(this.context, this.UIContext, false)
+                await exitAccount(this.context, this.UIContext, false)
               }
               await promptAction.openToast({
                 message: '退出成功'
