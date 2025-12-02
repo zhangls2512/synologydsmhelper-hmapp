@@ -219,11 +219,6 @@ struct Index {
         await importAccounts(this.context, this.UIContext, wantUri)
       })
       const promptAction = this.UIContext.getPromptAction()
-      this.context.eventHub.on('toast', async (message: string) => {
-        await promptAction.openToast({
-          message: message
-        })
-      })
       this.context.eventHub.on('dialog', async (title: string, message: string) => {
         await promptAction.showDialog({
           title: title,
@@ -251,7 +246,6 @@ struct Index {
     .onDisAppear(() => {
       this.context.eventHub.off('refreshIndex')
       this.context.eventHub.off('dialog')
-      this.context.eventHub.off('toast')
       this.context.eventHub.off('wantUri')
       this.context.eventHub.off('accountList')
       this.context.eventHub.off('clearData')

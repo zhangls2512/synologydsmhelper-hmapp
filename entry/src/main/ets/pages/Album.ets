@@ -7,7 +7,7 @@ import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { netBoost } from '@kit.NetworkBoostKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { hdsEffect } from '@kit.UIDesignKit'
-import { get, getLoginStatus } from '../common/Account'
+import { getAccountInfo, getLoginStatus } from '../common/Account'
 import { getDnsServer } from '../common/Dnsserver'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import { getPreferType, getPreferTypeByDisplayId } from '../common/Prefertype'
@@ -106,7 +106,7 @@ export default struct Album {
         this.loadingDialogControllerProgress.close()
         if (res !== 'fail') {
           const tid = res['tid'] as string
-          const accountInfo = await get()
+          const accountInfo = await getAccountInfo()
           const textEncoder = new util.TextEncoder()
           this.loadingDialogControllerProgress.open()
           const photores = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Item',
@@ -171,7 +171,7 @@ export default struct Album {
     this.loadingDialogControllerProgress.close()
     if (res !== 'fail') {
       const tid = res['tid'] as string
-      const accountInfo = await get()
+      const accountInfo = await getAccountInfo()
       const textEncoder = new util.TextEncoder()
       this.loadingDialogControllerProgress.open()
       const photores = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Item',
@@ -345,7 +345,7 @@ export default struct Album {
               scene: 'download',
               sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
             })
-            const accountInfo = await get()
+            const accountInfo = await getAccountInfo()
             const session = rcp.createSession({
               requestConfiguration: {
                 tracing: {

@@ -3,7 +3,7 @@ import { promptAction } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
 import { netBoost } from '@kit.NetworkBoostKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
-import { get, set } from './Account'
+import { getAccountInfo, setAccount } from './Account'
 import { getDnsServer } from './Dnsserver'
 import { read, write } from './File'
 import { ResponseData } from '../pages/Login'
@@ -60,7 +60,7 @@ async function getCacheApiVersion(context: Context, path: string, api: string) {
 }
 
 export async function getDsmApiMaxVersion(context: Context, path: string, api: string) {
-  const accountInfo = await get()
+  const accountInfo = await getAccountInfo()
   let requestPath = path
   if (!requestPath) {
     requestPath = accountInfo.path
@@ -155,7 +155,7 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
 
 export async function dsmRequest(context: Context, UIContext: UIContext, path: string, api: string, params: string,
   version?: number): Promise<string | object> {
-  const accountInfo = await get()
+  const accountInfo = await getAccountInfo()
   let requestPath = path
   if (!requestPath) {
     requestPath = accountInfo.path
@@ -216,7 +216,7 @@ export async function dsmRequest(context: Context, UIContext: UIContext, path: s
         })
         if (loginres !== 'fail') {
           const data = loginres as ResponseData
-          await set(context, UIContext, {
+          await setAccount(context, UIContext, {
             path: accountInfo.path,
             name: data.account,
             password: accountInfo.password,
@@ -251,23 +251,14 @@ export async function dsmRequest(context: Context, UIContext: UIContext, path: s
   }
 }
 
-export async function developerRequest(context: Context, UIContext: UIContext, path: string, body: rcp.RequestContent) {
-  const promptAction = UIContext.getPromptAction()
+export async function developerRequest(context: Context, path: string, body: rcp.RequestContent) {
   const commonSettingDataPreferences = preferences.getPreferencesSync(context, {
     name: 'commonSetting'
   })
   const allService = commonSettingDataPreferences.getSync('allService', true)
   if (!allService) {
-    await promptAction.showDialog({
-      title: '全量模式未开启',
-      message: '全量模式未开启，无法使用在线功能。如需使用在线功能，请前往“我的”>“设置”>“更多”>“应用服务模式”，开启全量模式。',
-      buttons: [
-        {
-          text: '确定',
-          color: $r('sys.color.font_emphasize')
-        }
-      ]
-    })
+    context.eventHub.emit('dialog', '全量模式未开启',
+      '全量模式未开启，无法使用在线功能。如需使用在线功能，请前往“我的”>“设置”>“更多”>“应用服务模式”，开启全量模式。')
     return 'fail'
   }
   const session = rcp.createSession({
@@ -290,16 +281,8 @@ export async function developerRequest(context: Context, UIContext: UIContext, p
         return body
       }
       const res = JSON.parse(body) as DeveloperErrorResponse
-      await promptAction.showDialog({
-        title: '接口调用失败',
-        message: '错误码：' + res.errCode + '\n错误信息：' + res.errMsg + '\n修复方法：' + res.errFix,
-        buttons: [
-          {
-            text: '确定',
-            color: $r('sys.color.font_emphasize')
-          }
-        ]
-      })
+      context.eventHub.emit('dialog', '接口调用失败',
+        '错误码：' + res.errCode + '\n错误信息：' + res.errMsg + '\n修复方法：' + res.errFix)
       return 'fail'
     }
     await promptAction.openToast({

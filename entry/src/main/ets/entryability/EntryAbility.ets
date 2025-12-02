@@ -2,7 +2,6 @@ import {
   AbilityConstant,
   appRecovery,
   bundleManager,
-  common,
   ConfigurationConstant,
   errorManager,
   UIAbility,
@@ -11,7 +10,7 @@ import {
 } from '@kit.AbilityKit'
 import { updateManager } from '@kit.AppGalleryKit'
 import { preferences } from '@kit.ArkData'
-import { window } from '@kit.ArkUI'
+import { promptAction, window } from '@kit.ArkUI'
 import { deviceInfo } from '@kit.BasicServicesKit'
 import { fileIo } from '@kit.CoreFileKit'
 import { netQuality } from '@kit.NetworkBoostKit'
@@ -19,7 +18,7 @@ import { connection } from '@kit.NetworkKit'
 import { notificationManager } from '@kit.NotificationKit'
 import { hiAppEvent } from '@kit.PerformanceAnalysisKit'
 import { systemShare } from '@kit.ShareKit'
-import { getList, getLoginStatus } from '../common/Account'
+import { getAccountList, getLoginStatus } from '../common/Account'
 import { write } from '../common/File'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import openLink from '../common/Openlink'
@@ -60,8 +59,7 @@ export default class EntryAbility extends UIAbility {
 
   async windowInit(windowStage: window.WindowStage) {
     await windowStage.loadContent('pages/Index')
-    const UIContext = windowStage.getMainWindowSync().getUIContext()
-    const context = UIContext.getHostContext() as common.UIAbilityContext
+    const context = this.context
     const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
       name: 'commonSetting'
     })
@@ -82,9 +80,11 @@ export default class EntryAbility extends UIAbility {
     })
     const errorLogDir = this.context.filesDir + '/log/error/'
     errorManager.on('error', {
-      onUnhandledException(errMsg) {
+      async onUnhandledException(errMsg) {
         if (debugSettingDataPreferences.getSync('globalErrorShowType', 0) === 0) {
-          context.eventHub.emit('toast', 'js 运行异常：' + errMsg)
+          await promptAction.openToast({
+            message: 'js 运行异常：' + errMsg
+          })
         }
       },
       async onException(err) {
@@ -100,7 +100,9 @@ export default class EntryAbility extends UIAbility {
           await write(errorLogDir + Date.now() + '.txt', JSON.stringify(object))
         }
         if (debugSettingDataPreferences.getSync('globalErrorShowType', 0) === 0) {
-          context.eventHub.emit('toast', 'js 运行异常，错误名称：' + err.name + '，错误信息：' + err.message)
+          await promptAction.openToast({
+            message: 'js 运行异常，错误名称：' + err.name + '，错误信息：' + err.message
+          })
         }
         if (debugSettingDataPreferences.getSync('globalErrorShowType', 0) === 1) {
           context.eventHub.emit('dialog', 'js 运行异常', '名称：' + err.name + '\n信息：' + err.message)
@@ -115,7 +117,7 @@ export default class EntryAbility extends UIAbility {
             'RESOURCE_OVERLIMIT',
             'ADDRESS_SANITIZER'
           ]) as string[]).includes('JS_ERROR')) {
-            const res = await developerRequest(context, UIContext, '/debug/newErrorLog', {
+            const res = await developerRequest(context, '/debug/newErrorLog', {
               product: 'synologydsmhelper',
               object: object
             })
@@ -141,7 +143,9 @@ export default class EntryAbility extends UIAbility {
           await write(errorLogDir + Date.now() + '.txt', JSON.stringify(object))
         }
         if (debugSettingDataPreferences.getSync('globalErrorShowType', 0) === 0) {
-          this.context.eventHub.emit('toast', 'js 运行异常，错误名称：' + err.name + '，错误信息：' + err.message)
+          await promptAction.openToast({
+            message: 'js 运行异常，错误名称：' + err.name + '，错误信息：' + err.message
+          })
         }
         if (debugSettingDataPreferences.getSync('globalErrorShowType', 0) === 1) {
           this.context.eventHub.emit('dialog', 'js 运行异常', '名称：' + err.name + '\n信息：' + err.message)
@@ -156,7 +160,7 @@ export default class EntryAbility extends UIAbility {
             'RESOURCE_OVERLIMIT',
             'ADDRESS_SANITIZER'
           ]) as string[]).includes('JS_ERROR')) {
-            const res = await developerRequest(context, UIContext, '/debug/newErrorLog', {
+            const res = await developerRequest(context, '/debug/newErrorLog', {
               product: 'synologydsmhelper',
               object: object
             })
@@ -193,7 +197,7 @@ export default class EntryAbility extends UIAbility {
               'RESOURCE_OVERLIMIT',
               'ADDRESS_SANITIZER'
             ]) as string[]).includes(item.name)) {
-              const res = await developerRequest(context, UIContext, '/debug/newErrorLog', {
+              const res = await developerRequest(context, '/debug/newErrorLog', {
                 product: 'synologydsmhelper',
                 object: item
               })
@@ -210,14 +214,18 @@ export default class EntryAbility extends UIAbility {
     const netConnection = connection.createNetConnection()
     netConnection.register(() => {
     })
-    netConnection.on('netAvailable', (data) => {
+    netConnection.on('netAvailable', async (data) => {
       if (debugSettingDataPreferences.getSync('showNetAvailableStatusChange', false)) {
-        this.context.eventHub.emit('toast', '网络可用，数据网络句柄：' + data.netId)
+        await promptAction.openToast({
+          message: '网络可用，数据网络句柄：' + data.netId
+        })
       }
     })
-    netConnection.on('netUnavailable', () => {
+    netConnection.on('netUnavailable', async () => {
       if (debugSettingDataPreferences.getSync('showNetAvailableStatusChange', false)) {
-        this.context.eventHub.emit('toast', '网络不可用')
+        await promptAction.openToast({
+          message: '网络不可用'
+        })
       }
     })
     netConnection.on('netBlockStatusChange', (data) => {
@@ -226,9 +234,11 @@ export default class EntryAbility extends UIAbility {
           '数据网络句柄：' + data.netHandle.netId + '\n是否堵塞：' + data.blocked ? '是' : '否')
       }
     })
-    netConnection.on('netLost', (data) => {
+    netConnection.on('netLost', async (data) => {
       if (debugSettingDataPreferences.getSync('showNetLost', false)) {
-        this.context.eventHub.emit('toast', '网络丢失，数据网络句柄：' + data.netId)
+        await promptAction.openToast({
+          message: '网络丢失，数据网络句柄：' + data.netId
+        })
       }
     })
     netConnection.on('netCapabilitiesChange', (data) => {
@@ -244,7 +254,7 @@ export default class EntryAbility extends UIAbility {
             ' KB/s\n下行带宽：' + data.netCap.linkDownBandwidthKbps + ' KB/s\n网络类型：' + netBearType)
       }
     })
-    netQuality.on('netQosChange', (list) => {
+    netQuality.on('netQosChange', async (list) => {
       if (list.length > 0) {
         const data = list[0]
         if (debugSettingDataPreferences.getSync('showNetQosChange', false)) {
@@ -265,7 +275,9 @@ export default class EntryAbility extends UIAbility {
             serviceType: 'default',
             qoeType: 'highLatency'
           })
-          this.context.eventHub.emit('toast', '自动反馈网络高时延传输体验成功')
+          await promptAction.openToast({
+            message: '自动反馈网络高时延传输体验成功'
+          })
         }
       }
     })
@@ -315,7 +327,7 @@ export default class EntryAbility extends UIAbility {
     }
     const showAccountlistSheetAfterAppLaunch =
       commonSettingDataPreferences.getSync('showAccountlistSheetAfterAppLaunch', false)
-    const accounts = await getList()
+    const accounts = await getAccountList()
     const isLogin = await getLoginStatus()
     if (showAccountlistSheetAfterAppLaunch) {
       if (!isLogin && accounts.length !== 0) {
@@ -395,9 +407,11 @@ export default class EntryAbility extends UIAbility {
     }
   }
 
-  onContinue(wantParam: Record<string, Object>) {
+  async onContinue(wantParam: Record<string, Object>) {
     if (wantParam.version !== 29) {
-      this.context.eventHub.emit('toast', '接续失败，原因：目标端应用版本号与发起端不匹配')
+      await promptAction.openToast({
+        message: '接续失败，原因：目标端应用版本号与发起端不匹配'
+      })
       return AbilityConstant.OnContinueResult.MISMATCH
     }
     const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
@@ -420,7 +434,7 @@ export default class EntryAbility extends UIAbility {
     }
   }
 
-  onMemoryLevel(level: AbilityConstant.MemoryLevel) {
+  async onMemoryLevel(level: AbilityConstant.MemoryLevel) {
     const debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
       name: 'debugSetting'
     })
@@ -436,7 +450,9 @@ export default class EntryAbility extends UIAbility {
       if (level === 2) {
         memoryLevel = '高'
       }
-      this.context.eventHub.emit('toast', '当前内存占用' + memoryLevel)
+      await promptAction.openToast({
+        message: '当前内存占用' + memoryLevel
+      })
     }
   }
 }

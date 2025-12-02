@@ -13,8 +13,7 @@ struct Feedback {
   @Local contactType: string = '邮箱'
   @Local contactTypeIndex: number = 0
   @Local contactValue: string = ''
-  UIContext = this.getUIContext()
-  context = this.UIContext.getHostContext() as common.UIAbilityContext
+  context = this.getUIContext().getHostContext() as common.UIAbilityContext
   pageInfos = new NavPathStack()
 
   build() {
@@ -108,7 +107,7 @@ struct Feedback {
                 })
               })
               dialogControllerProgress.open()
-              const res = await developerRequest(this.context, this.UIContext, '/debug/sendFeedbackEmail', {
+              const res = await developerRequest(this.context, '/debug/sendFeedbackEmail', {
                 product: 'synologydsmhelper',
                 content: this.content,
                 contactType: this.contactType,

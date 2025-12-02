@@ -11,7 +11,7 @@ import { filePreview } from '@kit.PreviewKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { systemShare } from '@kit.ShareKit'
 import { hdsEffect } from '@kit.UIDesignKit'
-import { get, getLoginStatus } from '../common/Account'
+import { getAccountInfo, getLoginStatus } from '../common/Account'
 import { getDnsServer } from '../common/Dnsserver'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import { getPreferType, getPreferTypeByDisplayId } from '../common/Prefertype'
@@ -78,11 +78,11 @@ export default struct Filelist {
   backDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'back'
   })
-  commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-    name: 'commonSetting'
-  })
   debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'debugSetting'
+  })
+  commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+    name: 'commonSetting'
   })
   searchDialogControllerProgress = new CustomDialogController({
     builder: LoadingDialog({
@@ -365,7 +365,7 @@ export default struct Filelist {
                       scene: 'download',
                       sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
                     })
-                    const accountInfo = await get()
+                    const accountInfo = await getAccountInfo()
                     const session = rcp.createSession({
                       requestConfiguration: {
                         transfer: {
@@ -1338,7 +1338,7 @@ export default struct Filelist {
                           dialogControllerProgress.close()
                           if (res !== 'fail') {
                             const tid = res['tid'] as string
-                            const accountInfo = await get()
+                            const accountInfo = await getAccountInfo()
                             const textEncoder = new util.TextEncoder()
                             const bytes = textEncoder.encodeInto(item.path)
                             const dlink = Array.from(bytes).map(byte => byte.toString(16).padStart(2, '0')).join('')
@@ -1413,7 +1413,7 @@ export default struct Filelist {
                               scene: 'download',
                               sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
                             })
-                            const accountInfo = await get()
+                            const accountInfo = await getAccountInfo()
                             const session = rcp.createSession({
                               requestConfiguration: {
                                 transfer: {
