@@ -30,8 +30,8 @@ struct License {
             Span('ICP备案：')
             Span('黑ICP备2024023054号-10A')
               .fontColor($r('sys.color.font_emphasize'))
-              .onClick(() => {
-                openLink(this.context, 'https://beian.miit.gov.cn/#/Integrated/recordQuery')
+              .onClick(async () => {
+                await openLink(this.context, 'https://beian.miit.gov.cn/#/Integrated/recordQuery')
               })
           }
           .enableAutoSpacing(true)
@@ -45,8 +45,8 @@ struct License {
             Text('公安备案')
               .fontColor($r('sys.color.font_emphasize'))
               .fontWeight(FontWeight.Bold)
-              .onClick(() => {
-                openLink(this.context, 'https://beian.mps.gov.cn/#/query/appSearch')
+              .onClick(async () => {
+                await openLink(this.context, 'https://beian.mps.gov.cn/#/query/appSearch')
               })
             Flex({
               alignItems: ItemAlign.Stretch,

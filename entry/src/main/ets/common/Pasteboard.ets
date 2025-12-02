@@ -6,7 +6,7 @@ async function writePasteBoard(text: string) {
   const pasteData = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, text)
   const systemPasteboard = pasteboard.getSystemPasteboard()
   await systemPasteboard.setData(pasteData)
-  promptAction.openToast({
+  await promptAction.openToast({
     message: '内容已复制到剪贴板'
   })
 }
@@ -17,7 +17,7 @@ export default async function copy(context: Context, UIContext: UIContext, text:
   })
   const canWritePasteBoard = permissionSettingDataPreferences.getSync('writePasteBoard', false)
   if (canWritePasteBoard) {
-    writePasteBoard(text)
+    await writePasteBoard(text)
   }
   if (!canWritePasteBoard) {
     const promptAction = UIContext.getPromptAction()
@@ -38,7 +38,7 @@ export default async function copy(context: Context, UIContext: UIContext, text:
     if (data.index === 1) {
       permissionSettingDataPreferences.putSync('writePasteBoard', true)
       permissionSettingDataPreferences.flushSync()
-      writePasteBoard(text)
+      await writePasteBoard(text)
     }
   }
 }

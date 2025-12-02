@@ -1,6 +1,6 @@
 import { promptAction } from '@kit.ArkUI'
 import { appAccount } from '@kit.BasicServicesKit'
-import { read } from './File'
+import { readUri } from './File'
 import { dsmRequest } from './Request'
 
 export interface AccountInfo {
@@ -21,9 +21,9 @@ interface InAccountInfo {
   did: string
 }
 
-export async function set(context: Context, UIContext: UIContext, accountInfo: InAccountInfo) {
-  await exit(context, UIContext, false)
-  const accounts = await getList()
+export async function setAccount(context: Context, UIContext: UIContext, accountInfo: InAccountInfo) {
+  await exitAccount(context, UIContext, false)
+  const accounts = await getAccountList()
   let accountIndex = -1
   accounts.forEach((item, index) => {
     if (accountInfo.path === item.path && accountInfo.name === item.name && accountInfo.password === item.password) {
@@ -56,10 +56,10 @@ export async function set(context: Context, UIContext: UIContext, accountInfo: I
       })
       await appAccountManager.setCredential(id, 'password', accountInfo.password)
       if (oldAccountIndex !== -1) {
-        await remove(accounts[oldAccountIndex].id)
+        await removeAccount(accounts[oldAccountIndex].id)
       }
     } catch (err) {
-      promptAction.openToast({
+      await promptAction.openToast({
         message: '发生错误，错误码：' + err.code
       })
     }
@@ -67,15 +67,15 @@ export async function set(context: Context, UIContext: UIContext, accountInfo: I
 }
 
 export async function getLoginStatus() {
-  const res = await get()
+  const res = await getAccountInfo()
   if (res.id !== -1) {
     return true
   }
   return false
 }
 
-export async function get(): Promise<AccountInfo> {
-  const accounts = await getList()
+export async function getAccountInfo(): Promise<AccountInfo> {
+  const accounts = await getAccountList()
   const index = accounts.findIndex(item => item.isLogin === 'true')
   if (index !== -1) {
     return accounts[index]
@@ -91,7 +91,7 @@ export async function get(): Promise<AccountInfo> {
   }
 }
 
-export async function getList(): Promise<AccountInfo[]> {
+export async function getAccountList(): Promise<AccountInfo[]> {
   const appAccountManager = appAccount.createAppAccountManager()
   const appAccountIds = await appAccountManager.getAccountsByOwner('com.songjy.synologydsmhelper')
   const appAccounts: AccountInfo[] = []
@@ -110,8 +110,8 @@ export async function getList(): Promise<AccountInfo[]> {
   return appAccounts
 }
 
-export async function exit(context: Context, UIContext: UIContext, logout: boolean) {
-  const accounts = await getList()
+export async function exitAccount(context: Context, UIContext: UIContext, logout: boolean) {
+  const accounts = await getAccountList()
   const index = accounts.findIndex(item => item.isLogin === 'true')
   if (index !== -1) {
     if (logout) {
@@ -122,12 +122,12 @@ export async function exit(context: Context, UIContext: UIContext, logout: boole
   }
 }
 
-export async function remove(id: number) {
-  const accounts = await getList()
+export async function removeAccount(id: number) {
+  const accounts = await getAccountList()
   if (accounts.findIndex(item => item.id === id) !== -1) {
     const appAccountManager = appAccount.createAppAccountManager()
     await appAccountManager.removeAccount(String(id))
-    promptAction.openToast({
+    await promptAction.openToast({
       message: '删除成功'
     })
   }
@@ -135,17 +135,17 @@ export async function remove(id: number) {
 
 export async function importAccounts(context: Context, UIContext: UIContext, uri: string) {
   try {
-    const array = await getList()
+    const array = await getAccountList()
     if (array.length > 0) {
-      promptAction.openToast({
+      await promptAction.openToast({
         message: '导入失败，原因：本地存在账号'
       })
       return
     }
-    const filestring = read(uri)
+    const filestring = await readUri(uri)
     const accounts = JSON.parse(filestring) as AccountInfo[]
     const promises = accounts.map(async (item) => {
-      await set(context, UIContext, {
+      await setAccount(context, UIContext, {
         path: item.path,
         name: item.name,
         password: item.password,
@@ -154,11 +154,11 @@ export async function importAccounts(context: Context, UIContext: UIContext, uri
       })
     })
     await Promise.all(promises)
-    promptAction.openToast({
+    await promptAction.openToast({
       message: '导入成功'
     })
   } catch {
-    promptAction.openToast({
+    await promptAction.openToast({
       message: '导入失败'
     })
   }

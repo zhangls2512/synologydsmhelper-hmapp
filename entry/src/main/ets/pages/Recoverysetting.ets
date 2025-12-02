@@ -127,9 +127,9 @@ struct Recoverysetting {
                 top: $r('sys.float.ohos_id_elements_margin_vertical_l')
               })
               .width('100%')
-              .onClick(() => {
+              .onClick(async () => {
                 appRecovery.enableAppRecovery(this.restart, this.saveOccasion, this.saveMode)
-                promptAction.openToast({
+                await promptAction.openToast({
                   message: '保存成功'
                 })
                 this.pageInfos.pop()

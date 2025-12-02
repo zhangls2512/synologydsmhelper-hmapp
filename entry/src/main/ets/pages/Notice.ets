@@ -21,8 +21,7 @@ struct Notice {
   @Local noticeArray: NoticeItem[] = []
   @Local pushToken: string = ''
   @Local loading: boolean = false
-  UIContext = this.getUIContext()
-  context = this.UIContext.getHostContext() as common.UIAbilityContext
+  context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
   build() {
     NavDestination() {
@@ -57,8 +56,8 @@ struct Notice {
               Span('系统设置')
                 .fontColor($r('sys.color.font_emphasize'))
                 .fontWeight(FontWeight.Medium)
-                .onClick(() => {
-                  notificationManager.openNotificationSettings(this.context)
+                .onClick(async () => {
+                  await notificationManager.openNotificationSettings(this.context)
                 })
               Span('管理此开关。')
                 .fontColor($r('sys.color.font_secondary'))
@@ -135,13 +134,13 @@ struct Notice {
                           })
                         })
                         dialogControllerProgress.open()
-                        const res = await developerRequest(this.context, this.UIContext, '/product/updatePushStatus', {
+                        const res = await developerRequest(this.context, '/product/updatePushStatus', {
                           id: item._id,
                           pushToken: this.pushToken
                         })
                         dialogControllerProgress.close()
                         if (res !== 'fail') {
-                          promptAction.openToast({
+                          await promptAction.openToast({
                             message: '设置成功'
                           })
                         }
@@ -175,12 +174,12 @@ struct Notice {
       try {
         this.pushToken = await pushService.getToken()
       } catch (err) {
-        promptAction.openToast({
+        await promptAction.openToast({
           message: '发生错误，错误码：' + err.code
         })
       }
       this.loading = true
-      const res = await developerRequest(this.context, this.UIContext, '/product/getPushList', {
+      const res = await developerRequest(this.context, '/product/getPushList', {
         product: 'synologydsmhelper',
         pushToken: this.pushToken
       })

@@ -29,8 +29,8 @@ export default struct Player {
           .loop(this.loop)
           .muted(this.muted)
           .objectFit(ImageFit.Auto)
-          .onError((err) => {
-            promptAction.openToast({
+          .onError(async (err) => {
+            await promptAction.openToast({
               message: '发生错误，错误码：' + err.code
             })
           })

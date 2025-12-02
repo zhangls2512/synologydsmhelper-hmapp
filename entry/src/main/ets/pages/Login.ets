@@ -3,7 +3,7 @@ import { privacyManager } from '@kit.AppGalleryKit'
 import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { netBoost } from '@kit.NetworkBoostKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
-import { set } from '../common/Account'
+import { setAccount } from '../common/Account'
 import { getDnsServer } from '../common/Dnsserver'
 import openLink from '../common/Openlink'
 import { dsmRequest } from '../common/Request'
@@ -185,39 +185,39 @@ export default struct Login {
             .onClick(async () => {
               if (!this.quickConnectId) {
                 if (!this.host) {
-                  promptAction.openToast({
+                  await promptAction.openToast({
                     message: '请输入主机'
                   })
                   return
                 }
               }
               if (!this.port) {
-                promptAction.openToast({
+                await promptAction.openToast({
                   message: '请输入端口'
                 })
                 return
               }
               const port = Number(this.port)
               if (!Number.isInteger(port) || port <= 0 || port > 65535) {
-                promptAction.openToast({
+                await promptAction.openToast({
                   message: '请输入有效的端口'
                 })
                 return
               }
               if (!this.name) {
-                promptAction.openToast({
+                await promptAction.openToast({
                   message: '请输入账号'
                 })
                 return
               }
               if (!this.password) {
-                promptAction.openToast({
+                await promptAction.openToast({
                   message: '请输入密码'
                 })
                 return
               }
               if (this.mfa && this.mfa.length !== 6) {
-                promptAction.openToast({
+                await promptAction.openToast({
                   message: '请输入正确的 MFA'
                 })
                 return
@@ -284,14 +284,14 @@ export default struct Login {
                       })
                     } else {
                       dialogControllerProgress.close()
-                      promptAction.openToast({
+                      await promptAction.openToast({
                         message: 'QuickConnect 连接失败，错误码：' + bodyObject[0]['errno']
                       })
                       return
                     }
                   } else {
                     dialogControllerProgress.close()
-                    promptAction.openToast({
+                    await promptAction.openToast({
                       message: 'HTTP 请求失败，状态码：' + response.statusCode
                     })
                     return
@@ -299,7 +299,7 @@ export default struct Login {
                 } catch (err) {
                   session.close()
                   dialogControllerProgress.close()
-                  promptAction.openToast({
+                  await promptAction.openToast({
                     message: 'QuickConnect 请求失败，错误码：' + err.code
                   })
                   return
@@ -308,14 +308,14 @@ export default struct Login {
               dialogControllerProgress.close()
               if (res !== 'fail') {
                 const data = res as ResponseData
-                await set(this.context, this.UIContext, {
+                await setAccount(this.context, this.UIContext, {
                   path: path,
                   name: data.account,
                   password: this.password,
                   sid: data.sid,
                   did: data.device_id
                 })
-                promptAction.openToast({
+                await promptAction.openToast({
                   message: '登录成功'
                 })
                 this.isShowLoginSheet = false
@@ -333,26 +333,26 @@ export default struct Login {
               Span('已阅读并同意')
               Span('《群晖DSM助手用户服务条款与条件》')
                 .fontColor($r('sys.color.font_emphasize'))
-                .onClick(() => {
+                .onClick(async () => {
                   try {
                     const appPrivacyLink =
                       privacyManager.getAppPrivacyMgmtInfo().privacyInfo.find(item => item.type === 2)
-                    openLink(this.context, appPrivacyLink?.url as string)
+                    await openLink(this.context, appPrivacyLink?.url as string)
                   } catch (err) {
-                    promptAction.openToast({
+                    await promptAction.openToast({
                       message: '发生错误，错误码：' + err.code + '，错误信息：' + err.message
                     })
                   }
                 })
               Span('《关于群晖DSM助手与隐私的声明》')
                 .fontColor($r('sys.color.font_emphasize'))
-                .onClick(() => {
+                .onClick(async () => {
                   try {
                     const appPrivacyLink =
                       privacyManager.getAppPrivacyMgmtInfo().privacyInfo.find(item => item.type === 1)
-                    openLink(this.context, appPrivacyLink?.url as string)
+                    await openLink(this.context, appPrivacyLink?.url as string)
                   } catch (err) {
-                    promptAction.openToast({
+                    await promptAction.openToast({
                       message: '发生错误，错误码：' + err.code + '，错误信息：' + err.message
                     })
                   }

@@ -30,7 +30,7 @@ export async function checkPermission(context: Context, UIContext: UIContext, pe
     }
   }
   const promptAction = UIContext.getPromptAction()
-  promptAction.showDialog({
+  await promptAction.showDialog({
     title: '提示',
     message: '请允许授权以使用此功能',
     buttons: [

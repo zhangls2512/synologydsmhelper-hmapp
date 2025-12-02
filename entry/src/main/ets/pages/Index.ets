@@ -24,11 +24,11 @@ struct Index {
   @Local isShowCleardataSheet: boolean = false
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
-  commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-    name: 'commonSetting'
-  })
   backDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'back'
+  })
+  commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+    name: 'commonSetting'
   })
 
   onBackPress() {
@@ -57,7 +57,7 @@ struct Index {
   get() {
     this.backgroundImagePixelMap = this.getBackgroundImage()
     const oldShowAlbum = this.showAlbum
-    this.showAlbum = this.commonSettingDataPreferences.getSync('showAlbum', false) as boolean
+    this.showAlbum = this.commonSettingDataPreferences.getSync('showAlbum', true) as boolean
     if (oldShowAlbum !== this.showAlbum) {
       if (!oldShowAlbum) {
         if (this.index === 2) {
@@ -215,12 +215,25 @@ struct Index {
           this.isShowAccountlistSheet = true
         }
       })
-      this.context.eventHub.on('wantUri', (wantUri: string) => {
-        importAccounts(this.context, this.UIContext, wantUri)
+      this.context.eventHub.on('wantUri', async (wantUri: string) => {
+        await importAccounts(this.context, this.UIContext, wantUri)
       })
-      this.preferType = getPreferType()
+      const promptAction = this.UIContext.getPromptAction()
+      this.context.eventHub.on('dialog', async (title: string, message: string) => {
+        await promptAction.showDialog({
+          title: title,
+          message: message,
+          buttons: [
+            {
+              text: '确定',
+              color: $r('sys.color.font_emphasize')
+            }
+          ]
+        })
+      })
+      this.preferType = getPreferType(this.UIContext)
       display.on('change', (displayId) => {
-        this.preferType = getPreferTypeByDisplayId(displayId)
+        this.preferType = getPreferTypeByDisplayId(displayId, this.UIContext)
       })
       const currentIndex = this.index
       this.index = -1
@@ -232,6 +245,7 @@ struct Index {
     })
     .onDisAppear(() => {
       this.context.eventHub.off('refreshIndex')
+      this.context.eventHub.off('dialog')
       this.context.eventHub.off('wantUri')
       this.context.eventHub.off('accountList')
       this.context.eventHub.off('clearData')

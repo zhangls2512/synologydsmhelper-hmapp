@@ -2,7 +2,6 @@ import {
   AbilityConstant,
   appRecovery,
   bundleManager,
-  common,
   ConfigurationConstant,
   errorManager,
   UIAbility,
@@ -18,7 +17,8 @@ import { netQuality } from '@kit.NetworkBoostKit'
 import { connection } from '@kit.NetworkKit'
 import { notificationManager } from '@kit.NotificationKit'
 import { hiAppEvent } from '@kit.PerformanceAnalysisKit'
-import { getList, getLoginStatus } from '../common/Account'
+import { systemShare } from '@kit.ShareKit'
+import { getAccountList, getLoginStatus } from '../common/Account'
 import { write } from '../common/File'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import openLink from '../common/Openlink'
@@ -33,7 +33,7 @@ export default class EntryAbility extends UIAbility {
   async appInit(want: Want) {
     await notificationManager.setBadgeNumber(0)
     if (want.parameters?.noticeUrl) {
-      openLink(this.context, want.parameters.noticeUrl as string)
+      await openLink(this.context, want.parameters.noticeUrl as string)
     }
     if (want.parameters?.menuHandler === 'clickMenu') {
       const uriList = want.parameters.uriList as string[]
@@ -47,71 +47,148 @@ export default class EntryAbility extends UIAbility {
         this.context.eventHub.emit('wantUri', want.uri)
       }
     }
+    try {
+      const sharedData = await systemShare.getSharedData(want)
+      const sharedRecords = sharedData.getRecords()
+      if (sharedRecords.length !== 0) {
+        this.context.eventHub.emit('wantUri', sharedRecords[0].uri)
+      }
+    } catch {
+    }
   }
 
   async windowInit(windowStage: window.WindowStage) {
-    try {
-      await windowStage.loadContent('pages/Index')
-      const UIContext = windowStage.getMainWindowSync().getUIContext()
-      const context = UIContext.getHostContext() as common.UIAbilityContext
-      const promptAction = UIContext.getPromptAction()
-      const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-        name: 'commonSetting'
-      })
-      if (deviceInfo.deviceType === '2in1') {
-        const windowRectAutoSave = commonSettingDataPreferences.getSync('windowRectAutoSave', false) as boolean
-        await windowStage.setWindowRectAutoSave(windowRectAutoSave)
-      }
-      if (deviceInfo.deviceType === '2in1') {
-        const lastWindow = await window.getLastWindow(this.context)
-        const windowTopmost = commonSettingDataPreferences.getSync('windowTopmost', false) as boolean
-        await lastWindow.setWindowTopmost(windowTopmost)
-      }
-      if (!notificationManager.isNotificationEnabledSync()) {
-        await notificationManager.requestEnableNotification(this.context)
-      }
-      const debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-        name: 'debugSetting'
-      })
-      const filesDir = this.context.filesDir
-      errorManager.on('error', {
-        async onUnhandledException(errMsg) {
-          if (debugSettingDataPreferences.getSync('globalErrorShowType', 0) === 0) {
-            await promptAction.openToast({
-              message: 'js 运行异常：' + errMsg
+    await windowStage.loadContent('pages/Index')
+    const context = this.context
+    const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+      name: 'commonSetting'
+    })
+    if (deviceInfo.deviceType === '2in1') {
+      const windowRectAutoSave = commonSettingDataPreferences.getSync('windowRectAutoSave', false) as boolean
+      await windowStage.setWindowRectAutoSave(windowRectAutoSave)
+    }
+    if (deviceInfo.deviceType === '2in1') {
+      const lastWindow = await window.getLastWindow(this.context)
+      const windowTopmost = commonSettingDataPreferences.getSync('windowTopmost', false) as boolean
+      await lastWindow.setWindowTopmost(windowTopmost)
+    }
+    if (!notificationManager.isNotificationEnabledSync()) {
+      await notificationManager.requestEnableNotification(this.context)
+    }
+    const debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+      name: 'debugSetting'
+    })
+    const errorLogDir = this.context.filesDir + '/log/error/'
+    errorManager.on('error', {
+      async onUnhandledException(errMsg) {
+        if (debugSettingDataPreferences.getSync('globalErrorShowType', 0) === 0) {
+          await promptAction.openToast({
+            message: 'js 运行异常：' + errMsg
+          })
+        }
+      },
+      async onException(err) {
+        const object: JsErrorObject = {
+          name: 'JS_ERROR',
+          info: {
+            name: err.name,
+            message: err.message,
+            stack: err.stack
+          }
+        }
+        if (debugSettingDataPreferences.getSync('saveErrorLog', true)) {
+          await write(errorLogDir + Date.now() + '.txt', JSON.stringify(object))
+        }
+        if (debugSettingDataPreferences.getSync('globalErrorShowType', 0) === 0) {
+          await promptAction.openToast({
+            message: 'js 运行异常，错误名称：' + err.name + '，错误信息：' + err.message
+          })
+        }
+        if (debugSettingDataPreferences.getSync('globalErrorShowType', 0) === 1) {
+          context.eventHub.emit('dialog', 'js 运行异常', '名称：' + err.name + '\n信息：' + err.message)
+        }
+        if (debugSettingDataPreferences.getSync('autoUploadErrorLog', true) &&
+        commonSettingDataPreferences.getSync('allService', true)) {
+          if ((debugSettingDataPreferences.getSync('autoUploadErrorLogType', [
+            'JS_ERROR',
+            'APP_CRASH',
+            'APP_FREEZE',
+            'APP_KILLED',
+            'RESOURCE_OVERLIMIT',
+            'ADDRESS_SANITIZER'
+          ]) as string[]).includes('JS_ERROR')) {
+            const res = await developerRequest(context, '/debug/newErrorLog', {
+              product: 'synologydsmhelper',
+              object: object
             })
-          }
-        },
-        async onException(err) {
-          if (debugSettingDataPreferences.getSync('globalErrorShowType', 0) === 1) {
-            let message = '名称：' + err.name + '\n信息：' + err.message
-            if (typeof (err.stack) === 'string') {
-              message = message + '\n堆栈：' + err.stack
+            if (res !== 'fail') {
+              context.eventHub.emit('dialog', '提示',
+                '故障日志自动上传成功，故障类型：JS_ERROR。建议您依次进入“我的”>“设置”>“关于”，附带联系方式提交意见反馈或联系人工客服，便于开发者排查、处理问题。')
             }
-            await promptAction.showDialog({
-              title: 'js 运行异常',
-              message: message,
-              buttons: [
-                {
-                  text: '确定',
-                  color: $r('sys.color.font_emphasize')
-                }
-              ]
+          }
+        }
+      }
+    })
+    errorManager.on('unhandledRejection', async (err: Error) => {
+      if (err.message !== 'cancel') {
+        const object: JsErrorObject = {
+          name: 'JS_ERROR',
+          info: {
+            name: err.name,
+            message: err.message,
+            stack: err.stack
+          }
+        }
+        if (debugSettingDataPreferences.getSync('saveErrorLog', true)) {
+          await write(errorLogDir + Date.now() + '.txt', JSON.stringify(object))
+        }
+        if (debugSettingDataPreferences.getSync('globalErrorShowType', 0) === 0) {
+          await promptAction.openToast({
+            message: 'js 运行异常，错误名称：' + err.name + '，错误信息：' + err.message
+          })
+        }
+        if (debugSettingDataPreferences.getSync('globalErrorShowType', 0) === 1) {
+          this.context.eventHub.emit('dialog', 'js 运行异常', '名称：' + err.name + '\n信息：' + err.message)
+        }
+        if (debugSettingDataPreferences.getSync('autoUploadErrorLog', true) &&
+        commonSettingDataPreferences.getSync('allService', true)) {
+          if ((debugSettingDataPreferences.getSync('autoUploadErrorLogType', [
+            'JS_ERROR',
+            'APP_CRASH',
+            'APP_FREEZE',
+            'APP_KILLED',
+            'RESOURCE_OVERLIMIT',
+            'ADDRESS_SANITIZER'
+          ]) as string[]).includes('JS_ERROR')) {
+            const res = await developerRequest(context, '/debug/newErrorLog', {
+              product: 'synologydsmhelper',
+              object: object
             })
-          }
-          const object: JsErrorObject = {
-            name: 'JS_ERROR',
-            info: {
-              name: err.name,
-              message: err.message,
-              stack: err.stack
+            if (res !== 'fail') {
+              this.context.eventHub.emit('dialog', '提示',
+                '故障日志自动上传成功，故障类型：JS_ERROR。建议您依次进入“我的”>“设置”>“关于”，附带联系方式提交意见反馈或联系人工客服，便于开发者排查、处理问题。')
             }
           }
-          if (debugSettingDataPreferences.getSync('saveErrorLog', true)) {
-            write(filesDir + '/log/error/' + Date.now() + '.txt', JSON.stringify(object))
-          }
-          if (debugSettingDataPreferences.getSync('autoUploadErrorLog', true) &&
-          commonSettingDataPreferences.getSync('allService', true)) {
+        }
+      }
+    })
+    hiAppEvent.addWatcher({
+      name: 'watcher',
+      appEventFilters: [
+        {
+          domain: hiAppEvent.domain.OS,
+          eventTypes: [hiAppEvent.EventType.FAULT]
+        }
+      ],
+      onReceive: async (domain, appEventGroups) => {
+        if (debugSettingDataPreferences.getSync('saveErrorLog', true)) {
+          appEventGroups.forEach(async (item) => {
+            await write(errorLogDir + Date.now() + '.txt', JSON.stringify(item))
+          })
+        }
+        if (debugSettingDataPreferences.getSync('autoUploadErrorLog', true) &&
+        commonSettingDataPreferences.getSync('allService', true)) {
+          const promises = appEventGroups.map(async (item) => {
             if ((debugSettingDataPreferences.getSync('autoUploadErrorLogType', [
               'JS_ERROR',
               'APP_CRASH',
@@ -119,356 +196,203 @@ export default class EntryAbility extends UIAbility {
               'APP_KILLED',
               'RESOURCE_OVERLIMIT',
               'ADDRESS_SANITIZER'
-            ]) as string[]).includes('JS_ERROR')) {
-              const res = await developerRequest(context, UIContext, '/debug/newErrorLog', {
+            ]) as string[]).includes(item.name)) {
+              const res = await developerRequest(context, '/debug/newErrorLog', {
                 product: 'synologydsmhelper',
-                object: object
+                object: item
               })
               if (res !== 'fail') {
-                await promptAction.showDialog({
-                  title: '提示',
-                  message: '故障日志自动上传成功，故障类型：JS_ERROR。建议您依次进入“我的”>“设置”>“关于”，附带联系方式提交意见反馈或联系人工客服，便于开发者排查、处理问题。',
-                  buttons: [
-                    {
-                      text: '确定',
-                      color: $r('sys.color.font_emphasize')
-                    }
-                  ]
-                })
+                this.context.eventHub.emit('dialog', '提示', '故障日志自动上传成功，故障类型：' + item.name +
+                  '。建议您依次进入“我的”>“设置”>“关于”，附带联系方式提交意见反馈或联系人工客服，便于开发者排查、处理问题。')
               }
             }
-          }
+          })
+          await Promise.all(promises)
         }
-      })
-      errorManager.on('unhandledRejection', async (err: Error) => {
-        if (err.message !== 'cancel') {
-          if (debugSettingDataPreferences.getSync('globalErrorShowType', 0) === 0) {
-            await promptAction.openToast({
-              message: 'js 运行异常，错误名称：' + err.name + '，错误信息：' + err.message + '，错误堆栈：' + err.stack
-            })
-          }
-          if (debugSettingDataPreferences.getSync('globalErrorShowType', 0) === 1) {
-            let message = '名称：' + err.name + '\n信息：' + err.message
-            if (typeof (err.stack) === 'string') {
-              message = message + '\n堆栈：' + err.stack
-            }
-            await promptAction.showDialog({
-              title: 'js 运行异常',
-              message: message,
-              buttons: [
-                {
-                  text: '确定',
-                  color: $r('sys.color.font_emphasize')
-                }
-              ]
-            })
-          }
-          const object: JsErrorObject = {
-            name: 'JS_ERROR',
-            info: {
-              name: err.name,
-              message: err.message,
-              stack: err.stack
-            }
-          }
-          if (debugSettingDataPreferences.getSync('saveErrorLog', true)) {
-            write(filesDir + '/log/error/' + Date.now() + '.txt', JSON.stringify(object))
-          }
-          if (debugSettingDataPreferences.getSync('autoUploadErrorLog', true) &&
-          commonSettingDataPreferences.getSync('allService', true)) {
-            if ((debugSettingDataPreferences.getSync('autoUploadErrorLogType', [
-              'JS_ERROR',
-              'APP_CRASH',
-              'APP_FREEZE',
-              'APP_KILLED',
-              'RESOURCE_OVERLIMIT',
-              'ADDRESS_SANITIZER'
-            ]) as string[]).includes('JS_ERROR')) {
-              const res = await developerRequest(context, UIContext, '/debug/newErrorLog', {
-                product: 'synologydsmhelper',
-                object: object
-              })
-              if (res !== 'fail') {
-                await promptAction.showDialog({
-                  title: '提示',
-                  message: '故障日志自动上传成功，故障类型：JS_ERROR。建议您依次进入“我的”>“设置”>“关于”，附带联系方式提交意见反馈或联系人工客服，便于开发者排查、处理问题。',
-                  buttons: [
-                    {
-                      text: '确定',
-                      color: $r('sys.color.font_emphasize')
-                    }
-                  ]
-                })
-              }
-            }
-          }
+      }
+    })
+    const netConnection = connection.createNetConnection()
+    netConnection.register(() => {
+    })
+    netConnection.on('netAvailable', async (data) => {
+      if (debugSettingDataPreferences.getSync('showNetAvailableStatusChange', false)) {
+        await promptAction.openToast({
+          message: '网络可用，数据网络句柄：' + data.netId
+        })
+      }
+    })
+    netConnection.on('netUnavailable', async () => {
+      if (debugSettingDataPreferences.getSync('showNetAvailableStatusChange', false)) {
+        await promptAction.openToast({
+          message: '网络不可用'
+        })
+      }
+    })
+    netConnection.on('netBlockStatusChange', (data) => {
+      if (debugSettingDataPreferences.getSync('showNetBlockStatusChange', false)) {
+        this.context.eventHub.emit('dialog', '网络阻塞状态变化',
+          '数据网络句柄：' + data.netHandle.netId + '\n是否堵塞：' + data.blocked ? '是' : '否')
+      }
+    })
+    netConnection.on('netLost', async (data) => {
+      if (debugSettingDataPreferences.getSync('showNetLost', false)) {
+        await promptAction.openToast({
+          message: '网络丢失，数据网络句柄：' + data.netId
+        })
+      }
+    })
+    netConnection.on('netCapabilitiesChange', (data) => {
+      if (debugSettingDataPreferences.getSync('showNetCapabilitiesChange', false)) {
+        const netBearType = data.netCap.bearerTypes.includes(0) ? '蜂窝' :
+          data.netCap.bearerTypes.includes(1) ? 'Wi-Fi' :
+            data.netCap.bearerTypes.includes(2) ? '蓝牙' :
+              data.netCap.bearerTypes.includes(3) ? '以太网' :
+                data.netCap.bearerTypes.includes(4) ? 'VPN' :
+                  'undefined'
+        this.context.eventHub.emit('dialog', '网络能力变化',
+          '数据网络句柄：' + data.netHandle.netId + '\n上行带宽：' + data.netCap.linkUpBandwidthKbps +
+            ' KB/s\n下行带宽：' + data.netCap.linkDownBandwidthKbps + ' KB/s\n网络类型：' + netBearType)
+      }
+    })
+    netQuality.on('netQosChange', async (list) => {
+      if (list.length > 0) {
+        const data = list[0]
+        if (debugSettingDataPreferences.getSync('showNetQosChange', false)) {
+          const pathType = data.pathType === 0 ? '蜂窝主卡' :
+            data.pathType === 1 ? '蜂窝副卡' :
+              data.pathType === 2 ? '主 Wi-Fi' :
+                data.pathType === 3 ? '副 Wi-Fi' :
+                  'undefined'
+          this.context.eventHub.emit('dialog', '网络质量变化',
+            '数据路径：' + pathType + '\n上行带宽：' + data.linkUpBandwidth + ' bps\n下行带宽：' + data.linkDownBandwidth +
+              ' bps\n上行速率：' + data.linkUpRate + ' bps\n下行速率：' + data.linkDownRate + '\nRTT 时延：' + data.rttMs +
+              ' ms\n上行发送空口缓冲时延：' + data.linkUpBufferDelayMs + ' ms\n上行发送空口缓冲时延占总缓冲时间的比例：' +
+            data.linkUpBufferCongestionPercent + '%')
         }
-      })
-      hiAppEvent.addWatcher({
-        name: 'watcher',
-        appEventFilters: [
-          {
-            domain: hiAppEvent.domain.OS,
-            eventTypes: [hiAppEvent.EventType.FAULT]
-          }
-        ],
-        onReceive: (domain, appEventGroups) => {
-          if (debugSettingDataPreferences.getSync('saveErrorLog', true)) {
-            appEventGroups.forEach((item) => {
-              write(filesDir + '/log/error/' + Date.now() + '.txt', JSON.stringify(item))
-            })
-          }
-          if (debugSettingDataPreferences.getSync('autoUploadErrorLog', true) &&
-          commonSettingDataPreferences.getSync('allService', true)) {
-            appEventGroups.map(async (item) => {
-              if ((debugSettingDataPreferences.getSync('autoUploadErrorLogType', [
-                'JS_ERROR',
-                'APP_CRASH',
-                'APP_FREEZE',
-                'APP_KILLED',
-                'RESOURCE_OVERLIMIT',
-                'ADDRESS_SANITIZER'
-              ]) as string[]).includes(item.name)) {
-                const res = await developerRequest(context, UIContext, '/debug/newErrorLog', {
-                  product: 'synologydsmhelper',
-                  object: item
-                })
-                if (res !== 'fail') {
-                  await promptAction.showDialog({
-                    title: '提示',
-                    message: '故障日志自动上传成功，故障类型：' + item.name +
-                      '。建议您依次进入“我的”>“设置”>“关于”，附带联系方式提交意见反馈或联系人工客服，便于开发者排查、处理问题。',
-                    buttons: [
-                      {
-                        text: '确定',
-                        color: $r('sys.color.font_emphasize')
-                      }
-                    ]
-                  })
-                }
-              }
-            })
-          }
-        }
-      })
-      const netConnection = connection.createNetConnection()
-      netConnection.register(() => {
-      })
-      netConnection.on('netAvailable', async (data) => {
-        if (debugSettingDataPreferences.getSync('showNetAvailableStatusChange', false)) {
+        if (debugSettingDataPreferences.getSync('autoReportHighLatency', true) &&
+          data.rttMs >= debugSettingDataPreferences.getSync('highLatencyThreshold', 200)) {
+          netQuality.reportQoe({
+            serviceType: 'default',
+            qoeType: 'highLatency'
+          })
           await promptAction.openToast({
-            message: '网络可用，数据网络句柄：' + data.netId
+            message: '自动反馈网络高时延传输体验成功'
           })
         }
-      })
-      netConnection.on('netUnavailable', async () => {
-        if (debugSettingDataPreferences.getSync('showNetAvailableStatusChange', false)) {
-          await promptAction.openToast({
-            message: '网络不可用'
-          })
-        }
-      })
-      netConnection.on('netBlockStatusChange', async (data) => {
-        if (debugSettingDataPreferences.getSync('showNetBlockStatusChange', false)) {
-          await promptAction.showDialog({
-            title: '网络阻塞状态变化',
-            message: '数据网络句柄：' + data.netHandle.netId + '\n是否堵塞：' + data.blocked ? '是' : '否',
-            buttons: [
-              {
-                text: '确定',
-                color: $r('sys.color.font_emphasize')
-              }
-            ]
-          })
-        }
-      })
-      netConnection.on('netLost', async (data) => {
-        if (debugSettingDataPreferences.getSync('showNetLost', false)) {
-          await promptAction.openToast({
-            message: '网络丢失，数据网络句柄：' + data.netId
-          })
-        }
-      })
-      netConnection.on('netCapabilitiesChange', async (data) => {
-        if (debugSettingDataPreferences.getSync('showNetCapabilitiesChange', false)) {
-          const netBearType = data.netCap.bearerTypes.includes(0) ? '蜂窝' :
-            data.netCap.bearerTypes.includes(1) ? 'Wi-Fi' :
-              data.netCap.bearerTypes.includes(2) ? '蓝牙' :
-                data.netCap.bearerTypes.includes(3) ? '以太网' :
-                  data.netCap.bearerTypes.includes(4) ? 'VPN' :
+      }
+    })
+    netQuality.on('netSceneChange', (list) => {
+      if (list.length > 0) {
+        const data = list[0]
+        if (debugSettingDataPreferences.getSync('showNetSceneChange', false)) {
+          const pathType = data.pathType === 0 ? '蜂窝主卡' :
+            data.pathType === 1 ? '蜂窝副卡' :
+              data.pathType === 2 ? '主 Wi-Fi' :
+                data.pathType === 3 ? '副 Wi-Fi' :
+                  'undefined'
+          const scene = data.scene === 'normal' ? '正常' :
+            data.scene === 'congestion' ? '拥塞' :
+              data.scene === 'frequentHandover' ? '小区切换频繁' :
+                data.scene === 'weakSignal' ? '弱信号' :
+                  'undefined'
+          const dataSpeedSimpleAction = data.recommendedAction === 'doCaching' ? '做缓存动作' :
+            data.recommendedAction === 'suspendData' ? '停止发包' :
+              data.recommendedAction === 'decreaseData' ? '降低发包速率' :
+                data.recommendedAction === 'increaseData' ? '增加发包速率' :
+                  data.recommendedAction === 'keepData' ? '保持当前发包速率' :
                     'undefined'
-          await promptAction.showDialog({
-            title: '网络能力变化',
-            message: '数据网络句柄：' + data.netHandle.netId + '\n上行带宽：' + data.netCap.linkUpBandwidthKbps +
-              ' KB/s\n下行带宽：' + data.netCap.linkDownBandwidthKbps + ' KB/s\n网络类型：' + netBearType,
-            buttons: [
-              {
-                text: '确定',
-                color: $r('sys.color.font_emphasize')
-              }
-            ]
-          })
+          const isLastPredictionValid = data.weakSignalPrediction?.isLastPredictionValid ? '是' : '否'
+          this.context.eventHub.emit('dialog', '网络场景变化',
+            '数据路径：' + pathType + '\n场景类型：' + scene + '\n建议的数传策略：' + dataSpeedSimpleAction +
+              '\n最近一次的弱信号预测是否有效：' + isLastPredictionValid + '\n预计多长时间进入弱信号：' +
+              data.weakSignalPrediction?.startTime + ' s\n预计在弱信号区域停留时长：' +
+              data.weakSignalPrediction?.duration + ' s')
         }
-      })
-      netQuality.on('netQosChange', async (list) => {
-        if (list.length > 0) {
-          const data = list[0]
-          if (debugSettingDataPreferences.getSync('showNetQosChange', false)) {
-            const pathType = data.pathType === 0 ? '蜂窝主卡' :
-              data.pathType === 1 ? '蜂窝副卡' :
-                data.pathType === 2 ? '主 Wi-Fi' :
-                  data.pathType === 3 ? '副 Wi-Fi' :
-                    'undefined'
-            await promptAction.showDialog({
-              title: '网络质量变化',
-              message: '数据路径：' + pathType + '\n上行带宽：' + data.linkUpBandwidth +
-                ' bps\n下行带宽：' + data.linkDownBandwidth + ' bps\n上行速率：' + data.linkUpRate +
-                ' bps\n下行速率：' + data.linkDownRate + '\nRTT 时延：' + data.rttMs + ' ms\n上行发送空口缓冲时延：' +
-              data.linkUpBufferDelayMs + ' ms\n上行发送空口缓冲时延占总缓冲时间的比例：' +
-              data.linkUpBufferCongestionPercent + '%',
-              buttons: [
-                {
-                  text: '确定',
-                  color: $r('sys.color.font_emphasize')
-                }
-              ]
-            })
-          }
-          if (debugSettingDataPreferences.getSync('autoReportHighLatency', true) &&
-            data.rttMs >= debugSettingDataPreferences.getSync('highLatencyThreshold', 200)) {
-            netQuality.reportQoe({
-              serviceType: 'default',
-              qoeType: 'highLatency'
-            })
-            await promptAction.openToast({
-              message: '自动反馈网络高时延传输体验成功'
-            })
+      }
+    })
+    if (debugSettingDataPreferences.getSync('deleteErrorLogBeforeUpdateTimeWhenAppLaunch', true)) {
+      const bundleInfo = bundleManager.getBundleInfoForSelfSync(bundleManager.BundleFlag.GET_BUNDLE_INFO_DEFAULT)
+      const updateTime = bundleInfo.updateTime
+      if (fileIo.accessSync(errorLogDir)) {
+        const errorLogFileName = await fileIo.listFile(errorLogDir)
+        const errorLogFilePath = errorLogFileName.map(item => errorLogDir + item)
+        for (let i = 0; i < errorLogFilePath.length; i++) {
+          const item = errorLogFilePath[i]
+          const time = Number(item.replace(errorLogDir, '').replace('.txt', ''))
+          if (time < updateTime) {
+            await fileIo.unlink(item)
           }
         }
-      })
-      netQuality.on('netSceneChange', async (list) => {
-        if (list.length > 0) {
-          const data = list[0]
-          if (debugSettingDataPreferences.getSync('showNetSceneChange', false)) {
-            const pathType = data.pathType === 0 ? '蜂窝主卡' :
-              data.pathType === 1 ? '蜂窝副卡' :
-                data.pathType === 2 ? '主 Wi-Fi' :
-                  data.pathType === 3 ? '副 Wi-Fi' :
-                    'undefined'
-            const scene = data.scene === 'normal' ? '正常' :
-              data.scene === 'congestion' ? '拥塞' :
-                data.scene === 'frequentHandover' ? '小区切换频繁' :
-                  data.scene === 'weakSignal' ? '弱信号' :
-                    'undefined'
-            const dataSpeedSimpleAction = data.recommendedAction === 'doCaching' ? '做缓存动作' :
-              data.recommendedAction === 'suspendData' ? '停止发包' :
-                data.recommendedAction === 'decreaseData' ? '降低发包速率' :
-                  data.recommendedAction === 'increaseData' ? '增加发包速率' :
-                    data.recommendedAction === 'keepData' ? '保持当前发包速率' :
-                      'undefined'
-            const isLastPredictionValid = data.weakSignalPrediction?.isLastPredictionValid ? '是' : '否'
-            await promptAction.showDialog({
-              title: '网络场景变化',
-              message: '数据路径：' + pathType + '\n场景类型：' + scene +
-                '\n建议的数传策略：' + dataSpeedSimpleAction + '\n最近一次的弱信号预测是否有效：' +
-                isLastPredictionValid +
-                '\n预计多长时间进入弱信号：' + data.weakSignalPrediction?.startTime + ' s\n预计在弱信号区域停留时长：' +
-                data.weakSignalPrediction?.duration + ' s',
-              buttons: [
-                {
-                  text: '确定',
-                  color: $r('sys.color.font_emphasize')
-                }
-              ]
-            })
-          }
+      }
+    }
+    const showAccountlistSheetAfterAppLaunch =
+      commonSettingDataPreferences.getSync('showAccountlistSheetAfterAppLaunch', false)
+    const accounts = await getAccountList()
+    const isLogin = await getLoginStatus()
+    if (showAccountlistSheetAfterAppLaunch) {
+      if (!isLogin && accounts.length !== 0) {
+        this.context.eventHub.emit('accountList')
+      }
+      if (isLogin && accounts.length > 1) {
+        this.context.eventHub.emit('accountList')
+      }
+    }
+    if (getCurrentNetworkBearerType() !== -1) {
+      const checkVersionUpdate = commonSettingDataPreferences.getSync('checkVersionUpdate', 1)
+      if (checkVersionUpdate === 2 || (checkVersionUpdate === 1 && getCurrentNetworkBearerType() !== 0)) {
+        const res = await updateManager.checkAppUpdate(this.context)
+        if (res.updateAvailable === 1) {
+          await updateManager.showUpdateDialog(this.context)
         }
-      })
-    } catch {
+      }
     }
   }
 
   async onCreate(want: Want) {
-    try {
-      appRecovery.enableAppRecovery(appRecovery.RestartFlag.RESTART_WHEN_APP_FREEZE)
-      const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-        name: 'commonSetting'
-      })
-      const allowContinue = commonSettingDataPreferences.getSync('allowContinue', true)
-      if (!allowContinue) {
-        await this.context.setMissionContinueState(AbilityConstant.ContinueState.INACTIVE)
-      }
-      if (allowContinue) {
-        await this.context.setMissionContinueState(AbilityConstant.ContinueState.ACTIVE)
-      }
-      const allowRestore = commonSettingDataPreferences.getSync('allowRestore', true) as boolean
-      this.context.setRestoreEnabled(allowRestore)
-      const applicationContext = this.context.getApplicationContext()
-      const colorMode = commonSettingDataPreferences.getSync('colorMode', 0)
-      if (colorMode === 0) {
-        applicationContext.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET)
-      }
-      if (colorMode === 1) {
-        applicationContext.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT)
-      }
-      if (colorMode === 2) {
-        applicationContext.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_DARK)
-      }
-      const debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-        name: 'debugSetting'
-      })
-      if (deviceInfo.deviceType === 'phone' || deviceInfo.deviceType === '2in1') {
-        const processCache = debugSettingDataPreferences.getSync('processCache', true) as boolean
-        applicationContext.setSupportedProcessCache(processCache)
-      }
-      if (debugSettingDataPreferences.getSync('deleteErrorLogBeforeUpdateTimeWhenAppLaunch', true)) {
-        const bundleInfo = bundleManager.getBundleInfoForSelfSync(bundleManager.BundleFlag.GET_BUNDLE_INFO_DEFAULT)
-        const updateTime = bundleInfo.updateTime
-        const errorLogFileName = fileIo.listFileSync(this.context.filesDir + '/log/error/')
-        const errorLogFilePath = errorLogFileName.map(item => this.context.filesDir + '/log/error/' + item)
-        errorLogFilePath.map((item) => {
-          const time = Number(item.replace(this.context.filesDir + '/log/error/', '').replace('.txt', ''))
-          if (time < updateTime) {
-            fileIo.unlinkSync(item)
-          }
-        })
-      }
-      if (getCurrentNetworkBearerType() !== -1) {
-        const checkVersionUpdate = commonSettingDataPreferences.getSync('checkVersionUpdate', 1)
-        if (checkVersionUpdate === 2 || (checkVersionUpdate === 1 && getCurrentNetworkBearerType() !== 0)) {
-          const res = await updateManager.checkAppUpdate(this.context)
-          if (res.updateAvailable === 1) {
-            await updateManager.showUpdateDialog(this.context)
-          }
-        }
-      }
-      const showAccountlistSheetAfterAppLaunch =
-        commonSettingDataPreferences.getSync('showAccountlistSheetAfterAppLaunch', false)
-      const accounts = await getList()
-      const isLogin = await getLoginStatus()
-      if (showAccountlistSheetAfterAppLaunch) {
-        if (!isLogin && accounts.length !== 0) {
-          this.context.eventHub.emit('accountList')
-        }
-        if (isLogin && accounts.length > 1) {
-          this.context.eventHub.emit('accountList')
-        }
-      }
-      this.appInit(want)
-    } catch {
+    appRecovery.enableAppRecovery(appRecovery.RestartFlag.RESTART_WHEN_APP_FREEZE)
+    const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+      name: 'commonSetting'
+    })
+    const allowContinue = commonSettingDataPreferences.getSync('allowContinue', true)
+    if (!allowContinue) {
+      await this.context.setMissionContinueState(AbilityConstant.ContinueState.INACTIVE)
     }
+    if (allowContinue) {
+      await this.context.setMissionContinueState(AbilityConstant.ContinueState.ACTIVE)
+    }
+    const allowRestore = commonSettingDataPreferences.getSync('allowRestore', true) as boolean
+    this.context.setRestoreEnabled(allowRestore)
+    const applicationContext = this.context.getApplicationContext()
+    const colorMode = commonSettingDataPreferences.getSync('colorMode', 0)
+    if (colorMode === 0) {
+      applicationContext.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET)
+    }
+    if (colorMode === 1) {
+      applicationContext.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT)
+    }
+    if (colorMode === 2) {
+      applicationContext.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_DARK)
+    }
+    const debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+      name: 'debugSetting'
+    })
+    if (deviceInfo.deviceType === 'phone' || deviceInfo.deviceType === '2in1') {
+      const processCache = debugSettingDataPreferences.getSync('processCache', true) as boolean
+      applicationContext.setSupportedProcessCache(processCache)
+    }
+    await this.appInit(want)
   }
 
-  onNewWant(want: Want) {
-    this.appInit(want)
+  async onNewWant(want: Want) {
+    await this.appInit(want)
   }
 
-  onWindowStageCreate(windowStage: window.WindowStage) {
-    this.windowInit(windowStage)
+  async onWindowStageCreate(windowStage: window.WindowStage) {
+    await this.windowInit(windowStage)
   }
 
-  onWindowStageRestore(windowStage: window.WindowStage) {
-    this.windowInit(windowStage)
+  async onWindowStageRestore(windowStage: window.WindowStage) {
+    await this.windowInit(windowStage)
   }
 
   onBackPressed() {
@@ -484,22 +408,18 @@ export default class EntryAbility extends UIAbility {
   }
 
   async onContinue(wantParam: Record<string, Object>) {
-    try {
-      if (wantParam.version !== 28) {
-        await promptAction.openToast({
-          message: '接续失败，原因：目标端应用版本号与发起端不匹配'
-        })
-        return AbilityConstant.OnContinueResult.MISMATCH
-      }
-      const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-        name: 'commonSetting'
+    if (wantParam.version !== 29) {
+      await promptAction.openToast({
+        message: '接续失败，原因：目标端应用版本号与发起端不匹配'
       })
-      const exitAfterContinue = commonSettingDataPreferences.getSync('exitAfterContinue', true)
-      wantParam[wantConstant.Params.SUPPORT_CONTINUE_SOURCE_EXIT_KEY] = exitAfterContinue
-      return AbilityConstant.OnContinueResult.AGREE
-    } catch {
-      return AbilityConstant.OnContinueResult.REJECT
+      return AbilityConstant.OnContinueResult.MISMATCH
     }
+    const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+      name: 'commonSetting'
+    })
+    const exitAfterContinue = commonSettingDataPreferences.getSync('exitAfterContinue', true)
+    wantParam[wantConstant.Params.SUPPORT_CONTINUE_SOURCE_EXIT_KEY] = exitAfterContinue
+    return AbilityConstant.OnContinueResult.AGREE
   }
 
   onCollaborate() {
@@ -515,27 +435,24 @@ export default class EntryAbility extends UIAbility {
   }
 
   async onMemoryLevel(level: AbilityConstant.MemoryLevel) {
-    try {
-      const debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-        name: 'debugSetting'
-      })
-      const showMemoryLevelChange = debugSettingDataPreferences.getSync('showMemoryLevelChange', false)
-      if (showMemoryLevelChange) {
-        let memoryLevel = ''
-        if (level === 0) {
-          memoryLevel = '适中'
-        }
-        if (level === 1) {
-          memoryLevel = '低'
-        }
-        if (level === 2) {
-          memoryLevel = '高'
-        }
-        await promptAction.openToast({
-          message: '当前内存占用' + memoryLevel
-        })
+    const debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+      name: 'debugSetting'
+    })
+    const showMemoryLevelChange = debugSettingDataPreferences.getSync('showMemoryLevelChange', false)
+    if (showMemoryLevelChange) {
+      let memoryLevel = ''
+      if (level === 0) {
+        memoryLevel = '适中'
       }
-    } catch {
+      if (level === 1) {
+        memoryLevel = '低'
+      }
+      if (level === 2) {
+        memoryLevel = '高'
+      }
+      await promptAction.openToast({
+        message: '当前内存占用' + memoryLevel
+      })
     }
   }
 }

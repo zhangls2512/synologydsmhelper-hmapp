@@ -91,8 +91,8 @@ struct Permissionsetting {
               Span('系统设置')
                 .fontColor($r('sys.color.font_emphasize'))
                 .fontWeight(FontWeight.Medium)
-                .onClick(() => {
-                  this.context.startAbility({
+                .onClick(async () => {
+                  await this.context.startAbility({
                     bundleName: 'com.huawei.hmos.settings',
                     abilityName: 'com.huawei.hmos.settings.MainAbility',
                     uri: 'application_info_entry',

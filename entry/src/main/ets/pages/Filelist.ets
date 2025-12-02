@@ -11,7 +11,7 @@ import { filePreview } from '@kit.PreviewKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { systemShare } from '@kit.ShareKit'
 import { hdsEffect } from '@kit.UIDesignKit'
-import { get, getLoginStatus } from '../common/Account'
+import { getAccountInfo, getLoginStatus } from '../common/Account'
 import { getDnsServer } from '../common/Dnsserver'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import { getPreferType, getPreferTypeByDisplayId } from '../common/Prefertype'
@@ -78,11 +78,11 @@ export default struct Filelist {
   backDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'back'
   })
-  commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-    name: 'commonSetting'
-  })
   debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'debugSetting'
+  })
+  commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+    name: 'commonSetting'
   })
   searchDialogControllerProgress = new CustomDialogController({
     builder: LoadingDialog({
@@ -180,7 +180,7 @@ export default struct Filelist {
       encodeURIComponent(this.searchKeyword))
     if (res !== 'fail') {
       const taskId = res['taskid'] as string
-      this.searchByTaskId(taskId)
+      await this.searchByTaskId(taskId)
     }
     if (res === 'fail') {
       this.searchDialogControllerProgress.close()
@@ -214,7 +214,7 @@ export default struct Filelist {
     if (res !== 'fail') {
       const finished = res['finished'] as boolean
       if (!finished) {
-        this.searchByTaskId(taskId)
+        await this.searchByTaskId(taskId)
       }
       if (finished) {
         this.searchDialogControllerProgress.close()
@@ -365,7 +365,7 @@ export default struct Filelist {
                       scene: 'download',
                       sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
                     })
-                    const accountInfo = await get()
+                    const accountInfo = await getAccountInfo()
                     const session = rcp.createSession({
                       requestConfiguration: {
                         transfer: {
@@ -376,7 +376,7 @@ export default struct Filelist {
                         tracing: {
                           httpEventsHandler: {
                             onDataReceive: async (incomingData) => {
-                              fileStream.writeSync(incomingData)
+                              await fileStream.write(incomingData)
                               this.transferredSize = this.transferredSize + incomingData.byteLength
                               try {
                                 await notificationManager.publish({
@@ -404,7 +404,7 @@ export default struct Filelist {
                                 })
                               } catch (err) {
                                 if (err.code !== 1600009 && err.code !== 202) {
-                                  promptAction.openToast({
+                                  await promptAction.openToast({
                                     message: '发生错误，错误码：' + err.code
                                   })
                                 }
@@ -423,14 +423,14 @@ export default struct Filelist {
                               if (this.transferredSize !== item.additional.size - 1) {
                                 this.transferredSize = -1
                                 this.totalSize = -1
-                                promptAction.openToast({
+                                await promptAction.openToast({
                                   message: '下载失败'
                                 })
                               }
                               if (this.transferredSize === item.additional.size - 1) {
                                 this.transferredSize = -1
                                 this.totalSize = -1
-                                promptAction.openToast({
+                                await promptAction.openToast({
                                   message: '下载成功'
                                 })
                               }
@@ -453,9 +453,9 @@ export default struct Filelist {
                         did: accountInfo.did
                       }
                     })
-                    backgroundTaskManager.on('continuousTaskCancel', () => {
+                    backgroundTaskManager.on('continuousTaskCancel', async () => {
                       session.cancel()
-                      promptAction.openToast({
+                      await promptAction.openToast({
                         message: '下载失败'
                       })
                     })
@@ -465,10 +465,9 @@ export default struct Filelist {
                     this.totalSize = item.additional.size
                     this.isShowProgressSheet = true
                     try {
-                      const response =
-                        await session.get(accountInfo.path +
-                          '/webapi/entry.cgi?api=SYNO.FileStation.Download&version=' +
-                          version + '&method=download&mode=download&path=' + encodeURIComponent(item.path))
+                      const response = await session.get(accountInfo.path +
+                        '/webapi/entry.cgi?api=SYNO.FileStation.Download&version=' +
+                        version + '&method=download&mode=download&path=' + encodeURIComponent(item.path))
                       if (response.statusCode !== 200) {
                         session.close()
                         netBoost.setSceneDesc({
@@ -481,7 +480,7 @@ export default struct Filelist {
                         this.transferredSize = -1
                         this.totalSize = -1
                         this.context.eventHub.off('cancelDownload')
-                        promptAction.openToast({
+                        await promptAction.openToast({
                           message: 'HTTP 请求失败，状态码：' + response.statusCode
                         })
                       }
@@ -496,7 +495,7 @@ export default struct Filelist {
                         await backgroundTaskManager.stopBackgroundRunning(this.context)
                       } catch (err) {
                         if (err.code !== 9800005) {
-                          promptAction.openToast({
+                          await promptAction.openToast({
                             message: '发生错误，错误码：' + err.code
                           })
                         }
@@ -506,7 +505,7 @@ export default struct Filelist {
                       this.totalSize = -1
                       this.context.eventHub.off('cancelDownload')
                       if (err.code !== 1007900992) {
-                        promptAction.openToast({
+                        await promptAction.openToast({
                           message: '下载失败，错误码：' + err.code
                         })
                       }
@@ -514,7 +513,7 @@ export default struct Filelist {
                   }
                 }
               } catch (err) {
-                promptAction.openToast({
+                await promptAction.openToast({
                   message: '发生错误，错误码：' + err.code
                 })
               }
@@ -545,7 +544,7 @@ export default struct Filelist {
                 content: links[0].url
               })
               const shareController = new systemShare.ShareController(shareData)
-              shareController.show(this.context, {})
+              await shareController.show(this.context, {})
             }
           })
         if (this.dirnames.length > 0) {
@@ -610,7 +609,7 @@ export default struct Filelist {
                   if (statusres !== 'fail') {
                     if (statusres['finished']) {
                       finished = true
-                      promptAction.openToast({
+                      await promptAction.openToast({
                         message: '删除成功'
                       })
                       this.loading = true
@@ -716,7 +715,7 @@ export default struct Filelist {
                 this.multipleSelectArray = []
                 if (startres !== 'fail') {
                   const taskId = startres['taskid'] as string
-                  promptAction.openToast({
+                  await promptAction.openToast({
                     message: '正在复制文件，可在系统通知栏查看进度'
                   })
                   let finished = false
@@ -764,7 +763,7 @@ export default struct Filelist {
                         })
                       } catch (err) {
                         if (err.code !== 1600009 && err.code !== 202) {
-                          promptAction.openToast({
+                          await promptAction.openToast({
                             message: '发生错误，错误码：' + err.code
                           })
                         }
@@ -772,7 +771,7 @@ export default struct Filelist {
                       if (statusres['finished']) {
                         finished = true
                         await backgroundTaskManager.stopBackgroundRunning(this.context)
-                        promptAction.openToast({
+                        await promptAction.openToast({
                           message: '复制成功'
                         })
                         this.loading = true
@@ -830,7 +829,7 @@ export default struct Filelist {
                     if (statusres !== 'fail') {
                       if (statusres['finished']) {
                         finished = true
-                        promptAction.openToast({
+                        await promptAction.openToast({
                           message: '移动成功'
                         })
                         this.loading = true
@@ -896,7 +895,7 @@ export default struct Filelist {
                       if (statusres !== 'fail') {
                         if (statusres['finished']) {
                           finished = true
-                          promptAction.openToast({
+                          await promptAction.openToast({
                             message: '删除成功'
                           })
                           this.loading = true
@@ -1022,8 +1021,8 @@ export default struct Filelist {
               value: this.searchKeyword!!
             })
               .searchButton('搜索')
-              .onSubmit(() => {
-                this.search()
+              .onSubmit(async () => {
+                await this.search()
               })
           }
           if (this.dirnames.length > 0) {
@@ -1140,7 +1139,7 @@ export default struct Filelist {
                   this.remove = false
                   if (startres !== 'fail') {
                     const taskId = startres['taskid'] as string
-                    promptAction.openToast({
+                    await promptAction.openToast({
                       message: '正在' + text + '文件，可在系统通知栏查看进度'
                     })
                     let finished = false
@@ -1188,7 +1187,7 @@ export default struct Filelist {
                           })
                         } catch (err) {
                           if (err.code !== 1600009 && err.code !== 202) {
-                            promptAction.openToast({
+                            await promptAction.openToast({
                               message: '发生错误，错误码：' + err.code
                             })
                           }
@@ -1196,7 +1195,7 @@ export default struct Filelist {
                         if (statusres['finished']) {
                           finished = true
                           await backgroundTaskManager.stopBackgroundRunning(this.context)
-                          promptAction.openToast({
+                          await promptAction.openToast({
                             message: text + '成功'
                           })
                           this.loading = true
@@ -1339,7 +1338,7 @@ export default struct Filelist {
                           dialogControllerProgress.close()
                           if (res !== 'fail') {
                             const tid = res['tid'] as string
-                            const accountInfo = await get()
+                            const accountInfo = await getAccountInfo()
                             const textEncoder = new util.TextEncoder()
                             const bytes = textEncoder.encodeInto(item.path)
                             const dlink = Array.from(bytes).map(byte => byte.toString(16).padStart(2, '0')).join('')
@@ -1353,7 +1352,7 @@ export default struct Filelist {
                           return
                         }
                         if (item.additional.size > Math.pow(1024, 3)) {
-                          promptAction.openToast({
+                          await promptAction.openToast({
                             message: '大小大于 1GB，请长按将其下载到本地后预览'
                           })
                           return
@@ -1387,7 +1386,7 @@ export default struct Filelist {
                         try {
                           const previewDir = this.context.tempDir + '/preview'
                           if (!fileIo.accessSync(previewDir)) {
-                            fileIo.mkdirSync(previewDir)
+                            await fileIo.mkdir(previewDir)
                           }
                           const filePath = previewDir + '/' + item.name
                           this.prepareDownloadDialogControllerProgress.open()
@@ -1414,7 +1413,7 @@ export default struct Filelist {
                               scene: 'download',
                               sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
                             })
-                            const accountInfo = await get()
+                            const accountInfo = await getAccountInfo()
                             const session = rcp.createSession({
                               requestConfiguration: {
                                 transfer: {
@@ -1425,7 +1424,7 @@ export default struct Filelist {
                                 tracing: {
                                   httpEventsHandler: {
                                     onDataReceive: async (incomingData) => {
-                                      fileStream.writeSync(incomingData)
+                                      await fileStream.write(incomingData)
                                       this.transferredSize = this.transferredSize + incomingData.byteLength
                                       try {
                                         await notificationManager.publish({
@@ -1456,7 +1455,7 @@ export default struct Filelist {
                                         })
                                       } catch (err) {
                                         if (err.code !== 1600009 && err.code !== 202) {
-                                          promptAction.openToast({
+                                          await promptAction.openToast({
                                             message: '发生错误，错误码：' + err.code
                                           })
                                         }
@@ -1475,7 +1474,7 @@ export default struct Filelist {
                                       if (this.transferredSize !== item.additional.size - 1) {
                                         this.transferredSize = -1
                                         this.totalSize = -1
-                                        promptAction.openToast({
+                                        await promptAction.openToast({
                                           message: '下载失败'
                                         })
                                       }
@@ -1488,12 +1487,12 @@ export default struct Filelist {
                                         if (filePreviewType === 0) {
                                           const canPreview = await filePreview.canPreview(this.context, uri)
                                           if (!canPreview) {
-                                            promptAction.openToast({
+                                            await promptAction.openToast({
                                               message: '此类型不支持预览'
                                             })
                                           }
                                           if (canPreview) {
-                                            filePreview.openPreview(this.context, {
+                                            await filePreview.openPreview(this.context, {
                                               title: item.name,
                                               uri: uri,
                                               mimeType: ''
@@ -1501,7 +1500,7 @@ export default struct Filelist {
                                           }
                                         }
                                         if (filePreviewType === 1) {
-                                          this.context.startAbility({
+                                          await this.context.startAbility({
                                             action: 'ohos.want.action.viewData',
                                             uri: uri,
                                             parameters: {
@@ -1530,9 +1529,9 @@ export default struct Filelist {
                                 did: accountInfo.did
                               }
                             })
-                            backgroundTaskManager.on('continuousTaskCancel', () => {
+                            backgroundTaskManager.on('continuousTaskCancel', async () => {
                               session.cancel()
-                              promptAction.openToast({
+                              await promptAction.openToast({
                                 message: '下载失败'
                               })
                             })
@@ -1542,10 +1541,9 @@ export default struct Filelist {
                             this.totalSize = item.additional.size
                             this.isShowProgressSheet = true
                             try {
-                              const response =
-                                await session.get(accountInfo.path +
-                                  '/webapi/entry.cgi?api=SYNO.FileStation.Download&version=' +
-                                  version + '&method=download&mode=download&path=' + encodeURIComponent(item.path))
+                              const response = await session.get(accountInfo.path +
+                                '/webapi/entry.cgi?api=SYNO.FileStation.Download&version=' +
+                                version + '&method=download&mode=download&path=' + encodeURIComponent(item.path))
                               if (response.statusCode !== 200) {
                                 session.close()
                                 netBoost.setSceneDesc({
@@ -1558,7 +1556,7 @@ export default struct Filelist {
                                 this.transferredSize = -1
                                 this.totalSize = -1
                                 this.context.eventHub.off('cancelDownload')
-                                promptAction.openToast({
+                                await promptAction.openToast({
                                   message: 'HTTP 请求失败，状态码：' + response.statusCode
                                 })
                               }
@@ -1573,7 +1571,7 @@ export default struct Filelist {
                                 await backgroundTaskManager.stopBackgroundRunning(this.context)
                               } catch (err) {
                                 if (err.code !== 9800005) {
-                                  promptAction.openToast({
+                                  await promptAction.openToast({
                                     message: '发生错误，错误码：' + err.code
                                   })
                                 }
@@ -1583,14 +1581,14 @@ export default struct Filelist {
                               this.totalSize = -1
                               this.context.eventHub.off('cancelDownload')
                               if (err.code !== 1007900992) {
-                                promptAction.openToast({
+                                await promptAction.openToast({
                                   message: '下载失败，错误码：' + err.code
                                 })
                               }
                             }
                           }
                         } catch (err) {
-                          promptAction.openToast({
+                          await promptAction.openToast({
                             message: '发生错误，错误码：' + err.code
                           })
                         }
@@ -1636,20 +1634,20 @@ export default struct Filelist {
       right: $r('sys.float.ohos_id_max_padding_end'),
       top: this.preferType === 0 ? 0 : $r('sys.float.ohos_id_default_padding_top')
     })
-    .onAppear(() => {
-      this.preferType = getPreferType()
+    .onAppear(async () => {
+      this.preferType = getPreferType(this.UIContext)
       display.on('change', (displayId) => {
-        this.preferType = getPreferTypeByDisplayId(displayId)
+        this.preferType = getPreferTypeByDisplayId(displayId, this.UIContext)
       })
       this.context.eventHub.on('backFilelist', () => {
         this.dirnames.pop()
         this.backDataPreferences.putSync('filelist', this.dirnames.length === 0 ? false : true)
         this.loading = true
       })
-      this.context.eventHub.on('refreshFilelist', () => {
-        this.get()
+      this.context.eventHub.on('refreshFilelist', async () => {
+        await this.get()
       })
-      this.get()
+      await this.get()
     })
     .onDisAppear(() => {
       this.context.eventHub.off('refreshFilelist')

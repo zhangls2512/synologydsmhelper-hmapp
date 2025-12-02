@@ -33,11 +33,11 @@ struct Debugsetting {
   @Local hoverId: number = -1
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
   pageInfos = new NavPathStack()
-  debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-    name: 'debugSetting'
-  })
   commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'commonSetting'
+  })
+  debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+    name: 'debugSetting'
   })
 
   getSetting() {
@@ -480,7 +480,7 @@ struct Debugsetting {
                 })
                 if (data.index === 1) {
                   const applicationContext = this.context.getApplicationContext()
-                  applicationContext.clearUpApplicationData()
+                  await applicationContext.clearUpApplicationData()
                 }
               })
 
@@ -539,11 +539,11 @@ struct Debugsetting {
                 })
                 if (data.index === 0) {
                   const applicationContext = this.context.getApplicationContext()
-                  applicationContext.killAllProcesses(true)
+                  await applicationContext.killAllProcesses(true)
                 }
                 if (data.index === 1) {
                   const applicationContext = this.context.getApplicationContext()
-                  applicationContext.killAllProcesses(false)
+                  await applicationContext.killAllProcesses(false)
                 }
               })
             }
@@ -642,10 +642,10 @@ struct Debugsetting {
                   this.hoverId = 6
                 }
               })
-              .onClick(() => {
+              .onClick(async () => {
                 const res = appRecovery.saveAppState()
                 if (res) {
-                  promptAction.openToast({
+                  await promptAction.openToast({
                     message: '保存成功'
                   })
                 }
@@ -905,10 +905,10 @@ struct Debugsetting {
                   .maxLength(4)
                   .type(InputType.Number)
                   .width('35%')
-                  .onSubmit((enterKey, event) => {
+                  .onSubmit(async (enterKey, event) => {
                     this.debugSettingDataPreferences.putSync('highLatencyThreshold', Number(event.text))
                     this.debugSettingDataPreferences.flushSync()
-                    promptAction.openToast({
+                    await promptAction.openToast({
                       message: '设置成功'
                     })
                   })
@@ -1188,7 +1188,7 @@ struct Debugsetting {
               if (data.index === 1) {
                 this.debugSettingDataPreferences.clearSync()
                 this.debugSettingDataPreferences.flushSync()
-                promptAction.openToast({
+                await promptAction.openToast({
                   message: '恢复成功'
                 })
                 this.getSetting()

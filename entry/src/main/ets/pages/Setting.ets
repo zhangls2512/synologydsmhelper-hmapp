@@ -4,7 +4,7 @@ import { preferences } from '@kit.ArkData'
 import { promptAction } from '@kit.ArkUI'
 import { appAccount } from '@kit.BasicServicesKit'
 import { fileIo, picker } from '@kit.CoreFileKit'
-import { get, getList, getLoginStatus, importAccounts } from '../common/Account'
+import { getAccountInfo, getAccountList, getLoginStatus, importAccounts } from '../common/Account'
 import openLink from '../common/Openlink'
 import { checkPermission } from '../common/Permission'
 
@@ -30,13 +30,13 @@ export default struct Setting {
       const appPrivacyResults: privacyManager.AppPrivacyResult[] = privacyManager.getAppPrivacyResult()
       this.agreedPrivacyAgreement = appPrivacyResults.find(item => item.type === 1)?.result
     } catch (err) {
-      promptAction.openToast({
+      await promptAction.openToast({
         message: '发生错误，错误码：' + err.code + '，错误信息：' + err.message
       })
     }
     this.isLogin = await getLoginStatus()
     if (this.isLogin) {
-      const accountInfo = await get()
+      const accountInfo = await getAccountInfo()
       const appAccountManager = appAccount.createAppAccountManager()
       if (accountInfo.id !== -1) {
         const res = await checkPermission(this.context, this.UIContext, 'ohos.permission.DISTRIBUTED_DATASYNC')
@@ -46,7 +46,7 @@ export default struct Setting {
         }
       }
     }
-    const accounts = await getList()
+    const accounts = await getAccountList()
     this.accountCount = accounts.length
   }
 
@@ -80,12 +80,12 @@ export default struct Setting {
                     .enabled(this.accountDataSyncEnabled)
                     .onChange(async (isOn) => {
                       try {
-                        const accountInfo = await get()
+                        const accountInfo = await getAccountInfo()
                         const appAccountManager = appAccount.createAppAccountManager()
-                        appAccountManager.setDataSyncEnabled(String(accountInfo.id), isOn)
+                        await appAccountManager.setDataSyncEnabled(String(accountInfo.id), isOn)
                       } catch (err) {
                         this.accountDataSync = false
-                        promptAction.openToast({
+                        await promptAction.openToast({
                           message: '发生错误，错误码：' + err.code
                         })
                       }
@@ -143,7 +143,7 @@ export default struct Setting {
                   if (uris.length === 1) {
                     const uri = uris[0]
                     await importAccounts(this.context, this.UIContext, uri)
-                    this.getSetting()
+                    await this.getSetting()
                   }
                 })
 
@@ -194,15 +194,15 @@ export default struct Setting {
                   const uris = await documentViewPicker.save(documentSaveOptions)
                   const filePath = uris[0]
                   const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
-                  const array = await getList()
-                  fileIo.writeSync(file.fd, JSON.stringify(array))
+                  const array = await getAccountList()
+                  await fileIo.write(file.fd, JSON.stringify(array))
                   fileIo.closeSync(file)
-                  promptAction.openToast({
+                  await promptAction.openToast({
                     message: '导出成功'
                   })
                 } catch (err) {
                   if (err.code !== 13900020) {
-                    promptAction.openToast({
+                    await promptAction.openToast({
                       message: '发生错误，错误码：' + err.code
                     })
                   }
@@ -410,7 +410,7 @@ export default struct Setting {
                 })
                 .onClick(async () => {
                   await privacyManager.requestAppPrivacyConsent(this.context)
-                  this.getSetting()
+                  await this.getSetting()
                 })
               }
               if (this.agreedPrivacyAgreement === 1) {
@@ -447,9 +447,9 @@ export default struct Setting {
                     this.hoverId = 6
                   }
                 })
-                .onClick(() => {
+                .onClick(async () => {
                   privacyManager.disableService()
-                  this.context.terminateSelf()
+                  await this.context.terminateSelf()
                 })
               }
             }
@@ -507,7 +507,7 @@ export default struct Setting {
                   this.hoverId = 7
                 }
               })
-              .onClick(() => {
+              .onClick(async () => {
                 try {
                   const appPrivacyLink =
                     privacyManager.getAppPrivacyMgmtInfo().privacyInfo.find(item => item.type === 1)
@@ -516,7 +516,7 @@ export default struct Setting {
                     param: appPrivacyLink?.url
                   })
                 } catch (err) {
-                  promptAction.openToast({
+                  await promptAction.openToast({
                     message: '发生错误，错误码：' + err.code + '，错误信息：' + err.message
                   })
                 }
@@ -560,8 +560,8 @@ export default struct Setting {
                   this.hoverId = 8
                 }
               })
-              .onClick(() => {
-                openLink(this.context, 'https://docs.qq.com/doc/p/142d00b55db803faf04f75a8486617bd4e51b07c')
+              .onClick(async () => {
+                await openLink(this.context, 'https://docs.qq.com/doc/p/142d00b55db803faf04f75a8486617bd4e51b07c')
               })
 
               Divider()
@@ -644,8 +644,8 @@ export default struct Setting {
                   this.hoverId = 10
                 }
               })
-              .onClick(() => {
-                openLink(this.context, 'https://docs.qq.com/doc/p/396e155d30adf768c0efcac3d14bebca4876143c')
+              .onClick(async () => {
+                await openLink(this.context, 'https://docs.qq.com/doc/p/396e155d30adf768c0efcac3d14bebca4876143c')
               })
             }
             .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
@@ -884,11 +884,11 @@ export default struct Setting {
     })
     .title('设置')
     .titleMode(NavigationTitleMode.Mini)
-    .onAppear(() => {
-      this.getSetting()
-      this.context.eventHub.on('refreshSetting', () => {
-        this.getSetting()
+    .onAppear(async () => {
+      this.context.eventHub.on('refreshSetting', async () => {
+        await this.getSetting()
       })
+      await this.getSetting()
     })
     .onDisAppear(() => {
       this.context.eventHub.off('refreshSetting')

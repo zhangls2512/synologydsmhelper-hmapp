@@ -1,6 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { display, LoadingDialog } from '@kit.ArkUI'
-import { exit, get } from '../common/Account'
+import { exitAccount, getAccountInfo } from '../common/Account'
 import { getPreferType, getPreferTypeByDisplayId } from '../common/Prefertype'
 import { dsmRequest } from '../common/Request'
 import Accountlist from './Accountlist'
@@ -24,7 +24,7 @@ export default struct Me {
   })
 
   async get() {
-    const accountInfo = await get()
+    const accountInfo = await getAccountInfo()
     this.name = accountInfo.name
   }
 
@@ -98,8 +98,8 @@ export default struct Me {
             title: {
               title: '登录'
             },
-            onDisappear: () => {
-              this.get()
+            onDisappear: async () => {
+              await this.get()
             }
           })
 
@@ -234,7 +234,7 @@ export default struct Me {
                     await dsmRequest(this.context, this.UIContext, '', 'SYNO.Core.System', '&method=reboot', 2)
                   this.dialogControllerProgress.close()
                   if (res !== 'fail') {
-                    promptAction.openToast({
+                    await promptAction.openToast({
                       message: '重启命令发送成功'
                     })
                   }
@@ -306,7 +306,7 @@ export default struct Me {
                     await dsmRequest(this.context, this.UIContext, '', 'SYNO.Core.System', '&method=shutdown', 2)
                   this.dialogControllerProgress.close()
                   if (res !== 'fail') {
-                    promptAction.openToast({
+                    await promptAction.openToast({
                       message: '关机命令发送成功'
                     })
                   }
@@ -369,8 +369,8 @@ export default struct Me {
           })
           .bindSheet(this.isShowSettingSheet!!, this.SettingSheetBuilder(), {
             preferType: this.preferType,
-            onDisappear: () => {
-              this.get()
+            onDisappear: async () => {
+              await this.get()
             }
           })
         }
@@ -409,13 +409,13 @@ export default struct Me {
                   })
                 })
                 dialogControllerProgress.open()
-                await exit(this.context, this.UIContext, true)
+                await exitAccount(this.context, this.UIContext, true)
                 dialogControllerProgress.close()
               }
               if (data.index === 1) {
-                await exit(this.context, this.UIContext, false)
+                await exitAccount(this.context, this.UIContext, false)
               }
-              promptAction.openToast({
+              await promptAction.openToast({
                 message: '退出成功'
               })
               this.name = ''
@@ -431,18 +431,18 @@ export default struct Me {
       right: $r('sys.float.ohos_id_max_padding_end'),
       top: this.preferType === 0 ? 0 : $r('sys.float.ohos_id_default_padding_top')
     })
-    .onAppear(() => {
-      this.preferType = getPreferType()
+    .onAppear(async () => {
+      this.preferType = getPreferType(this.UIContext)
       display.on('change', (displayId) => {
-        this.preferType = getPreferTypeByDisplayId(displayId)
+        this.preferType = getPreferTypeByDisplayId(displayId, this.UIContext)
       })
       this.context.eventHub.on('login', () => {
         this.isShowLoginSheet = true
       })
-      this.context.eventHub.on('refreshMe', () => {
-        this.get()
+      this.context.eventHub.on('refreshMe', async () => {
+        await this.get()
       })
-      this.get()
+      await this.get()
     })
     .onDisAppear(() => {
       this.context.eventHub.off('refreshMe')

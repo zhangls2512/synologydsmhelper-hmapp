@@ -87,10 +87,10 @@ export default struct Noticelist {
                 '&method=notify&action=apply&clean=all')
               dialogControllerProgress.close()
               if (res !== 'fail') {
-                promptAction.openToast({
+                await promptAction.openToast({
                   message: '清除成功'
                 })
-                this.get()
+                await this.get()
               }
             })
         }
@@ -207,8 +207,8 @@ export default struct Noticelist {
       left: $r('sys.float.ohos_id_max_padding_start'),
       right: $r('sys.float.ohos_id_max_padding_end')
     })
-    .onAppear(() => {
-      this.get()
+    .onAppear(async () => {
+      await this.get()
     })
   }
 }
