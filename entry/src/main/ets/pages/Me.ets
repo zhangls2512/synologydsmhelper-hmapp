@@ -213,7 +213,7 @@ export default struct Me {
                 }
               })
               .onClick(async () => {
-                const promptAction = this.getUIContext().getPromptAction()
+                const promptAction = this.UIContext.getPromptAction()
                 const data = await promptAction.showDialog({
                   title: '提示',
                   message: '确定重启？',
@@ -285,7 +285,7 @@ export default struct Me {
                 }
               })
               .onClick(async () => {
-                const promptAction = this.getUIContext().getPromptAction()
+                const promptAction = this.UIContext.getPromptAction()
                 const data = await promptAction.showDialog({
                   title: '提示',
                   message: '确定关机？',
@@ -388,7 +388,7 @@ export default struct Me {
             .role(ButtonRole.ERROR)
             .width('100%')
             .onClick(async () => {
-              const promptAction = this.getUIContext().getPromptAction()
+              const promptAction = this.UIContext.getPromptAction()
               const data = await promptAction.showActionMenu({
                 title: '是否注销会话？',
                 buttons: [

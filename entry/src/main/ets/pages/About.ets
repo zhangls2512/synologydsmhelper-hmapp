@@ -32,7 +32,7 @@ struct About {
                   count: 2
                 })
                   .onAction(async () => {
-                    const promptAction = this.getUIContext().getPromptAction()
+                    const promptAction = this.UIContext.getPromptAction()
                     const data = await promptAction.showActionMenu({
                       title: '调试',
                       buttons: [

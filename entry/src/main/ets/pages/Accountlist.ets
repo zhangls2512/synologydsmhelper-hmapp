@@ -26,7 +26,7 @@ export default struct Accountlist {
         content: '删除'
       })
         .onClick(async () => {
-          const promptAction = this.getUIContext().getPromptAction()
+          const promptAction = this.UIContext.getPromptAction()
           const data = await promptAction.showDialog({
             title: '提示',
             message: '删除成功后无法恢复，确定删除？',
