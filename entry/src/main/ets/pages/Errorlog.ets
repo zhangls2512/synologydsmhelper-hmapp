@@ -305,7 +305,7 @@ struct Errorlog {
                 .onClick(async () => {
                   const filestring = await read(externalLogItem)
                   if (filestring !== 'fail') {
-                    const promptAction = this.getUIContext().getPromptAction()
+                    const promptAction = this.UIContext.getPromptAction()
                     const data = await promptAction.showDialog({
                       title: externalLogItem,
                       message: filestring,

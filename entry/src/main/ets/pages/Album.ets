@@ -44,6 +44,27 @@ interface PhotoResItem {
   additional: PhotoAdditional
 }
 
+interface TimelineItem {
+  date: string,
+  count: number
+}
+
+interface TimelineResponse {
+  section: TimelineSectionItem[]
+}
+
+interface TimelineSectionItem {
+  limit: number,
+  list: TimelineListItem[]
+}
+
+interface TimelineListItem {
+  year: number,
+  month: number,
+  day: number,
+  item_count: number
+}
+
 interface AlbumItem {
   id: number,
   item_count: number,
@@ -55,6 +76,7 @@ export default struct Album {
   @Local preferType: number = 1
   @Local selectedIndex: number = 0
   @Local loading: boolean = false
+  @Local timelineArray: TimelineItem[] = []
   @Local photoArray: PhotoItem[] = []
   @Local albumArray: AlbumItem[] = []
   @Local albumPhotoArray: PhotoItem[] = []
@@ -85,6 +107,14 @@ export default struct Album {
     })
   })
 
+  isPhotoVisiable(photoIndex: number, dateIndex: number) {
+    let minIndex = 0
+    for (let i = 0; i < dateIndex; i++) {
+      minIndex += this.timelineArray[i].count
+    }
+    return photoIndex >= minIndex && photoIndex < minIndex + this.timelineArray[dateIndex].count
+  }
+
   async get(refresh: number = 2) {
     this.isLogin = await getLoginStatus()
     if (this.isLogin) {
@@ -99,64 +129,102 @@ export default struct Album {
         }
       }
       if (refresh !== 1) {
-        this.photoArray = []
+        this.timelineArray = []
         this.loadingDialogControllerProgress.open()
-        const res = await dsmRequest(this.context, this.UIContext, '', 'SYNO.API.Auth.Key',
-          '&method=grant&allow_api=SYNO.FileStation.Download&allow_methods=["download"]')
+        const timelineres =
+          await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Timeline', '&method=get')
         this.loadingDialogControllerProgress.close()
-        if (res !== 'fail') {
-          const tid = res['tid'] as string
-          const accountInfo = await getAccountInfo()
-          const textEncoder = new util.TextEncoder()
+        if (timelineres !== 'fail') {
+          const timelineSection = timelineres as TimelineResponse
+          const timelineList = timelineSection.section[0].list
+          for (let i = 0; i < timelineList.length; i++) {
+            const item = timelineList[i]
+            this.timelineArray.push({
+              date: item.year + '-' + String(item.month).padStart(2, '0') + '-' + String(item.day).padStart(2, '0'),
+              count: item.item_count
+            })
+          }
           this.loadingDialogControllerProgress.open()
-          const photores = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Item',
-            '&method=list&offset=0&limit=5000&additional=["resolution"]')
+          const keyres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.API.Auth.Key',
+            '&method=grant&allow_api=SYNO.FileStation.Download&allow_methods=["download"]')
           this.loadingDialogControllerProgress.close()
-          if (photores !== 'fail') {
-            const photos = (photores['list'] as PhotoResItem[]).filter(item => item.type === 'photo')
-            const photoArray: PhotoItem[] = []
-            const folderMap = new Map<number, string>()
-            this.loadingDialogControllerProgress.open()
-            for (let i = 0; i < photos.length; i++) {
-              const item = photos[i]
-              if (!folderMap.has(item.folder_id)) {
-                const folderres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Folder',
-                  '&method=get&id=' + item.folder_id)
-                if (folderres !== 'fail') {
-                  const folderPath = folderres['folder']['name'] as string
-                  const path = '/home/Photos' + folderPath + '/'
-                  folderMap.set(item.folder_id, path)
-                  photoArray.push({
-                    id: item.id,
-                    filename: item.filename,
-                    filesize: item.filesize,
-                    time: item.time,
-                    folder_id: item.folder_id,
-                    url: accountInfo.path + '/fbdownload/' + item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
-                      '?tid=' + tid + '&mode=open&dlink=' + Array.from(textEncoder.encodeInto(path + item.filename))
-                      .map(byte => byte.toString(16).padStart(2, '0')).join(''),
-                    path: path + item.filename,
-                    resolution: item.additional.resolution
-                  })
-                }
-              } else {
-                photoArray.push({
-                  id: item.id,
-                  filename: item.filename,
-                  filesize: item.filesize,
-                  time: item.time,
-                  folder_id: item.folder_id,
-                  url: accountInfo.path + '/fbdownload/' + item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
-                    '?tid=' + tid + '&mode=open&dlink=' +
-                  Array.from(textEncoder.encodeInto(folderMap.get(item.folder_id) + item.filename))
-                    .map(byte => byte.toString(16).padStart(2, '0')).join(''),
-                  path: folderMap.get(item.folder_id) + item.filename,
-                  resolution: item.additional.resolution
-                })
+          if (keyres !== 'fail') {
+            const tid = keyres['tid'] as string
+            const accountInfo = await getAccountInfo()
+            const textEncoder = new util.TextEncoder()
+            if (getCurrentNetworkBearerType() === 0) {
+              const promptAction = this.UIContext.getPromptAction()
+              const data = await promptAction.showDialog({
+                title: '流量使用提醒',
+                message: '当前正在使用流量上网，确定加载？',
+                buttons: [
+                  {
+                    text: '取消',
+                    color: $r('sys.color.font_primary')
+                  },
+                  {
+                    text: '确定',
+                    color: $r('sys.color.font_emphasize')
+                  }
+                ]
+              })
+              if (data.index === 0) {
+                return
               }
             }
-            this.loadingDialogControllerProgress.close()
-            this.photoArray = photoArray
+            this.photoArray = []
+            let offset = 0
+            while (this.photoArray.length !== timelineSection.section[0].limit - 1) {
+              const photores = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Item',
+                '&method=list&offset=' + offset + '&limit=4&additional=["resolution"]')
+              if (photores !== 'fail') {
+                const photos = (photores['list'] as PhotoResItem[]).filter(item => item.type === 'photo')
+                const photoArray: PhotoItem[] = []
+                const folderMap = new Map<number, string>()
+                for (let i = 0; i < photos.length; i++) {
+                  const item = photos[i]
+                  if (!folderMap.has(item.folder_id)) {
+                    const folderres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Folder',
+                      '&method=get&id=' + item.folder_id)
+                    if (folderres !== 'fail') {
+                      const folderPath = folderres['folder']['name'] as string
+                      const path = '/home/Photos' + folderPath + '/'
+                      folderMap.set(item.folder_id, path)
+                      photoArray.push({
+                        id: item.id,
+                        filename: item.filename,
+                        filesize: item.filesize,
+                        time: item.time,
+                        folder_id: item.folder_id,
+                        url: accountInfo.path + '/fbdownload/' +
+                        item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
+                          '?tid=' + tid + '&mode=open&dlink=' + Array.from(textEncoder.encodeInto(path + item.filename))
+                          .map(byte => byte.toString(16).padStart(2, '0')).join(''),
+                        path: path + item.filename,
+                        resolution: item.additional.resolution
+                      })
+                    }
+                  } else {
+                    photoArray.push({
+                      id: item.id,
+                      filename: item.filename,
+                      filesize: item.filesize,
+                      time: item.time,
+                      folder_id: item.folder_id,
+                      url: accountInfo.path + '/fbdownload/' +
+                      item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
+                        '?tid=' + tid + '&mode=open&dlink=' +
+                      Array.from(textEncoder.encodeInto(folderMap.get(item.folder_id) + item.filename))
+                        .map(byte => byte.toString(16).padStart(2, '0')).join(''),
+                      path: folderMap.get(item.folder_id) + item.filename,
+                      resolution: item.additional.resolution
+                    })
+                  }
+                }
+                this.photoArray = this.photoArray.concat(photoArray)
+                offset += 4
+              }
+            }
           }
         }
       }
@@ -164,7 +232,6 @@ export default struct Album {
   }
 
   async getAlbumPhoto() {
-    this.albumPhotoArray = []
     this.loadingDialogControllerProgress.open()
     const res = await dsmRequest(this.context, this.UIContext, '', 'SYNO.API.Auth.Key',
       '&method=grant&allow_api=SYNO.FileStation.Download&allow_methods=["download"]')
@@ -173,24 +240,64 @@ export default struct Album {
       const tid = res['tid'] as string
       const accountInfo = await getAccountInfo()
       const textEncoder = new util.TextEncoder()
-      this.loadingDialogControllerProgress.open()
-      const photores = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Item',
-        '&method=list&offset=0&limit=5000&additional=["resolution"]&album_id=' + this.previewAlbum?.id)
-      this.loadingDialogControllerProgress.close()
-      if (photores !== 'fail') {
-        const photos = (photores['list'] as PhotoResItem[]).filter(item => item.type === 'photo')
-        const photoArray: PhotoItem[] = []
-        const folderMap = new Map<number, string>()
-        this.loadingDialogControllerProgress.open()
-        for (let i = 0; i < photos.length; i++) {
-          const item = photos[i]
-          if (!folderMap.has(item.folder_id)) {
-            const folderres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Folder',
-              '&method=get&id=' + item.folder_id)
-            if (folderres !== 'fail') {
-              const folderPath = folderres['folder']['name'] as string
-              const path = '/home/Photos' + folderPath + '/'
-              folderMap.set(item.folder_id, path)
+      if (getCurrentNetworkBearerType() === 0) {
+        const promptAction = this.UIContext.getPromptAction()
+        const data = await promptAction.showDialog({
+          title: '流量使用提醒',
+          message: '当前正在使用流量上网，确定加载？',
+          buttons: [
+            {
+              text: '取消',
+              color: $r('sys.color.font_primary')
+            },
+            {
+              text: '确定',
+              color: $r('sys.color.font_emphasize')
+            }
+          ]
+        })
+        if (data.index === 0) {
+          return
+        }
+      }
+      this.albumPhotoArray = []
+      let finished = false
+      let offset = 0
+      while (!finished) {
+        const photores = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Item',
+          '&method=list&offset=' + offset + '&limit=4&additional=["resolution"]&album_id=' + this.previewAlbum?.id)
+        if (photores !== 'fail') {
+          const all = photores['list'] as PhotoResItem[]
+          if (all.length === 0) {
+            finished = true
+            return
+          }
+          const photos = all.filter(item => item.type === 'photo')
+          const photoArray: PhotoItem[] = []
+          const folderMap = new Map<number, string>()
+          for (let i = 0; i < photos.length; i++) {
+            const item = photos[i]
+            if (!folderMap.has(item.folder_id)) {
+              const folderres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Folder',
+                '&method=get&id=' + item.folder_id)
+              if (folderres !== 'fail') {
+                const folderPath = folderres['folder']['name'] as string
+                const path = '/home/Photos' + folderPath + '/'
+                folderMap.set(item.folder_id, path)
+                photoArray.push({
+                  id: item.id,
+                  filename: item.filename,
+                  filesize: item.filesize,
+                  time: item.time,
+                  folder_id: item.folder_id,
+                  url: accountInfo.path + '/fbdownload/' + item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
+                    '?tid=' + tid + '&mode=open&dlink=' + Array.from(textEncoder.encodeInto(path + item.filename))
+                    .map(byte => byte.toString(16).padStart(2, '0')).join(''),
+                  path: path + item.filename,
+                  resolution: item.additional.resolution
+                })
+              }
+            } else {
               photoArray.push({
                 id: item.id,
                 filename: item.filename,
@@ -198,30 +305,20 @@ export default struct Album {
                 time: item.time,
                 folder_id: item.folder_id,
                 url: accountInfo.path + '/fbdownload/' + item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
-                  '?tid=' + tid + '&mode=open&dlink=' + Array.from(textEncoder.encodeInto(path + item.filename))
+                  '?tid=' + tid + '&mode=open&dlink=' +
+                Array.from(textEncoder.encodeInto(folderMap.get(item.folder_id) + item.filename))
                   .map(byte => byte.toString(16).padStart(2, '0')).join(''),
-                path: path + item.filename,
+                path: folderMap.get(item.folder_id) + item.filename,
                 resolution: item.additional.resolution
               })
             }
-          } else {
-            photoArray.push({
-              id: item.id,
-              filename: item.filename,
-              filesize: item.filesize,
-              time: item.time,
-              folder_id: item.folder_id,
-              url: accountInfo.path + '/fbdownload/' + item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
-                '?tid=' + tid + '&mode=open&dlink=' +
-              Array.from(textEncoder.encodeInto(folderMap.get(item.folder_id) + item.filename))
-                .map(byte => byte.toString(16).padStart(2, '0')).join(''),
-              path: folderMap.get(item.folder_id) + item.filename,
-              resolution: item.additional.resolution
-            })
           }
+          this.albumPhotoArray = this.albumPhotoArray.concat(photoArray)
+          offset += 4
         }
-        this.loadingDialogControllerProgress.close()
-        this.albumPhotoArray = photoArray
+        if (photores === 'fail') {
+          finished = true
+        }
       }
     }
   }
@@ -306,7 +403,7 @@ export default struct Album {
             const cellularDataUseRemind = this.commonSettingDataPreferences.getSync('cellularDataUseRemind', 0)
             if (cellularDataUseRemind === 0 ||
               (cellularDataUseRemind === 1 && item.filesize > 200 * Math.pow(1024, 2))) {
-              const promptAction = this.getUIContext().getPromptAction()
+              const promptAction = this.UIContext.getPromptAction()
               const data = await promptAction.showDialog({
                 title: '流量使用提醒',
                 message: '当前正在使用流量上网，下载此图片将消耗约 ' + getSizeString(item.filesize) + ' 流量，确定下载？',
@@ -449,7 +546,7 @@ export default struct Album {
       })
         .contentFontColor($r('sys.color.warning'))
         .onClick(async () => {
-          const promptAction = this.getUIContext().getPromptAction()
+          const promptAction = this.UIContext.getPromptAction()
           const data = await promptAction.showDialog({
             title: '提示',
             message: '删除成功后无法恢复，确定删除？',
@@ -523,95 +620,110 @@ export default struct Album {
             Refresh({
               refreshing: $$this.loading
             }) {
-              List() {
+              Column() {
                 if (this.selectedIndex === 0) {
-                  ListItem() {
-                    Flex({
-                      wrap: FlexWrap.Wrap
-                    }) {
-                      ForEach(this.photoArray, (item: PhotoItem) => {
-                        Image(item.url)
-                          .alt($r('app.media.imageloading'))
-                          .aspectRatio(1)
-                          .copyOption(CopyOptions.LocalDevice)
-                          .width('25%')
-                          .onError(async (err) => {
-                            await promptAction.openToast({
-                              message: '发生错误，错误信息：' + err.message
+                  List() {
+                    ForEach(this.timelineArray, (item: TimelineItem, index) => {
+                      ListItem() {
+                        Column() {
+                          Text(item.date)
+                          Flex({
+                            wrap: FlexWrap.Wrap
+                          }) {
+                            ForEach(this.photoArray, (item: PhotoItem, photoIndex) => {
+                              if (this.isPhotoVisiable(photoIndex, index)) {
+                                Image(item.url)
+                                  .alt($r('app.media.imageloading'))
+                                  .aspectRatio(1)
+                                  .copyOption(CopyOptions.LocalDevice)
+                                  .width('25%')
+                                  .onError(async (err) => {
+                                    await promptAction.openToast({
+                                      message: '发生错误，错误信息：' + err.message
+                                    })
+                                  })
+                                  .onClick(() => {
+                                    this.previewPhoto = item
+                                    this.backDataPreferences.putSync('album', true)
+                                  })
+                              }
                             })
+                          }
+                          .margin({
+                            top: $r('sys.float.ohos_id_elements_margin_vertical_m')
                           })
-                          .onClick(() => {
-                            this.previewPhoto = item
-                            this.backDataPreferences.putSync('album', true)
-                          })
+                        }
+                        .alignItems(HorizontalAlign.Start)
+                      }
+                      .margin({
+                        top: index !== 0 ? $r('sys.float.ohos_id_elements_margin_vertical_m') : 0
                       })
-                    }
+                    })
                   }
                 }
                 if (this.selectedIndex === 1) {
-                  ListItem() {
-                    Column() {
-                      ForEach(this.albumArray, (item: AlbumItem, index) => {
-                        if (index !== 0) {
-                          Divider()
-                            .padding({
-                              left: 12,
-                              right: 12
-                            })
+                  Column() {
+                    ForEach(this.albumArray, (item: AlbumItem, index) => {
+                      if (index !== 0) {
+                        Divider()
+                          .padding({
+                            left: 12,
+                            right: 12
+                          })
+                      }
+                      Row() {
+                        Text(item.name)
+                          .fontWeight(FontWeight.Medium)
+                          .layoutWeight(1)
+                          .margin({
+                            right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                          })
+                        Text(String(item.item_count))
+                          .fontColor($r('sys.color.font_secondary'))
+                          .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                          .margin({
+                            right: $r('sys.float.ohos_id_elements_margin_horizontal_s')
+                          })
+                        Image($r('app.media.right'))
+                          .fillColor($r('sys.color.icon_fourth'))
+                          .height(12)
+                          .width(12)
+                      }
+                      .borderRadius(12)
+                      .padding(12)
+                      .stateStyles({
+                        normal: {
+                          .backgroundColor(this.hoverId === index ? $r('sys.color.interactive_hover') :
+                            $r('sys.color.comp_background_primary'))
+                        },
+                        pressed: {
+                          .backgroundColor($r('sys.color.comp_background_secondary'))
                         }
-                        Row() {
-                          Text(item.name)
-                            .fontWeight(FontWeight.Medium)
-                            .layoutWeight(1)
-                            .margin({
-                              right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                            })
-                          Text(String(item.item_count))
-                            .fontColor($r('sys.color.font_secondary'))
-                            .fontSize($r('sys.float.ohos_id_text_size_body2'))
-                            .margin({
-                              right: $r('sys.float.ohos_id_elements_margin_horizontal_s')
-                            })
-                          Image($r('app.media.right'))
-                            .fillColor($r('sys.color.icon_fourth'))
-                            .height(12)
-                            .width(12)
-                        }
-                        .borderRadius(12)
-                        .padding(12)
-                        .stateStyles({
-                          normal: {
-                            .backgroundColor(this.hoverId === index ? $r('sys.color.interactive_hover') :
-                              $r('sys.color.comp_background_primary'))
-                          },
-                          pressed: {
-                            .backgroundColor($r('sys.color.comp_background_secondary'))
-                          }
-                        })
-                        .width('100%')
-                        .onHover((isHover) => {
-                          if (!isHover) {
-                            this.hoverId = -1
-                          }
-                          if (isHover) {
-                            this.hoverId = index
-                          }
-                        })
-                        .onClick(async () => {
-                          this.previewAlbum = item
-                          this.backDataPreferences.putSync('album', true)
-                          await this.getAlbumPhoto()
-                        })
                       })
-                    }
-                    .backgroundColor($r('sys.color.comp_background_primary'))
-                    .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
-                    .padding($r('sys.float.ohos_id_corner_radius_mark'))
+                      .width('100%')
+                      .onHover((isHover) => {
+                        if (!isHover) {
+                          this.hoverId = -1
+                        }
+                        if (isHover) {
+                          this.hoverId = index
+                        }
+                      })
+                      .onClick(async () => {
+                        this.previewAlbum = item
+                        this.backDataPreferences.putSync('album', true)
+                        await this.getAlbumPhoto()
+                      })
+                    })
                   }
+                  .backgroundColor($r('sys.color.comp_background_primary'))
+                  .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+                  .padding($r('sys.float.ohos_id_corner_radius_mark'))
                 }
               }
             }
             .layoutWeight(1)
+            .width('100%')
             .onRefreshing(async () => {
               await this.get(this.selectedIndex)
               this.loading = false
@@ -783,25 +895,29 @@ export default struct Album {
                   })
               }
 
-              Flex({
-                wrap: FlexWrap.Wrap
-              }) {
-                ForEach(this.albumPhotoArray, (item: PhotoItem) => {
-                  Image(item.url)
-                    .alt($r('app.media.imageloading'))
-                    .aspectRatio(1)
-                    .copyOption(CopyOptions.LocalDevice)
-                    .width('25%')
-                    .onError(async (err) => {
-                      await promptAction.openToast({
-                        message: '发生错误，错误信息：' + err.message
-                      })
+              List() {
+                ListItem() {
+                  Flex({
+                    wrap: FlexWrap.Wrap
+                  }) {
+                    ForEach(this.albumPhotoArray, (item: PhotoItem) => {
+                      Image(item.url)
+                        .alt($r('app.media.imageloading'))
+                        .aspectRatio(1)
+                        .copyOption(CopyOptions.LocalDevice)
+                        .width('25%')
+                        .onError(async (err) => {
+                          await promptAction.openToast({
+                            message: '发生错误，错误信息：' + err.message
+                          })
+                        })
+                        .onClick(() => {
+                          this.previewPhoto = item
+                          this.backDataPreferences.putSync('album', true)
+                        })
                     })
-                    .onClick(() => {
-                      this.previewPhoto = item
-                      this.backDataPreferences.putSync('album', true)
-                    })
-                })
+                  }
+                }
               }
               .margin({
                 top: $r('sys.float.ohos_id_elements_margin_vertical_l')

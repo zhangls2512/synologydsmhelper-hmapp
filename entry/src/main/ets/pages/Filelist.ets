@@ -293,7 +293,7 @@ export default struct Filelist {
                 const cellularDataUseRemind = this.commonSettingDataPreferences.getSync('cellularDataUseRemind', 0)
                 if (cellularDataUseRemind === 0 ||
                   (cellularDataUseRemind === 1 && item.additional.size > 200 * Math.pow(1024, 2))) {
-                  const promptAction = this.getUIContext().getPromptAction()
+                  const promptAction = this.UIContext.getPromptAction()
                   const data = await promptAction.showDialog({
                     title: '流量使用提醒',
                     message: '当前正在使用流量上网，下载此文件将消耗约 ' + getSizeString(item.additional.size) +
@@ -581,7 +581,7 @@ export default struct Filelist {
           content: '删除'
         })
           .onClick(async () => {
-            const promptAction = this.getUIContext().getPromptAction()
+            const promptAction = this.UIContext.getPromptAction()
             const data = await promptAction.showDialog({
               title: '提示',
               message: '删除成功后无法恢复，确定删除？',
@@ -865,7 +865,7 @@ export default struct Filelist {
                 .buildEffect())
               .width(40)
               .onClick(async () => {
-                const promptAction = this.getUIContext().getPromptAction()
+                const promptAction = this.UIContext.getPromptAction()
                 const data = await promptAction.showDialog({
                   title: '提示',
                   message: '删除成功后无法恢复，确定删除？',
@@ -1362,7 +1362,7 @@ export default struct Filelist {
                             this.commonSettingDataPreferences.getSync('cellularDataUseRemind', 0)
                           if (cellularDataUseRemind === 0 ||
                             (cellularDataUseRemind === 1 && item.additional.size > 200 * Math.pow(1024, 2))) {
-                            const promptAction = this.getUIContext().getPromptAction()
+                            const promptAction = this.UIContext.getPromptAction()
                             const data = await promptAction.showDialog({
                               title: '流量使用提醒',
                               message: '当前正在使用流量上网，下载此文件将消耗约 ' +
