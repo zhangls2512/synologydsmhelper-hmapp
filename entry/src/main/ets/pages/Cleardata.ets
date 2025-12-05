@@ -29,7 +29,8 @@ export default struct Cleardata {
   @Local tempFileNouse: boolean = false
   @Local tempFileNouseSize: string = ''
   @Local settingNouse: boolean = false
-  context = this.getUIContext().getHostContext() as common.UIAbilityContext
+  UIContext = this.getUIContext()
+  context = this.UIContext.getHostContext() as common.UIAbilityContext
 
   async getSize() {
     const apiVersionCacheFilePath = this.context.cacheDir + '/apiversion.txt'
@@ -188,7 +189,7 @@ export default struct Cleardata {
           .role(ButtonRole.ERROR)
           .width('100%')
           .onClick(async () => {
-            const promptAction = this.getUIContext().getPromptAction()
+            const promptAction = this.UIContext.getPromptAction()
             const data = await promptAction.showDialog({
               title: '提示',
               message: '清理成功后将恢复所选设置为默认，无法恢复。确定清理？',
@@ -341,7 +342,7 @@ export default struct Cleardata {
           .role(ButtonRole.ERROR)
           .width('100%')
           .onClick(async () => {
-            const promptAction = this.getUIContext().getPromptAction()
+            const promptAction = this.UIContext.getPromptAction()
             const data = await promptAction.showDialog({
               title: '提示',
               message: '清理成功后性能可能略微降低，但不会影响正常使用。确定清理？',
@@ -459,7 +460,7 @@ export default struct Cleardata {
           .role(ButtonRole.ERROR)
           .width('100%')
           .onClick(async () => {
-            const promptAction = this.getUIContext().getPromptAction()
+            const promptAction = this.UIContext.getPromptAction()
             const data = await promptAction.showDialog({
               title: '提示',
               message: '日志有助于开发者定位问题。清理成功后无法恢复，确定清理？',
