@@ -37,7 +37,8 @@ struct Commonsetting {
   @Local openLinkTypeIndex: number = 0
   @Local openLinkTypeValue: string = '系统默认'
   @Local hoverId: number = -1
-  context = this.getUIContext().getHostContext() as common.UIAbilityContext
+  UIContext = this.getUIContext()
+  context = this.UIContext.getHostContext() as common.UIAbilityContext
   commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'commonSetting'
   })
@@ -71,7 +72,7 @@ struct Commonsetting {
                   .onChange(async (isOn) => {
                     this.commonSettingDataPreferences.putSync('allowContinue', isOn)
                     this.commonSettingDataPreferences.flushSync()
-                    const promptAction = this.getUIContext().getPromptAction()
+                    const promptAction = this.UIContext.getPromptAction()
                     const data = await promptAction.showDialog({
                       title: '提示',
                       message: '设置成功，需重启应用生效，是否重启？',
@@ -143,7 +144,7 @@ struct Commonsetting {
                   .onChange(async (isOn) => {
                     this.commonSettingDataPreferences.putSync('allowRestore', isOn)
                     this.commonSettingDataPreferences.flushSync()
-                    const promptAction = this.getUIContext().getPromptAction()
+                    const promptAction = this.UIContext.getPromptAction()
                     const data = await promptAction.showDialog({
                       title: '提示',
                       message: '设置成功，需重启应用生效，是否重启？',
@@ -360,7 +361,7 @@ struct Commonsetting {
                     .onChange(async (isOn) => {
                       this.commonSettingDataPreferences.putSync('windowRectAutoSave', isOn)
                       this.commonSettingDataPreferences.flushSync()
-                      const promptAction = this.getUIContext().getPromptAction()
+                      const promptAction = this.UIContext.getPromptAction()
                       const data = await promptAction.showDialog({
                         title: '提示',
                         message: '设置成功，需重启应用生效，是否重启？',
@@ -524,7 +525,7 @@ struct Commonsetting {
                   return
                 }
                 if (res) {
-                  const promptAction = this.getUIContext().getPromptAction()
+                  const promptAction = this.UIContext.getPromptAction()
                   const data = await promptAction.showActionMenu({
                     title: '设置背景图',
                     buttons: [

@@ -31,7 +31,8 @@ struct Debugsetting {
   @Local destroyModeValue: string = '普通'
   @Local allService: boolean = false
   @Local hoverId: number = -1
-  context = this.getUIContext().getHostContext() as common.UIAbilityContext
+  UIContext = this.getUIContext()
+  context = this.UIContext.getHostContext() as common.UIAbilityContext
   pageInfos = new NavPathStack()
   commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'commonSetting'
@@ -334,7 +335,7 @@ struct Debugsetting {
                     .onChange(async (isOn) => {
                       this.debugSettingDataPreferences.putSync('processCache', isOn)
                       this.debugSettingDataPreferences.flushSync()
-                      const promptAction = this.getUIContext().getPromptAction()
+                      const promptAction = this.UIContext.getPromptAction()
                       const data = await promptAction.showDialog({
                         title: '提示',
                         message: '设置成功，需重启应用生效，是否重启？',
@@ -463,7 +464,7 @@ struct Debugsetting {
                 }
               })
               .onClick(async () => {
-                const promptAction = this.getUIContext().getPromptAction()
+                const promptAction = this.UIContext.getPromptAction()
                 const data = await promptAction.showDialog({
                   title: '提示',
                   message: '此操作将清除应用全部数据，同时撤销应用向用户申请的权限。确定清除？',
@@ -523,7 +524,7 @@ struct Debugsetting {
                 }
               })
               .onClick(async () => {
-                const promptAction = this.getUIContext().getPromptAction()
+                const promptAction = this.UIContext.getPromptAction()
                 const data = await promptAction.showActionMenu({
                   title: '是否清除页面堆栈？',
                   buttons: [
@@ -1170,7 +1171,7 @@ struct Debugsetting {
             .align(Alignment.Center)
             .width('100%')
             .onClick(async () => {
-              const promptAction = this.getUIContext().getPromptAction()
+              const promptAction = this.UIContext.getPromptAction()
               const data = await promptAction.showDialog({
                 title: '提示',
                 message: '此操作将恢复全部调试设置为默认。确定恢复？',
