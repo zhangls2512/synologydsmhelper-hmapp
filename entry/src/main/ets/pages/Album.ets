@@ -87,6 +87,7 @@ export default struct Album {
   @Local hoverId: number = -1
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
+  photoFinished = true
   backDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'back'
   })
@@ -129,6 +130,9 @@ export default struct Album {
         }
       }
       if (refresh !== 1) {
+        if (!this.photoFinished) {
+          return
+        }
         this.timelineArray = []
         this.loadingDialogControllerProgress.open()
         const timelineres =
@@ -136,7 +140,17 @@ export default struct Album {
         this.loadingDialogControllerProgress.close()
         if (timelineres !== 'fail') {
           const timelineSection = timelineres as TimelineResponse
-          const timelineList = timelineSection.section[0].list
+          let timelineList: TimelineListItem[] = []
+          for (let i = 0; i < timelineSection.section.length; i++) {
+            const list = timelineSection.section[i].list
+            if (list) {
+              timelineList = timelineList.concat(list)
+            }
+          }
+          let limit = 0
+          for (let i = 0; i < timelineSection.section.length; i++) {
+            limit += timelineSection.section[i].limit
+          }
           for (let i = 0; i < timelineList.length; i++) {
             const item = timelineList[i]
             this.timelineArray.push({
@@ -173,14 +187,23 @@ export default struct Album {
               }
             }
             this.photoArray = []
+            this.photoFinished = false
             let offset = 0
-            while (this.photoArray.length !== timelineSection.section[0].limit - 1) {
+            const folderMap = new Map<number, string>()
+            while (!this.photoFinished) {
+              await promptAction.openToast({
+                message: '已加载 ' + offset + ' 张，共 ' + limit + ' 张'
+              })
               const photores = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Item',
                 '&method=list&offset=' + offset + '&limit=4&additional=["resolution"]')
               if (photores !== 'fail') {
-                const photos = (photores['list'] as PhotoResItem[]).filter(item => item.type === 'photo')
+                const all = photores['list'] as PhotoResItem[]
+                if (all.length === 0) {
+                  this.photoFinished = true
+                  return
+                }
+                const photos = all.filter(item => item.type === 'photo')
                 const photoArray: PhotoItem[] = []
-                const folderMap = new Map<number, string>()
                 for (let i = 0; i < photos.length; i++) {
                   const item = photos[i]
                   if (!folderMap.has(item.folder_id)) {
@@ -224,6 +247,9 @@ export default struct Album {
                 this.photoArray = this.photoArray.concat(photoArray)
                 offset += 4
               }
+              if (photores === 'fail') {
+                this.photoFinished = true
+              }
             }
           }
         }
@@ -263,7 +289,11 @@ export default struct Album {
       this.albumPhotoArray = []
       let finished = false
       let offset = 0
+      const folderMap = new Map<number, string>()
       while (!finished) {
+        await promptAction.openToast({
+          message: '已加载 ' + offset + ' 张，共 ' + this.previewAlbum?.item_count + ' 张'
+        })
         const photores = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Item',
           '&method=list&offset=' + offset + '&limit=4&additional=["resolution"]&album_id=' + this.previewAlbum?.id)
         if (photores !== 'fail') {
@@ -274,7 +304,6 @@ export default struct Album {
           }
           const photos = all.filter(item => item.type === 'photo')
           const photoArray: PhotoItem[] = []
-          const folderMap = new Map<number, string>()
           for (let i = 0; i < photos.length; i++) {
             const item = photos[i]
             if (!folderMap.has(item.folder_id)) {
@@ -635,7 +664,9 @@ export default struct Album {
                                 Image(item.url)
                                   .alt($r('app.media.imageloading'))
                                   .aspectRatio(1)
+                                  .autoResize(true)
                                   .copyOption(CopyOptions.LocalDevice)
+                                  .objectFit(ImageFit.Auto)
                                   .width('25%')
                                   .onError(async (err) => {
                                     await promptAction.openToast({
@@ -904,7 +935,9 @@ export default struct Album {
                       Image(item.url)
                         .alt($r('app.media.imageloading'))
                         .aspectRatio(1)
+                        .autoResize(true)
                         .copyOption(CopyOptions.LocalDevice)
+                        .objectFit(ImageFit.Auto)
                         .width('25%')
                         .onError(async (err) => {
                           await promptAction.openToast({
