@@ -94,6 +94,11 @@
       "name": "Dnsserver",
       "pageSourceFile": "src/main/ets/pages/Dnsserver.ets",
       "buildFunction": "DnsserverBuilder"
+    },
+    {
+      "name": "Apiversioncache",
+      "pageSourceFile": "src/main/ets/pages/Apiversioncache.ets",
+      "buildFunction": "ApiversioncacheBuilder"
     }
   ]
 }

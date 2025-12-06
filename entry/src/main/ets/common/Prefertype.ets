@@ -1,58 +1,12 @@
-import { display, UIContext } from '@kit.ArkUI'
-import { deviceInfo } from '@kit.BasicServicesKit'
+import { UIContext } from '@kit.ArkUI'
 
-export function getPreferType(UIContext: UIContext) {
-  if (deviceInfo.productModel !== 'VDE-AL00' && deviceInfo.productModel !== 'VDE-AL10') {
-    const windowHeightBreakpoint = UIContext.getWindowHeightBreakpoint()
-    if (windowHeightBreakpoint !== HeightBreakpoint.HEIGHT_SM) {
-      return 0
-    }
-    if (windowHeightBreakpoint === HeightBreakpoint.HEIGHT_SM) {
-      return 1
-    }
+export default function getPreferType(UIContext: UIContext) {
+  const windowHeightBreakpoint = UIContext.getWindowHeightBreakpoint()
+  if (windowHeightBreakpoint !== HeightBreakpoint.HEIGHT_SM) {
+    return 0
   }
-  if (deviceInfo.productModel === 'VDE-AL00' || deviceInfo.productModel === 'VDE-AL10') {
-    const foldDisplayMode = display.getFoldDisplayMode()
-    if (foldDisplayMode === display.FoldDisplayMode.FOLD_DISPLAY_MODE_FULL) {
-      const orientation = display.getDefaultDisplaySync().orientation
-      if (orientation === display.Orientation.PORTRAIT || orientation === display.Orientation.PORTRAIT_INVERTED) {
-        return 0
-      }
-      if (orientation === display.Orientation.LANDSCAPE || orientation === display.Orientation.LANDSCAPE_INVERTED) {
-        return 1
-      }
-    }
-    if (foldDisplayMode === display.FoldDisplayMode.FOLD_DISPLAY_MODE_MAIN) {
-      return 0
-    }
-  }
-  return -1
-}
-
-export function getPreferTypeByDisplayId(displayId: number, UIContext: UIContext) {
-  if (deviceInfo.productModel !== 'VDE-AL00' && deviceInfo.productModel !== 'VDE-AL10') {
-    const windowHeightBreakpoint = UIContext.getWindowHeightBreakpoint()
-    if (windowHeightBreakpoint !== HeightBreakpoint.HEIGHT_SM) {
-      return 0
-    }
-    if (windowHeightBreakpoint === HeightBreakpoint.HEIGHT_SM) {
-      return 1
-    }
-  }
-  if (deviceInfo.productModel === 'VDE-AL00' || deviceInfo.productModel === 'VDE-AL10') {
-    const foldDisplayMode = display.getFoldDisplayMode()
-    if (foldDisplayMode === display.FoldDisplayMode.FOLD_DISPLAY_MODE_FULL) {
-      const orientation = display.getDisplayByIdSync(displayId).orientation
-      if (orientation === display.Orientation.PORTRAIT || orientation === display.Orientation.PORTRAIT_INVERTED) {
-        return 0
-      }
-      if (orientation === display.Orientation.LANDSCAPE || orientation === display.Orientation.LANDSCAPE_INVERTED) {
-        return 1
-      }
-    }
-    if (foldDisplayMode === display.FoldDisplayMode.FOLD_DISPLAY_MODE_MAIN) {
-      return 0
-    }
+  if (windowHeightBreakpoint === HeightBreakpoint.HEIGHT_SM) {
+    return 1
   }
   return -1
 }
