@@ -39,6 +39,7 @@ struct Commonsetting {
   @Local hoverId: number = -1
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
+  pageInfos = new NavPathStack()
   commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'commonSetting'
   })
@@ -808,6 +809,50 @@ struct Commonsetting {
                   right: 12
                 })
               Row() {
+                Text('API版本号缓存')
+                  .enableAutoSpacing(true)
+                  .fontWeight(FontWeight.Medium)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                Image($r('app.media.right'))
+                  .fillColor($r('sys.color.icon_fourth'))
+                  .height(12)
+                  .width(12)
+              }
+              .borderRadius(12)
+              .padding(12)
+              .stateStyles({
+                normal: {
+                  .backgroundColor(this.hoverId === 2 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
+                },
+                pressed: {
+                  .backgroundColor($r('sys.color.interactive_pressed'))
+                }
+              })
+              .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 2
+                }
+              })
+              .onClick(() => {
+                this.pageInfos.pushPath({
+                  name: 'Apiversioncache'
+                })
+              })
+
+              Divider()
+                .padding({
+                  left: 12,
+                  right: 12
+                })
+              Row() {
                 Text('流量使用提醒')
                   .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
@@ -897,13 +942,14 @@ struct Commonsetting {
       }
       .padding({
         bottom: $r('sys.float.ohos_id_default_padding_bottom_fixed'),
-        left: $r('sys.float.ohos_id_max_padding_start'),
-        right: $r('sys.float.ohos_id_max_padding_end')
+        left: $r('sys.float.ohos_id_elements_margin_horizontal_l'),
+        right: $r('sys.float.ohos_id_elements_margin_horizontal_l')
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
     .title('通用')
-    .onAppear(async () => {
+    .onReady(async (context) => {
+      this.pageInfos = context.pathStack
       this.allowContinue = this.commonSettingDataPreferences.getSync('allowContinue', true) as boolean
       this.exitAfterContinue = this.commonSettingDataPreferences.getSync('exitAfterContinue', true) as boolean
       this.allowRestore = this.commonSettingDataPreferences.getSync('allowRestore', true) as boolean

@@ -14,7 +14,7 @@ import { hdsEffect } from '@kit.UIDesignKit'
 import { getAccountInfo, getLoginStatus } from '../common/Account'
 import { getDnsServer } from '../common/Dnsserver'
 import { getCurrentNetworkBearerType } from '../common/Network'
-import { getPreferType, getPreferTypeByDisplayId } from '../common/Prefertype'
+import getPreferType from '../common/Prefertype'
 import { dsmRequest, getDsmApiMaxVersion } from '../common/Request'
 import { getSizeString, getTimeString } from '../common/Stringformat'
 import Newfolder from './Newfolder'
@@ -1630,14 +1630,16 @@ export default struct Filelist {
       .height('100%')
     }
     .padding({
-      left: $r('sys.float.ohos_id_max_padding_start'),
-      right: $r('sys.float.ohos_id_max_padding_end'),
+      left: $r('sys.float.ohos_id_elements_margin_horizontal_l'),
+      right: $r('sys.float.ohos_id_elements_margin_horizontal_l'),
       top: this.preferType === 0 ? 0 : $r('sys.float.ohos_id_default_padding_top')
     })
     .onAppear(async () => {
       this.preferType = getPreferType(this.UIContext)
-      display.on('change', (displayId) => {
-        this.preferType = getPreferTypeByDisplayId(displayId, this.UIContext)
+      display.on('change', () => {
+        setTimeout(() => {
+          this.preferType = getPreferType(this.UIContext)
+        }, 200)
       })
       this.context.eventHub.on('backFilelist', () => {
         this.dirnames.pop()

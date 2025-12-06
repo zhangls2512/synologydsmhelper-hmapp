@@ -10,7 +10,7 @@ import { hdsEffect } from '@kit.UIDesignKit'
 import { getAccountInfo, getLoginStatus } from '../common/Account'
 import { getDnsServer } from '../common/Dnsserver'
 import { getCurrentNetworkBearerType } from '../common/Network'
-import { getPreferType, getPreferTypeByDisplayId } from '../common/Prefertype'
+import getPreferType from '../common/Prefertype'
 import { dsmRequest, getDsmApiMaxVersion } from '../common/Request'
 import { getSizeString, getTimeString } from '../common/Stringformat'
 
@@ -54,6 +54,7 @@ interface TimelineResponse {
 }
 
 interface TimelineSectionItem {
+  offset: number,
   limit: number,
   list: TimelineListItem[]
 }
@@ -142,8 +143,9 @@ export default struct Album {
           const timelineSection = timelineres as TimelineResponse
           let timelineList: TimelineListItem[] = []
           for (let i = 0; i < timelineSection.section.length; i++) {
-            const list = timelineSection.section[i].list
-            if (list) {
+            const item = timelineSection.section[i]
+            const list = item.list
+            if (list && item.offset === 0) {
               timelineList = timelineList.concat(list)
             }
           }
@@ -195,7 +197,7 @@ export default struct Album {
                 message: '已加载 ' + offset + ' 张，共 ' + limit + ' 张'
               })
               const photores = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Item',
-                '&method=list&offset=' + offset + '&limit=4&additional=["resolution"]')
+                '&method=list&offset=' + offset + '&limit=10&additional=["resolution"]')
               if (photores !== 'fail') {
                 const all = photores['list'] as PhotoResItem[]
                 if (all.length === 0) {
@@ -245,7 +247,7 @@ export default struct Album {
                   }
                 }
                 this.photoArray = this.photoArray.concat(photoArray)
-                offset += 4
+                offset += 10
               }
               if (photores === 'fail') {
                 this.photoFinished = true
@@ -295,7 +297,7 @@ export default struct Album {
           message: '已加载 ' + offset + ' 张，共 ' + this.previewAlbum?.item_count + ' 张'
         })
         const photores = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Item',
-          '&method=list&offset=' + offset + '&limit=4&additional=["resolution"]&album_id=' + this.previewAlbum?.id)
+          '&method=list&offset=' + offset + '&limit=10&additional=["resolution"]&album_id=' + this.previewAlbum?.id)
         if (photores !== 'fail') {
           const all = photores['list'] as PhotoResItem[]
           if (all.length === 0) {
@@ -343,7 +345,7 @@ export default struct Album {
             }
           }
           this.albumPhotoArray = this.albumPhotoArray.concat(photoArray)
-          offset += 4
+          offset += 10
         }
         if (photores === 'fail') {
           finished = true
@@ -406,8 +408,8 @@ export default struct Album {
           })
           .padding({
             bottom: $r('sys.float.ohos_id_default_padding_bottom_fixed'),
-            left: $r('sys.float.ohos_id_max_padding_start'),
-            right: $r('sys.float.ohos_id_max_padding_end')
+            left: $r('sys.float.ohos_id_elements_margin_horizontal_l'),
+            right: $r('sys.float.ohos_id_elements_margin_horizontal_l')
           })
           .width('100%')
         }
@@ -651,51 +653,52 @@ export default struct Album {
             }) {
               Column() {
                 if (this.selectedIndex === 0) {
-                  List() {
-                    ForEach(this.timelineArray, (item: TimelineItem, index) => {
-                      ListItem() {
+                  Scroll() {
+                    Column() {
+                      ForEach(this.timelineArray, (timelineItem: TimelineItem, timelineIndex) => {
                         Column() {
-                          Text(item.date)
-                          Flex({
-                            wrap: FlexWrap.Wrap
-                          }) {
-                            ForEach(this.photoArray, (item: PhotoItem, photoIndex) => {
-                              if (this.isPhotoVisiable(photoIndex, index)) {
-                                Image(item.url)
-                                  .alt($r('app.media.imageloading'))
-                                  .aspectRatio(1)
-                                  .autoResize(true)
-                                  .copyOption(CopyOptions.LocalDevice)
-                                  .objectFit(ImageFit.Auto)
-                                  .width('25%')
-                                  .onError(async (err) => {
-                                    await promptAction.openToast({
-                                      message: '发生错误，错误信息：' + err.message
+                          Text(timelineItem.date)
+                          List() {
+                            ForEach(this.photoArray.filter((photoItem,
+                              photoIndex): boolean => this.isPhotoVisiable(photoIndex, timelineIndex)),
+                              (photoItem: PhotoItem) => {
+                                ListItem() {
+                                  Image(photoItem.url)
+                                    .alt($r('app.media.imageloading'))
+                                    .aspectRatio(1)
+                                    .autoResize(true)
+                                    .copyOption(CopyOptions.LocalDevice)
+                                    .objectFit(ImageFit.Auto)
+                                    .onError(async (err) => {
+                                      await promptAction.openToast({
+                                        message: '发生错误，错误信息：' + err.message
+                                      })
                                     })
-                                  })
-                                  .onClick(() => {
-                                    this.previewPhoto = item
-                                    this.backDataPreferences.putSync('album', true)
-                                  })
-                              }
-                            })
+                                    .onClick(() => {
+                                      this.previewPhoto = photoItem
+                                      this.backDataPreferences.putSync('album', true)
+                                    })
+                                }
+                              })
                           }
+                          .lanes(4)
                           .margin({
                             top: $r('sys.float.ohos_id_elements_margin_vertical_m')
                           })
                         }
                         .alignItems(HorizontalAlign.Start)
-                      }
-                      .margin({
-                        top: index !== 0 ? $r('sys.float.ohos_id_elements_margin_vertical_m') : 0
+                        .margin({
+                          top: timelineIndex !== 0 ? $r('sys.float.ohos_id_elements_margin_vertical_m') : 0
+                        })
                       })
-                    })
+                    }
                   }
+                  .edgeEffect(EdgeEffect.Spring)
                 }
                 if (this.selectedIndex === 1) {
                   Column() {
-                    ForEach(this.albumArray, (item: AlbumItem, index) => {
-                      if (index !== 0) {
+                    ForEach(this.albumArray, (albumItem: AlbumItem, albumIndex) => {
+                      if (albumIndex !== 0) {
                         Divider()
                           .padding({
                             left: 12,
@@ -703,13 +706,13 @@ export default struct Album {
                           })
                       }
                       Row() {
-                        Text(item.name)
+                        Text(albumItem.name)
                           .fontWeight(FontWeight.Medium)
                           .layoutWeight(1)
                           .margin({
                             right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                           })
-                        Text(String(item.item_count))
+                        Text(String(albumItem.item_count))
                           .fontColor($r('sys.color.font_secondary'))
                           .fontSize($r('sys.float.ohos_id_text_size_body2'))
                           .margin({
@@ -724,7 +727,7 @@ export default struct Album {
                       .padding(12)
                       .stateStyles({
                         normal: {
-                          .backgroundColor(this.hoverId === index ? $r('sys.color.interactive_hover') :
+                          .backgroundColor(this.hoverId === albumIndex ? $r('sys.color.interactive_hover') :
                             $r('sys.color.comp_background_primary'))
                         },
                         pressed: {
@@ -737,11 +740,11 @@ export default struct Album {
                           this.hoverId = -1
                         }
                         if (isHover) {
-                          this.hoverId = index
+                          this.hoverId = albumIndex
                         }
                       })
                       .onClick(async () => {
-                        this.previewAlbum = item
+                        this.previewAlbum = albumItem
                         this.backDataPreferences.putSync('album', true)
                         await this.getAlbumPhoto()
                       })
@@ -926,32 +929,36 @@ export default struct Album {
                   })
               }
 
-              List() {
-                ListItem() {
-                  Flex({
-                    wrap: FlexWrap.Wrap
-                  }) {
+              Scroll() {
+                Column() {
+                  List() {
                     ForEach(this.albumPhotoArray, (item: PhotoItem) => {
-                      Image(item.url)
-                        .alt($r('app.media.imageloading'))
-                        .aspectRatio(1)
-                        .autoResize(true)
-                        .copyOption(CopyOptions.LocalDevice)
-                        .objectFit(ImageFit.Auto)
-                        .width('25%')
-                        .onError(async (err) => {
-                          await promptAction.openToast({
-                            message: '发生错误，错误信息：' + err.message
+                      ListItem() {
+                        Image(item.url)
+                          .alt($r('app.media.imageloading'))
+                          .aspectRatio(1)
+                          .autoResize(true)
+                          .copyOption(CopyOptions.LocalDevice)
+                          .objectFit(ImageFit.Auto)
+                          .onError(async (err) => {
+                            await promptAction.openToast({
+                              message: '发生错误，错误信息：' + err.message
+                            })
                           })
-                        })
-                        .onClick(() => {
-                          this.previewPhoto = item
-                          this.backDataPreferences.putSync('album', true)
-                        })
+                          .onClick(() => {
+                            this.previewPhoto = item
+                            this.backDataPreferences.putSync('album', true)
+                          })
+                      }
                     })
                   }
+                  .lanes(4)
+                  .margin({
+                    top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                  })
                 }
               }
+              .edgeEffect(EdgeEffect.Spring)
               .margin({
                 top: $r('sys.float.ohos_id_elements_margin_vertical_l')
               })
@@ -965,14 +972,16 @@ export default struct Album {
       .height('100%')
     }
     .padding({
-      left: $r('sys.float.ohos_id_max_padding_start'),
-      right: $r('sys.float.ohos_id_max_padding_end'),
+      left: $r('sys.float.ohos_id_elements_margin_horizontal_l'),
+      right: $r('sys.float.ohos_id_elements_margin_horizontal_l'),
       top: this.preferType === 0 ? 0 : $r('sys.float.ohos_id_default_padding_top')
     })
     .onAppear(async () => {
       this.preferType = getPreferType(this.UIContext)
-      display.on('change', (displayId) => {
-        this.preferType = getPreferTypeByDisplayId(displayId, this.UIContext)
+      display.on('change', () => {
+        setTimeout(() => {
+          this.preferType = getPreferType(this.UIContext)
+        }, 200)
       })
       this.context.eventHub.on('backAlbum', () => {
         if (this.previewPhoto && !this.previewAlbum) {

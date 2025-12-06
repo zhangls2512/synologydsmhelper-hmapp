@@ -4,7 +4,7 @@ import { display } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
 import { image } from '@kit.ImageKit'
 import { importAccounts } from '../common/Account'
-import { getPreferType, getPreferTypeByDisplayId } from '../common/Prefertype'
+import getPreferType from '../common/Prefertype'
 import Cardlist from './Cardlist'
 import Filelist from './Filelist'
 import Album from './Album'
@@ -127,7 +127,7 @@ struct Index {
           .fontWeight(FontWeight.Bold)
           .margin({
             bottom: $r('sys.float.ohos_id_elements_margin_vertical_l'),
-            left: $r('sys.float.ohos_id_default_padding_start')
+            left: $r('sys.float.ohos_id_elements_margin_horizontal_l')
           })
       }
       Tabs({
@@ -141,9 +141,7 @@ struct Index {
         .bindSheet(this.isShowAccountlistSheet!!, this.AccountlistSheetBuilder(), {
           height: SheetSize.FIT_CONTENT,
           preferType: this.preferType,
-          title: {
-            title: '切换账号'
-          }
+          showClose: false
         })
 
         TabContent() {
@@ -232,8 +230,10 @@ struct Index {
         })
       })
       this.preferType = getPreferType(this.UIContext)
-      display.on('change', (displayId) => {
-        this.preferType = getPreferTypeByDisplayId(displayId, this.UIContext)
+      display.on('change', () => {
+        setTimeout(() => {
+          this.preferType = getPreferType(this.UIContext)
+        }, 200)
       })
       const currentIndex = this.index
       this.index = -1
