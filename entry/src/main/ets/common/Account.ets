@@ -76,9 +76,9 @@ export async function getLoginStatus() {
 
 export async function getAccountInfo(): Promise<AccountInfo> {
   const accounts = await getAccountList()
-  const index = accounts.findIndex(item => item.isLogin === 'true')
-  if (index !== -1) {
-    return accounts[index]
+  const account = accounts.find(item => item.isLogin === 'true')
+  if (account) {
+    return account
   }
   return {
     id: -1,
@@ -112,19 +112,19 @@ export async function getAccountList(): Promise<AccountInfo[]> {
 
 export async function exitAccount(context: Context, UIContext: UIContext, logout: boolean) {
   const accounts = await getAccountList()
-  const index = accounts.findIndex(item => item.isLogin === 'true')
-  if (index !== -1) {
+  const account = accounts.find(item => item.isLogin === 'true')
+  if (account) {
     if (logout) {
       await dsmRequest(context, UIContext, '', 'SYNO.API.Auth', '&method=logout')
     }
     const appAccountManager = appAccount.createAppAccountManager()
-    await appAccountManager.setCustomData(String(accounts[index].id), 'isLogin', 'false')
+    await appAccountManager.setCustomData(String(account.id), 'isLogin', 'false')
   }
 }
 
 export async function removeAccount(id: number) {
   const accounts = await getAccountList()
-  if (accounts.findIndex(item => item.id === id) !== -1) {
+  if (accounts.find(item => item.id === id)) {
     const appAccountManager = appAccount.createAppAccountManager()
     await appAccountManager.removeAccount(String(id))
     await promptAction.openToast({

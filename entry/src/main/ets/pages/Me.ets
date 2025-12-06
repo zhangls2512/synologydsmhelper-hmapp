@@ -1,7 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { display, LoadingDialog } from '@kit.ArkUI'
 import { exitAccount, getAccountInfo } from '../common/Account'
-import { getPreferType, getPreferTypeByDisplayId } from '../common/Prefertype'
+import getPreferType from '../common/Prefertype'
 import { dsmRequest } from '../common/Request'
 import Accountlist from './Accountlist'
 import Login from './Login'
@@ -427,14 +427,16 @@ export default struct Me {
       }
     }
     .padding({
-      left: $r('sys.float.ohos_id_max_padding_start'),
-      right: $r('sys.float.ohos_id_max_padding_end'),
+      left: $r('sys.float.ohos_id_elements_margin_horizontal_l'),
+      right: $r('sys.float.ohos_id_elements_margin_horizontal_l'),
       top: this.preferType === 0 ? 0 : $r('sys.float.ohos_id_default_padding_top')
     })
     .onAppear(async () => {
       this.preferType = getPreferType(this.UIContext)
-      display.on('change', (displayId) => {
-        this.preferType = getPreferTypeByDisplayId(displayId, this.UIContext)
+      display.on('change', () => {
+        setTimeout(() => {
+          this.preferType = getPreferType(this.UIContext)
+        }, 200)
       })
       this.context.eventHub.on('login', () => {
         this.isShowLoginSheet = true

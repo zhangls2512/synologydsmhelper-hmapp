@@ -8,12 +8,12 @@ import { getDnsServer } from './Dnsserver'
 import { read, write } from './File'
 import { ResponseData } from '../pages/Login'
 
-interface ApiVersionItem {
+export interface ApiVersionItem {
   name: string,
   version: number
 }
 
-interface ApiVersionCacheItem {
+export interface ApiVersionCacheItem {
   path: string,
   apiVersion: ApiVersionItem[]
 }
@@ -44,16 +44,16 @@ async function getCacheApiVersion(context: Context, path: string, api: string) {
     if (filestring !== 'fail') {
       apiVersionCache = JSON.parse(filestring) as ApiVersionCacheItem[]
     }
-    const pathIndex = apiVersionCache.findIndex(item => item.path === path)
-    if (pathIndex === -1) {
+    const apiVersionCacheItem = apiVersionCache.find(item => item.path === path)
+    if (!apiVersionCacheItem) {
       return -1
     } else {
-      const pathApiVersionCache = apiVersionCache[pathIndex].apiVersion
-      const apiVersionIndex = pathApiVersionCache.findIndex(item => item.name === api)
-      if (apiVersionIndex === -1) {
+      const pathApiVersionCache = apiVersionCacheItem.apiVersion
+      const apiVersionItem = pathApiVersionCache.find(item => item.name === api)
+      if (!apiVersionItem) {
         return -1
       } else {
-        return pathApiVersionCache[apiVersionIndex].version
+        return apiVersionItem.version
       }
     }
   }
@@ -108,8 +108,8 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
           if (filestring !== 'fail') {
             apiVersionCache = JSON.parse(filestring) as ApiVersionCacheItem[]
           }
-          const pathIndex = apiVersionCache.findIndex(item => item.path === requestPath)
-          if (pathIndex === -1) {
+          const apiVersionCacheItem = apiVersionCache.find(item => item.path === requestPath)
+          if (!apiVersionCacheItem) {
             apiVersionCache.push({
               path: requestPath,
               apiVersion: [
@@ -120,15 +120,15 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
               ]
             })
           } else {
-            const pathApiVersionCache = apiVersionCache[pathIndex].apiVersion
-            const apiVersionIndex = pathApiVersionCache.findIndex(item => item.name === api)
-            if (apiVersionIndex === -1) {
+            const pathApiVersionCache = apiVersionCacheItem.apiVersion
+            const apiVersionItem = pathApiVersionCache.find(item => item.name === api)
+            if (!apiVersionItem) {
               pathApiVersionCache.push({
                 name: api,
                 version: version
               })
             } else {
-              pathApiVersionCache[apiVersionIndex].version = version
+              apiVersionItem.version = version
             }
           }
           await write(filePath, JSON.stringify(apiVersionCache))

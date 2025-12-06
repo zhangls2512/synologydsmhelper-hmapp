@@ -50,7 +50,7 @@ export default struct Cardeditsetting {
                 .onChange((isOn) => {
                   let cardlist: string[] = []
                   if (!isOn) {
-                    cardlist = this.cards.filter(itema => itema !== item.value)
+                    cardlist = this.cards.filter(inItem => inItem !== item.value)
                   }
                   if (isOn) {
                     cardlist = [...this.cards, item.value]
@@ -75,8 +75,8 @@ export default struct Cardeditsetting {
     }
     .padding({
       bottom: $r('sys.float.ohos_id_default_padding_bottom_fixed'),
-      left: $r('sys.float.ohos_id_max_padding_start'),
-      right: $r('sys.float.ohos_id_max_padding_end')
+      left: $r('sys.float.ohos_id_elements_margin_horizontal_l'),
+      right: $r('sys.float.ohos_id_elements_margin_horizontal_l')
     })
     .onAppear(() => {
       this.getSetting()
