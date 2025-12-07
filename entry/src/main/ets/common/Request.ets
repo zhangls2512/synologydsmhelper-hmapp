@@ -63,15 +63,20 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
   const accountInfo = await getAccountInfo()
   let requestPath = path
   if (!requestPath) {
+    if (!accountInfo.path) {
+      return 'fail'
+    }
     requestPath = accountInfo.path
   }
   const commonSettingDataPreferences = preferences.getPreferencesSync(context, {
     name: 'commonSetting'
   })
-  const cacheApiVersion = await getCacheApiVersion(context, requestPath, api)
   const cacheApiVersionSetting = commonSettingDataPreferences.getSync('cacheApiVersion', true)
-  if (cacheApiVersionSetting && cacheApiVersion !== -1) {
-    return cacheApiVersion
+  if (cacheApiVersionSetting) {
+    const cacheApiVersion = await getCacheApiVersion(context, requestPath, api)
+    if (cacheApiVersion !== -1) {
+      return cacheApiVersion
+    }
   }
   const debugSettingDataPreferences = preferences.getPreferencesSync(context, {
     name: 'debugSetting'
@@ -158,6 +163,9 @@ export async function dsmRequest(context: Context, UIContext: UIContext, path: s
   const accountInfo = await getAccountInfo()
   let requestPath = path
   if (!requestPath) {
+    if (!accountInfo.path) {
+      return 'fail'
+    }
     requestPath = accountInfo.path
   }
   let apiVersion = version

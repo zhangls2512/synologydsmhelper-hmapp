@@ -18,7 +18,8 @@ interface InAccountInfo {
   name: string,
   password: string,
   sid: string,
-  did: string
+  did: string,
+  isLogin?: string
 }
 
 export async function setAccount(context: Context, UIContext: UIContext, accountInfo: InAccountInfo) {
@@ -51,7 +52,7 @@ export async function setAccount(context: Context, UIContext: UIContext, account
           name: accountInfo.name,
           sid: accountInfo.sid,
           did: accountInfo.did,
-          isLogin: 'true'
+          isLogin: accountInfo.isLogin ? accountInfo.isLogin : 'true'
         }
       })
       await appAccountManager.setCredential(id, 'password', accountInfo.password)
@@ -150,7 +151,8 @@ export async function importAccounts(context: Context, UIContext: UIContext, uri
         name: item.name,
         password: item.password,
         sid: item.sid,
-        did: item.did
+        did: item.did,
+        isLogin: item.isLogin
       })
     })
     await Promise.all(promises)

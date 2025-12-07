@@ -88,6 +88,8 @@ export default struct Album {
   @Local hoverId: number = -1
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
+  account = ''
+  folderMap = new Map<number, string>()
   photoFinished = true
   backDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'back'
@@ -117,9 +119,30 @@ export default struct Album {
     return photoIndex >= minIndex && photoIndex < minIndex + this.timelineArray[dateIndex].count
   }
 
-  async get(refresh: number = 2) {
+  async get(refresh: number = 2, notRefreshWhenAccountSame = false) {
     this.isLogin = await getLoginStatus()
+    if (!this.isLogin) {
+      this.timelineArray = []
+      this.photoArray = []
+      this.albumPhotoArray = []
+      this.account = ''
+      this.folderMap.clear()
+      this.photoFinished = true
+    }
     if (this.isLogin) {
+      const accountInfo = await getAccountInfo()
+      const account = accountInfo.path + '\0' + accountInfo.name
+      if (this.account !== account) {
+        this.timelineArray = []
+        this.photoArray = []
+        this.albumPhotoArray = []
+        this.folderMap.clear()
+        this.photoFinished = true
+      }
+      if (this.account === account && notRefreshWhenAccountSame) {
+        return
+      }
+      this.account = account
       if (refresh !== 0) {
         this.albumArray = []
         this.loadingDialogControllerProgress.open()
@@ -135,6 +158,7 @@ export default struct Album {
           return
         }
         this.timelineArray = []
+        this.photoArray = []
         this.loadingDialogControllerProgress.open()
         const timelineres =
           await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Timeline', '&method=get')
@@ -149,10 +173,6 @@ export default struct Album {
               timelineList = timelineList.concat(list)
             }
           }
-          let limit = 0
-          for (let i = 0; i < timelineSection.section.length; i++) {
-            limit += timelineSection.section[i].limit
-          }
           for (let i = 0; i < timelineList.length; i++) {
             const item = timelineList[i]
             this.timelineArray.push({
@@ -166,7 +186,6 @@ export default struct Album {
           this.loadingDialogControllerProgress.close()
           if (keyres !== 'fail') {
             const tid = keyres['tid'] as string
-            const accountInfo = await getAccountInfo()
             const textEncoder = new util.TextEncoder()
             if (getCurrentNetworkBearerType() === 0) {
               const promptAction = this.UIContext.getPromptAction()
@@ -188,14 +207,12 @@ export default struct Album {
                 return
               }
             }
-            this.photoArray = []
             this.photoFinished = false
             let offset = 0
-            const folderMap = new Map<number, string>()
             while (!this.photoFinished) {
-              await promptAction.openToast({
-                message: '已加载 ' + offset + ' 张，共 ' + limit + ' 张'
-              })
+              if (this.account !== account) {
+                return
+              }
               const photores = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Item',
                 '&method=list&offset=' + offset + '&limit=10&additional=["resolution"]')
               if (photores !== 'fail') {
@@ -207,14 +224,20 @@ export default struct Album {
                 const photos = all.filter(item => item.type === 'photo')
                 const photoArray: PhotoItem[] = []
                 for (let i = 0; i < photos.length; i++) {
+                  if (this.account !== account) {
+                    return
+                  }
                   const item = photos[i]
-                  if (!folderMap.has(item.folder_id)) {
+                  if (!this.folderMap.has(item.folder_id)) {
                     const folderres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Folder',
                       '&method=get&id=' + item.folder_id)
                     if (folderres !== 'fail') {
+                      if (this.account !== account) {
+                        return
+                      }
                       const folderPath = folderres['folder']['name'] as string
                       const path = '/home/Photos' + folderPath + '/'
-                      folderMap.set(item.folder_id, path)
+                      this.folderMap.set(item.folder_id, path)
                       photoArray.push({
                         id: item.id,
                         filename: item.filename,
@@ -239,9 +262,9 @@ export default struct Album {
                       url: accountInfo.path + '/fbdownload/' +
                       item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
                         '?tid=' + tid + '&mode=open&dlink=' +
-                      Array.from(textEncoder.encodeInto(folderMap.get(item.folder_id) + item.filename))
+                      Array.from(textEncoder.encodeInto(this.folderMap.get(item.folder_id) + item.filename))
                         .map(byte => byte.toString(16).padStart(2, '0')).join(''),
-                      path: folderMap.get(item.folder_id) + item.filename,
+                      path: this.folderMap.get(item.folder_id) + item.filename,
                       resolution: item.additional.resolution
                     })
                   }
@@ -260,6 +283,7 @@ export default struct Album {
   }
 
   async getAlbumPhoto() {
+    this.albumPhotoArray = []
     this.loadingDialogControllerProgress.open()
     const res = await dsmRequest(this.context, this.UIContext, '', 'SYNO.API.Auth.Key',
       '&method=grant&allow_api=SYNO.FileStation.Download&allow_methods=["download"]')
@@ -267,6 +291,7 @@ export default struct Album {
     if (res !== 'fail') {
       const tid = res['tid'] as string
       const accountInfo = await getAccountInfo()
+      const account = accountInfo.path + '\0' + accountInfo.name
       const textEncoder = new util.TextEncoder()
       if (getCurrentNetworkBearerType() === 0) {
         const promptAction = this.UIContext.getPromptAction()
@@ -288,14 +313,12 @@ export default struct Album {
           return
         }
       }
-      this.albumPhotoArray = []
       let finished = false
       let offset = 0
-      const folderMap = new Map<number, string>()
       while (!finished) {
-        await promptAction.openToast({
-          message: '已加载 ' + offset + ' 张，共 ' + this.previewAlbum?.item_count + ' 张'
-        })
+        if (this.account !== account) {
+          return
+        }
         const photores = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Item',
           '&method=list&offset=' + offset + '&limit=10&additional=["resolution"]&album_id=' + this.previewAlbum?.id)
         if (photores !== 'fail') {
@@ -307,14 +330,20 @@ export default struct Album {
           const photos = all.filter(item => item.type === 'photo')
           const photoArray: PhotoItem[] = []
           for (let i = 0; i < photos.length; i++) {
+            if (this.account !== account) {
+              return
+            }
             const item = photos[i]
-            if (!folderMap.has(item.folder_id)) {
+            if (!this.folderMap.has(item.folder_id)) {
               const folderres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Folder',
                 '&method=get&id=' + item.folder_id)
               if (folderres !== 'fail') {
+                if (this.account !== account) {
+                  return
+                }
                 const folderPath = folderres['folder']['name'] as string
                 const path = '/home/Photos' + folderPath + '/'
-                folderMap.set(item.folder_id, path)
+                this.folderMap.set(item.folder_id, path)
                 photoArray.push({
                   id: item.id,
                   filename: item.filename,
@@ -337,9 +366,9 @@ export default struct Album {
                 folder_id: item.folder_id,
                 url: accountInfo.path + '/fbdownload/' + item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
                   '?tid=' + tid + '&mode=open&dlink=' +
-                Array.from(textEncoder.encodeInto(folderMap.get(item.folder_id) + item.filename))
+                Array.from(textEncoder.encodeInto(this.folderMap.get(item.folder_id) + item.filename))
                   .map(byte => byte.toString(16).padStart(2, '0')).join(''),
-                path: folderMap.get(item.folder_id) + item.filename,
+                path: this.folderMap.get(item.folder_id) + item.filename,
                 resolution: item.additional.resolution
               })
             }
@@ -632,7 +661,6 @@ export default struct Album {
       Column() {
         if (!this.isLogin) {
           Text('未登录账号')
-            .height('100%')
             .textAlign(TextAlign.Center)
             .width('100%')
         }
@@ -885,7 +913,6 @@ export default struct Album {
                 })
             }
             .alignItems(HorizontalAlign.Start)
-            .height('100%')
           }
           if (this.previewAlbum) {
             Column() {
@@ -929,47 +956,40 @@ export default struct Album {
                   })
               }
 
-              Scroll() {
-                Column() {
-                  List() {
-                    ForEach(this.albumPhotoArray, (item: PhotoItem) => {
-                      ListItem() {
-                        Image(item.url)
-                          .alt($r('app.media.imageloading'))
-                          .aspectRatio(1)
-                          .autoResize(true)
-                          .copyOption(CopyOptions.LocalDevice)
-                          .objectFit(ImageFit.Auto)
-                          .onError(async (err) => {
-                            await promptAction.openToast({
-                              message: '发生错误，错误信息：' + err.message
-                            })
+              Column() {
+                List() {
+                  ForEach(this.albumPhotoArray, (item: PhotoItem) => {
+                    ListItem() {
+                      Image(item.url)
+                        .alt($r('app.media.imageloading'))
+                        .aspectRatio(1)
+                        .autoResize(true)
+                        .copyOption(CopyOptions.LocalDevice)
+                        .objectFit(ImageFit.Auto)
+                        .onError(async (err) => {
+                          await promptAction.openToast({
+                            message: '发生错误，错误信息：' + err.message
                           })
-                          .onClick(() => {
-                            this.previewPhoto = item
-                            this.backDataPreferences.putSync('album', true)
-                          })
-                      }
-                    })
-                  }
-                  .lanes(4)
-                  .margin({
-                    top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                        })
+                        .onClick(() => {
+                          this.previewPhoto = item
+                          this.backDataPreferences.putSync('album', true)
+                        })
+                    }
                   })
                 }
+                .lanes(4)
               }
-              .edgeEffect(EdgeEffect.Spring)
+              .layoutWeight(1)
               .margin({
                 top: $r('sys.float.ohos_id_elements_margin_vertical_l')
               })
             }
             .alignItems(HorizontalAlign.Start)
-            .height('100%')
           }
         }
       }
       .alignItems(HorizontalAlign.Start)
-      .height('100%')
     }
     .padding({
       left: $r('sys.float.ohos_id_elements_margin_horizontal_l'),
@@ -1001,7 +1021,7 @@ export default struct Album {
         this.previewPhoto = undefined
         this.previewAlbum = undefined
         this.backDataPreferences.putSync('album', false)
-        await this.get()
+        await this.get(2, true)
       })
       await this.get()
     })

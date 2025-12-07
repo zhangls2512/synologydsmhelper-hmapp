@@ -146,14 +146,12 @@ struct Index {
 
         TabContent() {
           Filelist()
-            .height('100%')
         }
         .tabBar(this.tabBuilder(1, $r('app.media.file'), '文件'))
 
         if (this.showAlbum) {
           TabContent() {
             Album()
-              .height('100%')
           }
           .tabBar(this.tabBuilder(2, $r('app.media.album'), '相册'))
         }
