@@ -35,26 +35,48 @@ interface DeveloperErrorResponse {
 }
 
 async function getCacheApiVersion(context: Context, path: string, api: string) {
+  let apiVersionCacheValue = ''
+  const apiVersionCacheDataPreferences = preferences.getPreferencesSync(context, {
+    name: 'apiVersionCache'
+  })
   const filePath = context.cacheDir + '/apiversion.txt'
-  if (!fileIo.accessSync(filePath)) {
-    return -1
+  if (!apiVersionCacheDataPreferences.getSync('apiVersionCache', '')) {
+    apiVersionCacheValue = apiVersionCacheDataPreferences.getSync('apiVersionCache', '') as string
   } else {
-    const filestring = await read(filePath, true)
-    let apiVersionCache: ApiVersionCacheItem[] = []
-    if (filestring !== 'fail') {
-      apiVersionCache = JSON.parse(filestring) as ApiVersionCacheItem[]
-    }
-    const apiVersionCacheItem = apiVersionCache.find(item => item.path === path)
-    if (!apiVersionCacheItem) {
+    if (!fileIo.accessSync(filePath)) {
       return -1
     } else {
-      const pathApiVersionCache = apiVersionCacheItem.apiVersion
-      const apiVersionItem = pathApiVersionCache.find(item => item.name === api)
-      if (!apiVersionItem) {
+      const filestring = await read(filePath, true)
+      if (filestring !== 'fail') {
+        apiVersionCacheValue = filestring
+      } else {
+        return -1
+      }
+    }
+  }
+  if (!apiVersionCacheValue) {
+    return -1
+  } else {
+    try {
+      const apiVersionCache = JSON.parse(apiVersionCacheValue) as ApiVersionCacheItem[]
+      const apiVersionCacheItem = apiVersionCache.find(item => item.path === path)
+      if (!apiVersionCacheItem) {
         return -1
       } else {
-        return apiVersionItem.version
+        const pathApiVersionCache = apiVersionCacheItem.apiVersion
+        const apiVersionItem = pathApiVersionCache.find(item => item.name === api)
+        if (!apiVersionItem) {
+          return -1
+        } else {
+          return apiVersionItem.version
+        }
       }
+    } catch {
+      await preferences.deletePreferences(context, 'apiVersionCache')
+      if (fileIo.accessSync(filePath)) {
+        await fileIo.unlink(filePath)
+      }
+      return -1
     }
   }
 }
@@ -107,11 +129,14 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
       if (res.success) {
         const version = res.data[api].maxVersion as number
         if (cacheApiVersionSetting) {
-          const filePath = context.cacheDir + '/apiversion.txt'
-          const filestring = await read(filePath, true)
           let apiVersionCache: ApiVersionCacheItem[] = []
-          if (filestring !== 'fail') {
-            apiVersionCache = JSON.parse(filestring) as ApiVersionCacheItem[]
+          const apiVersionCacheDataPreferences = preferences.getPreferencesSync(context, {
+            name: 'apiVersionCache'
+          })
+          try {
+            apiVersionCache = JSON.parse(apiVersionCacheDataPreferences.getSync('apiVersionCache',
+              '') as string) as ApiVersionCacheItem[]
+          } catch {
           }
           const apiVersionCacheItem = apiVersionCache.find(item => item.path === requestPath)
           if (!apiVersionCacheItem) {
@@ -136,7 +161,10 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
               apiVersionItem.version = version
             }
           }
-          await write(filePath, JSON.stringify(apiVersionCache))
+          const apiVersionCacheValue = JSON.stringify(apiVersionCache)
+          apiVersionCacheDataPreferences.putSync('apiVersionCache', apiVersionCacheValue)
+          const filePath = context.cacheDir + '/apiversion.txt'
+          await write(filePath, apiVersionCacheValue)
         }
         return version
       }
@@ -239,7 +267,7 @@ export async function dsmRequest(context: Context, UIContext: UIContext, path: s
         return 'fail'
       }
       if (res.error.code === 150) {
-        return await dsmRequest(context, UIContext, path, api, params)
+        return await dsmRequest(context, UIContext, path, api, params, version)
       }
       await promptAction.openToast({
         message: 'DSM 接口调用失败，错误码：' + res.error.code

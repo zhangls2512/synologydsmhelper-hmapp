@@ -24,6 +24,7 @@ interface InAccountInfo {
 
 export async function setAccount(context: Context, UIContext: UIContext, accountInfo: InAccountInfo) {
   await exitAccount(context, UIContext, false)
+  const isLogin = accountInfo.isLogin ? accountInfo.isLogin : 'true'
   const accounts = await getAccountList()
   let accountIndex = -1
   accounts.forEach((item, index) => {
@@ -35,7 +36,7 @@ export async function setAccount(context: Context, UIContext: UIContext, account
   if (accountIndex !== -1) {
     await appAccountManager.setCustomData(String(accounts[accountIndex].id), 'sid', accountInfo.sid)
     await appAccountManager.setCustomData(String(accounts[accountIndex].id), 'did', accountInfo.did)
-    await appAccountManager.setCustomData(String(accounts[accountIndex].id), 'isLogin', 'true')
+    await appAccountManager.setCustomData(String(accounts[accountIndex].id), 'isLogin', isLogin)
   }
   if (accountIndex === -1) {
     let oldAccountIndex = -1
@@ -52,7 +53,7 @@ export async function setAccount(context: Context, UIContext: UIContext, account
           name: accountInfo.name,
           sid: accountInfo.sid,
           did: accountInfo.did,
-          isLogin: accountInfo.isLogin ? accountInfo.isLogin : 'true'
+          isLogin: isLogin
         }
       })
       await appAccountManager.setCredential(id, 'password', accountInfo.password)
