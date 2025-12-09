@@ -366,6 +366,7 @@ export default struct Cleardata {
                   webview.WebviewController.removeAllCache(true)
                 }
                 if (item === 'apiVersionCache') {
+                  await preferences.deletePreferences(this.context, 'apiVersionCache')
                   const filePath = this.context.cacheDir + '/apiversion.txt'
                   if (fileIo.accessSync(filePath)) {
                     await fileIo.unlink(filePath)
