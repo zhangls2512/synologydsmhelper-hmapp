@@ -163,6 +163,7 @@ struct Index {
       }
       .barBackgroundBlurStyle(BlurStyle.Regular)
       .barPosition(this.preferType === 0 ? BarPosition.End : BarPosition.Start)
+      .scrollable(false)
       .vertical(this.preferType === 0 ? false : true)
       .onAnimationStart((index, targetIndex) => {
         if (targetIndex === 0) {
