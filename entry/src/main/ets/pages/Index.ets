@@ -146,14 +146,12 @@ struct Index {
 
         TabContent() {
           Filelist()
-            .height('100%')
         }
         .tabBar(this.tabBuilder(1, $r('app.media.file'), '文件'))
 
         if (this.showAlbum) {
           TabContent() {
             Album()
-              .height('100%')
           }
           .tabBar(this.tabBuilder(2, $r('app.media.album'), '相册'))
         }
@@ -165,6 +163,7 @@ struct Index {
       }
       .barBackgroundBlurStyle(BlurStyle.Regular)
       .barPosition(this.preferType === 0 ? BarPosition.End : BarPosition.Start)
+      .scrollable(false)
       .vertical(this.preferType === 0 ? false : true)
       .onAnimationStart((index, targetIndex) => {
         if (targetIndex === 0) {

@@ -867,10 +867,6 @@ export default struct Setting {
           top: $r('sys.float.ohos_id_elements_margin_vertical_l')
         })
       }
-      .nestedScroll({
-        scrollForward: NestedScrollMode.SELF_ONLY,
-        scrollBackward: NestedScrollMode.SELF_ONLY
-      })
       .padding({
         bottom: $r('sys.float.ohos_id_default_padding_bottom_fixed'),
         left: $r('sys.float.ohos_id_elements_margin_horizontal_l'),

@@ -73,16 +73,17 @@ export default struct Filelist {
   @Local hoverId: number = -1
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
+  account = ''
   remove = false
   srcName = ''
   backDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'back'
   })
-  debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-    name: 'debugSetting'
-  })
   commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'commonSetting'
+  })
+  debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+    name: 'debugSetting'
   })
   searchDialogControllerProgress = new CustomDialogController({
     builder: LoadingDialog({
@@ -124,7 +125,16 @@ export default struct Filelist {
   async get() {
     this.searchKeyword = ''
     this.isLogin = await getLoginStatus()
+    if (!this.isLogin) {
+      this.account = ''
+    }
     if (this.isLogin) {
+      const accountInfo = await getAccountInfo()
+      const account = accountInfo.path + '\0' + accountInfo.name
+      if (this.account !== account) {
+        this.dirnames = []
+      }
+      this.account = account
       const path = this.getPath()
       let sortBy = ''
       if (this.sortByValue === '名称') {
@@ -632,7 +642,6 @@ export default struct Filelist {
       Column() {
         if (!this.isLogin) {
           Text('未登录账号')
-            .height('100%')
             .textAlign(TextAlign.Center)
             .width('100%')
         }
@@ -1627,7 +1636,6 @@ export default struct Filelist {
         }
       }
       .alignItems(HorizontalAlign.Start)
-      .height('100%')
     }
     .padding({
       left: $r('sys.float.ohos_id_elements_margin_horizontal_l'),
