@@ -10,6 +10,7 @@ export interface AccountInfo {
   password: string,
   sid: string,
   did: string,
+  bz: string,
   isLogin: string
 }
 
@@ -19,11 +20,13 @@ interface InAccountInfo {
   password: string,
   sid: string,
   did: string,
+  bz?: string,
   isLogin?: string
 }
 
 export async function setAccount(context: Context, UIContext: UIContext, accountInfo: InAccountInfo) {
   await exitAccount(context, UIContext, false)
+  const bz = accountInfo.bz ? accountInfo.bz : ''
   const isLogin = accountInfo.isLogin ? accountInfo.isLogin : 'true'
   const accounts = await getAccountList()
   let accountIndex = -1
@@ -36,6 +39,7 @@ export async function setAccount(context: Context, UIContext: UIContext, account
   if (accountIndex !== -1) {
     await appAccountManager.setCustomData(String(accounts[accountIndex].id), 'sid', accountInfo.sid)
     await appAccountManager.setCustomData(String(accounts[accountIndex].id), 'did', accountInfo.did)
+    await appAccountManager.setCustomData(String(accounts[accountIndex].id), 'bz', bz)
     await appAccountManager.setCustomData(String(accounts[accountIndex].id), 'isLogin', isLogin)
   }
   if (accountIndex === -1) {
@@ -53,6 +57,7 @@ export async function setAccount(context: Context, UIContext: UIContext, account
           name: accountInfo.name,
           sid: accountInfo.sid,
           did: accountInfo.did,
+          bz: bz,
           isLogin: isLogin
         }
       })
@@ -66,6 +71,11 @@ export async function setAccount(context: Context, UIContext: UIContext, account
       })
     }
   }
+}
+
+export async function setAccountBz(id: number, bz: string) {
+  const appAccountManager = appAccount.createAppAccountManager()
+  await appAccountManager.setCustomData(String(id), 'bz', bz)
 }
 
 export async function getLoginStatus() {
@@ -89,6 +99,7 @@ export async function getAccountInfo(): Promise<AccountInfo> {
     password: '',
     sid: '',
     did: '',
+    bz: '',
     isLogin: 'false'
   }
 }
@@ -98,6 +109,11 @@ export async function getAccountList(): Promise<AccountInfo[]> {
   const appAccountIds = await appAccountManager.getAccountsByOwner('com.songjy.synologydsmhelper')
   const appAccounts: AccountInfo[] = []
   const promises = appAccountIds.map(async (item) => {
+    let bz = ''
+    try {
+      bz = appAccountManager.getCustomDataSync(item.name, 'bz')
+    } catch {
+    }
     appAccounts.push({
       id: Number(item.name),
       path: appAccountManager.getCustomDataSync(item.name, 'path'),
@@ -105,6 +121,7 @@ export async function getAccountList(): Promise<AccountInfo[]> {
       password: await appAccountManager.getCredential(item.name, 'password'),
       sid: appAccountManager.getCustomDataSync(item.name, 'sid'),
       did: appAccountManager.getCustomDataSync(item.name, 'did'),
+      bz: bz,
       isLogin: appAccountManager.getCustomDataSync(item.name, 'isLogin')
     })
   })
@@ -147,12 +164,14 @@ export async function importAccounts(context: Context, UIContext: UIContext, uri
     const filestring = await readUri(uri)
     const accounts = JSON.parse(filestring) as AccountInfo[]
     const promises = accounts.map(async (item) => {
+      const bz = item.bz ? item.bz : ''
       await setAccount(context, UIContext, {
         path: item.path,
         name: item.name,
         password: item.password,
         sid: item.sid,
         did: item.did,
+        bz: bz,
         isLogin: item.isLogin
       })
     })
