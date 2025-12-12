@@ -315,7 +315,7 @@ struct Debugsetting {
               .padding(12)
               .width('100%')
 
-              if (deviceInfo.deviceType === 'phone' || deviceInfo.deviceType === '2in1') {
+              if (deviceInfo.deviceType !== 'tablet') {
                 Divider()
                   .padding({
                     left: 12,

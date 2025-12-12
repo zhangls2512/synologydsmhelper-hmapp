@@ -38,12 +38,10 @@ export default struct Setting {
     if (this.isLogin) {
       const accountInfo = await getAccountInfo()
       const appAccountManager = appAccount.createAppAccountManager()
-      if (accountInfo.id !== -1) {
-        const res = await checkPermission(this.context, this.UIContext, 'ohos.permission.DISTRIBUTED_DATASYNC')
-        this.accountDataSyncEnabled = res
-        if (this.accountDataSyncEnabled) {
-          this.accountDataSync = await appAccountManager.checkDataSyncEnabled(String(accountInfo.id))
-        }
+      const res = await checkPermission(this.context, this.UIContext, 'ohos.permission.DISTRIBUTED_DATASYNC')
+      this.accountDataSyncEnabled = res
+      if (this.accountDataSyncEnabled) {
+        this.accountDataSync = await appAccountManager.checkDataSyncEnabled(accountInfo.id)
       }
     }
     const accounts = await getAccountList()
@@ -82,7 +80,7 @@ export default struct Setting {
                       try {
                         const accountInfo = await getAccountInfo()
                         const appAccountManager = appAccount.createAppAccountManager()
-                        await appAccountManager.setDataSyncEnabled(String(accountInfo.id), isOn)
+                        await appAccountManager.setDataSyncEnabled(accountInfo.id, isOn)
                       } catch (err) {
                         this.accountDataSync = false
                         await promptAction.openToast({

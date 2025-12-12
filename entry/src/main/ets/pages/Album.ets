@@ -79,8 +79,8 @@ interface AlbumItem {
 @ComponentV2
 export default struct Album {
   @Provider() isShowProgressSheet: boolean = false
-  @Provider() transferredSize: number = -1
-  @Provider() totalSize: number = -1
+  @Provider() transferredSize: number = 0
+  @Provider() totalSize: number = 0
   @Local preferType: number = 1
   @Local selectedIndex: number = 0
   @Local loading: boolean = false
@@ -729,16 +729,16 @@ export default struct Album {
                             await backgroundTaskManager.stopBackgroundRunning(this.context)
                             this.isShowProgressSheet = false
                             this.context.eventHub.off('cancelDownload')
-                            if (this.transferredSize !== item.filesize - 1) {
-                              this.transferredSize = -1
-                              this.totalSize = -1
+                            if (this.transferredSize < item.filesize - 1) {
+                              this.transferredSize = 0
+                              this.totalSize = 0
                               await promptAction.openToast({
                                 message: '下载失败'
                               })
                             }
-                            if (this.transferredSize === item.filesize - 1) {
-                              this.transferredSize = -1
-                              this.totalSize = -1
+                            if (this.transferredSize >= item.filesize - 1) {
+                              this.transferredSize = 0
+                              this.totalSize = 0
                               await promptAction.openToast({
                                 message: '下载成功'
                               })
@@ -786,8 +786,8 @@ export default struct Album {
                       fileStream.closeSync()
                       await backgroundTaskManager.stopBackgroundRunning(this.context)
                       this.isShowProgressSheet = false
-                      this.transferredSize = -1
-                      this.totalSize = -1
+                      this.transferredSize = 0
+                      this.totalSize = 0
                       this.context.eventHub.off('cancelDownload')
                       await promptAction.openToast({
                         message: 'HTTP 请求失败，状态码：' + response.statusCode
@@ -810,8 +810,8 @@ export default struct Album {
                       }
                     }
                     this.isShowProgressSheet = false
-                    this.transferredSize = -1
-                    this.totalSize = -1
+                    this.transferredSize = 0
+                    this.totalSize = 0
                     this.context.eventHub.off('cancelDownload')
                     if (err.code !== 1007900992) {
                       await promptAction.openToast({
