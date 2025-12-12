@@ -6,11 +6,13 @@ import { dsmRequest } from '../common/Request'
 import Accountlist from './Accountlist'
 import Login from './Login'
 import Setting from './Setting'
+import Transfertask from './Transfertask'
 
 @ComponentV2
 export default struct Me {
   @Provider() isShowLoginSheet: boolean = false
   @Provider() isShowAccountlistSheet: boolean = false
+  @Local isShowTransfertaskSheet: boolean = false
   @Local isShowSettingSheet: boolean = false
   @Local preferType: number = 1
   @Local name: string = ''
@@ -36,6 +38,11 @@ export default struct Me {
   @Builder
   AccountlistSheetBuilder() {
     Accountlist()
+  }
+
+  @Builder
+  TransfertaskSheetBuilder() {
+    Transfertask()
   }
 
   @Builder
@@ -322,6 +329,65 @@ export default struct Me {
         .margin({
           top: $r('sys.float.ohos_id_elements_margin_vertical_l')
         })
+
+        ListItem() {
+          Column() {
+            Row() {
+              Image($r('app.media.transfer'))
+                .fillColor($r('sys.color.icon_primary'))
+                .height(24)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+                .width(24)
+              Text('传输任务')
+                .fontWeight(FontWeight.Medium)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+              Image($r('app.media.right'))
+                .fillColor($r('sys.color.icon_fourth'))
+                .height(12)
+                .width(12)
+            }
+            .borderRadius(12)
+            .padding(12)
+            .stateStyles({
+              normal: {
+                .backgroundColor(this.hoverId === 4 ? $r('sys.color.interactive_hover') :
+                  $r('sys.color.comp_background_primary'))
+              },
+              pressed: {
+                .backgroundColor($r('sys.color.comp_background_secondary'))
+              }
+            })
+            .width('100%')
+            .onHover((isHover) => {
+              if (!isHover) {
+                this.hoverId = -1
+              }
+              if (isHover) {
+                this.hoverId = 4
+              }
+            })
+            .onClick(() => {
+              this.isShowTransfertaskSheet = true
+            })
+            .bindSheet(this.isShowTransfertaskSheet!!, this.TransfertaskSheetBuilder(), {
+              preferType: this.preferType,
+              title: {
+                title: '传输任务'
+              }
+            })
+          }
+          .backgroundColor($r('sys.color.comp_background_primary'))
+          .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+          .padding($r('sys.float.ohos_id_corner_radius_mark'))
+        }
+        .margin({
+          top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+        })
       }
       ListItem() {
         Column() {
@@ -348,7 +414,7 @@ export default struct Me {
           .padding(12)
           .stateStyles({
             normal: {
-              .backgroundColor(this.hoverId === 4 ? $r('sys.color.interactive_hover') :
+              .backgroundColor(this.hoverId === 5 ? $r('sys.color.interactive_hover') :
                 $r('sys.color.comp_background_primary'))
             },
             pressed: {
@@ -361,7 +427,7 @@ export default struct Me {
               this.hoverId = -1
             }
             if (isHover) {
-              this.hoverId = 4
+              this.hoverId = 5
             }
           })
           .onClick(() => {

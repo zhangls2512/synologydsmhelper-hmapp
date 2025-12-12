@@ -1,16 +1,33 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
+import { taskpool } from '@kit.ArkTS'
 import { display } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
 import { image } from '@kit.ImageKit'
 import { importAccounts } from '../common/Account'
+import { getCurrentNetworkBearerType } from '../common/Network'
 import getPreferType from '../common/Prefertype'
+import { download } from '../common/Transfertask'
 import Cardlist from './Cardlist'
 import Filelist from './Filelist'
 import Album from './Album'
 import Me from './Me'
 import Cleardata from './Cleardata'
 import Accountlist from './Accountlist'
+
+export interface TransferTaskItem {
+  id: string,
+  path: string,
+  name: string,
+  transferredSize: number,
+  totalSize: number,
+  status: string,
+  errCode: number,
+  type: string,
+  accountPath: string,
+  accountSid: string,
+  accountDid: string
+}
 
 @Entry
 @ComponentV2
@@ -241,6 +258,40 @@ struct Index {
         this.get()
       })
       this.get()
+      setInterval(async () => {
+        const transferTaskArray: TransferTaskItem[] = []
+        const transferTaskDataPreferences = preferences.getPreferencesSync(this.context, {
+          name: 'transferTask'
+        })
+        const transferTaskObject = transferTaskDataPreferences.getAllSync() as object
+        const transferTaskIdArray = Object.keys(transferTaskObject)
+        for (let i = 0; i < transferTaskIdArray.length; i++) {
+          const transferTaskString = transferTaskObject[transferTaskIdArray[i]] as string
+          const transferTask = JSON.parse(transferTaskString) as TransferTaskItem
+          transferTaskArray.push(transferTask)
+        }
+        if (!transferTaskArray.find(item => item.status === 'processing')) {
+          const pendingTransferTaskArray = transferTaskArray.filter(item => item.status === 'pending')
+          for (let i = 0; i < pendingTransferTaskArray.length; i++) {
+            const item = pendingTransferTaskArray[i]
+            let exec = true
+            if (getCurrentNetworkBearerType() === 0) {
+              const cellularDataUseRemind = this.commonSettingDataPreferences.getSync('cellularDataUseRemind', 0)
+              if (cellularDataUseRemind === 0 ||
+                (cellularDataUseRemind === 1 && item.totalSize > 200 * Math.pow(1024, 2))) {
+                exec = false
+              }
+            }
+            if (exec) {
+              item.status = 'processing'
+              transferTaskDataPreferences.putSync(item.id, JSON.stringify(item))
+              const task = new taskpool.LongTask(download, this.context, item.id)
+              await taskpool.execute(task)
+              return
+            }
+          }
+        }
+      }, 1000)
     })
     .onDisAppear(() => {
       this.context.eventHub.off('refreshIndex')

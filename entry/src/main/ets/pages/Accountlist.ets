@@ -11,7 +11,7 @@ export default struct Accountlist {
   @Consumer() isShowAccountlistSheet: boolean = false
   @Local accountArray: AccountInfo[] = []
   @Local pathConnectionStatusArray: string[] = []
-  @Local bzId: number = -1
+  @Local bzId: string = ''
   @Local bz: string = ''
   @Local hoverId: number = -1
   UIContext = this.getUIContext()
@@ -134,7 +134,7 @@ export default struct Accountlist {
         right: $r('sys.float.ohos_id_default_padding_end')
       })
 
-      if (this.bzId === -1) {
+      if (!this.bzId) {
         if (this.accountArray.length === 0) {
           ListItem() {
             Text('无账号')
@@ -272,7 +272,7 @@ export default struct Accountlist {
           right: $r('sys.float.ohos_id_elements_margin_horizontal_l')
         })
       }
-      if (this.bzId !== -1) {
+      if (this.bzId) {
         ListItem() {
           TextInput({
             placeholder: '请输入备注',
@@ -295,7 +295,7 @@ export default struct Accountlist {
               .buttonStyle(ButtonStyleMode.NORMAL)
               .layoutWeight(1)
               .onClick(() => {
-                this.bzId = -1
+                this.bzId = ''
                 this.bz = ''
               })
             Blank()
@@ -307,7 +307,7 @@ export default struct Accountlist {
                 await promptAction.openToast({
                   message: '保存成功'
                 })
-                this.bzId = -1
+                this.bzId = ''
                 this.bz = ''
                 this.accountArray = await getAccountList()
               })

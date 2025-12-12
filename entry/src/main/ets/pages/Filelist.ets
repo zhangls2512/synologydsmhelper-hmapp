@@ -52,8 +52,8 @@ export default struct Filelist {
   @Provider() isShowPlayerSheet: boolean = false
   @Provider() isShowProgressSheet: boolean = false
   @Provider() isShowRenamefileSheet: boolean = false
-  @Provider() transferredSize: number = -1
-  @Provider() totalSize: number = -1
+  @Provider() transferredSize: number = 0
+  @Provider() totalSize: number = 0
   @Local preferType: number = 1
   @Local loading: boolean = false
   @Local fileArray: FileItem[] = []
@@ -65,7 +65,7 @@ export default struct Filelist {
   @Local sortDirectionValue: string = '正序'
   @Local searchKeyword: string = ''
   @Local multipleSelect: boolean = false
-  @Local multipleSelectArray: string[] = []
+  @Local multipleSelectArray: FileItem[] = []
   @Local src: string = ''
   @Local copyMovePath: string = ''
   @Local editPath: string = ''
@@ -290,7 +290,7 @@ export default struct Filelist {
           })
             .onClick(() => {
               this.multipleSelect = true
-              this.multipleSelectArray.push(item.path)
+              this.multipleSelectArray.push(item)
             })
         }
         if (!item.isdir) {
@@ -430,16 +430,16 @@ export default struct Filelist {
                               await backgroundTaskManager.stopBackgroundRunning(this.context)
                               this.isShowProgressSheet = false
                               this.context.eventHub.off('cancelDownload')
-                              if (this.transferredSize !== item.additional.size - 1) {
-                                this.transferredSize = -1
-                                this.totalSize = -1
+                              if (this.transferredSize < item.additional.size - 1) {
+                                this.transferredSize = 0
+                                this.totalSize = 0
                                 await promptAction.openToast({
                                   message: '下载失败'
                                 })
                               }
-                              if (this.transferredSize === item.additional.size - 1) {
-                                this.transferredSize = -1
-                                this.totalSize = -1
+                              if (this.transferredSize >= item.additional.size - 1) {
+                                this.transferredSize = 0
+                                this.totalSize = 0
                                 await promptAction.openToast({
                                   message: '下载成功'
                                 })
@@ -487,8 +487,8 @@ export default struct Filelist {
                         fileStream.closeSync()
                         await backgroundTaskManager.stopBackgroundRunning(this.context)
                         this.isShowProgressSheet = false
-                        this.transferredSize = -1
-                        this.totalSize = -1
+                        this.transferredSize = 0
+                        this.totalSize = 0
                         this.context.eventHub.off('cancelDownload')
                         await promptAction.openToast({
                           message: 'HTTP 请求失败，状态码：' + response.statusCode
@@ -511,8 +511,8 @@ export default struct Filelist {
                         }
                       }
                       this.isShowProgressSheet = false
-                      this.transferredSize = -1
-                      this.totalSize = -1
+                      this.transferredSize = 0
+                      this.totalSize = 0
                       this.context.eventHub.off('cancelDownload')
                       if (err.code !== 1007900992) {
                         await promptAction.openToast({
@@ -685,6 +685,60 @@ export default struct Filelist {
                   right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                 })
               Column() {
+                Image($r('app.media.download'))
+              }
+              .borderRadius(20)
+              .height(40)
+              .margin({
+                right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+              })
+              .padding(11)
+              .stateStyles({
+                normal: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
+                },
+                pressed: {
+                  .backgroundColor($r('sys.color.interactive_pressed'))
+                }
+              })
+              .visualEffect(new hdsEffect.HdsEffectBuilder()
+                .pointLight({
+                  sourceType: hdsEffect.PointLightSourceType.SOFT,
+                  illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                })
+                .buildEffect())
+              .width(40)
+              .onClick(async () => {
+                const transferTaskDataPreferences = preferences.getPreferencesSync(this.context, {
+                  name: 'transferTask'
+                })
+                const array = this.multipleSelectArray.filter(item => !item.isdir)
+                for (let i = 0; i < array.length; i++) {
+                  const item = array[i]
+                  const id = util.generateRandomUUID()
+                  const accountInfo = await getAccountInfo()
+                  transferTaskDataPreferences.putSync(id, JSON.stringify({
+                    id: id,
+                    path: item.path,
+                    name: item.name,
+                    transferredSize: 0,
+                    totalSize: item.additional.size,
+                    status: 'pending',
+                    errCode: 0,
+                    type: 'download',
+                    accountPath: accountInfo.path,
+                    accountSid: accountInfo.sid,
+                    accountDid: accountInfo.did
+                  }))
+                }
+                await promptAction.openToast({
+                  message: array.length + ' 项传输任务已添加'
+                })
+                this.multipleSelect = false
+                this.multipleSelectArray = []
+              })
+
+              Column() {
                 Image($r('app.media.copy'))
               }
               .borderRadius(20)
@@ -716,7 +770,8 @@ export default struct Filelist {
                 })
                 prepareDialogControllerProgress.open()
                 const startres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.CopyMove',
-                  '&method=start&path=' + encodeURIComponent(JSON.stringify(this.multipleSelectArray)) +
+                  '&method=start&path=' +
+                  encodeURIComponent(JSON.stringify(this.multipleSelectArray.map(item => item.path))) +
                     '&dest_folder_path=' + encodeURIComponent(this.getPath()) + '&remove_src=false')
                 prepareDialogControllerProgress.close()
                 const length = this.multipleSelectArray.length
@@ -825,7 +880,8 @@ export default struct Filelist {
                 })
                 dialogControllerProgress.open()
                 const startres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.CopyMove',
-                  '&method=start&path=' + encodeURIComponent(JSON.stringify(this.multipleSelectArray)) +
+                  '&method=start&path=' +
+                  encodeURIComponent(JSON.stringify(this.multipleSelectArray.map(item => item.path))) +
                     '&dest_folder_path=' + encodeURIComponent(this.getPath()) + '&remove_src=true')
                 this.multipleSelect = false
                 this.multipleSelectArray = []
@@ -892,7 +948,8 @@ export default struct Filelist {
                 if (data.index === 1) {
                   this.deleteDialogControllerProgress.open()
                   const startres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.Delete',
-                    '&method=start&path=' + encodeURIComponent(JSON.stringify(this.multipleSelectArray)))
+                    '&method=start&path=' +
+                    encodeURIComponent(JSON.stringify(this.multipleSelectArray.map(item => item.path))))
                   this.multipleSelect = false
                   this.multipleSelectArray = []
                   if (startres !== 'fail') {
@@ -1241,18 +1298,18 @@ export default struct Filelist {
                       if (this.multipleSelect && this.dirnames.length > 0) {
                         Toggle({
                           type: ToggleType.Checkbox,
-                          isOn: this.multipleSelectArray.some(selectItem => selectItem === item.path)
+                          isOn: this.multipleSelectArray.some(selectItem => selectItem.path === item.path)
                         })
                           .margin({
                             right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                           })
                           .onChange((isOn) => {
                             if (!isOn) {
-                              this.multipleSelectArray.splice(this.multipleSelectArray.findIndex(selectItem => selectItem ===
+                              this.multipleSelectArray.splice(this.multipleSelectArray.findIndex(selectItem => selectItem.path ===
                               item.path), 1)
                             }
                             if (isOn) {
-                              this.multipleSelectArray.push(item.path)
+                              this.multipleSelectArray.push(item)
                             }
                           })
                       }
@@ -1480,16 +1537,17 @@ export default struct Filelist {
                                       await backgroundTaskManager.stopBackgroundRunning(this.context)
                                       this.isShowProgressSheet = false
                                       this.context.eventHub.off('cancelDownload')
-                                      if (this.transferredSize !== item.additional.size - 1) {
-                                        this.transferredSize = -1
-                                        this.totalSize = -1
+                                      if (this.transferredSize < item.additional.size - 1) {
+                                        this.transferredSize = 0
+                                        this.totalSize = 0
                                         await promptAction.openToast({
                                           message: '下载失败'
                                         })
+                                        await fileIo.unlink(filePath)
                                       }
-                                      if (this.transferredSize === item.additional.size - 1) {
-                                        this.transferredSize = -1
-                                        this.totalSize = -1
+                                      if (this.transferredSize >= item.additional.size - 1) {
+                                        this.transferredSize = 0
+                                        this.totalSize = 0
                                         const uri = fileUri.getUriFromPath(filePath)
                                         const filePreviewType =
                                           this.commonSettingDataPreferences.getSync('filePreviewType', 0)
@@ -1560,10 +1618,11 @@ export default struct Filelist {
                                   sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
                                 })
                                 fileStream.closeSync()
+                                await fileIo.unlink(filePath)
                                 await backgroundTaskManager.stopBackgroundRunning(this.context)
                                 this.isShowProgressSheet = false
-                                this.transferredSize = -1
-                                this.totalSize = -1
+                                this.transferredSize = 0
+                                this.totalSize = 0
                                 this.context.eventHub.off('cancelDownload')
                                 await promptAction.openToast({
                                   message: 'HTTP 请求失败，状态码：' + response.statusCode
@@ -1576,6 +1635,7 @@ export default struct Filelist {
                                 sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
                               })
                               fileStream.closeSync()
+                              await fileIo.unlink(filePath)
                               try {
                                 await backgroundTaskManager.stopBackgroundRunning(this.context)
                               } catch (err) {
@@ -1586,8 +1646,8 @@ export default struct Filelist {
                                 }
                               }
                               this.isShowProgressSheet = false
-                              this.transferredSize = -1
-                              this.totalSize = -1
+                              this.transferredSize = 0
+                              this.totalSize = 0
                               this.context.eventHub.off('cancelDownload')
                               if (err.code !== 1007900992) {
                                 await promptAction.openToast({
