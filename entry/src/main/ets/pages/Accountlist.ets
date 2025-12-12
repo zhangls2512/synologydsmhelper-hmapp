@@ -19,6 +19,9 @@ export default struct Accountlist {
   commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'commonSetting'
   })
+  debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+    name: 'debugSetting'
+  })
 
   @Builder
   MenuBuilder(item: AccountInfo) {
@@ -333,6 +336,10 @@ export default struct Accountlist {
           requestConfiguration: {
             dns: {
               dnsRules: getDnsServer(this.context)
+            },
+            security: {
+              remoteValidation: this.debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
+                'system') as 'system' | 'skip'
             }
           }
         })
