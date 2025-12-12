@@ -1671,7 +1671,9 @@ export default struct Filelist {
                     .bindContextMenu(this.MenuBuilder(item), ResponseType.LongPress, {
                       hapticFeedbackMode: HapticFeedbackMode.AUTO
                     })
-                    .bindContextMenu(this.MenuBuilder(item), ResponseType.RightClick)
+                    .bindContextMenu(this.MenuBuilder(item), ResponseType.RightClick, {
+                      hapticFeedbackMode: HapticFeedbackMode.AUTO
+                    })
                     .bindSheet(this.isShowProgressSheet!!, this.ProgressSheetBuilder(), {
                       height: SheetSize.FIT_CONTENT,
                       preferType: this.preferType,

@@ -260,7 +260,9 @@ export default struct Accountlist {
               .bindContextMenu(this.MenuBuilder(item), ResponseType.LongPress, {
                 hapticFeedbackMode: HapticFeedbackMode.AUTO
               })
-              .bindContextMenu(this.MenuBuilder(item), ResponseType.RightClick)
+              .bindContextMenu(this.MenuBuilder(item), ResponseType.RightClick, {
+                hapticFeedbackMode: HapticFeedbackMode.AUTO
+              })
             })
           }
           .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
