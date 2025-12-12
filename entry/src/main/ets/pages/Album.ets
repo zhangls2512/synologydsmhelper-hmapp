@@ -1118,7 +1118,8 @@ export default struct Album {
                   .margin({
                     top: $r('sys.float.ohos_id_elements_margin_vertical_l')
                   })
-                  .objectFit(ImageFit.Auto)
+                  .objectFit(ImageFit.Contain)
+                  .width('100%')
                   .gesture(
                     PanGesture({
                       direction: PanDirection.Left | PanDirection.Right
