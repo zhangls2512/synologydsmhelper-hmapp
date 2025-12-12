@@ -3,8 +3,8 @@ import { getSizeString } from '../common/Stringformat'
 @ComponentV2
 export default struct Progresssheet {
   @Consumer() isShowProgressSheet: boolean = false
-  @Consumer() transferredSize: number = -1
-  @Consumer() totalSize: number = -1
+  @Consumer() transferredSize: number = 0
+  @Consumer() totalSize: number = 0
   @Local oneSecondBeforeTransferredSize: number = 0
   @Local oneSecondTransferredSize: number = 0
 

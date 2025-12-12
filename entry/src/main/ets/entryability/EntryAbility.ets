@@ -382,7 +382,7 @@ export default class EntryAbility extends UIAbility {
     const debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
       name: 'debugSetting'
     })
-    if (deviceInfo.deviceType === 'phone' || deviceInfo.deviceType === '2in1') {
+    if (deviceInfo.deviceType !== 'tablet') {
       const processCache = debugSettingDataPreferences.getSync('processCache', true) as boolean
       applicationContext.setSupportedProcessCache(processCache)
     }
@@ -414,7 +414,7 @@ export default class EntryAbility extends UIAbility {
   }
 
   async onContinue(wantParam: Record<string, Object>) {
-    if (wantParam.version !== 33) {
+    if (wantParam.version !== 34) {
       await promptAction.openToast({
         message: '接续失败，原因：目标端应用版本号与发起端不匹配'
       })

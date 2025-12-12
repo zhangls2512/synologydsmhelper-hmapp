@@ -5,6 +5,7 @@ import { deviceInfo } from '@kit.BasicServicesKit'
 import { fileIo } from '@kit.CoreFileKit'
 import { image } from '@kit.ImageKit'
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
+import { checkPermission, getPermission } from '../common/Permission'
 
 @Builder
 export function CommonsettingBuilder() {
@@ -23,6 +24,8 @@ struct Commonsetting {
   @Local windowRectAutoSave: boolean = false
   @Local windowTopmost: boolean = false
   @Local keepScreenOn: boolean = false
+  @Local downloadDirectoryIndex: number = 0
+  @Local downloadDirectoryValue: string = '应用'
   @Local filePreviewTypeIndex: number = 0
   @Local filePreviewTypeValue: string = '系统预览'
   @Local onlinePreviewMedia: boolean = false
@@ -586,6 +589,70 @@ struct Commonsetting {
           top: $r('sys.float.ohos_id_elements_margin_vertical_l')
         })
 
+        if (deviceInfo.deviceType !== 'phone') {
+          ListItem() {
+            Column() {
+              Text('传输')
+                .fontColor($r('sys.color.font_secondary'))
+                .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                .fontWeight(FontWeight.Medium)
+                .margin({
+                  bottom: 6,
+                  left: 12,
+                  right: 12
+                })
+              Column() {
+                Row() {
+                  Column() {
+                    Text('下载目录')
+                      .fontWeight(FontWeight.Medium)
+                    Text('新下载的文件会覆盖下载前下载目录中已有的同名文件')
+                      .fontColor($r('sys.color.font_secondary'))
+                      .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                      .margin({
+                        top: $r('sys.float.ohos_id_text_margin_vertical')
+                      })
+                  }
+                  .alignItems(HorizontalAlign.Start)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+
+                  Select([
+                    { value: '应用' },
+                    { value: '系统' }
+                  ])
+                    .selected(this.downloadDirectoryIndex!!)
+                    .value(this.downloadDirectoryValue!!)
+                    .onSelect(async (index) => {
+                      if (index === 1) {
+                        const res = await checkPermission(this.context, this.UIContext,
+                          'ohos.permission.READ_WRITE_DOWNLOAD_DIRECTORY')
+                        if (!res) {
+                          this.downloadDirectoryIndex = 0
+                          this.downloadDirectoryValue = '应用'
+                          return
+                        }
+                      }
+                      this.commonSettingDataPreferences.putSync('downloadDirectory', index)
+                      this.commonSettingDataPreferences.flushSync()
+                    })
+                }
+                .borderRadius(12)
+                .padding(12)
+                .width('100%')
+              }
+              .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+              .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+              .padding($r('sys.float.ohos_id_corner_radius_mark'))
+            }
+            .alignItems(HorizontalAlign.Start)
+          }
+          .margin({
+            top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+          })
+        }
         ListItem() {
           Column() {
             Text('文件')
@@ -971,6 +1038,14 @@ struct Commonsetting {
       this.windowTopmost = this.commonSettingDataPreferences.getSync('windowTopmost', false) as boolean
       const lastWindow = await window.getLastWindow(this.context)
       this.keepScreenOn = lastWindow.getWindowProperties().isKeepScreenOn
+      const downloadDirectory = this.commonSettingDataPreferences.getSync('downloadDirectory', 0)
+      this.downloadDirectoryIndex = downloadDirectory as number
+      if (downloadDirectory === 0) {
+        this.downloadDirectoryValue = '应用'
+      }
+      if (downloadDirectory === 1 && getPermission('ohos.permission.READ_WRITE_DOWNLOAD_DIRECTORY')) {
+        this.downloadDirectoryValue = '系统'
+      }
       const filePreviewType = this.commonSettingDataPreferences.getSync('filePreviewType', 0)
       this.filePreviewTypeIndex = filePreviewType as number
       if (filePreviewType === 0) {

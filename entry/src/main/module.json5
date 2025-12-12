@@ -136,6 +136,16 @@
           ],
           "when": "inuse"
         }
+      },
+      {
+        "name": "ohos.permission.READ_WRITE_DOWNLOAD_DIRECTORY",
+        "reason": "$string:READ_WRITE_DOWNLOAD_DIRECTORY_reason",
+        "usedScene": {
+          "abilities": [
+            "EntryAbility"
+          ],
+          "when": "inuse"
+        }
       }
     ],
     "fileContextMenu": "$profile:menu",

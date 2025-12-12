@@ -9,6 +9,10 @@
       "value": "用于设备间同步账号数据。"
     },
     {
+      "name": "READ_WRITE_DOWNLOAD_DIRECTORY_reason",
+      "value": "用于批量下载文件到公共下载目录。"
+    },
+    {
       "name": "WRITE_PASTEBOARD_reason",
       "value": "用于写入数据到剪贴板，便于在外部环境使用。"
     }
