@@ -265,11 +265,11 @@ struct Index {
         })
         const transferTaskObject = transferTaskDataPreferences.getAllSync() as object
         const transferTaskIdArray = Object.keys(transferTaskObject)
-        for (let i = 0; i < transferTaskIdArray.length; i++) {
-          const transferTaskString = transferTaskObject[transferTaskIdArray[i]] as string
+        transferTaskIdArray.forEach(item => {
+          const transferTaskString = transferTaskObject[item] as string
           const transferTask = JSON.parse(transferTaskString) as TransferTaskItem
           transferTaskArray.push(transferTask)
-        }
+        })
         if (!transferTaskArray.find(item => item.status === 'processing')) {
           const pendingTransferTaskArray = transferTaskArray.filter(item => item.status === 'pending')
           for (let i = 0; i < pendingTransferTaskArray.length; i++) {

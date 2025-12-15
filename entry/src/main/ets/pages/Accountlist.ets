@@ -333,7 +333,7 @@ export default struct Accountlist {
     .onAppear(async () => {
       this.accountArray = await getAccountList()
       this.pathConnectionStatusArray = Array(this.accountArray.length).fill('connecting')
-      this.accountArray.forEach(async (item, index) => {
+      const promises = this.accountArray.map(async (item, index) => {
         const session = rcp.createSession({
           requestConfiguration: {
             dns: {
@@ -358,6 +358,7 @@ export default struct Accountlist {
           this.pathConnectionStatusArray[index] = 'disconnected'
         }
       })
+      await Promise.all(promises)
     })
   }
 }

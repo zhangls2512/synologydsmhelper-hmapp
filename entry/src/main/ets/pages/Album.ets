@@ -173,20 +173,18 @@ export default struct Album {
         if (timelineres !== 'fail') {
           const timelineSection = timelineres as TimelineResponse
           let timelineList: TimelineListItem[] = []
-          for (let i = 0; i < timelineSection.section.length; i++) {
-            const item = timelineSection.section[i]
+          timelineSection.section.forEach(item => {
             const list = item.list
             if (list && item.offset === 0) {
               timelineList = timelineList.concat(list)
             }
-          }
-          for (let i = 0; i < timelineList.length; i++) {
-            const item = timelineList[i]
+          })
+          timelineList.forEach(item => {
             this.timelineArray.push({
               date: item.year + '-' + String(item.month).padStart(2, '0') + '-' + String(item.day).padStart(2, '0'),
               count: item.item_count
             })
-          }
+          })
           this.loadingDialogControllerProgress.open()
           const keyres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.API.Auth.Key',
             '&method=grant&allow_api=SYNO.FileStation.Download&allow_methods=["download"]')
@@ -229,11 +227,10 @@ export default struct Album {
                   return
                 }
                 const photoArray: PhotoItem[] = []
-                for (let i = 0; i < photos.length; i++) {
+                const promises = photos.map(async (item) => {
                   if (this.account !== account) {
                     return
                   }
-                  const item = photos[i]
                   if (!this.folderMap.has(item.folder_id)) {
                     const folderres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Folder',
                       '&method=get&id=' + item.folder_id)
@@ -276,7 +273,8 @@ export default struct Album {
                       type: item.type
                     })
                   }
-                }
+                })
+                await Promise.all(promises)
                 this.photoArray = this.photoArray.concat(photoArray)
                 offset += 10
               }
@@ -336,11 +334,10 @@ export default struct Album {
             return
           }
           const photoArray: PhotoItem[] = []
-          for (let i = 0; i < photos.length; i++) {
+          const promises = photos.map(async (item) => {
             if (this.account !== account) {
               return
             }
-            const item = photos[i]
             if (!this.folderMap.has(item.folder_id)) {
               const folderres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Folder',
                 '&method=get&id=' + item.folder_id)
@@ -381,7 +378,8 @@ export default struct Album {
                 type: item.type
               })
             }
-          }
+          })
+          await Promise.all(promises)
           this.albumPhotoArray = this.albumPhotoArray.concat(photoArray)
           offset += 10
         }

@@ -182,9 +182,10 @@ export default class EntryAbility extends UIAbility {
       ],
       onReceive: async (domain, appEventGroups) => {
         if (debugSettingDataPreferences.getSync('saveErrorLog', true)) {
-          appEventGroups.forEach(async (item) => {
+          const promises = appEventGroups.map(async (item) => {
             await write(errorLogDir + Date.now() + '.txt', JSON.stringify(item))
           })
+          await Promise.all(promises)
         }
         if (debugSettingDataPreferences.getSync('autoUploadErrorLog', true) &&
         commonSettingDataPreferences.getSync('allService', true)) {
@@ -316,13 +317,13 @@ export default class EntryAbility extends UIAbility {
       if (fileIo.accessSync(errorLogDir)) {
         const errorLogFileName = await fileIo.listFile(errorLogDir)
         const errorLogFilePath = errorLogFileName.map(item => errorLogDir + item)
-        for (let i = 0; i < errorLogFilePath.length; i++) {
-          const item = errorLogFilePath[i]
+        const promises = errorLogFilePath.map(async (item) => {
           const time = Number(item.replace(errorLogDir, '').replace('.txt', ''))
           if (time < updateTime) {
             await fileIo.unlink(item)
           }
-        }
+        })
+        await Promise.all(promises)
       }
     }
     const showAccountlistSheetAfterAppLaunch =

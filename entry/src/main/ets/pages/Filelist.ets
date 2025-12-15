@@ -116,9 +116,9 @@ export default struct Filelist {
 
   getPath() {
     let path = ''
-    for (let i = 0; i < this.dirnames.length; i++) {
-      path = path + '/' + this.dirnames[i]
-    }
+    this.dirnames.forEach(item => {
+      path = path + '/' + item
+    })
     return path
   }
 
@@ -713,10 +713,9 @@ export default struct Filelist {
                   name: 'transferTask'
                 })
                 const array = this.multipleSelectArray.filter(item => !item.isdir)
-                for (let i = 0; i < array.length; i++) {
-                  const item = array[i]
+                const accountInfo = await getAccountInfo()
+                array.forEach(item => {
                   const id = util.generateRandomUUID()
-                  const accountInfo = await getAccountInfo()
                   transferTaskDataPreferences.putSync(id, JSON.stringify({
                     id: id,
                     path: item.path,
@@ -730,7 +729,7 @@ export default struct Filelist {
                     accountSid: accountInfo.sid,
                     accountDid: accountInfo.did
                   }))
-                }
+                })
                 await promptAction.openToast({
                   message: array.length + ' 项传输任务已添加'
                 })
