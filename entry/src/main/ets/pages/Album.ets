@@ -513,11 +513,11 @@ export default struct Album {
                           houzhui = item.filename.slice(lastDotIndex + 1)
                         }
                         const phAccessHelper = photoAccessHelper.getPhotoAccessHelper(this.context)
-                        try {
-                          const uris = await phAccessHelper.showAssetsCreationDialog([uri], [{
-                            fileNameExtension: houzhui,
-                            photoType: photoAccessHelper.PhotoType.IMAGE
-                          }])
+                        const uris = await phAccessHelper.showAssetsCreationDialog([uri], [{
+                          fileNameExtension: houzhui,
+                          photoType: photoAccessHelper.PhotoType.IMAGE
+                        }])
+                        if (uris.length === 1) {
                           const srcFile = fileIo.openSync(uri)
                           const destFile = fileIo.openSync(uris[0], fileIo.OpenMode.WRITE_ONLY)
                           await fileIo.copyFile(srcFile.fd, destFile.fd)
@@ -527,12 +527,6 @@ export default struct Album {
                           await promptAction.openToast({
                             message: '保存成功'
                           })
-                        } catch (err) {
-                          if (err.code !== 13900020) {
-                            await promptAction.openToast({
-                              message: '发生错误，错误码：' + err.code
-                            })
-                          }
                         }
                       }
                     }

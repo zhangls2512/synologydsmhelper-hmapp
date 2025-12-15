@@ -184,12 +184,12 @@ export default struct Setting {
                 }
               })
               .onClick(async () => {
-                try {
-                  const documentSaveOptions = new picker.DocumentSaveOptions()
-                  documentSaveOptions.newFileNames = ['synologydsmhelperaccounts']
-                  documentSaveOptions.fileSuffixChoices = ['.txt']
-                  const documentViewPicker = new picker.DocumentViewPicker(this.context)
-                  const uris = await documentViewPicker.save(documentSaveOptions)
+                const documentSaveOptions = new picker.DocumentSaveOptions()
+                documentSaveOptions.newFileNames = ['synologydsmhelperaccounts']
+                documentSaveOptions.fileSuffixChoices = ['.txt']
+                const documentViewPicker = new picker.DocumentViewPicker(this.context)
+                const uris = await documentViewPicker.save(documentSaveOptions)
+                if (uris.length === 1) {
                   const filePath = uris[0]
                   const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
                   const array = await getAccountList()
@@ -198,12 +198,6 @@ export default struct Setting {
                   await promptAction.openToast({
                     message: '导出成功'
                   })
-                } catch (err) {
-                  if (err.code !== 13900020) {
-                    await promptAction.openToast({
-                      message: '发生错误，错误码：' + err.code
-                    })
-                  }
                 }
               })
             }
