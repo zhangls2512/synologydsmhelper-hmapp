@@ -45,7 +45,19 @@ export async function write(path: string, content: string) {
     if (!fileIo.accessSync(dir)) {
       await fileIo.mkdir(dir, true)
     }
-    const file = fileIo.openSync(path, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
+    const file = fileIo.openSync(path, fileIo.OpenMode.CREATE | fileIo.OpenMode.WRITE_ONLY)
+    await fileIo.write(file.fd, content)
+    fileIo.closeSync(file)
+  } catch (err) {
+    await promptAction.openToast({
+      message: '发生错误，错误码：' + err.code
+    })
+  }
+}
+
+export async function writeUri(uri: string, content: string) {
+  try {
+    const file = fileIo.openSync(uri, fileIo.OpenMode.WRITE_ONLY)
     await fileIo.write(file.fd, content)
     fileIo.closeSync(file)
   } catch (err) {

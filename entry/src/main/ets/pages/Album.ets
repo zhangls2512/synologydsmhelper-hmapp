@@ -485,7 +485,7 @@ export default struct Album {
                 await fileIo.mkdir(dir, true)
               }
               const path = dir + '/' + item.filename
-              const file = fileIo.openSync(path, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
+              const file = fileIo.openSync(path, fileIo.OpenMode.CREATE | fileIo.OpenMode.WRITE_ONLY)
               const fileStream = fileIo.fdopenStreamSync(file.fd, 'w+')
               netBoost.setSceneDesc({
                 scene: 'download',
@@ -660,7 +660,7 @@ export default struct Album {
                   })
                   const continuousTaskNotificationInfo =
                     await backgroundTaskManager.startBackgroundRunning(this.context, ['dataTransfer'], wandAgent)
-                  const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
+                  const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.WRITE_ONLY)
                   const fileStream = fileIo.fdopenStreamSync(file.fd, 'w+')
                   netBoost.setSceneDesc({
                     scene: 'download',

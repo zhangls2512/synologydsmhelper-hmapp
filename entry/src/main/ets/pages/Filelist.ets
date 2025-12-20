@@ -369,7 +369,7 @@ export default struct Filelist {
                     })
                     const continuousTaskNotificationInfo =
                       await backgroundTaskManager.startBackgroundRunning(this.context, ['dataTransfer'], wandAgent)
-                    const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
+                    const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.WRITE_ONLY)
                     const fileStream = fileIo.fdopenStreamSync(file.fd, 'w+')
                     netBoost.setSceneDesc({
                       scene: 'download',
@@ -1472,7 +1472,7 @@ export default struct Filelist {
                             const continuousTaskNotificationInfo =
                               await backgroundTaskManager.startBackgroundRunning(this.context, ['dataTransfer'],
                                 wandAgent)
-                            const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
+                            const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.WRITE_ONLY)
                             const fileStream = fileIo.fdopenStreamSync(file.fd, 'w+')
                             netBoost.setSceneDesc({
                               scene: 'download',

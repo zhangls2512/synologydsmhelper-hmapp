@@ -57,7 +57,7 @@ export async function download(context: Context, id: string) {
       })
       const continuousTaskNotificationInfo =
         await backgroundTaskManager.startBackgroundRunning(context, ['dataTransfer'], wandAgent)
-      const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
+      const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.WRITE_ONLY)
       const fileStream = fileIo.fdopenStreamSync(file.fd, 'w+')
       netBoost.setSceneDesc({
         scene: 'download',

@@ -3,8 +3,9 @@ import { privacyManager } from '@kit.AppGalleryKit'
 import { preferences } from '@kit.ArkData'
 import { promptAction } from '@kit.ArkUI'
 import { appAccount } from '@kit.BasicServicesKit'
-import { fileIo, picker } from '@kit.CoreFileKit'
+import { picker } from '@kit.CoreFileKit'
 import { getAccountInfo, getAccountList, getLoginStatus, importAccounts } from '../common/Account'
+import { writeUri } from '../common/File'
 import openLink from '../common/Openlink'
 import { checkPermission } from '../common/Permission'
 
@@ -191,10 +192,8 @@ export default struct Setting {
                 const uris = await documentViewPicker.save(documentSaveOptions)
                 if (uris.length === 1) {
                   const filePath = uris[0]
-                  const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
                   const array = await getAccountList()
-                  await fileIo.write(file.fd, JSON.stringify(array))
-                  fileIo.closeSync(file)
+                  await writeUri(filePath, JSON.stringify(array))
                   await promptAction.openToast({
                     message: '导出成功'
                   })
