@@ -9,15 +9,15 @@ import {
   wantConstant
 } from '@kit.AbilityKit'
 import { updateManager } from '@kit.AppGalleryKit'
-import { preferences } from '@kit.ArkData'
+import { preferences, uniformTypeDescriptor } from '@kit.ArkData'
 import { promptAction, window } from '@kit.ArkUI'
 import { deviceInfo } from '@kit.BasicServicesKit'
-import { fileIo } from '@kit.CoreFileKit'
+import { fileIo, fileUri } from '@kit.CoreFileKit'
 import { netQuality } from '@kit.NetworkBoostKit'
 import { connection } from '@kit.NetworkKit'
 import { notificationManager } from '@kit.NotificationKit'
 import { hiAppEvent } from '@kit.PerformanceAnalysisKit'
-import { systemShare } from '@kit.ShareKit'
+import { harmonyShare, systemShare } from '@kit.ShareKit'
 import { getAccountList, getLoginStatus } from '../common/Account'
 import { write } from '../common/File'
 import { getCurrentNetworkBearerType } from '../common/Network'
@@ -54,6 +54,25 @@ export default class EntryAbility extends UIAbility {
         this.context.eventHub.emit('wantUri', sharedRecords[0].uri)
       }
     } catch {
+    }
+    if (deviceInfo.deviceType === '2in1') {
+      const lastWindow = await window.getLastWindow(this.context)
+      harmonyShare.on('dataReceive', {
+        windowId: lastWindow.getWindowProperties().id,
+        capabilities: [
+          {
+            utd: uniformTypeDescriptor.UniformDataType.PLAIN_TEXT,
+            maxSupportedCount: 1
+          }
+        ]
+      }, async (receivableTarget) => {
+        await receivableTarget.receive(fileUri.getUriFromPath(this.context.tempDir), {
+          onDataReceived: (sharedData) => {
+            const sharedRecords = sharedData.getRecords()
+            this.context.eventHub.emit('wantUri', sharedRecords[0].uri)
+          }
+        })
+      })
     }
   }
 
@@ -415,7 +434,7 @@ export default class EntryAbility extends UIAbility {
   }
 
   async onContinue(wantParam: Record<string, Object>) {
-    if (wantParam.version !== 34) {
+    if (wantParam.version !== 35) {
       await promptAction.openToast({
         message: '接续失败，原因：目标端应用版本号与发起端不匹配'
       })
