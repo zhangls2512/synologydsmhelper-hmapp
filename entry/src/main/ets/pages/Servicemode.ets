@@ -57,8 +57,8 @@ struct Servicemode {
                 .fontWeight(FontWeight.Medium)
                 .onClick(async () => {
                   try {
-                    const appPrivacyLink =
-                      privacyManager.getAppPrivacyMgmtInfo().privacyInfo.find(item => item.type === 1)
+                    const appPrivacyLink = privacyManager.getAppPrivacyMgmtInfo().privacyInfo
+                      .find(item => item.type === privacyManager.AppPrivacyLinkType.PRIVACY_STATEMENT_LINK)
                     this.pageInfos.pushPath({
                       name: 'Webview',
                       param: appPrivacyLink?.url

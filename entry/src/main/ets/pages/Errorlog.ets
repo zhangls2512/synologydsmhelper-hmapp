@@ -1,5 +1,4 @@
 import { common } from '@kit.AbilityKit'
-import { promptAction } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
 import { hiAppEvent } from '@kit.PerformanceAnalysisKit'
 import { read } from '../common/File'
@@ -57,12 +56,7 @@ struct Errorlog {
         }
       })
       await Promise.all(promises)
-    } catch (err) {
-      if (err.code !== 13900002) {
-        await promptAction.openToast({
-          message: '发生错误，错误码：' + err.code
-        })
-      }
+    } catch {
     }
   }
 
@@ -101,12 +95,7 @@ struct Errorlog {
         }
       })
       await Promise.all(promises)
-    } catch (err) {
-      if (err.code !== 13900002) {
-        await promptAction.openToast({
-          message: '发生错误，错误码：' + err.code
-        })
-      }
+    } catch {
     }
   }
 

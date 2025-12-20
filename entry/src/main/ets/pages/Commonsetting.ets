@@ -1,6 +1,6 @@
 import { common, ConfigurationConstant } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
-import { promptAction, window } from '@kit.ArkUI'
+import { window } from '@kit.ArkUI'
 import { deviceInfo } from '@kit.BasicServicesKit'
 import { fileIo } from '@kit.CoreFileKit'
 import { image } from '@kit.ImageKit'
@@ -519,12 +519,7 @@ struct Commonsetting {
                     })
                     fileIo.closeSync(file)
                     this.context.eventHub.emit('refreshIndex')
-                  } catch (err) {
-                    if (err.code !== 13900020) {
-                      await promptAction.openToast({
-                        message: '发生错误，错误码：' + err.code
-                      })
-                    }
+                  } catch {
                   }
                   return
                 }
@@ -564,12 +559,7 @@ struct Commonsetting {
                       })
                       fileIo.closeSync(file)
                       this.context.eventHub.emit('refreshIndex')
-                    } catch (err) {
-                      if (err.code !== 13900020) {
-                        await promptAction.openToast({
-                          message: '发生错误，错误码：' + err.code
-                        })
-                      }
+                    } catch {
                     }
                   }
                   if (data.index === 1) {

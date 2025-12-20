@@ -703,12 +703,7 @@ export default struct Album {
                                   }
                                 }
                               })
-                            } catch (err) {
-                              if (err.code !== 1600009 && err.code !== 202) {
-                                await promptAction.openToast({
-                                  message: '发生错误，错误码：' + err.code
-                                })
-                              }
+                            } catch {
                             }
                           },
                           onDataEnd: async () => {
@@ -794,12 +789,7 @@ export default struct Album {
                     fileStream.closeSync()
                     try {
                       await backgroundTaskManager.stopBackgroundRunning(this.context)
-                    } catch (err) {
-                      if (err.code !== 9800005) {
-                        await promptAction.openToast({
-                          message: '发生错误，错误码：' + err.code
-                        })
-                      }
+                    } catch {
                     }
                     this.isShowProgressSheet = false
                     this.transferredSize = 0

@@ -10,7 +10,7 @@ export function WebviewBuilder() {
 @ComponentV2
 struct Webview {
   @Local url: string = ''
-  @Local darkMode: number = 0
+  @Local darkMode: WebDarkMode = WebDarkMode.Auto
   @Local optimizeParserBudget: boolean = false
   @Local title: string = ''
   context = this.getUIContext().getHostContext()
@@ -61,16 +61,17 @@ struct Webview {
       })
       const colorMode = commonSettingDataPreferences.getSync('colorMode', 0)
       if (colorMode === 0) {
-        this.darkMode = 2
+        this.darkMode = WebDarkMode.Auto
       }
       if (colorMode === 1) {
-        this.darkMode = 0
+        this.darkMode = WebDarkMode.Off
       }
       if (colorMode === 2) {
-        this.darkMode = 1
+        this.darkMode = WebDarkMode.On
       }
       this.optimizeParserBudget = this.debugSettingDataPreferences.getSync('optimizeParserBudget', true) as boolean
-      const destroyMode = this.debugSettingDataPreferences.getSync('destroyMode', 0) as number
+      const destroyMode = this.debugSettingDataPreferences.getSync('destroyMode',
+        webview.WebDestroyMode.NORMAL_MODE) as webview.WebDestroyMode
       webview.WebviewController.setWebDestroyMode(destroyMode)
     })
   }

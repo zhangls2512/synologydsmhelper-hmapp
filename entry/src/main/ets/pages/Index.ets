@@ -8,12 +8,12 @@ import { importAccounts } from '../common/Account'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import getPreferType from '../common/Prefertype'
 import { download } from '../common/Transfertask'
-import Cardlist from './Cardlist'
-import Filelist from './Filelist'
-import Album from './Album'
-import Me from './Me'
-import Cleardata from './Cleardata'
 import Accountlist from './Accountlist'
+import Album from './Album'
+import Cardlist from './Cardlist'
+import Cleardata from './Cleardata'
+import Filelist from './Filelist'
+import Me from './Me'
 
 export interface TransferTaskItem {
   id: string,

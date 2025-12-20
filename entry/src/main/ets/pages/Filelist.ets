@@ -412,12 +412,7 @@ export default struct Filelist {
                                     }
                                   }
                                 })
-                              } catch (err) {
-                                if (err.code !== 1600009 && err.code !== 202) {
-                                  await promptAction.openToast({
-                                    message: '发生错误，错误码：' + err.code
-                                  })
-                                }
+                              } catch {
                               }
                             },
                             onDataEnd: async () => {
@@ -503,12 +498,7 @@ export default struct Filelist {
                       fileStream.closeSync()
                       try {
                         await backgroundTaskManager.stopBackgroundRunning(this.context)
-                      } catch (err) {
-                        if (err.code !== 9800005) {
-                          await promptAction.openToast({
-                            message: '发生错误，错误码：' + err.code
-                          })
-                        }
+                      } catch {
                       }
                       this.isShowProgressSheet = false
                       this.transferredSize = 0
@@ -824,12 +814,7 @@ export default struct Filelist {
                             }
                           }
                         })
-                      } catch (err) {
-                        if (err.code !== 1600009 && err.code !== 202) {
-                          await promptAction.openToast({
-                            message: '发生错误，错误码：' + err.code
-                          })
-                        }
+                      } catch {
                       }
                       if (statusres['finished']) {
                         finished = true
@@ -1250,12 +1235,7 @@ export default struct Filelist {
                               }
                             }
                           })
-                        } catch (err) {
-                          if (err.code !== 1600009 && err.code !== 202) {
-                            await promptAction.openToast({
-                              message: '发生错误，错误码：' + err.code
-                            })
-                          }
+                        } catch {
                         }
                         if (statusres['finished']) {
                           finished = true
@@ -1518,12 +1498,7 @@ export default struct Filelist {
                                             }
                                           }
                                         })
-                                      } catch (err) {
-                                        if (err.code !== 1600009 && err.code !== 202) {
-                                          await promptAction.openToast({
-                                            message: '发生错误，错误码：' + err.code
-                                          })
-                                        }
+                                      } catch {
                                       }
                                     },
                                     onDataEnd: async () => {
@@ -1637,12 +1612,7 @@ export default struct Filelist {
                               await fileIo.unlink(filePath)
                               try {
                                 await backgroundTaskManager.stopBackgroundRunning(this.context)
-                              } catch (err) {
-                                if (err.code !== 9800005) {
-                                  await promptAction.openToast({
-                                    message: '发生错误，错误码：' + err.code
-                                  })
-                                }
+                              } catch {
                               }
                               this.isShowProgressSheet = false
                               this.transferredSize = 0

@@ -263,12 +263,11 @@ export default class EntryAbility extends UIAbility {
     })
     netConnection.on('netCapabilitiesChange', (data) => {
       if (debugSettingDataPreferences.getSync('showNetCapabilitiesChange', false)) {
-        const netBearType = data.netCap.bearerTypes.includes(0) ? '蜂窝' :
-          data.netCap.bearerTypes.includes(1) ? 'Wi-Fi' :
-            data.netCap.bearerTypes.includes(2) ? '蓝牙' :
-              data.netCap.bearerTypes.includes(3) ? '以太网' :
-                data.netCap.bearerTypes.includes(4) ? 'VPN' :
-                  'undefined'
+        const netBearType = data.netCap.bearerTypes.includes(connection.NetBearType.BEARER_CELLULAR) ? '蜂窝' :
+          data.netCap.bearerTypes.includes(connection.NetBearType.BEARER_WIFI) ? 'Wi-Fi' :
+            data.netCap.bearerTypes.includes(connection.NetBearType.BEARER_BLUETOOTH) ? '蓝牙' :
+              data.netCap.bearerTypes.includes(connection.NetBearType.BEARER_ETHERNET) ? '以太网' :
+                data.netCap.bearerTypes.includes(connection.NetBearType.BEARER_VPN) ? 'VPN' : 'undefined'
         this.context.eventHub.emit('dialog', '网络能力变化',
           '数据网络句柄：' + data.netHandle.netId + '\n上行带宽：' + data.netCap.linkUpBandwidthKbps +
             ' KB/s\n下行带宽：' + data.netCap.linkDownBandwidthKbps + ' KB/s\n网络类型：' + netBearType)
@@ -278,11 +277,10 @@ export default class EntryAbility extends UIAbility {
       if (list.length > 0) {
         const data = list[0]
         if (debugSettingDataPreferences.getSync('showNetQosChange', false)) {
-          const pathType = data.pathType === 0 ? '蜂窝主卡' :
-            data.pathType === 1 ? '蜂窝副卡' :
-              data.pathType === 2 ? '主 Wi-Fi' :
-                data.pathType === 3 ? '副 Wi-Fi' :
-                  'undefined'
+          const pathType = data.pathType === netQuality.PathType.CELLULAR_PRIMARY ? '蜂窝主卡' :
+            data.pathType === netQuality.PathType.CELLULAR_SECONDARY ? '蜂窝副卡' :
+              data.pathType === netQuality.PathType.WIFI_PRIMARY ? '主 Wi-Fi' :
+                data.pathType === netQuality.PathType.WIFI_SECONDARY ? '副 Wi-Fi' : 'undefined'
           this.context.eventHub.emit('dialog', '网络质量变化',
             '数据路径：' + pathType + '\n上行带宽：' + data.linkUpBandwidth + ' bps\n下行带宽：' + data.linkDownBandwidth +
               ' bps\n上行速率：' + data.linkUpRate + ' bps\n下行速率：' + data.linkDownRate + '\nRTT 时延：' + data.rttMs +
@@ -305,22 +303,19 @@ export default class EntryAbility extends UIAbility {
       if (list.length > 0) {
         const data = list[0]
         if (debugSettingDataPreferences.getSync('showNetSceneChange', false)) {
-          const pathType = data.pathType === 0 ? '蜂窝主卡' :
-            data.pathType === 1 ? '蜂窝副卡' :
-              data.pathType === 2 ? '主 Wi-Fi' :
-                data.pathType === 3 ? '副 Wi-Fi' :
-                  'undefined'
+          const pathType = data.pathType === netQuality.PathType.CELLULAR_PRIMARY ? '蜂窝主卡' :
+            data.pathType === netQuality.PathType.CELLULAR_SECONDARY ? '蜂窝副卡' :
+              data.pathType === netQuality.PathType.WIFI_PRIMARY ? '主 Wi-Fi' :
+                data.pathType === netQuality.PathType.WIFI_SECONDARY ? '副 Wi-Fi' : 'undefined'
           const scene = data.scene === 'normal' ? '正常' :
             data.scene === 'congestion' ? '拥塞' :
               data.scene === 'frequentHandover' ? '小区切换频繁' :
-                data.scene === 'weakSignal' ? '弱信号' :
-                  'undefined'
+                data.scene === 'weakSignal' ? '弱信号' : 'undefined'
           const dataSpeedSimpleAction = data.recommendedAction === 'doCaching' ? '做缓存动作' :
             data.recommendedAction === 'suspendData' ? '停止发包' :
               data.recommendedAction === 'decreaseData' ? '降低发包速率' :
                 data.recommendedAction === 'increaseData' ? '增加发包速率' :
-                  data.recommendedAction === 'keepData' ? '保持当前发包速率' :
-                    'undefined'
+                  data.recommendedAction === 'keepData' ? '保持当前发包速率' : 'undefined'
           const isLastPredictionValid = data.weakSignalPrediction?.isLastPredictionValid ? '是' : '否'
           this.context.eventHub.emit('dialog', '网络场景变化',
             '数据路径：' + pathType + '\n场景类型：' + scene + '\n建议的数传策略：' + dataSpeedSimpleAction +
@@ -359,10 +354,11 @@ export default class EntryAbility extends UIAbility {
     }
     if (getCurrentNetworkBearerType() !== -1) {
       const checkVersionUpdate = commonSettingDataPreferences.getSync('checkVersionUpdate', 1)
-      if (checkVersionUpdate === 2 || (checkVersionUpdate === 1 && getCurrentNetworkBearerType() !== 0)) {
+      if (checkVersionUpdate === 2 ||
+        (checkVersionUpdate === 1 && getCurrentNetworkBearerType() !== connection.NetBearType.BEARER_WIFI)) {
         try {
           const res = await updateManager.checkAppUpdate(this.context)
-          if (res.updateAvailable === 1) {
+          if (res.updateAvailable === updateManager.UpdateAvailableCode.LATER_VERSION_EXIST) {
             await updateManager.showUpdateDialog(this.context)
           }
         } catch (err) {
@@ -467,13 +463,13 @@ export default class EntryAbility extends UIAbility {
     const showMemoryLevelChange = debugSettingDataPreferences.getSync('showMemoryLevelChange', false)
     if (showMemoryLevelChange) {
       let memoryLevel = ''
-      if (level === 0) {
+      if (level === AbilityConstant.MemoryLevel.MEMORY_LEVEL_MODERATE) {
         memoryLevel = '适中'
       }
-      if (level === 1) {
+      if (level === AbilityConstant.MemoryLevel.MEMORY_LEVEL_LOW) {
         memoryLevel = '低'
       }
-      if (level === 2) {
+      if (level === AbilityConstant.MemoryLevel.MEMORY_LEVEL_CRITICAL) {
         memoryLevel = '高'
       }
       await promptAction.openToast({
