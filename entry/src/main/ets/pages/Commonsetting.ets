@@ -511,7 +511,7 @@ struct Commonsetting {
                       await fileIo.mkdir(this.context.filesDir + '/media')
                     }
                     const file =
-                      fileIo.openSync(backgroundImagePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
+                      fileIo.openSync(backgroundImagePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.WRITE_ONLY)
                     const imagePacker = image.createImagePacker()
                     await imagePacker.packToFile(imagePixelMap, file.fd, {
                       format: 'image/png',
@@ -556,7 +556,7 @@ struct Commonsetting {
                       const imageSource = image.createImageSource(fileSource.fd)
                       const imagePixelMap = await imageSource.createPixelMap()
                       const file =
-                        fileIo.openSync(backgroundImagePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
+                        fileIo.openSync(backgroundImagePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.WRITE_ONLY)
                       const imagePacker = image.createImagePacker()
                       await imagePacker.packToFile(imagePixelMap, file.fd, {
                         format: 'image/png',

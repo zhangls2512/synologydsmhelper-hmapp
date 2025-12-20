@@ -19,6 +19,9 @@ export default struct Accountlist {
   commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'commonSetting'
   })
+  debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+    name: 'debugSetting'
+  })
 
   @Builder
   MenuBuilder(item: AccountInfo) {
@@ -257,7 +260,9 @@ export default struct Accountlist {
               .bindContextMenu(this.MenuBuilder(item), ResponseType.LongPress, {
                 hapticFeedbackMode: HapticFeedbackMode.AUTO
               })
-              .bindContextMenu(this.MenuBuilder(item), ResponseType.RightClick)
+              .bindContextMenu(this.MenuBuilder(item), ResponseType.RightClick, {
+                hapticFeedbackMode: HapticFeedbackMode.AUTO
+              })
             })
           }
           .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
@@ -328,11 +333,15 @@ export default struct Accountlist {
     .onAppear(async () => {
       this.accountArray = await getAccountList()
       this.pathConnectionStatusArray = Array(this.accountArray.length).fill('connecting')
-      this.accountArray.forEach(async (item, index) => {
+      const promises = this.accountArray.map(async (item, index) => {
         const session = rcp.createSession({
           requestConfiguration: {
             dns: {
               dnsRules: getDnsServer(this.context)
+            },
+            security: {
+              remoteValidation: this.debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
+                'system') as 'system' | 'skip'
             }
           }
         })
@@ -349,6 +358,7 @@ export default struct Accountlist {
           this.pathConnectionStatusArray[index] = 'disconnected'
         }
       })
+      await Promise.all(promises)
     })
   }
 }

@@ -45,7 +45,19 @@ export async function write(path: string, content: string) {
     if (!fileIo.accessSync(dir)) {
       await fileIo.mkdir(dir, true)
     }
-    const file = fileIo.openSync(path, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
+    const file = fileIo.openSync(path, fileIo.OpenMode.CREATE | fileIo.OpenMode.WRITE_ONLY)
+    await fileIo.write(file.fd, content)
+    fileIo.closeSync(file)
+  } catch (err) {
+    await promptAction.openToast({
+      message: '发生错误，错误码：' + err.code
+    })
+  }
+}
+
+export async function writeUri(uri: string, content: string) {
+  try {
+    const file = fileIo.openSync(uri, fileIo.OpenMode.WRITE_ONLY)
     await fileIo.write(file.fd, content)
     fileIo.closeSync(file)
   } catch (err) {
@@ -61,13 +73,12 @@ export async function getDirectorySize(path: string) {
     const fileNames = await fileIo.listFile(path, {
       recursion: true
     })
-    for (let i = 0; i < fileNames.length; i++) {
-      const filePath = path + fileNames[i]
-      const fileStat = fileIo.statSync(filePath)
+    fileNames.forEach(item => {
+      const fileStat = fileIo.statSync(path + item)
       if (!fileStat.isDirectory()) {
         totalSize += fileStat.size
       }
-    }
+    })
   } catch {
   }
   return totalSize

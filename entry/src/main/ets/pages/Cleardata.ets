@@ -205,9 +205,10 @@ export default struct Cleardata {
               ]
             })
             if (data.index === 1) {
-              this.setting.forEach(async (item) => {
+              const promises = this.setting.map(async (item) => {
                 await preferences.deletePreferences(this.context, item)
               })
+              await Promise.all(promises)
               await promptAction.openToast({
                 message: '清理成功'
               })
@@ -358,7 +359,7 @@ export default struct Cleardata {
               ]
             })
             if (data.index === 1) {
-              this.cache.forEach(async (item) => {
+              const promises = this.cache.map(async (item) => {
                 if (item === 'appCache') {
                   await bundleManager.cleanBundleCacheFilesForSelf()
                 }
@@ -373,6 +374,7 @@ export default struct Cleardata {
                   }
                 }
               })
+              await Promise.all(promises)
               await promptAction.openToast({
                 message: '清理成功'
               })
@@ -477,14 +479,15 @@ export default struct Cleardata {
               ]
             })
             if (data.index === 1) {
-              this.log.forEach(async (item) => {
+              const promises = this.log.map(async (item) => {
                 if (item === 'errorLog') {
                   try {
                     const errorLogDir = this.context.filesDir + '/log/error/'
                     const fileNames = await fileIo.listFile(errorLogDir)
-                    for (let i = 0; i < fileNames.length; i++) {
-                      await fileIo.unlink(errorLogDir + fileNames[i])
-                    }
+                    const promises = fileNames.map(async (item) => {
+                      await fileIo.unlink(errorLogDir + item)
+                    })
+                    await Promise.all(promises)
                   } catch (err) {
                     if (err.code !== 13900002) {
                       await promptAction.openToast({
@@ -494,6 +497,7 @@ export default struct Cleardata {
                   }
                 }
               })
+              await Promise.all(promises)
               await promptAction.openToast({
                 message: '清理成功'
               })
@@ -605,11 +609,11 @@ export default struct Cleardata {
           .role(ButtonRole.ERROR)
           .width('100%')
           .onClick(async () => {
-            this.nouse.forEach(async (item) => {
+            const promises = this.nouse.map(async (item) => {
               if (item === 'tempFileNouse') {
                 const tempDir = this.context.tempDir
                 const tempFiles = await fileIo.listFile(tempDir)
-                tempFiles.forEach(async (item) => {
+                const promises = tempFiles.map(async (item) => {
                   const path = tempDir + '/' + item
                   const isDirectory = fileIo.statSync(path)
                   if (!isDirectory) {
@@ -619,24 +623,26 @@ export default struct Cleardata {
                     await fileIo.rmdir(path)
                   }
                 })
+                await Promise.all(promises)
               }
               if (item === 'settingNouse') {
                 const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
                   name: 'commonSetting'
                 })
                 const commonKeys = ['disallowScreenshot', 'cellularDataDownloadRemind']
-                commonKeys.forEach((item) => {
+                commonKeys.forEach(item => {
                   commonSettingDataPreferences.deleteSync(item)
                 })
                 const debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
                   name: 'debugSetting'
                 })
                 const debugKeys = ['lowBatteryCapacityLevel']
-                debugKeys.forEach((item) => {
+                debugKeys.forEach(item => {
                   debugSettingDataPreferences.deleteSync(item)
                 })
               }
             })
+            await Promise.all(promises)
             await promptAction.openToast({
               message: '清理成功'
             })

@@ -1,5 +1,3 @@
-import { UIContext } from '@kit.ArkUI'
-
 export default function getPreferType(UIContext: UIContext) {
   const windowHeightBreakpoint = UIContext.getWindowHeightBreakpoint()
   if (windowHeightBreakpoint !== HeightBreakpoint.HEIGHT_SM) {

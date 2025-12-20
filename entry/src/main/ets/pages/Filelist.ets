@@ -116,9 +116,9 @@ export default struct Filelist {
 
   getPath() {
     let path = ''
-    for (let i = 0; i < this.dirnames.length; i++) {
-      path = path + '/' + this.dirnames[i]
-    }
+    this.dirnames.forEach(item => {
+      path = path + '/' + item
+    })
     return path
   }
 
@@ -369,7 +369,7 @@ export default struct Filelist {
                     })
                     const continuousTaskNotificationInfo =
                       await backgroundTaskManager.startBackgroundRunning(this.context, ['dataTransfer'], wandAgent)
-                    const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
+                    const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.WRITE_ONLY)
                     const fileStream = fileIo.fdopenStreamSync(file.fd, 'w+')
                     netBoost.setSceneDesc({
                       scene: 'download',
@@ -713,10 +713,9 @@ export default struct Filelist {
                   name: 'transferTask'
                 })
                 const array = this.multipleSelectArray.filter(item => !item.isdir)
-                for (let i = 0; i < array.length; i++) {
-                  const item = array[i]
+                const accountInfo = await getAccountInfo()
+                array.forEach(item => {
                   const id = util.generateRandomUUID()
-                  const accountInfo = await getAccountInfo()
                   transferTaskDataPreferences.putSync(id, JSON.stringify({
                     id: id,
                     path: item.path,
@@ -730,7 +729,7 @@ export default struct Filelist {
                     accountSid: accountInfo.sid,
                     accountDid: accountInfo.did
                   }))
-                }
+                })
                 await promptAction.openToast({
                   message: array.length + ' 项传输任务已添加'
                 })
@@ -1473,7 +1472,7 @@ export default struct Filelist {
                             const continuousTaskNotificationInfo =
                               await backgroundTaskManager.startBackgroundRunning(this.context, ['dataTransfer'],
                                 wandAgent)
-                            const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
+                            const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.WRITE_ONLY)
                             const fileStream = fileIo.fdopenStreamSync(file.fd, 'w+')
                             netBoost.setSceneDesc({
                               scene: 'download',
@@ -1671,7 +1670,9 @@ export default struct Filelist {
                     .bindContextMenu(this.MenuBuilder(item), ResponseType.LongPress, {
                       hapticFeedbackMode: HapticFeedbackMode.AUTO
                     })
-                    .bindContextMenu(this.MenuBuilder(item), ResponseType.RightClick)
+                    .bindContextMenu(this.MenuBuilder(item), ResponseType.RightClick, {
+                      hapticFeedbackMode: HapticFeedbackMode.AUTO
+                    })
                     .bindSheet(this.isShowProgressSheet!!, this.ProgressSheetBuilder(), {
                       height: SheetSize.FIT_CONTENT,
                       preferType: this.preferType,

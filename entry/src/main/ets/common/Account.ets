@@ -51,26 +51,20 @@ export async function setAccount(context: Context, UIContext: UIContext, account
         oldAccountIndex = index
       }
     })
-    try {
-      const id = util.generateRandomUUID()
-      await appAccountManager.createAccount(id, {
-        customData: {
-          path: accountInfo.path,
-          name: accountInfo.name,
-          bz: bz,
-          isLogin: isLogin
-        }
-      })
-      await appAccountManager.setCredential(id, 'password', accountInfo.password)
-      await appAccountManager.setCredential(id, 'sid', accountInfo.sid)
-      await appAccountManager.setCredential(id, 'did', accountInfo.did)
-      if (oldAccountIndex !== -1) {
-        await removeAccount(accounts[oldAccountIndex].id)
+    const id = util.generateRandomUUID()
+    await appAccountManager.createAccount(id, {
+      customData: {
+        path: accountInfo.path,
+        name: accountInfo.name,
+        bz: bz,
+        isLogin: isLogin
       }
-    } catch (err) {
-      await promptAction.openToast({
-        message: '发生错误，错误码：' + err.code
-      })
+    })
+    await appAccountManager.setCredential(id, 'password', accountInfo.password)
+    await appAccountManager.setCredential(id, 'sid', accountInfo.sid)
+    await appAccountManager.setCredential(id, 'did', accountInfo.did)
+    if (oldAccountIndex !== -1) {
+      await removeAccount(accounts[oldAccountIndex].id)
     }
   }
 }
@@ -117,16 +111,43 @@ export async function getAccountList(): Promise<AccountInfo[]> {
     } catch {
     }
     const id = item.name
-    appAccounts.push({
-      id: id,
-      path: appAccountManager.getCustomDataSync(id, 'path'),
-      name: appAccountManager.getCustomDataSync(id, 'name'),
-      password: await appAccountManager.getCredential(id, 'password'),
-      sid: await appAccountManager.getCredential(id, 'sid'),
-      did: await appAccountManager.getCredential(id, 'did'),
-      bz: bz,
-      isLogin: appAccountManager.getCustomDataSync(item.name, 'isLogin')
-    })
+    try {
+      appAccounts.push({
+        id: id,
+        path: appAccountManager.getCustomDataSync(id, 'path'),
+        name: appAccountManager.getCustomDataSync(id, 'name'),
+        password: await appAccountManager.getCredential(id, 'password'),
+        sid: await appAccountManager.getCredential(id, 'sid'),
+        did: await appAccountManager.getCredential(id, 'did'),
+        bz: bz,
+        isLogin: appAccountManager.getCustomDataSync(item.name, 'isLogin')
+      })
+    } catch {
+      const accountInfo: AccountInfo = {
+        id: id,
+        path: appAccountManager.getCustomDataSync(id, 'path'),
+        name: appAccountManager.getCustomDataSync(id, 'name'),
+        password: await appAccountManager.getCredential(id, 'password'),
+        sid: appAccountManager.getCustomDataSync(id, 'sid'),
+        did: appAccountManager.getCustomDataSync(id, 'did'),
+        bz: bz,
+        isLogin: appAccountManager.getCustomDataSync(item.name, 'isLogin')
+      }
+      appAccounts.push(accountInfo)
+      await removeAccount(id)
+      const newId = util.generateRandomUUID()
+      await appAccountManager.createAccount(newId, {
+        customData: {
+          path: accountInfo.path,
+          name: accountInfo.name,
+          bz: bz,
+          isLogin: accountInfo.isLogin
+        }
+      })
+      await appAccountManager.setCredential(id, 'password', accountInfo.password)
+      await appAccountManager.setCredential(id, 'sid', accountInfo.sid)
+      await appAccountManager.setCredential(id, 'did', accountInfo.did)
+    }
   })
   await Promise.all(promises)
   return appAccounts

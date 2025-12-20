@@ -30,17 +30,16 @@ struct Errorlog {
       const errorLogDir = this.context.filesDir + '/log/error/'
       const errorLogFileName = await fileIo.listFile(errorLogDir)
       const errorLogFilePath = errorLogFileName.map(item => errorLogDir + item)
-      for (let i = 0; i < errorLogFilePath.length; i++) {
-        const item = errorLogFilePath[i]
+      const promises = errorLogFilePath.map(async (item) => {
         const filestring = await read(item)
         try {
           const errorLog = JSON.parse(filestring) as hiAppEvent.AppEventGroup
           const externalLog: string[] = []
           if (errorLog.appEventInfos) {
-            errorLog.appEventInfos.forEach((item) => {
+            errorLog.appEventInfos.forEach(item => {
               const external_log = item.params['external_log'] as string[] | undefined
               if (external_log) {
-                external_log.forEach((item) => {
+                external_log.forEach(item => {
                   if (item) {
                     externalLog.push(item)
                   }
@@ -56,7 +55,8 @@ struct Errorlog {
           })
         } catch {
         }
-      }
+      })
+      await Promise.all(promises)
     } catch (err) {
       if (err.code !== 13900002) {
         await promptAction.openToast({
@@ -72,17 +72,16 @@ struct Errorlog {
       const errorLogDir = this.context.filesDir + '/log/error/'
       const errorLogFileName = await fileIo.listFile(errorLogDir)
       const errorLogFilePath = errorLogFileName.map(item => errorLogDir + item)
-      for (let i = 0; i < errorLogFilePath.length; i++) {
-        const item = errorLogFilePath[i]
+      const promises = errorLogFilePath.map(async (item) => {
         const filestring = await read(item)
         try {
           const errorLog = JSON.parse(filestring) as hiAppEvent.AppEventGroup
           const externalLog: string[] = []
           if (errorLog.appEventInfos) {
-            errorLog.appEventInfos.forEach((item) => {
+            errorLog.appEventInfos.forEach(item => {
               const external_log = item.params['external_log'] as string[] | undefined
               if (external_log) {
-                external_log.forEach((item) => {
+                external_log.forEach(item => {
                   if (item) {
                     externalLog.push(item)
                   }
@@ -100,7 +99,8 @@ struct Errorlog {
           }
         } catch {
         }
-      }
+      })
+      await Promise.all(promises)
     } catch (err) {
       if (err.code !== 13900002) {
         await promptAction.openToast({
