@@ -10,6 +10,6 @@
       "maxCount": 5
     },
     "configuration": "$profile:configuration",
-    "appPreloadPhase": "windowStageCreated"
+    "appPreloadPhase": "abilityStageCreated"
   }
 }
