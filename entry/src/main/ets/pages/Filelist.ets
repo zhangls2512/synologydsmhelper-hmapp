@@ -107,11 +107,12 @@ export default struct Filelist {
     if (lastDotIndex !== -1) {
       houzhui = '.' + name.slice(lastDotIndex + 1)
     }
-    if (houzhui === '.') {
-      houzhui = '.aaa'
+    try {
+      const fileType = uniformTypeDescriptor.getUniformDataTypeByFilenameExtension(houzhui)
+      return fileManagerService.getFileIconSync(fileType)
+    } catch {
+      return fileManagerService.getFileIconSync('.aaa')
     }
-    const fileType = uniformTypeDescriptor.getUniformDataTypeByFilenameExtension(houzhui)
-    return fileManagerService.getFileIconSync(fileType)
   }
 
   getPath() {
