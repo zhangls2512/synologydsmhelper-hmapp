@@ -488,12 +488,7 @@ export default struct Cleardata {
                       await fileIo.unlink(errorLogDir + item)
                     })
                     await Promise.all(promises)
-                  } catch (err) {
-                    if (err.code !== 13900002) {
-                      await promptAction.openToast({
-                        message: '发生错误，错误码：' + err.code
-                      })
-                    }
+                  } catch {
                   }
                 }
               })

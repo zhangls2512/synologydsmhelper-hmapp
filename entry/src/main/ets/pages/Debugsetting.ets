@@ -1,6 +1,7 @@
 import { appRecovery, common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { promptAction } from '@kit.ArkUI'
+import { webview } from '@kit.ArkWeb'
 import { deviceInfo } from '@kit.BasicServicesKit'
 
 @Builder
@@ -27,7 +28,7 @@ struct Debugsetting {
   @Local highLatencyThreshold: string = '200'
   @Local closeRemoteValidationWhenLinkDsm: boolean = false
   @Local optimizeParserBudget: boolean = true
-  @Local destroyModeIndex: number = 0
+  @Local destroyModeIndex: webview.WebDestroyMode = webview.WebDestroyMode.NORMAL_MODE
   @Local destroyModeValue: string = '普通'
   @Local allService: boolean = false
   @Local hoverId: number = -1
@@ -67,8 +68,8 @@ struct Debugsetting {
     this.showNetQosChange = this.debugSettingDataPreferences.getSync('showNetQosChange', false) as boolean
     this.showNetSceneChange = this.debugSettingDataPreferences.getSync('showNetSceneChange', false) as boolean
     this.highLatencyThreshold = String(this.debugSettingDataPreferences.getSync('highLatencyThreshold', 200))
-    const destroyMode = this.debugSettingDataPreferences.getSync('destroyMode', 0)
-    this.destroyModeIndex = destroyMode as number
+    const destroyMode = this.debugSettingDataPreferences.getSync('destroyMode', webview.WebDestroyMode.NORMAL_MODE)
+    this.destroyModeIndex = destroyMode as webview.WebDestroyMode
     if (destroyMode === 0) {
       this.destroyModeValue = '普通'
     }

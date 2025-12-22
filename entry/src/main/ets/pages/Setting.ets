@@ -31,7 +31,8 @@ export default struct Setting {
     this.allService = commonSettingDataPreferences.getSync('allService', true) as boolean
     try {
       const appPrivacyResults: privacyManager.AppPrivacyResult[] = privacyManager.getAppPrivacyResult()
-      this.agreedPrivacyAgreement = appPrivacyResults.find(item => item.type === 1)?.result
+      this.agreedPrivacyAgreement =
+        appPrivacyResults.find(item => item.type === privacyManager.AppPrivacyType.PRIVACY_AGREEMENT)?.result
     } catch (err) {
       await promptAction.openToast({
         message: '发生错误，错误码：' + err.code + '，错误信息：' + err.message
@@ -577,8 +578,8 @@ export default struct Setting {
               })
               .onClick(async () => {
                 try {
-                  const appPrivacyLink =
-                    privacyManager.getAppPrivacyMgmtInfo().privacyInfo.find(item => item.type === 1)
+                  const appPrivacyLink = privacyManager.getAppPrivacyMgmtInfo().privacyInfo
+                    .find(item => item.type === privacyManager.AppPrivacyLinkType.PRIVACY_STATEMENT_LINK)
                   this.pageInfos.pushPath({
                     name: 'Webview',
                     param: appPrivacyLink?.url

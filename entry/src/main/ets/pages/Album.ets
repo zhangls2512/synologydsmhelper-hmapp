@@ -276,6 +276,20 @@ export default struct Album {
                 })
                 await Promise.all(promises)
                 this.photoArray = this.photoArray.concat(photoArray)
+                if (this.photoArray.length >= 1000) {
+                  const promptAction = this.UIContext.getPromptAction()
+                  await promptAction.showDialog({
+                    title: '提示',
+                    message: '为避免应用因内存占用过多崩溃退出，目前仅支持加载最多 1000 张图片/视频。如需查看更多图片/视频，请耐心等待修复版本',
+                    buttons: [
+                      {
+                        text: '确定',
+                        color: $r('sys.color.font_emphasize')
+                      }
+                    ]
+                  })
+                  return
+                }
                 offset += 10
               }
               if (photores === 'fail') {
@@ -381,6 +395,20 @@ export default struct Album {
           })
           await Promise.all(promises)
           this.albumPhotoArray = this.albumPhotoArray.concat(photoArray)
+          if (this.albumPhotoArray.length >= 1000) {
+            const promptAction = this.UIContext.getPromptAction()
+            await promptAction.showDialog({
+              title: '提示',
+              message: '为避免应用因内存占用过多崩溃退出，目前仅支持加载最多 1000 张图片/视频。如需查看更多图片/视频，请耐心等待修复版本',
+              buttons: [
+                {
+                  text: '确定',
+                  color: $r('sys.color.font_emphasize')
+                }
+              ]
+            })
+            return
+          }
           offset += 10
         }
         if (photores === 'fail') {
@@ -703,12 +731,7 @@ export default struct Album {
                                   }
                                 }
                               })
-                            } catch (err) {
-                              if (err.code !== 1600009 && err.code !== 202) {
-                                await promptAction.openToast({
-                                  message: '发生错误，错误码：' + err.code
-                                })
-                              }
+                            } catch {
                             }
                           },
                           onDataEnd: async () => {
@@ -794,12 +817,7 @@ export default struct Album {
                     fileStream.closeSync()
                     try {
                       await backgroundTaskManager.stopBackgroundRunning(this.context)
-                    } catch (err) {
-                      if (err.code !== 9800005) {
-                        await promptAction.openToast({
-                          message: '发生错误，错误码：' + err.code
-                        })
-                      }
+                    } catch {
                     }
                     this.isShowProgressSheet = false
                     this.transferredSize = 0
