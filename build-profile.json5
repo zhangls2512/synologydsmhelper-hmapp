@@ -4,36 +4,24 @@
       {
         "name": "release",
         "material": {
-          "storeFile": "D:/harmonyproject/内部文件/发布签名材料/keystore.p12",
-          "storePassword": "000000195C12DD78581766951C4A14A8EF547FA599ED4F3FADCD2A726A6754A39C4C94E2BE42310E9F",
+          "storeFile": "D:/code/harmonyproject/内部文件/发布签名材料/keystore.p12",
+          "storePassword": "000000198F2CAFEEAD1917FB341AE6389331EDD982DD0CDD87E4A57D8E753E6830CC477A0B08CA8194",
           "keyAlias": "release",
-          "keyPassword": "0000001984A06F2DD1122ECB427C9217BA8AB41E9F05DD1E930B56A57A794CDCDDE59C83C4D9B71366",
-          "certpath": "D:/harmonyproject/内部文件/发布签名材料/songjy.cer",
-          "profile": "D:/harmonyproject/内部文件/发布签名材料/synologydsmhelper.p7b",
+          "keyPassword": "00000019A1864392D96E0D72F22AA682D532E4453C9458E3279E62ABAA82351ABB8C135EC534ACCC6A",
+          "certpath": "D:/code/harmonyproject/内部文件/发布签名材料/songjy.cer",
+          "profile": "D:/code/harmonyproject/内部文件/发布签名材料/synologydsmhelper.p7b",
           "signAlg": "SHA256withECDSA"
         }
       },
       {
         "name": "debug",
         "material": {
-          "storeFile": "C:\\Users\\zls25\\.ohos\\config\\debug_synologydsmhelperhmapp_Ex1mAlsEleTUrK2Mt9RtAHQ-X3YSsN0n-_K3gkNxl2A=.p12",
-          "storePassword": "0000001AE93DE3BDFC6B3572DE0264363B9F36C6405A77CCE40C80142A71A0F73C0B4A599D965776835F",
-          "keyAlias": "debugKey",
-          "keyPassword": "0000001A26A92231B127D0F0C48520AABD938D16B84B7406469DD64B7A57878ACBBB62AB6EB7F8FEC780",
-          "certpath": "C:\\Users\\zls25\\.ohos\\config\\debug_synologydsmhelperhmapp_Ex1mAlsEleTUrK2Mt9RtAHQ-X3YSsN0n-_K3gkNxl2A=.cer",
-          "profile": "C:\\Users\\zls25\\.ohos\\config\\debug_synologydsmhelperhmapp_Ex1mAlsEleTUrK2Mt9RtAHQ-X3YSsN0n-_K3gkNxl2A=.p7b",
-          "signAlg": "SHA256withECDSA"
-        }
-      },
-      {
-        "name": "debugsjy",
-        "material": {
-          "storeFile": "C:\\Users\\Lenovo\\.ohos\\config\\debugsjy_synologydsmhelper_z1YKi4fCiPF-syFZjEJ_7sZs93FKZupePDYcs9zyO48=.p12",
-          "storePassword": "0000001B6C54D46FEC204C0D2521E7758DD9BD1A788A54BD6F87BEDFFAA5CF7B7DCD881A42C00D0E08C02B",
-          "keyAlias": "debugKey",
-          "keyPassword": "0000001BDAF5127DCD748A83B62FE9F7FAEC6CFAB07F4318054D0B721BCBD4CE06EBF41AE9041958C123B2",
-          "certpath": "C:\\Users\\Lenovo\\.ohos\\config\\debugsjy_synologydsmhelper_z1YKi4fCiPF-syFZjEJ_7sZs93FKZupePDYcs9zyO48=.cer",
-          "profile": "C:\\Users\\Lenovo\\.ohos\\config\\debugsjy_synologydsmhelper_z1YKi4fCiPF-syFZjEJ_7sZs93FKZupePDYcs9zyO48=.p7b",
+          "storeFile": "D:/code/harmonyproject/内部文件/调试签名材料/keystore.p12",
+          "storePassword": "00000019EF50B7E31C44148373AD33BB98D41495C927B1E65507D1E33DF04F03FEA4B084D091EC585B",
+          "keyAlias": "debug",
+          "keyPassword": "000000192F2367007198D2347FCABC149C2846ACEA5B16D804501B7AF630CED89A8AB86801EE9EDF82",
+          "certpath": "D:/code/harmonyproject/内部文件/调试签名材料/songjy.cer",
+          "profile": "D:/code/harmonyproject/内部文件/调试签名材料/synologydsmhelper.p7b",
           "signAlg": "SHA256withECDSA"
         }
       }
