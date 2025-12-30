@@ -133,6 +133,7 @@ export async function download(context: Context, id: string) {
           }
         },
         headers: {
+          'accept-language': 'zh-CN',
           referer: transferTask.path
         },
         cookies: {

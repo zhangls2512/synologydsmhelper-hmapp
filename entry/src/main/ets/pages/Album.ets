@@ -568,6 +568,7 @@ export default struct Album {
                   }
                 },
                 headers: {
+                  'accept-language': 'zh-CN',
                   referer: accountInfo.path
                 },
                 cookies: {
@@ -769,6 +770,7 @@ export default struct Album {
                       }
                     },
                     headers: {
+                      'accept-language': 'zh-CN',
                       referer: accountInfo.path
                     },
                     cookies: {

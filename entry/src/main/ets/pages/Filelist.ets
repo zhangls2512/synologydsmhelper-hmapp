@@ -451,6 +451,7 @@ export default struct Filelist {
                         }
                       },
                       headers: {
+                        'accept-language': 'zh-CN',
                         referer: accountInfo.path
                       },
                       cookies: {
@@ -1561,6 +1562,7 @@ export default struct Filelist {
                                 }
                               },
                               headers: {
+                                'accept-language': 'zh-CN',
                                 referer: accountInfo.path
                               },
                               cookies: {

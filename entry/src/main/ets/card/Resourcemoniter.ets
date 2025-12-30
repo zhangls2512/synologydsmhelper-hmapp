@@ -1,0 +1,120 @@
+import { common } from '@kit.AbilityKit'
+import { preferences } from '@kit.ArkData'
+import { getLoginStatus } from '../common/Account'
+import { dsmRequest } from '../common/Request'
+import { getSizeString } from '../common/Stringformat'
+
+interface ResourceMoniter {
+  cpu: Cpu,
+  memory: Memory,
+  disk: Disk,
+  network: NetworkItem[]
+}
+
+interface Cpu {
+  user_load: number
+}
+
+interface Memory {
+  real_usage: number
+}
+
+interface Disk {
+  total: DiskTotal
+}
+
+interface DiskTotal {
+  read_byte: number,
+  write_byte: number
+}
+
+interface NetworkItem {
+  device: string,
+  rx: number,
+  tx: number
+}
+
+@ComponentV2
+export default struct Resourcemoniter {
+  @Local resourcemoniter: ResourceMoniter | undefined = undefined
+  @Local status: string = 'fail'
+  UIContext = this.getUIContext()
+  context = this.UIContext.getHostContext() as common.UIAbilityContext
+
+  build() {
+    Column() {
+      if (this.status === 'pending' && !this.resourcemoniter) {
+        Text('获取数据中')
+      }
+      if (this.status === 'fail') {
+        Text('获取数据失败')
+      }
+      if (this.resourcemoniter) {
+        Column() {
+          Text('资源监控')
+            .fontWeight(FontWeight.Bold)
+          Text('CPU利用率：' + this.resourcemoniter.cpu.user_load + '%')
+            .enableAutoSpacing(true)
+            .margin({
+              top: $r('sys.float.ohos_id_text_margin_vertical')
+            })
+          Text('内存利用率：' + this.resourcemoniter.memory.real_usage + '%')
+            .margin({
+              top: $r('sys.float.ohos_id_text_margin_vertical')
+            })
+          Text('硬盘读取速度：' + getSizeString(this.resourcemoniter.disk.total.read_byte) + '/s')
+            .margin({
+              top: $r('sys.float.ohos_id_text_margin_vertical')
+            })
+          Text('硬盘写入速度：' + getSizeString(this.resourcemoniter.disk.total.write_byte) + '/s')
+            .margin({
+              top: $r('sys.float.ohos_id_text_margin_vertical')
+            })
+          Text('网络下行速度：' + getSizeString(this.resourcemoniter.network.find(item => item.device === 'total')?.rx) +
+            '/s')
+            .margin({
+              top: $r('sys.float.ohos_id_text_margin_vertical')
+            })
+          Text('网络上行速度：' + getSizeString(this.resourcemoniter.network.find(item => item.device === 'total')?.tx) +
+            '/s')
+            .margin({
+              top: $r('sys.float.ohos_id_text_margin_vertical')
+            })
+        }
+        .alignItems(HorizontalAlign.Start)
+        .width('100%')
+      }
+    }
+    .backgroundColor($r('sys.color.comp_background_primary'))
+    .borderRadius(12)
+    .padding(12)
+    .width('100%')
+    .onAppear(() => {
+      this.context.eventHub.on('refreshCard', () => {
+        this.status = 'pending'
+      })
+      this.status = 'pending'
+      setInterval(async () => {
+        const cardSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+          name: 'cardSetting'
+        })
+        const isLogin = await getLoginStatus()
+        if ((cardSettingDataPreferences.getSync('cards', []) as string[]).includes('resourcemoniter') &&
+          this.status !== 'fail' && isLogin) {
+          const res = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Core.System.Utilization', '&method=get')
+          if (res !== 'fail') {
+            this.resourcemoniter = res as ResourceMoniter
+            this.status = 'success'
+          }
+          if (res === 'fail') {
+            this.resourcemoniter = undefined
+            this.status = 'fail'
+          }
+        }
+      }, 5000)
+    })
+    .onDisAppear(() => {
+      this.context.eventHub.off('refreshCard')
+    })
+  }
+}

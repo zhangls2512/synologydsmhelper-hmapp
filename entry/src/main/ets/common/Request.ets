@@ -1,5 +1,5 @@
 import { preferences } from '@kit.ArkData'
-import { promptAction } from '@kit.ArkUI'
+import { promptAction, UIContext } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
 import { netBoost } from '@kit.NetworkBoostKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
@@ -114,6 +114,7 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
       }
     },
     headers: {
+      'accept-language': 'zh-CN',
       referer: requestPath
     }
   })
@@ -186,6 +187,7 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
             }
           },
           headers: {
+            'accept-language': 'zh-CN',
             referer: requestPath
           }
         })
@@ -283,7 +285,7 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
 }
 
 export async function dsmRequest(context: Context, UIContext: UIContext, path: string, api: string, params: string,
-  version?: number, dsm6Login?: boolean): Promise<string | object> {
+  version?: number, dsm6Login?: boolean, hide102ErrorCode?: boolean): Promise<string | object> {
   const accountInfo = await getAccountInfo()
   let requestPath = path
   if (!requestPath) {
@@ -315,6 +317,7 @@ export async function dsmRequest(context: Context, UIContext: UIContext, path: s
       }
     },
     headers: {
+      'accept-language': 'zh-CN',
       referer: requestPath
     },
     cookies: {
@@ -344,7 +347,7 @@ export async function dsmRequest(context: Context, UIContext: UIContext, path: s
         })
         const loginres = await dsmRequest(context, UIContext, accountInfo.path, 'SYNO.API.Auth',
           '&method=login&account=' + encodeURIComponent(accountInfo.name) + '&passwd=' +
-          encodeURIComponent(accountInfo.password))
+          encodeURIComponent(accountInfo.password), undefined, false, true)
         netBoost.setSceneDesc({
           scene: 'login',
           sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
@@ -399,9 +402,16 @@ export async function dsmRequest(context: Context, UIContext: UIContext, path: s
     return 'fail'
   } catch (err) {
     session.close()
-    await promptAction.openToast({
-      message: '发生错误，错误码：' + err.code
-    })
+    if (err.code !== 102) {
+      await promptAction.openToast({
+        message: '发生错误，错误码：' + err.code
+      })
+    }
+    if (err.code === 102 && !hide102ErrorCode) {
+      await promptAction.openToast({
+        message: '发生错误，错误码：' + err.code
+      })
+    }
     return 'fail'
   }
 }

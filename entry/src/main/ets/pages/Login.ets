@@ -231,10 +231,12 @@ export default struct Login {
               })
               dialogControllerProgress.open()
               if (!this.quickConnectId) {
-                const host = this.host.substring(0, this.host.indexOf('/'))
-                let route = this.host.substring(this.host.indexOf('/') + 1)
-                if (route) {
-                  route = '/' + this.host.substring(this.host.indexOf('/') + 1)
+                let host = this.host
+                let route = ''
+                const index = this.host.indexOf('/')
+                if (index !== -1) {
+                  host = this.host.substring(0, index)
+                  route = '/' + this.host.substring(index + 1)
                 }
                 path = this.scheme + '://' + host + ':' + this.port + route
                 netBoost.setSceneDesc({
@@ -243,7 +245,7 @@ export default struct Login {
                 })
                 res = await dsmRequest(this.context, this.UIContext, path, 'SYNO.API.Auth',
                   '&method=login&account=' + encodeURIComponent(this.name) + '&passwd=' +
-                  encodeURIComponent(this.password) + '&otp_code=' + this.mfa)
+                  encodeURIComponent(this.password) + '&otp_code=' + this.mfa, undefined, false, true)
                 netBoost.setSceneDesc({
                   scene: 'login',
                   sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
@@ -294,7 +296,7 @@ export default struct Login {
                       })
                       res = await dsmRequest(this.context, this.UIContext, path, 'SYNO.API.Auth',
                         '&method=login&account=' + encodeURIComponent(this.name) + '&passwd=' +
-                        encodeURIComponent(this.password) + '&otp_code=' + this.mfa)
+                        encodeURIComponent(this.password) + '&otp_code=' + this.mfa, undefined, false, true)
                       netBoost.setSceneDesc({
                         scene: 'login',
                         sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
