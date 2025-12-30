@@ -3,17 +3,6 @@
 struct FileAlbumEntranceCard {
   build() {
     Row() {
-      Image($r('app.media.card_form'))
-        .width('50%')
-        .onClick(() => {
-          postCardAction(this, {
-            action: 'router',
-            abilityName: 'EntryAbility',
-            params: {
-              shortcutId: 'card'
-            }
-          })
-        })
       Image($r('app.media.file_form'))
         .width('50%')
         .onClick(() => {
@@ -22,6 +11,17 @@ struct FileAlbumEntranceCard {
             abilityName: 'EntryAbility',
             params: {
               shortcutId: 'file'
+            }
+          })
+        })
+      Image($r('app.media.album_form'))
+        .width('50%')
+        .onClick(() => {
+          postCardAction(this, {
+            action: 'router',
+            abilityName: 'EntryAbility',
+            params: {
+              shortcutId: 'album'
             }
           })
         })
