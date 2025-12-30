@@ -3,6 +3,7 @@ import {
   appRecovery,
   bundleManager,
   ConfigurationConstant,
+  contextConstant,
   errorManager,
   UIAbility,
   Want,
@@ -11,8 +12,10 @@ import {
 import { updateManager } from '@kit.AppGalleryKit'
 import { preferences, uniformTypeDescriptor } from '@kit.ArkData'
 import { promptAction, window } from '@kit.ArkUI'
-import { deviceInfo } from '@kit.BasicServicesKit'
+import { commonEventManager, deviceInfo } from '@kit.BasicServicesKit'
 import { fileIo, fileUri } from '@kit.CoreFileKit'
+import { statusBarManager } from '@kit.DeskTopExtensionKit'
+import { image } from '@kit.ImageKit'
 import { netQuality } from '@kit.NetworkBoostKit'
 import { connection } from '@kit.NetworkKit'
 import { notificationManager } from '@kit.NotificationKit'
@@ -22,11 +25,18 @@ import { getAccountList, getLoginStatus } from '../common/Account'
 import { write } from '../common/File'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import openLink from '../common/Openlink'
-import { developerRequest } from '../common/Request'
 
 interface JsErrorObject {
   name: string,
   info: Error
+}
+
+interface MenuCodeEventData {
+  data: EventData
+}
+
+interface EventData {
+  menuCode: string
 }
 
 export default class EntryAbility extends UIAbility {
@@ -34,6 +44,18 @@ export default class EntryAbility extends UIAbility {
     await notificationManager.setBadgeNumber(0)
     if (want.parameters?.noticeUrl) {
       await openLink(this.context, want.parameters.noticeUrl as string)
+    }
+    if (want.parameters?.shortcutId === 'card') {
+      this.context.eventHub.emit('card')
+    }
+    if (want.parameters?.shortcutId === 'file') {
+      this.context.eventHub.emit('file')
+    }
+    if (want.parameters?.shortcutId === 'album') {
+      this.context.eventHub.emit('album')
+    }
+    if (want.parameters?.shortcutId === 'me') {
+      this.context.eventHub.emit('me')
     }
     if (want.parameters?.menuHandler === 'clickMenu') {
       const uriList = want.parameters.uriList as string[]
@@ -136,14 +158,7 @@ export default class EntryAbility extends UIAbility {
             'RESOURCE_OVERLIMIT',
             'ADDRESS_SANITIZER'
           ]) as string[]).includes('JS_ERROR')) {
-            const res = await developerRequest(context, '/debug/newErrorLog', {
-              product: 'synologydsmhelper',
-              object: object
-            })
-            if (res !== 'fail') {
-              context.eventHub.emit('dialog', '提示',
-                '故障日志自动上传成功，故障类型：JS_ERROR。建议您依次进入“我的”>“设置”>“关于”，附带联系方式提交意见反馈或联系人工客服，便于开发者排查、处理问题。')
-            }
+            context.eventHub.emit('uploadErrorLog', object.name, JSON.stringify(object))
           }
         }
       }
@@ -179,14 +194,7 @@ export default class EntryAbility extends UIAbility {
             'RESOURCE_OVERLIMIT',
             'ADDRESS_SANITIZER'
           ]) as string[]).includes('JS_ERROR')) {
-            const res = await developerRequest(context, '/debug/newErrorLog', {
-              product: 'synologydsmhelper',
-              object: object
-            })
-            if (res !== 'fail') {
-              this.context.eventHub.emit('dialog', '提示',
-                '故障日志自动上传成功，故障类型：JS_ERROR。建议您依次进入“我的”>“设置”>“关于”，附带联系方式提交意见反馈或联系人工客服，便于开发者排查、处理问题。')
-            }
+            this.context.eventHub.emit('uploadErrorLog', object.name, JSON.stringify(object))
           }
         }
       }
@@ -208,7 +216,7 @@ export default class EntryAbility extends UIAbility {
         }
         if (debugSettingDataPreferences.getSync('autoUploadErrorLog', true) &&
         commonSettingDataPreferences.getSync('allService', true)) {
-          const promises = appEventGroups.map(async (item) => {
+          appEventGroups.forEach(item => {
             if ((debugSettingDataPreferences.getSync('autoUploadErrorLogType', [
               'JS_ERROR',
               'APP_CRASH',
@@ -217,17 +225,9 @@ export default class EntryAbility extends UIAbility {
               'RESOURCE_OVERLIMIT',
               'ADDRESS_SANITIZER'
             ]) as string[]).includes(item.name)) {
-              const res = await developerRequest(context, '/debug/newErrorLog', {
-                product: 'synologydsmhelper',
-                object: item
-              })
-              if (res !== 'fail') {
-                this.context.eventHub.emit('dialog', '提示', '故障日志自动上传成功，故障类型：' + item.name +
-                  '。建议您依次进入“我的”>“设置”>“关于”，附带联系方式提交意见反馈或联系人工客服，便于开发者排查、处理问题。')
-              }
+              this.context.eventHub.emit('uploadErrorLog', item.name, JSON.stringify(item))
             }
           })
-          await Promise.all(promises)
         }
       }
     })
@@ -384,6 +384,93 @@ export default class EntryAbility extends UIAbility {
     }
     const allowRestore = commonSettingDataPreferences.getSync('allowRestore', true) as boolean
     this.context.setRestoreEnabled(allowRestore)
+    if (deviceInfo.deviceType === '2in1') {
+      statusBarManager.on('statusBarIconClick', async () => {
+        await this.context.showAbility()
+      })
+      statusBarManager.on('rightMenuClick', (data) => {
+        const datastring = JSON.stringify(data)
+        const eventData = JSON.parse(datastring) as MenuCodeEventData
+        this.context.eventHub.emit(eventData.data.menuCode)
+      })
+      const statusBarDataPreferences = preferences.getPreferencesSync(this.context, {
+        name: 'statusBar'
+      })
+      const subscriber = commonEventManager.createSubscriberSync({
+        events: ['BACKGROUNDABILITY_EVENT_PREPARETOTERMINATE']
+      })
+      await commonEventManager.subscribeToEvent(subscriber, async (data) => {
+        if (data.event === 'BACKGROUNDABILITY_EVENT_PREPARETOTERMINATE') {
+          statusBarManager.removeFromStatusBar(this.context)
+          statusBarDataPreferences.putSync('exist', false)
+          await this.context.terminateSelf()
+        }
+      })
+      const statusBar = commonSettingDataPreferences.getSync('statusBar', false)
+      if (statusBar) {
+        const fileData = this.context.resourceManager.getRawFileContentSync('icon.png')
+        const pixelMap = await image.createImageSource(fileData.buffer).createPixelMap()
+        statusBarManager.addToStatusBar(this.context, {
+          icons: {
+            black: pixelMap,
+            white: pixelMap
+          },
+          quickOperation: {
+            title: '',
+            height: 1,
+            abilityName: '',
+            moduleName: 'entry',
+            loadingStatus: true
+          }
+        })
+        statusBarManager.updateStatusBarMenu(this.context, [
+          [
+            {
+              title: '打开',
+              menuAction: {
+                abilityName: 'EntryAbility'
+              }
+            }
+          ],
+          [
+            {
+              title: '卡片',
+              menuAction: {
+                abilityName: 'EntryAbility',
+                notifyOnly: true,
+                menuCode: 'card'
+              }
+            },
+            {
+              title: '文件',
+              menuAction: {
+                abilityName: 'EntryAbility',
+                notifyOnly: true,
+                menuCode: 'file'
+              }
+            },
+            {
+              title: '相册',
+              menuAction: {
+                abilityName: 'EntryAbility',
+                notifyOnly: true,
+                menuCode: 'album'
+              }
+            }
+          ]
+        ])
+        setTimeout(async () => {
+          await this.context.startAbility({
+            bundleName: 'com.songjy.synologydsmhelper',
+            abilityName: 'BackGroundAbility'
+          }, {
+            processMode: contextConstant.ProcessMode.NEW_PROCESS_ATTACH_TO_STATUS_BAR_ITEM,
+            startupVisibility: contextConstant.StartupVisibility.STARTUP_HIDE
+          })
+          statusBarDataPreferences.putSync('exist', true)
+        }, 200)
+      }
+    }
     const applicationContext = this.context.getApplicationContext()
     const colorMode = commonSettingDataPreferences.getSync('colorMode', 0)
     if (colorMode === 0) {
@@ -415,6 +502,17 @@ export default class EntryAbility extends UIAbility {
 
   async onWindowStageRestore(windowStage: window.WindowStage) {
     await this.windowInit(windowStage)
+  }
+
+  async onPrepareToTerminateAsync(): Promise<boolean> {
+    const statusBarDataPreferences = preferences.getPreferencesSync(this.context, {
+      name: 'statusBar'
+    })
+    const statusBarExist = statusBarDataPreferences.getSync('exist', false) as boolean
+    if (statusBarExist) {
+      await this.context.hideAbility()
+    }
+    return statusBarExist
   }
 
   onBackPressed() {

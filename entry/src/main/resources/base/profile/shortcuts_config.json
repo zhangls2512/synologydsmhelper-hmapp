@@ -1,0 +1,46 @@
+{
+  "shortcuts": [
+    {
+      "shortcutId": "card",
+      "label": "$string:card",
+      "icon": "$media:card_shortcut",
+      "wants": [
+        {
+          "bundleName": "com.songjy.synologydsmhelper",
+          "abilityName": "EntryAbility",
+          "parameters": {
+            "shortcutId": "card"
+          }
+        }
+      ]
+    },
+    {
+      "shortcutId": "file",
+      "label": "$string:file",
+      "icon": "$media:file_shortcut",
+      "wants": [
+        {
+          "bundleName": "com.songjy.synologydsmhelper",
+          "abilityName": "EntryAbility",
+          "parameters": {
+            "shortcutId": "file"
+          }
+        }
+      ]
+    },
+    {
+      "shortcutId": "album",
+      "label": "$string:album",
+      "icon": "$media:album_shortcut",
+      "wants": [
+        {
+          "bundleName": "com.songjy.synologydsmhelper",
+          "abilityName": "EntryAbility",
+          "parameters": {
+            "shortcutId": "album"
+          }
+        }
+      ]
+    }
+  ]
+}

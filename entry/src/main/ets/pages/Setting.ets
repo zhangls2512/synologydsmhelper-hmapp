@@ -4,6 +4,7 @@ import { preferences, uniformTypeDescriptor } from '@kit.ArkData'
 import { promptAction } from '@kit.ArkUI'
 import { appAccount, deviceInfo } from '@kit.BasicServicesKit'
 import { fileIo, fileUri, picker } from '@kit.CoreFileKit'
+import { formProvider } from '@kit.FormKit'
 import { harmonyShare, systemShare } from '@kit.ShareKit'
 import { getAccountInfo, getAccountList, getLoginStatus, importAccounts } from '../common/Account'
 import { write, writeUri } from '../common/File'
@@ -290,47 +291,102 @@ export default struct Setting {
 
         ListItem() {
           Column() {
-            Row() {
-              Text('通用')
-                .fontWeight(FontWeight.Medium)
-                .layoutWeight(1)
-                .margin({
-                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                })
-              Image($r('app.media.right'))
-                .fillColor($r('sys.color.icon_fourth'))
-                .height(12)
-                .width(12)
-            }
-            .borderRadius(12)
-            .padding(12)
-            .stateStyles({
-              normal: {
-                .backgroundColor(this.hoverId === 3 ? $r('sys.color.interactive_hover') :
-                  $r('sys.color.ohos_id_color_card_bg'))
-              },
-              pressed: {
-                .backgroundColor($r('sys.color.interactive_pressed'))
-              }
-            })
-            .width('100%')
-            .onHover((isHover) => {
-              if (!isHover) {
-                this.hoverId = -1
-              }
-              if (isHover) {
-                this.hoverId = 3
-              }
-            })
-            .onClick(() => {
-              this.pageInfos.pushPath({
-                name: 'Commonsetting'
+            Text('通用')
+              .fontColor($r('sys.color.font_secondary'))
+              .fontSize($r('sys.float.ohos_id_text_size_body2'))
+              .fontWeight(FontWeight.Medium)
+              .margin({
+                bottom: 6,
+                left: 12,
+                right: 12
               })
-            })
+            Column() {
+              Row() {
+                Text('通用')
+                  .fontWeight(FontWeight.Medium)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                Image($r('app.media.right'))
+                  .fillColor($r('sys.color.icon_fourth'))
+                  .height(12)
+                  .width(12)
+              }
+              .borderRadius(12)
+              .padding(12)
+              .stateStyles({
+                normal: {
+                  .backgroundColor(this.hoverId === 3 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
+                },
+                pressed: {
+                  .backgroundColor($r('sys.color.interactive_pressed'))
+                }
+              })
+              .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 3
+                }
+              })
+              .onClick(() => {
+                this.pageInfos.pushPath({
+                  name: 'Commonsetting'
+                })
+              })
+
+              Divider()
+                .padding({
+                  left: 12,
+                  right: 12
+                })
+              Row() {
+                Text('卡片')
+                  .fontWeight(FontWeight.Medium)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                Image($r('app.media.right'))
+                  .fillColor($r('sys.color.icon_fourth'))
+                  .height(12)
+                  .width(12)
+              }
+              .borderRadius(12)
+              .padding(12)
+              .stateStyles({
+                normal: {
+                  .backgroundColor(this.hoverId === 4 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
+                },
+                pressed: {
+                  .backgroundColor($r('sys.color.interactive_pressed'))
+                }
+              })
+              .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 4
+                }
+              })
+              .onClick(() => {
+                formProvider.openFormManager({
+                  bundleName: 'com.songjy.synologydsmhelper'
+                })
+              })
+            }
+            .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+            .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+            .padding($r('sys.float.ohos_id_corner_radius_mark'))
           }
-          .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-          .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
-          .padding($r('sys.float.ohos_id_corner_radius_mark'))
+          .alignItems(HorizontalAlign.Start)
         }
         .margin({
           top: $r('sys.float.ohos_id_elements_margin_vertical_l')
@@ -354,7 +410,7 @@ export default struct Setting {
             .padding(12)
             .stateStyles({
               normal: {
-                .backgroundColor(this.hoverId === 4 ? $r('sys.color.interactive_hover') :
+                .backgroundColor(this.hoverId === 5 ? $r('sys.color.interactive_hover') :
                   $r('sys.color.ohos_id_color_card_bg'))
               },
               pressed: {
@@ -367,7 +423,7 @@ export default struct Setting {
                 this.hoverId = -1
               }
               if (isHover) {
-                this.hoverId = 4
+                this.hoverId = 5
               }
             })
             .onClick(() => {
@@ -412,7 +468,7 @@ export default struct Setting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 5 ? $r('sys.color.interactive_hover') :
+                  .backgroundColor(this.hoverId === 6 ? $r('sys.color.interactive_hover') :
                     $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
@@ -425,7 +481,7 @@ export default struct Setting {
                   this.hoverId = -1
                 }
                 if (isHover) {
-                  this.hoverId = 5
+                  this.hoverId = 6
                 }
               })
               .onClick(() => {
@@ -461,7 +517,7 @@ export default struct Setting {
                 .padding(12)
                 .stateStyles({
                   normal: {
-                    .backgroundColor(this.hoverId === 6 ? $r('sys.color.interactive_hover') :
+                    .backgroundColor(this.hoverId === 7 ? $r('sys.color.interactive_hover') :
                       $r('sys.color.ohos_id_color_card_bg'))
                   },
                   pressed: {
@@ -474,7 +530,7 @@ export default struct Setting {
                     this.hoverId = -1
                   }
                   if (isHover) {
-                    this.hoverId = 6
+                    this.hoverId = 7
                   }
                 })
                 .onClick(async () => {
@@ -500,7 +556,7 @@ export default struct Setting {
                 .padding(12)
                 .stateStyles({
                   normal: {
-                    .backgroundColor(this.hoverId === 7 ? $r('sys.color.interactive_hover') :
+                    .backgroundColor(this.hoverId === 8 ? $r('sys.color.interactive_hover') :
                       $r('sys.color.ohos_id_color_card_bg'))
                   },
                   pressed: {
@@ -513,7 +569,7 @@ export default struct Setting {
                     this.hoverId = -1
                   }
                   if (isHover) {
-                    this.hoverId = 7
+                    this.hoverId = 8
                   }
                 })
                 .onClick(async () => {
@@ -560,7 +616,7 @@ export default struct Setting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 8 ? $r('sys.color.interactive_hover') :
+                  .backgroundColor(this.hoverId === 9 ? $r('sys.color.interactive_hover') :
                     $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
@@ -573,7 +629,7 @@ export default struct Setting {
                   this.hoverId = -1
                 }
                 if (isHover) {
-                  this.hoverId = 8
+                  this.hoverId = 9
                 }
               })
               .onClick(async () => {
@@ -613,7 +669,7 @@ export default struct Setting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 9 ? $r('sys.color.interactive_hover') :
+                  .backgroundColor(this.hoverId === 10 ? $r('sys.color.interactive_hover') :
                     $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
@@ -626,7 +682,7 @@ export default struct Setting {
                   this.hoverId = -1
                 }
                 if (isHover) {
-                  this.hoverId = 9
+                  this.hoverId = 10
                 }
               })
               .onClick(async () => {
@@ -654,7 +710,7 @@ export default struct Setting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 10 ? $r('sys.color.interactive_hover') :
+                  .backgroundColor(this.hoverId === 11 ? $r('sys.color.interactive_hover') :
                     $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
@@ -667,7 +723,7 @@ export default struct Setting {
                   this.hoverId = -1
                 }
                 if (isHover) {
-                  this.hoverId = 10
+                  this.hoverId = 11
                 }
               })
               .onClick(() => {
@@ -697,7 +753,7 @@ export default struct Setting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 11 ? $r('sys.color.interactive_hover') :
+                  .backgroundColor(this.hoverId === 12 ? $r('sys.color.interactive_hover') :
                     $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
@@ -710,7 +766,7 @@ export default struct Setting {
                   this.hoverId = -1
                 }
                 if (isHover) {
-                  this.hoverId = 11
+                  this.hoverId = 12
                 }
               })
               .onClick(async () => {
@@ -761,7 +817,7 @@ export default struct Setting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 12 ? $r('sys.color.interactive_hover') :
+                  .backgroundColor(this.hoverId === 13 ? $r('sys.color.interactive_hover') :
                     $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
@@ -774,7 +830,7 @@ export default struct Setting {
                   this.hoverId = -1
                 }
                 if (isHover) {
-                  this.hoverId = 12
+                  this.hoverId = 13
                 }
               })
               .onClick(() => {
@@ -804,7 +860,7 @@ export default struct Setting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 13 ? $r('sys.color.interactive_hover') :
+                  .backgroundColor(this.hoverId === 14 ? $r('sys.color.interactive_hover') :
                     $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
@@ -817,7 +873,7 @@ export default struct Setting {
                   this.hoverId = -1
                 }
                 if (isHover) {
-                  this.hoverId = 13
+                  this.hoverId = 14
                 }
               })
               .onClick(() => {
@@ -863,7 +919,7 @@ export default struct Setting {
             .padding(12)
             .stateStyles({
               normal: {
-                .backgroundColor(this.hoverId === 14 ? $r('sys.color.interactive_hover') :
+                .backgroundColor(this.hoverId === 15 ? $r('sys.color.interactive_hover') :
                   $r('sys.color.ohos_id_color_card_bg'))
               },
               pressed: {
@@ -876,7 +932,7 @@ export default struct Setting {
                 this.hoverId = -1
               }
               if (isHover) {
-                this.hoverId = 14
+                this.hoverId = 15
               }
             })
             .onClick(() => {
@@ -906,7 +962,7 @@ export default struct Setting {
             .padding(12)
             .stateStyles({
               normal: {
-                .backgroundColor(this.hoverId === 15 ? $r('sys.color.interactive_hover') :
+                .backgroundColor(this.hoverId === 16 ? $r('sys.color.interactive_hover') :
                   $r('sys.color.ohos_id_color_card_bg'))
               },
               pressed: {
@@ -919,7 +975,7 @@ export default struct Setting {
                 this.hoverId = -1
               }
               if (isHover) {
-                this.hoverId = 15
+                this.hoverId = 16
               }
             })
             .onClick(() => {

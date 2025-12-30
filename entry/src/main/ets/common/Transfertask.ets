@@ -136,8 +136,7 @@ export async function download(context: Context, id: string) {
           referer: transferTask.path
         },
         cookies: {
-          id: transferTask.accountSid,
-          did: transferTask.accountDid
+          id: transferTask.accountSid
         }
       })
       backgroundTaskManager.on('continuousTaskCancel', () => {

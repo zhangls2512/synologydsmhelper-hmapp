@@ -10,7 +10,6 @@ export interface AccountInfo {
   name: string,
   password: string,
   sid: string,
-  did: string,
   bz: string,
   isLogin: string
 }
@@ -20,7 +19,6 @@ interface InAccountInfo {
   name: string,
   password: string,
   sid: string,
-  did: string,
   bz?: string,
   isLogin?: string
 }
@@ -40,7 +38,6 @@ export async function setAccount(context: Context, UIContext: UIContext, account
   if (accountIndex !== -1) {
     const id = accounts[accountIndex].id
     await appAccountManager.setCredential(id, 'sid', accountInfo.sid)
-    await appAccountManager.setCredential(id, 'did', accountInfo.did)
     await appAccountManager.setCustomData(id, 'bz', bz)
     await appAccountManager.setCustomData(id, 'isLogin', isLogin)
   }
@@ -62,7 +59,6 @@ export async function setAccount(context: Context, UIContext: UIContext, account
     })
     await appAccountManager.setCredential(id, 'password', accountInfo.password)
     await appAccountManager.setCredential(id, 'sid', accountInfo.sid)
-    await appAccountManager.setCredential(id, 'did', accountInfo.did)
     if (oldAccountIndex !== -1) {
       await removeAccount(accounts[oldAccountIndex].id)
     }
@@ -94,7 +90,6 @@ export async function getAccountInfo(): Promise<AccountInfo> {
     name: '',
     password: '',
     sid: '',
-    did: '',
     bz: '',
     isLogin: 'false'
   }
@@ -118,7 +113,6 @@ export async function getAccountList(): Promise<AccountInfo[]> {
         name: appAccountManager.getCustomDataSync(id, 'name'),
         password: await appAccountManager.getCredential(id, 'password'),
         sid: await appAccountManager.getCredential(id, 'sid'),
-        did: await appAccountManager.getCredential(id, 'did'),
         bz: bz,
         isLogin: appAccountManager.getCustomDataSync(item.name, 'isLogin')
       })
@@ -129,7 +123,6 @@ export async function getAccountList(): Promise<AccountInfo[]> {
         name: appAccountManager.getCustomDataSync(id, 'name'),
         password: await appAccountManager.getCredential(id, 'password'),
         sid: appAccountManager.getCustomDataSync(id, 'sid'),
-        did: appAccountManager.getCustomDataSync(id, 'did'),
         bz: bz,
         isLogin: appAccountManager.getCustomDataSync(item.name, 'isLogin')
       }
@@ -146,7 +139,6 @@ export async function getAccountList(): Promise<AccountInfo[]> {
       })
       await appAccountManager.setCredential(id, 'password', accountInfo.password)
       await appAccountManager.setCredential(id, 'sid', accountInfo.sid)
-      await appAccountManager.setCredential(id, 'did', accountInfo.did)
     }
   })
   await Promise.all(promises)
@@ -194,7 +186,6 @@ export async function importAccounts(context: Context, UIContext: UIContext, uri
         name: item.name,
         password: item.password,
         sid: item.sid,
-        did: item.did,
         bz: bz,
         isLogin: item.isLogin
       })
