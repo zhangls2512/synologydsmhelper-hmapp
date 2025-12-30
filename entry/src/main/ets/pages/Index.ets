@@ -14,6 +14,7 @@ import Cardlist from './Cardlist'
 import Cleardata from './Cleardata'
 import Filelist from './Filelist'
 import Me from './Me'
+import Uploaderrorlog from './Uploaderrorlog'
 
 export interface TransferTaskItem {
   id: string,
@@ -25,14 +26,16 @@ export interface TransferTaskItem {
   errCode: number,
   type: string,
   accountPath: string,
-  accountSid: string,
-  accountDid: string
+  accountSid: string
 }
 
 @Entry
 @ComponentV2
 struct Index {
   @Provider() isShowAccountlistSheet: boolean = false
+  @Provider() isShowUploaderrorlogSheet: boolean = false
+  @Local errorType: string = ''
+  @Local errorObject: string = ''
   @Local backgroundImagePixelMap: PixelMap | undefined = undefined
   @Local preferType: number = 1
   @Local index: number = 0
@@ -136,6 +139,14 @@ struct Index {
     Accountlist()
   }
 
+  @Builder
+  UploaderrorlogSheetBuilder() {
+    Uploaderrorlog({
+      errorType: this.errorType,
+      errorObject: this.errorObject
+    })
+  }
+
   build() {
     Column() {
       if (this.preferType === 0) {
@@ -208,6 +219,13 @@ struct Index {
           }
         }
       })
+      .bindSheet(this.isShowUploaderrorlogSheet!!, this.UploaderrorlogSheetBuilder(), {
+        height: SheetSize.FIT_CONTENT,
+        preferType: this.preferType,
+        title: {
+          title: '上传故障日志'
+        }
+      })
     }
     .alignItems(HorizontalAlign.Start)
     .backgroundColor($r('sys.color.background_secondary'))
@@ -229,6 +247,30 @@ struct Index {
           this.isShowAccountlistSheet = true
         }
       })
+      this.context.eventHub.on('card', () => {
+        this.index = 0
+        this.context.eventHub.emit('refreshCardlist')
+      })
+      this.context.eventHub.on('file', () => {
+        this.index = 1
+        this.context.eventHub.emit('refreshFilelist')
+      })
+      this.context.eventHub.on('album', () => {
+        if (this.showAlbum) {
+          this.index = 2
+          this.context.eventHub.emit('refreshAlbum')
+        }
+      })
+      this.context.eventHub.on('me', () => {
+        if (!this.showAlbum) {
+          this.index = 2
+          this.context.eventHub.emit('refreshMe')
+        }
+        if (this.showAlbum) {
+          this.index = 3
+          this.context.eventHub.emit('refreshMe')
+        }
+      })
       this.context.eventHub.on('wantUri', async (wantUri: string) => {
         await importAccounts(this.context, this.UIContext, wantUri)
       })
@@ -245,15 +287,17 @@ struct Index {
           ]
         })
       })
+      this.context.eventHub.on('uploadErrorLog', (errorType: string, errorObject: string) => {
+        this.errorType = errorType
+        this.errorObject = errorObject
+        this.isShowUploaderrorlogSheet = true
+      })
       this.preferType = getPreferType(this.UIContext)
       display.on('change', () => {
         setTimeout(() => {
           this.preferType = getPreferType(this.UIContext)
         }, 200)
       })
-      const currentIndex = this.index
-      this.index = -1
-      this.index = currentIndex
       this.context.eventHub.on('refreshIndex', () => {
         this.get()
       })
@@ -295,8 +339,13 @@ struct Index {
     })
     .onDisAppear(() => {
       this.context.eventHub.off('refreshIndex')
+      this.context.eventHub.off('uploadErrorLog')
       this.context.eventHub.off('dialog')
       this.context.eventHub.off('wantUri')
+      this.context.eventHub.off('me')
+      this.context.eventHub.off('album')
+      this.context.eventHub.off('file')
+      this.context.eventHub.off('card')
       this.context.eventHub.off('accountList')
       this.context.eventHub.off('clearData')
       display.off('change')

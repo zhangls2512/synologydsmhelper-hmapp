@@ -16,6 +16,22 @@ export default struct Cardeditsetting {
     {
       name: '系统信息',
       value: 'systeminfo'
+    },
+    {
+      name: '存储空间信息',
+      value: 'storageinfo'
+    },
+    {
+      name: '硬盘信息',
+      value: 'diskinfo'
+    },
+    {
+      name: '网络信息',
+      value: 'networkinfo'
+    },
+    {
+      name: '资源监控',
+      value: 'resourcemoniter'
     }
   ]
 

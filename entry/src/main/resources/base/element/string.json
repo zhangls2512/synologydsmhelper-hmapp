@@ -15,6 +15,34 @@
     {
       "name": "WRITE_PASTEBOARD_reason",
       "value": "用于写入数据到剪贴板，便于在外部环境使用。"
+    },
+    {
+      "name": "card",
+      "value": "卡片"
+    },
+    {
+      "name": "file",
+      "value": "文件"
+    },
+    {
+      "name": "album",
+      "value": "相册"
+    },
+    {
+      "name": "entrancecard_displayname",
+      "value": "卡片、文件、相册、我的"
+    },
+    {
+      "name": "entrancecard_description",
+      "value": "卡片、文件、相册、我的"
+    },
+    {
+      "name": "filealbumentrancecard_displayname",
+      "value": "文件、相册"
+    },
+    {
+      "name": "filealbumentrancecard_description",
+      "value": "文件、相册"
     }
   ]
 }

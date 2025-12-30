@@ -568,11 +568,11 @@ export default struct Album {
                   }
                 },
                 headers: {
+                  'accept-language': 'zh-CN',
                   referer: accountInfo.path
                 },
                 cookies: {
-                  id: accountInfo.sid,
-                  did: accountInfo.did
+                  id: accountInfo.sid
                 }
               })
               try {
@@ -770,11 +770,11 @@ export default struct Album {
                       }
                     },
                     headers: {
+                      'accept-language': 'zh-CN',
                       referer: accountInfo.path
                     },
                     cookies: {
-                      id: accountInfo.sid,
-                      did: accountInfo.did
+                      id: accountInfo.sid
                     }
                   })
                   backgroundTaskManager.on('continuousTaskCancel', async () => {
@@ -920,6 +920,9 @@ export default struct Album {
                 if (this.selectedIndex === 0) {
                   Scroll() {
                     Column() {
+                      if (this.timelineArray.length === 0) {
+                        Text('无数据')
+                      }
                       ForEach(this.timelineArray, (timelineItem: TimelineItem, timelineIndex) => {
                         Column() {
                           Text(timelineItem.date)
@@ -985,6 +988,9 @@ export default struct Album {
                   .edgeEffect(EdgeEffect.Spring)
                 }
                 if (this.selectedIndex === 1) {
+                  if (this.albumArray.length === 0) {
+                    Text('无数据')
+                  }
                   Column() {
                     ForEach(this.albumArray, (albumItem: AlbumItem, albumIndex) => {
                       if (albumIndex !== 0) {
@@ -1256,6 +1262,9 @@ export default struct Album {
               }
 
               Column() {
+                if (this.albumPhotoArray.length === 0) {
+                  Text('无数据')
+                }
                 List() {
                   ForEach(this.albumPhotoArray, (item: PhotoItem) => {
                     ListItem() {

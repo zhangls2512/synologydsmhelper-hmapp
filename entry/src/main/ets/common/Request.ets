@@ -1,5 +1,5 @@
 import { preferences } from '@kit.ArkData'
-import { promptAction } from '@kit.ArkUI'
+import { promptAction, UIContext } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
 import { netBoost } from '@kit.NetworkBoostKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
@@ -114,6 +114,7 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
       }
     },
     headers: {
+      'accept-language': 'zh-CN',
       referer: requestPath
     }
   })
@@ -127,6 +128,12 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
       }
       const res = JSON.parse(body) as DsmResponse
       if (res.success) {
+        if (!res.data[api]) {
+          await promptAction.openToast({
+            message: '当前登录的 DSM 不支持此功能'
+          })
+          return 'fail'
+        }
         const version = res.data[api].maxVersion as number
         if (cacheApiVersionSetting) {
           let apiVersionCache: ApiVersionCacheItem[] = []
@@ -168,6 +175,97 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
         }
         return version
       }
+      if (res.error.code === 102) {
+        const sessionb = rcp.createSession({
+          requestConfiguration: {
+            dns: {
+              dnsRules: getDnsServer(context)
+            },
+            security: {
+              remoteValidation: debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
+                'system') as 'system' | 'skip'
+            }
+          },
+          headers: {
+            'accept-language': 'zh-CN',
+            referer: requestPath
+          }
+        })
+        try {
+          const responseb =
+            await sessionb.get(requestPath + '/webapi/query.cgi?api=SYNO.API.Info&version=1&method=query')
+          sessionb.close()
+          if (responseb.statusCode === 200) {
+            let bodyb = ''
+            if (responseb.toString()) {
+              bodyb = responseb.toString() as string
+            }
+            const resb = JSON.parse(bodyb) as DsmResponse
+            if (resb.success) {
+              if (!resb.data[api]) {
+                await promptAction.openToast({
+                  message: '当前登录的 DSM 不支持此功能'
+                })
+                return 'fail'
+              }
+              const version = resb.data[api].maxVersion as number
+              if (cacheApiVersionSetting) {
+                let apiVersionCache: ApiVersionCacheItem[] = []
+                const apiVersionCacheDataPreferences = preferences.getPreferencesSync(context, {
+                  name: 'apiVersionCache'
+                })
+                try {
+                  apiVersionCache = JSON.parse(apiVersionCacheDataPreferences.getSync('apiVersionCache',
+                    '') as string) as ApiVersionCacheItem[]
+                } catch {
+                }
+                const apiVersionCacheItem = apiVersionCache.find(item => item.path === requestPath)
+                if (!apiVersionCacheItem) {
+                  apiVersionCache.push({
+                    path: requestPath,
+                    apiVersion: [
+                      {
+                        name: api,
+                        version: version
+                      }
+                    ]
+                  })
+                } else {
+                  const pathApiVersionCache = apiVersionCacheItem.apiVersion
+                  const apiVersionItem = pathApiVersionCache.find(item => item.name === api)
+                  if (!apiVersionItem) {
+                    pathApiVersionCache.push({
+                      name: api,
+                      version: version
+                    })
+                  } else {
+                    apiVersionItem.version = version
+                  }
+                }
+                const apiVersionCacheValue = JSON.stringify(apiVersionCache)
+                apiVersionCacheDataPreferences.putSync('apiVersionCache', apiVersionCacheValue)
+                const filePath = context.cacheDir + '/apiversion.txt'
+                await write(filePath, apiVersionCacheValue)
+              }
+              return version
+            }
+            await promptAction.openToast({
+              message: 'DSM 接口调用失败，错误码：' + resb.error.code
+            })
+            return 'fail'
+          }
+          await promptAction.openToast({
+            message: 'HTTP 请求失败，状态码：' + responseb.statusCode
+          })
+          return 'fail'
+        } catch (err) {
+          sessionb.close()
+          await promptAction.openToast({
+            message: '发生错误，错误码：' + err.code
+          })
+          return 'fail'
+        }
+      }
       await promptAction.openToast({
         message: 'DSM 接口调用失败，错误码：' + res.error.code
       })
@@ -187,7 +285,7 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
 }
 
 export async function dsmRequest(context: Context, UIContext: UIContext, path: string, api: string, params: string,
-  version?: number): Promise<string | object> {
+  version?: number, dsm6Login?: boolean, hide102ErrorCode?: boolean): Promise<string | object> {
   const accountInfo = await getAccountInfo()
   let requestPath = path
   if (!requestPath) {
@@ -219,15 +317,19 @@ export async function dsmRequest(context: Context, UIContext: UIContext, path: s
       }
     },
     headers: {
+      'accept-language': 'zh-CN',
       referer: requestPath
     },
     cookies: {
-      id: accountInfo.sid,
-      did: accountInfo.did
+      id: accountInfo.sid
     }
   })
   try {
-    const response = await session.get(requestPath + '/webapi/entry.cgi?api=' + api + '&version=' + apiVersion + params)
+    let path = requestPath + '/webapi/entry.cgi?api=' + api + '&version=' + apiVersion + params
+    if (dsm6Login) {
+      path = requestPath + '/webapi/auth.cgi?api=' + api + '&version=' + apiVersion + params + '&session=FileStation'
+    }
+    const response = await session.get(path)
     session.close()
     if (response.statusCode === 200) {
       let body = ''
@@ -245,7 +347,7 @@ export async function dsmRequest(context: Context, UIContext: UIContext, path: s
         })
         const loginres = await dsmRequest(context, UIContext, accountInfo.path, 'SYNO.API.Auth',
           '&method=login&account=' + encodeURIComponent(accountInfo.name) + '&passwd=' +
-          encodeURIComponent(accountInfo.password))
+          encodeURIComponent(accountInfo.password), undefined, false, true)
         netBoost.setSceneDesc({
           scene: 'login',
           sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
@@ -254,10 +356,30 @@ export async function dsmRequest(context: Context, UIContext: UIContext, path: s
           const data = loginres as ResponseData
           await setAccount(context, UIContext, {
             path: accountInfo.path,
-            name: data.account,
+            name: accountInfo.name,
             password: accountInfo.password,
-            sid: data.sid,
-            did: data.device_id
+            sid: data.sid
+          })
+          return await dsmRequest(context, UIContext, path, api, params, version)
+        }
+        netBoost.setSceneDesc({
+          scene: 'login',
+          sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
+        })
+        const loginresb = await dsmRequest(context, UIContext, accountInfo.path, 'SYNO.API.Auth',
+          '&method=login&account=' + encodeURIComponent(accountInfo.name) + '&passwd=' +
+          encodeURIComponent(accountInfo.password), undefined, true)
+        netBoost.setSceneDesc({
+          scene: 'login',
+          sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+        })
+        if (loginresb !== 'fail') {
+          const data = loginresb as ResponseData
+          await setAccount(context, UIContext, {
+            path: accountInfo.path,
+            name: accountInfo.name,
+            password: accountInfo.password,
+            sid: data.sid
           })
           return await dsmRequest(context, UIContext, path, api, params, version)
         }
@@ -280,9 +402,16 @@ export async function dsmRequest(context: Context, UIContext: UIContext, path: s
     return 'fail'
   } catch (err) {
     session.close()
-    await promptAction.openToast({
-      message: '发生错误，错误码：' + err.code
-    })
+    if (err.code !== 102) {
+      await promptAction.openToast({
+        message: '发生错误，错误码：' + err.code
+      })
+    }
+    if (err.code === 102 && !hide102ErrorCode) {
+      await promptAction.openToast({
+        message: '发生错误，错误码：' + err.code
+      })
+    }
     return 'fail'
   }
 }

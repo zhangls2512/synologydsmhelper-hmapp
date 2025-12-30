@@ -173,8 +173,7 @@ export default struct Filelist {
       if (path) {
         const res = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.List',
           '&method=list&additional=["size","time"]&folder_path=' + encodeURIComponent(path) + '&sort_by=' + sortBy +
-            '&sort_direction=' +
-            sortDirection)
+            '&sort_direction=' + sortDirection)
         this.fileArray = []
         if (res !== 'fail') {
           this.fileArray = res['files']
@@ -452,11 +451,11 @@ export default struct Filelist {
                         }
                       },
                       headers: {
+                        'accept-language': 'zh-CN',
                         referer: accountInfo.path
                       },
                       cookies: {
-                        id: accountInfo.sid,
-                        did: accountInfo.did
+                        id: accountInfo.sid
                       }
                     })
                     backgroundTaskManager.on('continuousTaskCancel', async () => {
@@ -717,8 +716,7 @@ export default struct Filelist {
                     errCode: 0,
                     type: 'download',
                     accountPath: accountInfo.path,
-                    accountSid: accountInfo.sid,
-                    accountDid: accountInfo.did
+                    accountSid: accountInfo.sid
                   }))
                 })
                 await promptAction.openToast({
@@ -1564,11 +1562,11 @@ export default struct Filelist {
                                 }
                               },
                               headers: {
+                                'accept-language': 'zh-CN',
                                 referer: accountInfo.path
                               },
                               cookies: {
-                                id: accountInfo.sid,
-                                did: accountInfo.did
+                                id: accountInfo.sid
                               }
                             })
                             backgroundTaskManager.on('continuousTaskCancel', async () => {
