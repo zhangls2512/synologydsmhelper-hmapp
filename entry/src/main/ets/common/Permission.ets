@@ -3,7 +3,7 @@ import { abilityAccessCtrl, Permissions } from '@kit.AbilityKit'
 export function getPermission(permission: Permissions) {
   const atManager = abilityAccessCtrl.createAtManager()
   const status = atManager.getSelfPermissionStatus(permission)
-  if (status === 0) {
+  if (status === abilityAccessCtrl.PermissionStatus.GRANTED) {
     return true
   }
   return false
@@ -12,20 +12,20 @@ export function getPermission(permission: Permissions) {
 export async function checkPermission(context: Context, UIContext: UIContext, permission: Permissions) {
   const atManager = abilityAccessCtrl.createAtManager()
   const status = atManager.getSelfPermissionStatus(permission)
-  if (status === 0) {
+  if (status === abilityAccessCtrl.PermissionStatus.GRANTED) {
     return true
   }
-  if (status === 1) {
+  if (status === abilityAccessCtrl.PermissionStatus.NOT_DETERMINED) {
     const res = await atManager.requestPermissionsFromUser(context, [permission])
     const authResult = res.authResults[0]
-    if (authResult === 0) {
+    if (authResult === abilityAccessCtrl.GrantStatus.PERMISSION_GRANTED) {
       return true
     }
   }
-  if (status === -1) {
+  if (status === abilityAccessCtrl.PermissionStatus.DENIED) {
     const res = await atManager.requestPermissionOnSetting(context, [permission])
     const authResult = res[0]
-    if (authResult === 0) {
+    if (authResult === abilityAccessCtrl.GrantStatus.PERMISSION_GRANTED) {
       return true
     }
   }

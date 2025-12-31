@@ -1,6 +1,6 @@
 import { common, ConfigurationConstant } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
-import { promptAction, window } from '@kit.ArkUI'
+import { window } from '@kit.ArkUI'
 import { deviceInfo } from '@kit.BasicServicesKit'
 import { fileIo } from '@kit.CoreFileKit'
 import { image } from '@kit.ImageKit'
@@ -19,6 +19,7 @@ struct Commonsetting {
   @Local allowRestore: boolean = false
   @Local acceptCollaborate: boolean = false
   @Local destroyWhenBackPressed: boolean = false
+  @Local statusBar: boolean = false
   @Local colorModeIndex: number = 0
   @Local colorModeValue: string = '跟随系统'
   @Local windowRectAutoSave: boolean = false
@@ -226,6 +227,54 @@ struct Commonsetting {
               .padding(12)
               .width('100%')
 
+              if (deviceInfo.deviceType === '2in1') {
+                Divider()
+                  .padding({
+                    left: 12,
+                    right: 12
+                  })
+                Row() {
+                  Text('状态栏')
+                    .fontWeight(FontWeight.Medium)
+                    .layoutWeight(1)
+                    .margin({
+                      right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                    })
+                  Toggle({
+                    type: ToggleType.Switch,
+                    isOn: this.statusBar!!
+                  })
+                    .onChange(async (isOn) => {
+                      this.commonSettingDataPreferences.putSync('statusBar', isOn)
+                      this.commonSettingDataPreferences.flushSync()
+                      const promptAction = this.UIContext.getPromptAction()
+                      const data = await promptAction.showDialog({
+                        title: '提示',
+                        message: '设置成功，需重启应用生效，是否重启？',
+                        buttons: [
+                          {
+                            text: '取消',
+                            color: $r('sys.color.font_primary')
+                          },
+                          {
+                            text: '重启',
+                            color: $r('sys.color.font_emphasize')
+                          }
+                        ]
+                      })
+                      if (data.index === 1) {
+                        const applicationContext = this.context.getApplicationContext()
+                        applicationContext.restartApp({
+                          bundleName: 'com.songjy.synologydsmhelper',
+                          abilityName: 'EntryAbility'
+                        })
+                      }
+                    })
+                }
+                .borderRadius(12)
+                .padding(12)
+                .width('100%')
+              }
               Divider()
                 .padding({
                   left: 12,
@@ -519,12 +568,7 @@ struct Commonsetting {
                     })
                     fileIo.closeSync(file)
                     this.context.eventHub.emit('refreshIndex')
-                  } catch (err) {
-                    if (err.code !== 13900020) {
-                      await promptAction.openToast({
-                        message: '发生错误，错误码：' + err.code
-                      })
-                    }
+                  } catch {
                   }
                   return
                 }
@@ -564,12 +608,7 @@ struct Commonsetting {
                       })
                       fileIo.closeSync(file)
                       this.context.eventHub.emit('refreshIndex')
-                    } catch (err) {
-                      if (err.code !== 13900020) {
-                        await promptAction.openToast({
-                          message: '发生错误，错误码：' + err.code
-                        })
-                      }
+                    } catch {
                     }
                   }
                   if (data.index === 1) {
@@ -1023,6 +1062,7 @@ struct Commonsetting {
       this.acceptCollaborate = this.commonSettingDataPreferences.getSync('acceptCollaborate', true) as boolean
       this.destroyWhenBackPressed =
         this.commonSettingDataPreferences.getSync('destroyWhenBackPressed', false) as boolean
+      this.statusBar = this.commonSettingDataPreferences.getSync('statusBar', false) as boolean
       const colorMode = this.commonSettingDataPreferences.getSync('colorMode', 0)
       this.colorModeIndex = colorMode as number
       if (colorMode === 0) {

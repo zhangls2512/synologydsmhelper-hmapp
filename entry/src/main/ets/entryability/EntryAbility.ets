@@ -3,6 +3,7 @@ import {
   appRecovery,
   bundleManager,
   ConfigurationConstant,
+  contextConstant,
   errorManager,
   UIAbility,
   Want,
@@ -11,8 +12,10 @@ import {
 import { updateManager } from '@kit.AppGalleryKit'
 import { preferences, uniformTypeDescriptor } from '@kit.ArkData'
 import { promptAction, window } from '@kit.ArkUI'
-import { deviceInfo } from '@kit.BasicServicesKit'
+import { commonEventManager, deviceInfo } from '@kit.BasicServicesKit'
 import { fileIo, fileUri } from '@kit.CoreFileKit'
+import { statusBarManager } from '@kit.DeskTopExtensionKit'
+import { image } from '@kit.ImageKit'
 import { netQuality } from '@kit.NetworkBoostKit'
 import { connection } from '@kit.NetworkKit'
 import { notificationManager } from '@kit.NotificationKit'
@@ -22,11 +25,18 @@ import { getAccountList, getLoginStatus } from '../common/Account'
 import { write } from '../common/File'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import openLink from '../common/Openlink'
-import { developerRequest } from '../common/Request'
 
 interface JsErrorObject {
   name: string,
   info: Error
+}
+
+interface MenuCodeEventData {
+  data: EventData
+}
+
+interface EventData {
+  menuCode: string
 }
 
 export default class EntryAbility extends UIAbility {
@@ -34,6 +44,18 @@ export default class EntryAbility extends UIAbility {
     await notificationManager.setBadgeNumber(0)
     if (want.parameters?.noticeUrl) {
       await openLink(this.context, want.parameters.noticeUrl as string)
+    }
+    if (want.parameters?.shortcutId === 'card') {
+      this.context.eventHub.emit('card')
+    }
+    if (want.parameters?.shortcutId === 'file') {
+      this.context.eventHub.emit('file')
+    }
+    if (want.parameters?.shortcutId === 'album') {
+      this.context.eventHub.emit('album')
+    }
+    if (want.parameters?.shortcutId === 'me') {
+      this.context.eventHub.emit('me')
     }
     if (want.parameters?.menuHandler === 'clickMenu') {
       const uriList = want.parameters.uriList as string[]
@@ -136,20 +158,13 @@ export default class EntryAbility extends UIAbility {
             'RESOURCE_OVERLIMIT',
             'ADDRESS_SANITIZER'
           ]) as string[]).includes('JS_ERROR')) {
-            const res = await developerRequest(context, '/debug/newErrorLog', {
-              product: 'synologydsmhelper',
-              object: object
-            })
-            if (res !== 'fail') {
-              context.eventHub.emit('dialog', '提示',
-                '故障日志自动上传成功，故障类型：JS_ERROR。建议您依次进入“我的”>“设置”>“关于”，附带联系方式提交意见反馈或联系人工客服，便于开发者排查、处理问题。')
-            }
+            context.eventHub.emit('uploadErrorLog', object.name, JSON.stringify(object))
           }
         }
       }
     })
     errorManager.on('unhandledRejection', async (err: Error) => {
-      if (err.message !== 'cancel') {
+      if (err.message !== 'cancel' && err.message !== 'Default error message') {
         const object: JsErrorObject = {
           name: 'JS_ERROR',
           info: {
@@ -179,14 +194,7 @@ export default class EntryAbility extends UIAbility {
             'RESOURCE_OVERLIMIT',
             'ADDRESS_SANITIZER'
           ]) as string[]).includes('JS_ERROR')) {
-            const res = await developerRequest(context, '/debug/newErrorLog', {
-              product: 'synologydsmhelper',
-              object: object
-            })
-            if (res !== 'fail') {
-              this.context.eventHub.emit('dialog', '提示',
-                '故障日志自动上传成功，故障类型：JS_ERROR。建议您依次进入“我的”>“设置”>“关于”，附带联系方式提交意见反馈或联系人工客服，便于开发者排查、处理问题。')
-            }
+            this.context.eventHub.emit('uploadErrorLog', object.name, JSON.stringify(object))
           }
         }
       }
@@ -208,7 +216,7 @@ export default class EntryAbility extends UIAbility {
         }
         if (debugSettingDataPreferences.getSync('autoUploadErrorLog', true) &&
         commonSettingDataPreferences.getSync('allService', true)) {
-          const promises = appEventGroups.map(async (item) => {
+          appEventGroups.forEach(item => {
             if ((debugSettingDataPreferences.getSync('autoUploadErrorLogType', [
               'JS_ERROR',
               'APP_CRASH',
@@ -217,17 +225,9 @@ export default class EntryAbility extends UIAbility {
               'RESOURCE_OVERLIMIT',
               'ADDRESS_SANITIZER'
             ]) as string[]).includes(item.name)) {
-              const res = await developerRequest(context, '/debug/newErrorLog', {
-                product: 'synologydsmhelper',
-                object: item
-              })
-              if (res !== 'fail') {
-                this.context.eventHub.emit('dialog', '提示', '故障日志自动上传成功，故障类型：' + item.name +
-                  '。建议您依次进入“我的”>“设置”>“关于”，附带联系方式提交意见反馈或联系人工客服，便于开发者排查、处理问题。')
-              }
+              this.context.eventHub.emit('uploadErrorLog', item.name, JSON.stringify(item))
             }
           })
-          await Promise.all(promises)
         }
       }
     })
@@ -263,12 +263,11 @@ export default class EntryAbility extends UIAbility {
     })
     netConnection.on('netCapabilitiesChange', (data) => {
       if (debugSettingDataPreferences.getSync('showNetCapabilitiesChange', false)) {
-        const netBearType = data.netCap.bearerTypes.includes(0) ? '蜂窝' :
-          data.netCap.bearerTypes.includes(1) ? 'Wi-Fi' :
-            data.netCap.bearerTypes.includes(2) ? '蓝牙' :
-              data.netCap.bearerTypes.includes(3) ? '以太网' :
-                data.netCap.bearerTypes.includes(4) ? 'VPN' :
-                  'undefined'
+        const netBearType = data.netCap.bearerTypes.includes(connection.NetBearType.BEARER_CELLULAR) ? '蜂窝' :
+          data.netCap.bearerTypes.includes(connection.NetBearType.BEARER_WIFI) ? 'Wi-Fi' :
+            data.netCap.bearerTypes.includes(connection.NetBearType.BEARER_BLUETOOTH) ? '蓝牙' :
+              data.netCap.bearerTypes.includes(connection.NetBearType.BEARER_ETHERNET) ? '以太网' :
+                data.netCap.bearerTypes.includes(connection.NetBearType.BEARER_VPN) ? 'VPN' : 'undefined'
         this.context.eventHub.emit('dialog', '网络能力变化',
           '数据网络句柄：' + data.netHandle.netId + '\n上行带宽：' + data.netCap.linkUpBandwidthKbps +
             ' KB/s\n下行带宽：' + data.netCap.linkDownBandwidthKbps + ' KB/s\n网络类型：' + netBearType)
@@ -278,11 +277,10 @@ export default class EntryAbility extends UIAbility {
       if (list.length > 0) {
         const data = list[0]
         if (debugSettingDataPreferences.getSync('showNetQosChange', false)) {
-          const pathType = data.pathType === 0 ? '蜂窝主卡' :
-            data.pathType === 1 ? '蜂窝副卡' :
-              data.pathType === 2 ? '主 Wi-Fi' :
-                data.pathType === 3 ? '副 Wi-Fi' :
-                  'undefined'
+          const pathType = data.pathType === netQuality.PathType.CELLULAR_PRIMARY ? '蜂窝主卡' :
+            data.pathType === netQuality.PathType.CELLULAR_SECONDARY ? '蜂窝副卡' :
+              data.pathType === netQuality.PathType.WIFI_PRIMARY ? '主 Wi-Fi' :
+                data.pathType === netQuality.PathType.WIFI_SECONDARY ? '副 Wi-Fi' : 'undefined'
           this.context.eventHub.emit('dialog', '网络质量变化',
             '数据路径：' + pathType + '\n上行带宽：' + data.linkUpBandwidth + ' bps\n下行带宽：' + data.linkDownBandwidth +
               ' bps\n上行速率：' + data.linkUpRate + ' bps\n下行速率：' + data.linkDownRate + '\nRTT 时延：' + data.rttMs +
@@ -305,22 +303,19 @@ export default class EntryAbility extends UIAbility {
       if (list.length > 0) {
         const data = list[0]
         if (debugSettingDataPreferences.getSync('showNetSceneChange', false)) {
-          const pathType = data.pathType === 0 ? '蜂窝主卡' :
-            data.pathType === 1 ? '蜂窝副卡' :
-              data.pathType === 2 ? '主 Wi-Fi' :
-                data.pathType === 3 ? '副 Wi-Fi' :
-                  'undefined'
+          const pathType = data.pathType === netQuality.PathType.CELLULAR_PRIMARY ? '蜂窝主卡' :
+            data.pathType === netQuality.PathType.CELLULAR_SECONDARY ? '蜂窝副卡' :
+              data.pathType === netQuality.PathType.WIFI_PRIMARY ? '主 Wi-Fi' :
+                data.pathType === netQuality.PathType.WIFI_SECONDARY ? '副 Wi-Fi' : 'undefined'
           const scene = data.scene === 'normal' ? '正常' :
             data.scene === 'congestion' ? '拥塞' :
               data.scene === 'frequentHandover' ? '小区切换频繁' :
-                data.scene === 'weakSignal' ? '弱信号' :
-                  'undefined'
+                data.scene === 'weakSignal' ? '弱信号' : 'undefined'
           const dataSpeedSimpleAction = data.recommendedAction === 'doCaching' ? '做缓存动作' :
             data.recommendedAction === 'suspendData' ? '停止发包' :
               data.recommendedAction === 'decreaseData' ? '降低发包速率' :
                 data.recommendedAction === 'increaseData' ? '增加发包速率' :
-                  data.recommendedAction === 'keepData' ? '保持当前发包速率' :
-                    'undefined'
+                  data.recommendedAction === 'keepData' ? '保持当前发包速率' : 'undefined'
           const isLastPredictionValid = data.weakSignalPrediction?.isLastPredictionValid ? '是' : '否'
           this.context.eventHub.emit('dialog', '网络场景变化',
             '数据路径：' + pathType + '\n场景类型：' + scene + '\n建议的数传策略：' + dataSpeedSimpleAction +
@@ -359,10 +354,11 @@ export default class EntryAbility extends UIAbility {
     }
     if (getCurrentNetworkBearerType() !== -1) {
       const checkVersionUpdate = commonSettingDataPreferences.getSync('checkVersionUpdate', 1)
-      if (checkVersionUpdate === 2 || (checkVersionUpdate === 1 && getCurrentNetworkBearerType() !== 0)) {
+      if (checkVersionUpdate === 2 ||
+        (checkVersionUpdate === 1 && getCurrentNetworkBearerType() !== connection.NetBearType.BEARER_WIFI)) {
         try {
           const res = await updateManager.checkAppUpdate(this.context)
-          if (res.updateAvailable === 1) {
+          if (res.updateAvailable === updateManager.UpdateAvailableCode.LATER_VERSION_EXIST) {
             await updateManager.showUpdateDialog(this.context)
           }
         } catch (err) {
@@ -388,6 +384,93 @@ export default class EntryAbility extends UIAbility {
     }
     const allowRestore = commonSettingDataPreferences.getSync('allowRestore', true) as boolean
     this.context.setRestoreEnabled(allowRestore)
+    if (deviceInfo.deviceType === '2in1') {
+      statusBarManager.on('statusBarIconClick', async () => {
+        await this.context.showAbility()
+      })
+      statusBarManager.on('rightMenuClick', (data) => {
+        const datastring = JSON.stringify(data)
+        const eventData = JSON.parse(datastring) as MenuCodeEventData
+        this.context.eventHub.emit(eventData.data.menuCode)
+      })
+      const statusBarDataPreferences = preferences.getPreferencesSync(this.context, {
+        name: 'statusBar'
+      })
+      const subscriber = commonEventManager.createSubscriberSync({
+        events: ['BACKGROUNDABILITY_EVENT_PREPARETOTERMINATE']
+      })
+      await commonEventManager.subscribeToEvent(subscriber, async (data) => {
+        if (data.event === 'BACKGROUNDABILITY_EVENT_PREPARETOTERMINATE') {
+          statusBarManager.removeFromStatusBar(this.context)
+          statusBarDataPreferences.putSync('exist', false)
+          await this.context.terminateSelf()
+        }
+      })
+      const statusBar = commonSettingDataPreferences.getSync('statusBar', false)
+      if (statusBar) {
+        const fileData = this.context.resourceManager.getRawFileContentSync('icon.png')
+        const pixelMap = await image.createImageSource(fileData.buffer).createPixelMap()
+        statusBarManager.addToStatusBar(this.context, {
+          icons: {
+            black: pixelMap,
+            white: pixelMap
+          },
+          quickOperation: {
+            title: '',
+            height: 1,
+            abilityName: '',
+            moduleName: 'entry',
+            loadingStatus: true
+          }
+        })
+        statusBarManager.updateStatusBarMenu(this.context, [
+          [
+            {
+              title: '打开',
+              menuAction: {
+                abilityName: 'EntryAbility'
+              }
+            }
+          ],
+          [
+            {
+              title: '卡片',
+              menuAction: {
+                abilityName: 'EntryAbility',
+                notifyOnly: true,
+                menuCode: 'card'
+              }
+            },
+            {
+              title: '文件',
+              menuAction: {
+                abilityName: 'EntryAbility',
+                notifyOnly: true,
+                menuCode: 'file'
+              }
+            },
+            {
+              title: '相册',
+              menuAction: {
+                abilityName: 'EntryAbility',
+                notifyOnly: true,
+                menuCode: 'album'
+              }
+            }
+          ]
+        ])
+        setTimeout(async () => {
+          await this.context.startAbility({
+            bundleName: 'com.songjy.synologydsmhelper',
+            abilityName: 'BackGroundAbility'
+          }, {
+            processMode: contextConstant.ProcessMode.NEW_PROCESS_ATTACH_TO_STATUS_BAR_ITEM,
+            startupVisibility: contextConstant.StartupVisibility.STARTUP_HIDE
+          })
+          statusBarDataPreferences.putSync('exist', true)
+        }, 200)
+      }
+    }
     const applicationContext = this.context.getApplicationContext()
     const colorMode = commonSettingDataPreferences.getSync('colorMode', 0)
     if (colorMode === 0) {
@@ -421,6 +504,17 @@ export default class EntryAbility extends UIAbility {
     await this.windowInit(windowStage)
   }
 
+  async onPrepareToTerminateAsync(): Promise<boolean> {
+    const statusBarDataPreferences = preferences.getPreferencesSync(this.context, {
+      name: 'statusBar'
+    })
+    const statusBarExist = statusBarDataPreferences.getSync('exist', false) as boolean
+    if (statusBarExist) {
+      await this.context.hideAbility()
+    }
+    return statusBarExist
+  }
+
   onBackPressed() {
     const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
       name: 'commonSetting'
@@ -434,7 +528,7 @@ export default class EntryAbility extends UIAbility {
   }
 
   async onContinue(wantParam: Record<string, Object>) {
-    if (wantParam.version !== 35) {
+    if (wantParam.version !== 37) {
       await promptAction.openToast({
         message: '接续失败，原因：目标端应用版本号与发起端不匹配'
       })
@@ -467,13 +561,13 @@ export default class EntryAbility extends UIAbility {
     const showMemoryLevelChange = debugSettingDataPreferences.getSync('showMemoryLevelChange', false)
     if (showMemoryLevelChange) {
       let memoryLevel = ''
-      if (level === 0) {
+      if (level === AbilityConstant.MemoryLevel.MEMORY_LEVEL_MODERATE) {
         memoryLevel = '适中'
       }
-      if (level === 1) {
+      if (level === AbilityConstant.MemoryLevel.MEMORY_LEVEL_LOW) {
         memoryLevel = '低'
       }
-      if (level === 2) {
+      if (level === AbilityConstant.MemoryLevel.MEMORY_LEVEL_CRITICAL) {
         memoryLevel = '高'
       }
       await promptAction.openToast({

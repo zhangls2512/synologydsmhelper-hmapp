@@ -7,6 +7,10 @@ import getPreferType from '../common/Prefertype'
 import { dsmRequest } from '../common/Request'
 import Cardedit from './Cardedit'
 import Noticelist from './Noticelist'
+import Diskinfo from '../card/Diskinfo'
+import Networkinfo from '../card/Networkinfo'
+import Resourcemoniter from '../card/Resourcemoniter'
+import Storageinfo from '../card/Storageinfo'
 import Systeminfo from '../card/Systeminfo'
 
 interface NoticeResponseData {
@@ -57,16 +61,13 @@ export default struct Cardlist {
   }
 
   build() {
-    List() {
-      if (!this.isLogin) {
-        ListItem() {
+    Scroll() {
+      Column() {
+        if (!this.isLogin) {
           Text('未登录账号')
+            .height('100%')
         }
-        .height('100%')
-        .width('100%')
-      }
-      if (this.isLogin) {
-        ListItem() {
+        if (this.isLogin) {
           Row() {
             Column() {
               Image($r('app.media.edit'))
@@ -150,29 +151,74 @@ export default struct Cardlist {
             }
           }
           .justifyContent(FlexAlign.End)
-          .width('100%')
-        }
-        .margin({
-          bottom: $r('sys.float.ohos_id_elements_margin_vertical_m')
-        })
-
-        if (this.cards.length === 0) {
-          ListItem() {
-            Text('暂无卡片，可点击右上角添加')
-          }
           .margin({
-            top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+            bottom: $r('sys.float.ohos_id_elements_margin_vertical_m')
           })
           .width('100%')
         }
-        if (this.cards.includes('systeminfo')) {
-          ListItem() {
-            Systeminfo()
+        List() {
+          if (this.isLogin) {
+            if (this.cards.length === 0) {
+              ListItem() {
+                Column() {
+                  Text('未添加卡片')
+                  Button('添加')
+                    .margin({
+                      top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+                    })
+                    .onClick(() => {
+                      this.isShowCardeditSheet = true
+                    })
+                }
+              }
+              .margin({
+                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+              })
+              .width('100%')
+            }
+            if (this.cards.includes('systeminfo')) {
+              ListItem() {
+                Systeminfo()
+              }
+              .margin({
+                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+              })
+            }
+            if (this.cards.includes('storageinfo')) {
+              ListItem() {
+                Storageinfo()
+              }
+              .margin({
+                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+              })
+            }
+            if (this.cards.includes('diskinfo')) {
+              ListItem() {
+                Diskinfo()
+              }
+              .margin({
+                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+              })
+            }
+            if (this.cards.includes('networkinfo')) {
+              ListItem() {
+                Networkinfo()
+              }
+              .margin({
+                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+              })
+            }
+            if (this.cards.includes('resourcemoniter')) {
+              ListItem() {
+                Resourcemoniter()
+              }
+              .margin({
+                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+              })
+            }
           }
-          .margin({
-            top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-          })
         }
+        .layoutWeight(1)
       }
     }
     .padding({

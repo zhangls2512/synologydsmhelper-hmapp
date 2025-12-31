@@ -1,0 +1,32 @@
+{
+  "forms": [
+    {
+      "name": "entrance",
+      "displayName": "$string:entrancecard_displayname",
+      "description": "$string:entrancecard_description",
+      "src": "./ets/form/pages/EntranceCard.ets",
+      "uiSyntax": "arkts",
+      "isDefault": true,
+      "supportDimensions": [
+        "2*2"
+      ],
+      "defaultDimension": "2*2",
+      "updateEnabled": false,
+      "renderingMode": "autoColor"
+    },
+    {
+      "name": "filealbumentrance",
+      "displayName": "$string:filealbumentrancecard_displayname",
+      "description": "$string:filealbumentrancecard_description",
+      "src": "./ets/form/pages/FileAlbumEntranceCard.ets",
+      "uiSyntax": "arkts",
+      "isDefault": false,
+      "supportDimensions": [
+        "1*2"
+      ],
+      "defaultDimension": "1*2",
+      "updateEnabled": false,
+      "renderingMode": "autoColor"
+    }
+  ]
+}

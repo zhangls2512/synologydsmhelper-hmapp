@@ -231,18 +231,38 @@ export default struct Login {
               })
               dialogControllerProgress.open()
               if (!this.quickConnectId) {
-                path = this.scheme + '://' + this.host + ':' + this.port
+                let host = this.host
+                let route = ''
+                const index = this.host.indexOf('/')
+                if (index !== -1) {
+                  host = this.host.substring(0, index)
+                  route = '/' + this.host.substring(index + 1)
+                }
+                path = this.scheme + '://' + host + ':' + this.port + route
                 netBoost.setSceneDesc({
                   scene: 'login',
                   sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
                 })
                 res = await dsmRequest(this.context, this.UIContext, path, 'SYNO.API.Auth',
                   '&method=login&account=' + encodeURIComponent(this.name) + '&passwd=' +
-                  encodeURIComponent(this.password) + '&otp_code=' + this.mfa)
+                  encodeURIComponent(this.password) + '&otp_code=' + this.mfa, undefined, false, true)
                 netBoost.setSceneDesc({
                   scene: 'login',
                   sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
                 })
+                if (res === 'fail') {
+                  netBoost.setSceneDesc({
+                    scene: 'login',
+                    sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
+                  })
+                  res = await dsmRequest(this.context, this.UIContext, path, 'SYNO.API.Auth',
+                    '&method=login&account=' + encodeURIComponent(this.name) + '&passwd=' +
+                    encodeURIComponent(this.password) + '&otp_code=' + this.mfa, undefined, true)
+                  netBoost.setSceneDesc({
+                    scene: 'login',
+                    sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                  })
+                }
               }
               if (this.quickConnectId) {
                 const session = rcp.createSession({
@@ -268,20 +288,32 @@ export default struct Login {
                     }
                     const bodyObject = JSON.parse(body) as object
                     if (bodyObject[0]['errno'] === 0) {
-                      path =
-                        'https://' + this.quickConnectId + '.' + bodyObject[0]['env']['relay_region'] +
-                          '.quickconnect.cn'
+                      path = 'https://' + this.quickConnectId + '.' + bodyObject[0]['env']['relay_region'] +
+                        '.quickconnect.cn'
                       netBoost.setSceneDesc({
                         scene: 'login',
                         sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
                       })
                       res = await dsmRequest(this.context, this.UIContext, path, 'SYNO.API.Auth',
                         '&method=login&account=' + encodeURIComponent(this.name) + '&passwd=' +
-                        encodeURIComponent(this.password) + '&otp_code=' + this.mfa)
+                        encodeURIComponent(this.password) + '&otp_code=' + this.mfa, undefined, false, true)
                       netBoost.setSceneDesc({
                         scene: 'login',
                         sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
                       })
+                      if (res === 'fail') {
+                        netBoost.setSceneDesc({
+                          scene: 'login',
+                          sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
+                        })
+                        res = await dsmRequest(this.context, this.UIContext, path, 'SYNO.API.Auth',
+                          '&method=login&account=' + encodeURIComponent(this.name) + '&passwd=' +
+                          encodeURIComponent(this.password) + '&otp_code=' + this.mfa, undefined, true)
+                        netBoost.setSceneDesc({
+                          scene: 'login',
+                          sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                        })
+                      }
                     } else {
                       dialogControllerProgress.close()
                       await promptAction.openToast({
@@ -310,10 +342,9 @@ export default struct Login {
                 const data = res as ResponseData
                 await setAccount(this.context, this.UIContext, {
                   path: path,
-                  name: data.account,
+                  name: this.name,
                   password: this.password,
-                  sid: data.sid,
-                  did: data.device_id
+                  sid: data.sid
                 })
                 await promptAction.openToast({
                   message: '登录成功'
@@ -335,8 +366,8 @@ export default struct Login {
                 .fontColor($r('sys.color.font_emphasize'))
                 .onClick(async () => {
                   try {
-                    const appPrivacyLink =
-                      privacyManager.getAppPrivacyMgmtInfo().privacyInfo.find(item => item.type === 2)
+                    const appPrivacyLink = privacyManager.getAppPrivacyMgmtInfo().privacyInfo
+                      .find(item => item.type === privacyManager.AppPrivacyLinkType.USER_AGREEMENT_LINK)
                     await openLink(this.context, appPrivacyLink?.url as string)
                   } catch (err) {
                     await promptAction.openToast({
@@ -348,8 +379,8 @@ export default struct Login {
                 .fontColor($r('sys.color.font_emphasize'))
                 .onClick(async () => {
                   try {
-                    const appPrivacyLink =
-                      privacyManager.getAppPrivacyMgmtInfo().privacyInfo.find(item => item.type === 1)
+                    const appPrivacyLink = privacyManager.getAppPrivacyMgmtInfo().privacyInfo
+                      .find(item => item.type === privacyManager.AppPrivacyLinkType.PRIVACY_STATEMENT_LINK)
                     await openLink(this.context, appPrivacyLink?.url as string)
                   } catch (err) {
                     await promptAction.openToast({

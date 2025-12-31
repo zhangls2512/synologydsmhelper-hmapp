@@ -243,8 +243,7 @@ export default struct Accountlist {
                   path: item.path,
                   name: item.name,
                   password: item.password,
-                  sid: item.sid,
-                  did: item.did
+                  sid: item.sid
                 })
                 await promptAction.openToast({
                   message: '登录成功'

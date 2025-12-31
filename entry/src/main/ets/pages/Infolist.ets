@@ -274,12 +274,22 @@ struct Infolist {
                   right: 12
                 })
               Row() {
-                Text('信息内容')
-                  .fontWeight(FontWeight.Medium)
-                  .layoutWeight(1)
-                  .margin({
-                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                  })
+                Column() {
+                  Text('信息内容')
+                    .fontWeight(FontWeight.Medium)
+                  Text('应用名称、应用版本号、故障日志、联系方式')
+                    .fontColor($r('sys.color.font_secondary'))
+                    .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                    .margin({
+                      top: $r('sys.float.ohos_id_text_margin_vertical')
+                    })
+                }
+                .alignItems(HorizontalAlign.Start)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+
                 Image($r('app.media.right'))
                   .fillColor($r('sys.color.icon_fourth'))
                   .height(12)

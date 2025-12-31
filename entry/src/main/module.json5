@@ -16,6 +16,12 @@
         "srcEntry": "./ets/entryability/EntryAbility.ets",
         "icon": "$media:layered_image",
         "label": "$string:EntryAbility_label",
+        "metadata": [
+          {
+            "name": "ohos.ability.shortcuts",
+            "resource": "$profile:shortcuts_config"
+          }
+        ],
         "exported": true,
         "continuable": true,
         "skills": [
@@ -87,6 +93,12 @@
         "removeMissionAfterTerminate": true,
         "orientation": "auto_rotation_restricted",
         "recoverable": true
+      },
+      {
+        "name": "BackGroundAbility",
+        "srcEntry": "./ets/backgroundability/BackGroundAbility.ets",
+        "startWindowIcon": "$media:layered_image",
+        "startWindowBackground": "$color:start_window_background"
       }
     ],
     "extensionAbilities": [
@@ -98,6 +110,17 @@
           {
             "name": "ohos.extension.backup",
             "resource": "$profile:backup_config"
+          }
+        ]
+      },
+      {
+        "name": "EntryFormAbility",
+        "srcEntry": "./ets/entryformability/EntryFormAbility.ets",
+        "type": "form",
+        "metadata": [
+          {
+            "name": "ohos.extension.form",
+            "resource": "$profile:form_config"
           }
         ]
       }
@@ -119,7 +142,7 @@
         "name": "ohos.permission.KEEP_BACKGROUND_RUNNING"
       },
       {
-        "name": "ohos.permission.PRIVACY_WINDOW"
+        "name": "ohos.permission.PREPARE_APP_TERMINATE"
       },
       {
         "name": "ohos.permission.VIBRATE"
