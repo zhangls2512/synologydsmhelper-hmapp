@@ -1,6 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { LoadingDialog, promptAction } from '@kit.ArkUI'
-import { dsmRequest } from '../common/Request'
+import { getAccountInfo } from '../common/Account'
+import { developerRequest, dsmRequest } from '../common/Request'
 
 interface NoticeString {
   msg: string,
@@ -10,8 +11,9 @@ interface NoticeString {
 interface NoticeItem {
   level: string,
   className: string,
-  msg: string[],
-  title: string
+  msg: string,
+  title: string,
+  time?: number
 }
 
 interface NoticeResponseData {
@@ -38,20 +40,40 @@ export default struct Noticelist {
     this.loading = true
     const res = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Core.DSMNotify', '&method=notify&action=load')
     if (res !== 'fail') {
+      const noticeres = res as NoticeResponseData
       const resa =
         await dsmRequest(this.context, this.UIContext, '', 'SYNO.Core.DSMNotify.Strings', '&method=get&lang=chs')
-      this.loading = false
       if (resa !== 'fail') {
-        const noticeres = res as NoticeResponseData
+        this.loading = false
         const noticeString = resa as Record<string, NoticeString>
         this.notices = noticeres.items.map((item): NoticeItem => {
           return {
             level: item.level,
             className: noticeString[item.title].title,
-            msg: item.msg,
+            msg: item.msg[0],
             title: noticeString[item.title].msg
           }
         })
+      }
+      if (resa === 'fail') {
+        const accountInfo = await getAccountInfo()
+        const resb = await developerRequest(this.context, '/eval', {
+          path: accountInfo.path
+        })
+        this.loading = false
+        if (resb !== 'fail') {
+          const noticeJson = JSON.parse(resb).data as Record<string, Record<string, string>>
+          this.notices = noticeres.items.map((item): NoticeItem => {
+            const filterMsg = item.msg[0].split(':')
+            return {
+              level: '',
+              className: filterMsg[0],
+              msg: filterMsg[1],
+              title: noticeJson[filterMsg[0]][filterMsg[1]],
+              time: (item.time as number) * 1000
+            }
+          })
+        }
       }
     }
     if (res === 'fail') {
@@ -119,8 +141,7 @@ export default struct Noticelist {
                 })
               Text(item.level === 'NOTIFICATION_INFO' ? '信息' :
                 item.level === 'NOTIFICATION_WARN' ? '警告' :
-                  item.level === 'NOTIFICATION_ERROR' ? '重要' :
-                    '未知')
+                  item.level === 'NOTIFICATION_ERROR' ? '重要' : '未知')
                 .fontColor($r('sys.color.font_secondary'))
                 .fontSize($r('sys.float.ohos_id_text_size_body2'))
                 .layoutWeight(1)
@@ -183,7 +204,7 @@ export default struct Noticelist {
                 .margin({
                   right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                 })
-              Text(this.getTime(item.msg[0]))
+              Text(item.time ? String(new Date(item.time)) : this.getTime(item.msg))
                 .fontColor($r('sys.color.font_secondary'))
                 .fontSize($r('sys.float.ohos_id_text_size_body2'))
                 .layoutWeight(1)

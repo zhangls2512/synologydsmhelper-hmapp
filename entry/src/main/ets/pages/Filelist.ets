@@ -1383,8 +1383,7 @@ export default struct Filelist {
                           if (res !== 'fail') {
                             const tid = res['tid'] as string
                             const accountInfo = await getAccountInfo()
-                            const textEncoder = new util.TextEncoder()
-                            const bytes = textEncoder.encodeInto(item.path)
+                            const bytes = new util.TextEncoder().encodeInto(item.path)
                             const dlink = Array.from(bytes).map(byte => byte.toString(16).padStart(2, '0')).join('')
                             this.src =
                               accountInfo.path + '/fbdownload/' +
