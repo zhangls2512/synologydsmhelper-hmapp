@@ -1,6 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { deviceInfo } from '@kit.BasicServicesKit'
+import { HdsNavDestination } from '@kit.UIDesignKit'
 import { getPermission } from '../common/Permission'
 
 @Builder
@@ -19,7 +20,7 @@ struct Permissionsetting {
   })
 
   build() {
-    NavDestination() {
+    HdsNavDestination() {
       List() {
         ListItem() {
           Column() {
@@ -227,7 +228,14 @@ struct Permissionsetting {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('权限管理')
+    .titleBar({
+      content: {
+        title: {
+          mainTitle: '权限管理'
+        }
+      },
+      enableComponentSafeArea: true
+    })
     .onAppear(() => {
       this.writePasteBoard = this.permissionSettingDataPreferences.getSync('writePasteBoard', false) as boolean
     })

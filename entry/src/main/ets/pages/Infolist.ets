@@ -1,5 +1,6 @@
 import { promptAction } from '@kit.ArkUI'
 import { pushService } from '@kit.PushKit'
+import { HdsNavDestination } from '@kit.UIDesignKit'
 
 @Builder
 export function InfolistBuilder() {
@@ -12,7 +13,7 @@ struct Infolist {
   pageInfos = new NavPathStack()
 
   build() {
-    NavDestination() {
+    HdsNavDestination() {
       List() {
         ListItem() {
           Text('宋佳懿 (以下简称我) 会严格遵从国家的法规要求，将合法合规融入产品设计和业务流程中，并采用业界先进的安全技术保证数据安全。\n在新的服务需求及业务功能变更时，我可能会调整我收集信息的范围，并及时在本说明中向您说明情况。')
@@ -426,7 +427,7 @@ struct Infolist {
               Column() {
                 Text('信息内容')
                   .fontWeight(FontWeight.Medium)
-                Text('应用名称 (群晖DSM助手)、内容、联系方式 (可选)')
+                Text('应用名称 (SynDSM助手)、内容、联系方式 (可选)')
                   .enableAutoSpacing(true)
                   .fontColor($r('sys.color.font_secondary'))
                   .fontSize($r('sys.float.ohos_id_text_size_body2'))
@@ -456,7 +457,14 @@ struct Infolist {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('已收集个人信息清单')
+    .titleBar({
+      content: {
+        title: {
+          mainTitle: '已收集个人信息清单'
+        }
+      },
+      enableComponentSafeArea: true
+    })
     .onReady((context) => {
       this.pageInfos = context.pathStack
     })

@@ -1,5 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { LoadingDialog, promptAction } from '@kit.ArkUI'
+import { HdsNavDestination } from '@kit.UIDesignKit'
 import { developerRequest } from '../common/Request'
 
 @Builder
@@ -17,7 +18,7 @@ struct Feedback {
   pageInfos = new NavPathStack()
 
   build() {
-    NavDestination() {
+    HdsNavDestination() {
       List() {
         ListItem() {
           Column() {
@@ -107,9 +108,9 @@ struct Feedback {
                 })
               })
               dialogControllerProgress.open()
-              const res = await developerRequest(this.context, '/debug/sendFeedbackEmail', {
+              const res = await developerRequest(this.context, '/product/sendFeedbackEmail', {
                 product: 'synologydsmhelper',
-                version: '1.1.3.1',
+                version: '1.1.3.2',
                 content: this.content,
                 contactType: this.contactType,
                 contactValue: this.contactValue
@@ -145,7 +146,14 @@ struct Feedback {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('意见反馈')
+    .titleBar({
+      content: {
+        title: {
+          mainTitle: '意见反馈'
+        }
+      },
+      enableComponentSafeArea: true
+    })
     .onReady((context) => {
       this.pageInfos = context.pathStack
     })

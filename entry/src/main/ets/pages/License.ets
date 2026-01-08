@@ -1,4 +1,5 @@
 import { common } from '@kit.AbilityKit'
+import { HdsNavDestination } from '@kit.UIDesignKit'
 import openLink from '../common/Openlink'
 
 interface Item {
@@ -15,7 +16,7 @@ export function LicenseBuilder() {
 struct License {
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
   gabaInfoArray: Item[] = [
-    { property: '名称', value: '群晖DSM助手' },
+    { property: '名称', value: 'SynDSM助手' },
     { property: '主体类型', value: '个人' },
     { property: '开办者名称', value: '张轩铭' },
     { property: '注册地公安机关', value: '萨尔图区网安大队' },
@@ -23,7 +24,7 @@ struct License {
   ]
 
   build() {
-    NavDestination() {
+    HdsNavDestination() {
       List() {
         ListItem() {
           Text() {
@@ -109,6 +110,13 @@ struct License {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('资质证照')
+    .titleBar({
+      content: {
+        title: {
+          mainTitle: '资质证照'
+        }
+      },
+      enableComponentSafeArea: true
+    })
   }
 }

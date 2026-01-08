@@ -1,6 +1,7 @@
 import { preferences } from '@kit.ArkData'
 import { promptAction } from '@kit.ArkUI'
 import { webview } from '@kit.ArkWeb'
+import { HdsNavDestination } from '@kit.UIDesignKit'
 
 @Builder
 export function WebviewBuilder() {
@@ -20,17 +21,16 @@ struct Webview {
   })
 
   build() {
-    NavDestination() {
+    HdsNavDestination() {
       Web({
         src: this.url,
-        controller: this.controller
+        controller: this.controller,
+        incognitoMode: true
       })
         .darkMode(this.darkMode)
         .enableDataDetector(true)
-        .enableFollowSystemFontWeight(true)
         .enableNativeEmbedMode(true)
         .geolocationAccess(false)
-        .mixedMode(MixedMode.None)
         .nestedScroll({
           scrollForward: NestedScrollMode.SELF_ONLY,
           scrollBackward: NestedScrollMode.SELF_ONLY
@@ -40,6 +40,7 @@ struct Webview {
         .onControllerAttached(() => {
           this.controller.enableAdsBlock(true)
           this.controller.enableIntelligentTrackingPrevention(true)
+          this.controller.enableSafeBrowsing(true)
           this.controller.setErrorPageEnabled(true)
           this.controller.loadUrl(this.url)
         })
@@ -53,7 +54,14 @@ struct Webview {
         })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title(this.title)
+    .titleBar({
+      content: {
+        title: {
+          mainTitle: this.title
+        }
+      },
+      enableComponentSafeArea: true
+    })
     .onReady((context) => {
       this.url = context.pathInfo.param as string
       const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {

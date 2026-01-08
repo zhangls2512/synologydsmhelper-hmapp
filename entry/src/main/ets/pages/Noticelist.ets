@@ -1,7 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { LoadingDialog, promptAction } from '@kit.ArkUI'
-import { getAccountInfo } from '../common/Account'
-import { developerRequest, dsmRequest } from '../common/Request'
+import { dsmRequest } from '../common/Request'
 
 interface NoticeString {
   msg: string,
@@ -56,20 +55,22 @@ export default struct Noticelist {
         })
       }
       if (resa === 'fail') {
-        const accountInfo = await getAccountInfo()
-        const resb = await developerRequest(this.context, '/eval', {
-          path: accountInfo.path
-        })
+        const resb =
+          await dsmRequest(this.context, this.UIContext, '', 'SYNO.Core.Desktop.UIString', '&method=getjs&lang=chs')
         this.loading = false
         if (resb !== 'fail') {
-          const noticeJson = JSON.parse(resb).data as Record<string, Record<string, string>>
+          const noticeString = resb as string
+          const startIndex = noticeString.indexOf('=')
+          const endIndex = noticeString.indexOf('}}')
+          const noticeJsonString = noticeString.substring(startIndex + 1, endIndex + 2)
+          const noticeJson = JSON.parse(noticeJsonString) as Record<string, Record<string, string>>
           this.notices = noticeres.items.map((item): NoticeItem => {
-            const filterMsg = item.msg[0].split(':')
+            const filterTitle = item.title.split(':')
             return {
               level: '',
-              className: filterMsg[0],
-              msg: filterMsg[1],
-              title: noticeJson[filterMsg[0]][filterMsg[1]],
+              className: noticeJson[filterTitle[0]][filterTitle[1]],
+              msg: item.msg[0],
+              title: item.msg[0],
               time: (item.time as number) * 1000
             }
           })

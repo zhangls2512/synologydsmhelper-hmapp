@@ -1,4 +1,5 @@
 import { fileIo } from '@kit.CoreFileKit'
+import { HdsNavDestination } from '@kit.UIDesignKit'
 
 @Builder
 export function DeletefileBuilder() {
@@ -10,7 +11,7 @@ struct Deletefile {
   @Local fileUri: string = ''
 
   build() {
-    NavDestination() {
+    HdsNavDestination() {
       List() {
         ListItem() {
           TextInput({
@@ -71,6 +72,13 @@ struct Deletefile {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('沙箱文件删除工具')
+    .titleBar({
+      content: {
+        title: {
+          mainTitle: '沙箱文件删除工具'
+        }
+      },
+      enableComponentSafeArea: true
+    })
   }
 }
