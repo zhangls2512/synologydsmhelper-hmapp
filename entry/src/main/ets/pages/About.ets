@@ -2,7 +2,6 @@ import { common } from '@kit.AbilityKit'
 import { commentManager, updateManager } from '@kit.AppGalleryKit'
 import { promptAction } from '@kit.ArkUI'
 import { call } from '@kit.TelephonyKit'
-import { HdsNavDestination } from '@kit.UIDesignKit'
 import openLink from '../common/Openlink'
 import copy from '../common/Pasteboard'
 
@@ -21,7 +20,7 @@ struct About {
   pageInfos = new NavPathStack()
 
   build() {
-    HdsNavDestination() {
+    NavDestination() {
       List() {
         ListItem() {
           Column() {
@@ -887,14 +886,7 @@ struct About {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .titleBar({
-      content: {
-        title: {
-          mainTitle: '关于'
-        }
-      },
-      enableComponentSafeArea: true
-    })
+    .title('关于')
     .onReady(async (context) => {
       this.pageInfos = context.pathStack
       try {

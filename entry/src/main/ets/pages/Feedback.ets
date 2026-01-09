@@ -1,6 +1,5 @@
 import { common } from '@kit.AbilityKit'
 import { LoadingDialog, promptAction } from '@kit.ArkUI'
-import { HdsNavDestination } from '@kit.UIDesignKit'
 import { developerRequest } from '../common/Request'
 
 @Builder
@@ -18,7 +17,7 @@ struct Feedback {
   pageInfos = new NavPathStack()
 
   build() {
-    HdsNavDestination() {
+    NavDestination() {
       List() {
         ListItem() {
           Column() {
@@ -146,14 +145,7 @@ struct Feedback {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .titleBar({
-      content: {
-        title: {
-          mainTitle: '意见反馈'
-        }
-      },
-      enableComponentSafeArea: true
-    })
+    .title('意见反馈')
     .onReady((context) => {
       this.pageInfos = context.pathStack
     })

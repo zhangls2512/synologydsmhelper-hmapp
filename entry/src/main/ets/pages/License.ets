@@ -1,5 +1,4 @@
 import { common } from '@kit.AbilityKit'
-import { HdsNavDestination } from '@kit.UIDesignKit'
 import openLink from '../common/Openlink'
 
 interface Item {
@@ -24,7 +23,7 @@ struct License {
   ]
 
   build() {
-    HdsNavDestination() {
+    NavDestination() {
       List() {
         ListItem() {
           Text() {
@@ -110,13 +109,6 @@ struct License {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .titleBar({
-      content: {
-        title: {
-          mainTitle: '资质证照'
-        }
-      },
-      enableComponentSafeArea: true
-    })
+    .title('资质证照')
   }
 }

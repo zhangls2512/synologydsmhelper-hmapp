@@ -1,7 +1,6 @@
 import { preferences } from '@kit.ArkData'
 import { promptAction } from '@kit.ArkUI'
 import { webview } from '@kit.ArkWeb'
-import { HdsNavDestination } from '@kit.UIDesignKit'
 
 @Builder
 export function WebviewBuilder() {
@@ -21,7 +20,7 @@ struct Webview {
   })
 
   build() {
-    HdsNavDestination() {
+    NavDestination() {
       Web({
         src: this.url,
         controller: this.controller,
@@ -54,14 +53,7 @@ struct Webview {
         })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .titleBar({
-      content: {
-        title: {
-          mainTitle: this.title
-        }
-      },
-      enableComponentSafeArea: true
-    })
+    .title(this.title)
     .onReady((context) => {
       this.url = context.pathInfo.param as string
       const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {

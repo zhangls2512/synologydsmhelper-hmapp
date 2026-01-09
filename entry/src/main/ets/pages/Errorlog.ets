@@ -1,7 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { fileIo } from '@kit.CoreFileKit'
 import { hiAppEvent } from '@kit.PerformanceAnalysisKit'
-import { HdsNavDestination } from '@kit.UIDesignKit'
 import { read } from '../common/File'
 import copy from '../common/Pasteboard'
 
@@ -101,7 +100,7 @@ struct Errorlog {
   }
 
   build() {
-    HdsNavDestination() {
+    NavDestination() {
       Scroll() {
         Column() {
           Select([
@@ -336,14 +335,7 @@ struct Errorlog {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .titleBar({
-      content: {
-        title: {
-          mainTitle: '故障日志'
-        }
-      },
-      enableComponentSafeArea: true
-    })
+    .title('故障日志')
     .onAppear(async () => {
       await this.get()
     })

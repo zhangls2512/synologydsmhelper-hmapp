@@ -1,5 +1,4 @@
 import { common } from '@kit.AbilityKit'
-import { HdsNavDestination } from '@kit.UIDesignKit'
 
 @Builder
 export function MoresettingBuilder() {
@@ -12,7 +11,7 @@ struct Moresetting {
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
   build() {
-    HdsNavDestination() {
+    NavDestination() {
       List() {
         ListItem() {
           Column() {
@@ -171,13 +170,6 @@ struct Moresetting {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .titleBar({
-      content: {
-        title: {
-          mainTitle: '其他'
-        }
-      },
-      enableComponentSafeArea: true
-    })
+    .title('其他')
   }
 }

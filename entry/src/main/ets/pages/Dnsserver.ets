@@ -1,6 +1,5 @@
 import { preferences } from '@kit.ArkData'
 import { promptAction } from '@kit.ArkUI'
-import { HdsNavDestination } from '@kit.UIDesignKit'
 
 @Builder
 export function DnsserverBuilder() {
@@ -18,7 +17,7 @@ struct Dnsserver {
   })
 
   build() {
-    HdsNavDestination() {
+    NavDestination() {
       List() {
         ListItem() {
           Row() {
@@ -104,14 +103,7 @@ struct Dnsserver {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .titleBar({
-      content: {
-        title: {
-          mainTitle: '自定义 DNS 服务器'
-        }
-      },
-      enableComponentSafeArea: true
-    })
+    .title('自定义 DNS 服务器')
     .onReady((context) => {
       this.pageInfos = context.pathStack
       this.ip = this.debugSettingDataPreferences.getSync('dnsserverip', '') as string

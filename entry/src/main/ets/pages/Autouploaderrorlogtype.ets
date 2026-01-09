@@ -1,5 +1,4 @@
 import { preferences } from '@kit.ArkData'
-import { HdsNavDestination } from '@kit.UIDesignKit'
 
 interface Type {
   name: string,
@@ -77,7 +76,7 @@ struct Autouploaderrorlogtype {
   }
 
   build() {
-    HdsNavDestination() {
+    NavDestination() {
       List() {
         ListItem() {
           Column() {
@@ -134,14 +133,7 @@ struct Autouploaderrorlogtype {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .titleBar({
-      content: {
-        title: {
-          mainTitle: '自动上传故障日志类型'
-        }
-      },
-      enableComponentSafeArea: true
-    })
+    .title('自动上传故障日志类型')
     .onAppear(() => {
       this.getSetting()
     })

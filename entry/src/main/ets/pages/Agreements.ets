@@ -1,7 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { privacyManager } from '@kit.AppGalleryKit'
 import { promptAction } from '@kit.ArkUI'
-import { HdsNavDestination } from '@kit.UIDesignKit'
 import openLink from '../common/Openlink'
 
 @Builder
@@ -15,7 +14,7 @@ struct Agreements {
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
   build() {
-    HdsNavDestination() {
+    NavDestination() {
       List() {
         ListItem() {
           Column() {
@@ -78,13 +77,6 @@ struct Agreements {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .titleBar({
-      content: {
-        title: {
-          mainTitle: '服务协议与规则'
-        }
-      },
-      enableComponentSafeArea: true
-    })
+    .title('服务协议与规则')
   }
 }

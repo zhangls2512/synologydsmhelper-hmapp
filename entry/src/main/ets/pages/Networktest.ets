@@ -1,6 +1,5 @@
 import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { rcp } from '@kit.RemoteCommunicationKit'
-import { HdsNavDestination } from '@kit.UIDesignKit'
 import { getDnsServer } from '../common/Dnsserver'
 
 interface Response {
@@ -26,7 +25,7 @@ struct Networktest {
   context = this.getUIContext().getHostContext()
 
   build() {
-    HdsNavDestination() {
+    NavDestination() {
       List() {
         ListItem() {
           Column() {
@@ -243,13 +242,6 @@ struct Networktest {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .titleBar({
-      content: {
-        title: {
-          mainTitle: '网络测试'
-        }
-      },
-      enableComponentSafeArea: true
-    })
+    .title('网络测试')
   }
 }

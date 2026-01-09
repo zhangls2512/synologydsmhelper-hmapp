@@ -4,7 +4,6 @@ import { taskpool } from '@kit.ArkTS'
 import { display } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
 import { image } from '@kit.ImageKit'
-import { HdsTabs, HdsTabsController } from '@kit.UIDesignKit'
 import { importAccounts } from '../common/Account'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import getPreferType from '../common/Prefertype'
@@ -45,7 +44,6 @@ struct Index {
   @Local isShowCleardataSheet: boolean = false
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
-  controller = new HdsTabsController()
   backDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'back'
   })
@@ -83,15 +81,15 @@ struct Index {
     if (oldShowAlbum !== this.showAlbum) {
       if (!oldShowAlbum) {
         if (this.index === 2) {
-          this.controller.changeIndex(3)
+          this.index = 3
         }
       }
       if (oldShowAlbum) {
         if (this.index === 2) {
-          this.controller.changeIndex(0)
+          this.index = 0
         }
         if (this.index === 3) {
-          this.controller.changeIndex(2)
+          this.index = 2
         }
       }
     }
@@ -160,8 +158,8 @@ struct Index {
             left: $r('sys.float.ohos_id_elements_margin_horizontal_l')
           })
       }
-      HdsTabs({
-        controller: this.controller
+      Tabs({
+        index: $$this.index
       }) {
         TabContent() {
           Cardlist()
@@ -193,12 +191,8 @@ struct Index {
       }
       .barBackgroundBlurStyle(BlurStyle.Regular)
       .barPosition(this.preferType === 0 ? BarPosition.End : BarPosition.Start)
-      .barWidth(this.preferType === 0 ? '100%' : 56)
       .scrollable(false)
       .vertical(this.preferType === 0 ? false : true)
-      .onChange((index) => {
-        this.index = index
-      })
       .onAnimationStart((index, targetIndex) => {
         if (targetIndex === 0) {
           this.title = '卡片'
@@ -254,26 +248,26 @@ struct Index {
         }
       })
       this.context.eventHub.on('card', () => {
-        this.controller.changeIndex(0)
+        this.index = 0
         this.context.eventHub.emit('refreshCardlist')
       })
       this.context.eventHub.on('file', () => {
-        this.controller.changeIndex(1)
+        this.index = 1
         this.context.eventHub.emit('refreshFilelist')
       })
       this.context.eventHub.on('album', () => {
         if (this.showAlbum) {
-          this.controller.changeIndex(2)
+          this.index = 2
           this.context.eventHub.emit('refreshAlbum')
         }
       })
       this.context.eventHub.on('me', () => {
         if (!this.showAlbum) {
-          this.controller.changeIndex(2)
+          this.index = 2
           this.context.eventHub.emit('refreshMe')
         }
         if (this.showAlbum) {
-          this.controller.changeIndex(3)
+          this.index = 3
           this.context.eventHub.emit('refreshMe')
         }
       })
