@@ -362,7 +362,7 @@ export default struct Login {
               })
             Text() {
               Span('已阅读并同意')
-              Span('《群晖DSM助手用户服务条款与条件》')
+              Span('《SynDSM助手用户服务条款与条件》')
                 .fontColor($r('sys.color.font_emphasize'))
                 .onClick(async () => {
                   try {
@@ -375,7 +375,7 @@ export default struct Login {
                     })
                   }
                 })
-              Span('《关于群晖DSM助手与隐私的声明》')
+              Span('《关于SynDSM助手与隐私的声明》')
                 .fontColor($r('sys.color.font_emphasize'))
                 .onClick(async () => {
                   try {

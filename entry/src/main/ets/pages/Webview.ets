@@ -23,14 +23,13 @@ struct Webview {
     NavDestination() {
       Web({
         src: this.url,
-        controller: this.controller
+        controller: this.controller,
+        incognitoMode: true
       })
         .darkMode(this.darkMode)
         .enableDataDetector(true)
-        .enableFollowSystemFontWeight(true)
         .enableNativeEmbedMode(true)
         .geolocationAccess(false)
-        .mixedMode(MixedMode.None)
         .nestedScroll({
           scrollForward: NestedScrollMode.SELF_ONLY,
           scrollBackward: NestedScrollMode.SELF_ONLY
@@ -40,6 +39,7 @@ struct Webview {
         .onControllerAttached(() => {
           this.controller.enableAdsBlock(true)
           this.controller.enableIntelligentTrackingPrevention(true)
+          this.controller.enableSafeBrowsing(true)
           this.controller.setErrorPageEnabled(true)
           this.controller.loadUrl(this.url)
         })

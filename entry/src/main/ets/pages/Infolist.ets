@@ -426,7 +426,7 @@ struct Infolist {
               Column() {
                 Text('信息内容')
                   .fontWeight(FontWeight.Medium)
-                Text('应用名称 (群晖DSM助手)、内容、联系方式 (可选)')
+                Text('应用名称 (SynDSM助手)、内容、联系方式 (可选)')
                   .enableAutoSpacing(true)
                   .fontColor($r('sys.color.font_secondary'))
                   .fontSize($r('sys.float.ohos_id_text_size_body2'))

@@ -699,6 +699,12 @@ export default struct Filelist {
                 .buildEffect())
               .width(40)
               .onClick(async () => {
+                if (this.multipleSelectArray.length === 0) {
+                  await promptAction.openToast({
+                    message: '未选择'
+                  })
+                  return
+                }
                 const transferTaskDataPreferences = preferences.getPreferencesSync(this.context, {
                   name: 'transferTask'
                 })
@@ -751,6 +757,12 @@ export default struct Filelist {
                 .buildEffect())
               .width(40)
               .onClick(async () => {
+                if (this.multipleSelectArray.length === 0) {
+                  await promptAction.openToast({
+                    message: '未选择'
+                  })
+                  return
+                }
                 const prepareDialogControllerProgress = new CustomDialogController({
                   builder: LoadingDialog({
                     content: '复制准备中...'
@@ -856,6 +868,12 @@ export default struct Filelist {
                 .buildEffect())
               .width(40)
               .onClick(async () => {
+                if (this.multipleSelectArray.length === 0) {
+                  await promptAction.openToast({
+                    message: '未选择'
+                  })
+                  return
+                }
                 const dialogControllerProgress = new CustomDialogController({
                   builder: LoadingDialog({
                     content: '移动中...'
@@ -914,6 +932,12 @@ export default struct Filelist {
               .width(40)
               .onClick(async () => {
                 const promptAction = this.UIContext.getPromptAction()
+                if (this.multipleSelectArray.length === 0) {
+                  await promptAction.openToast({
+                    message: '未选择'
+                  })
+                  return
+                }
                 const data = await promptAction.showDialog({
                   title: '提示',
                   message: '删除成功后无法恢复，确定删除？',
@@ -1252,6 +1276,72 @@ export default struct Filelist {
                   }
                 })
               }
+              if (this.multipleSelect) {
+                Blank()
+                if (!this.fileArray.every(item => this.multipleSelectArray.find(selectItem => selectItem.path ===
+                item.path))) {
+                  Column() {
+                    Image($r('app.media.selectall'))
+                  }
+                  .borderRadius(20)
+                  .height(40)
+                  .padding(11)
+                  .stateStyles({
+                    normal: {
+                      .backgroundColor($r('sys.color.interactive_hover'))
+                    },
+                    pressed: {
+                      .backgroundColor($r('sys.color.interactive_pressed'))
+                    }
+                  })
+                  .visualEffect(new hdsEffect.HdsEffectBuilder()
+                    .pointLight({
+                      sourceType: hdsEffect.PointLightSourceType.SOFT,
+                      illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                    })
+                    .buildEffect())
+                  .width(40)
+                  .onClick(() => {
+                    this.fileArray.forEach(item => {
+                      if (!this.multipleSelectArray.find(selectItem => selectItem.path === item.path)) {
+                        this.multipleSelectArray.push(item)
+                      }
+                    })
+                  })
+                }
+                if (this.fileArray.every(item => this.multipleSelectArray.find(selectItem => selectItem.path ===
+                item.path))) {
+                  Column() {
+                    Image($r('app.media.cancelselectall'))
+                  }
+                  .borderRadius(20)
+                  .height(40)
+                  .padding(11)
+                  .stateStyles({
+                    normal: {
+                      .backgroundColor($r('sys.color.interactive_hover'))
+                    },
+                    pressed: {
+                      .backgroundColor($r('sys.color.interactive_pressed'))
+                    }
+                  })
+                  .visualEffect(new hdsEffect.HdsEffectBuilder()
+                    .pointLight({
+                      sourceType: hdsEffect.PointLightSourceType.SOFT,
+                      illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                    })
+                    .buildEffect())
+                  .width(40)
+                  .onClick(() => {
+                    this.fileArray.forEach(item => {
+                      const index = this.multipleSelectArray.findIndex(selectItem => selectItem.path === item.path)
+                      if (index !== -1) {
+                        this.multipleSelectArray.splice(index, 1)
+                      }
+                    })
+                  })
+                }
+              }
             }
             .margin({
               bottom: $r('sys.float.ohos_id_elements_margin_vertical_m')
@@ -1282,11 +1372,12 @@ export default struct Filelist {
                             right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                           })
                           .onChange((isOn) => {
-                            if (!isOn) {
+                            const exist = this.multipleSelectArray.find(selectItem => selectItem.path === item.path)
+                            if (!isOn && exist) {
                               this.multipleSelectArray.splice(this.multipleSelectArray.findIndex(selectItem => selectItem.path ===
                               item.path), 1)
                             }
-                            if (isOn) {
+                            if (isOn && !exist) {
                               this.multipleSelectArray.push(item)
                             }
                           })
@@ -1383,8 +1474,7 @@ export default struct Filelist {
                           if (res !== 'fail') {
                             const tid = res['tid'] as string
                             const accountInfo = await getAccountInfo()
-                            const textEncoder = new util.TextEncoder()
-                            const bytes = textEncoder.encodeInto(item.path)
+                            const bytes = new util.TextEncoder().encodeInto(item.path)
                             const dlink = Array.from(bytes).map(byte => byte.toString(16).padStart(2, '0')).join('')
                             this.src =
                               accountInfo.path + '/fbdownload/' +
