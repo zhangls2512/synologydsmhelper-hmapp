@@ -10,8 +10,9 @@ interface NoticeString {
 interface NoticeItem {
   level: string,
   className: string,
-  msg: string[],
-  title: string
+  msg: string,
+  title: string,
+  time?: number
 }
 
 interface NoticeResponseData {
@@ -38,20 +39,42 @@ export default struct Noticelist {
     this.loading = true
     const res = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Core.DSMNotify', '&method=notify&action=load')
     if (res !== 'fail') {
+      const noticeres = res as NoticeResponseData
       const resa =
         await dsmRequest(this.context, this.UIContext, '', 'SYNO.Core.DSMNotify.Strings', '&method=get&lang=chs')
-      this.loading = false
       if (resa !== 'fail') {
-        const noticeres = res as NoticeResponseData
+        this.loading = false
         const noticeString = resa as Record<string, NoticeString>
         this.notices = noticeres.items.map((item): NoticeItem => {
           return {
             level: item.level,
             className: noticeString[item.title].title,
-            msg: item.msg,
+            msg: item.msg[0],
             title: noticeString[item.title].msg
           }
         })
+      }
+      if (resa === 'fail') {
+        const resb =
+          await dsmRequest(this.context, this.UIContext, '', 'SYNO.Core.Desktop.UIString', '&method=getjs&lang=chs')
+        this.loading = false
+        if (resb !== 'fail') {
+          const noticeString = resb as string
+          const startIndex = noticeString.indexOf('=')
+          const endIndex = noticeString.indexOf('}}')
+          const noticeJsonString = noticeString.substring(startIndex + 1, endIndex + 2)
+          const noticeJson = JSON.parse(noticeJsonString) as Record<string, Record<string, string>>
+          this.notices = noticeres.items.map((item): NoticeItem => {
+            const filterTitle = item.title.split(':')
+            return {
+              level: '',
+              className: noticeJson[filterTitle[0]][filterTitle[1]],
+              msg: item.msg[0],
+              title: item.msg[0],
+              time: (item.time as number) * 1000
+            }
+          })
+        }
       }
     }
     if (res === 'fail') {
@@ -119,8 +142,7 @@ export default struct Noticelist {
                 })
               Text(item.level === 'NOTIFICATION_INFO' ? '信息' :
                 item.level === 'NOTIFICATION_WARN' ? '警告' :
-                  item.level === 'NOTIFICATION_ERROR' ? '重要' :
-                    '未知')
+                  item.level === 'NOTIFICATION_ERROR' ? '重要' : '未知')
                 .fontColor($r('sys.color.font_secondary'))
                 .fontSize($r('sys.float.ohos_id_text_size_body2'))
                 .layoutWeight(1)
@@ -183,7 +205,7 @@ export default struct Noticelist {
                 .margin({
                   right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                 })
-              Text(this.getTime(item.msg[0]))
+              Text(item.time ? String(new Date(item.time)) : this.getTime(item.msg))
                 .fontColor($r('sys.color.font_secondary'))
                 .fontSize($r('sys.float.ohos_id_text_size_body2'))
                 .layoutWeight(1)

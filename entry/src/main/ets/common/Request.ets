@@ -204,7 +204,7 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
             if (resb.success) {
               if (!resb.data[api]) {
                 await promptAction.openToast({
-                  message: '当前登录的 DSM 不支持此功能'
+                  message: '当前登录的 DSM 不支持此功能：' + api
                 })
                 return 'fail'
               }
@@ -336,7 +336,12 @@ export async function dsmRequest(context: Context, UIContext: UIContext, path: s
       if (response.toString()) {
         body = response.toString() as string
       }
-      const res = JSON.parse(body) as DsmResponse
+      let res: string | DsmResponse = ''
+      try {
+        res = JSON.parse(body) as DsmResponse
+      } catch {
+        return body
+      }
       if (res.success) {
         return res.data
       }
