@@ -11,7 +11,8 @@ interface StorageInfo {
 interface VolumeItem {
   device_type: string,
   fs_type: string,
-  size: VolumeSize
+  size: VolumeSize,
+  num_id: number
 }
 
 interface VolumeSize {
@@ -39,8 +40,8 @@ export default struct Storageinfo {
         Column() {
           Text('存储空间信息')
             .fontWeight(FontWeight.Bold)
-          ForEach(this.storageinfo.volumes, (item: VolumeItem, index) => {
-            Text('存储池' + (index + 1))
+          ForEach(this.storageinfo.volumes, (item: VolumeItem) => {
+            Text('存储空间' + item.num_id)
               .enableAutoSpacing(true)
               .fontWeight(FontWeight.Medium)
               .margin({
