@@ -30,6 +30,9 @@ struct Webview {
         .enableDataDetector(true)
         .enableNativeEmbedMode(true)
         .geolocationAccess(false)
+        .margin({
+          bottom: $r('sys.float.ohos_id_default_padding_bottom_fixed')
+        })
         .nestedScroll({
           scrollForward: NestedScrollMode.SELF_ONLY,
           scrollBackward: NestedScrollMode.SELF_ONLY

@@ -331,7 +331,6 @@ struct Index {
               transferTaskDataPreferences.putSync(item.id, JSON.stringify(item))
               const task = new taskpool.LongTask(download, this.context, item.id)
               await taskpool.execute(task)
-              return
             }
           }
         }
