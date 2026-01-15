@@ -1,5 +1,5 @@
 import { preferences } from '@kit.ArkData'
-import { promptAction } from '@kit.ArkUI'
+import { LengthMetrics, promptAction } from '@kit.ArkUI'
 import { webview } from '@kit.ArkWeb'
 
 @Builder
@@ -56,7 +56,9 @@ struct Webview {
         })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title(this.title)
+    .title(this.title, {
+      paddingEnd: LengthMetrics.vp(60)
+    })
     .onReady((context) => {
       this.url = context.pathInfo.param as string
       const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
