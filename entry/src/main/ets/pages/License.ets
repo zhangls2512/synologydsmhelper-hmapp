@@ -1,4 +1,5 @@
 import { common } from '@kit.AbilityKit'
+import { LengthMetrics } from '@kit.ArkUI'
 import openLink from '../common/Openlink'
 
 interface Item {
@@ -109,6 +110,8 @@ struct License {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('资质证照')
+    .title('资质证照', {
+      paddingEnd: LengthMetrics.vp(60)
+    })
   }
 }

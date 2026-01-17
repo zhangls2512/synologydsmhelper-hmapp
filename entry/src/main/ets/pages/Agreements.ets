@@ -1,6 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { privacyManager } from '@kit.AppGalleryKit'
-import { promptAction } from '@kit.ArkUI'
+import { LengthMetrics, promptAction } from '@kit.ArkUI'
 import openLink from '../common/Openlink'
 
 @Builder
@@ -77,6 +77,8 @@ struct Agreements {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('服务协议与规则')
+    .title('服务协议与规则', {
+      paddingEnd: LengthMetrics.vp(60)
+    })
   }
 }

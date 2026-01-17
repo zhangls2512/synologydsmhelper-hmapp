@@ -1,4 +1,4 @@
-import { LoadingDialog, promptAction } from '@kit.ArkUI'
+import { LengthMetrics, LoadingDialog, promptAction } from '@kit.ArkUI'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { getDnsServer } from '../common/Dnsserver'
 
@@ -242,6 +242,8 @@ struct Networktest {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('网络测试')
+    .title('网络测试', {
+      paddingEnd: LengthMetrics.vp(60)
+    })
   }
 }

@@ -1,4 +1,5 @@
 import { preferences } from '@kit.ArkData'
+import { LengthMetrics } from '@kit.ArkUI'
 
 interface Type {
   name: string,
@@ -133,7 +134,9 @@ struct Autouploaderrorlogtype {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('自动上传故障日志类型')
+    .title('自动上传故障日志类型', {
+      paddingEnd: LengthMetrics.vp(60)
+    })
     .onAppear(() => {
       this.getSetting()
     })

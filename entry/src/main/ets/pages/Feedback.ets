@@ -1,5 +1,5 @@
 import { common } from '@kit.AbilityKit'
-import { LoadingDialog, promptAction } from '@kit.ArkUI'
+import { LengthMetrics, LoadingDialog, promptAction } from '@kit.ArkUI'
 import { developerRequest } from '../common/Request'
 
 @Builder
@@ -145,7 +145,9 @@ struct Feedback {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('意见反馈')
+    .title('意见反馈', {
+      paddingEnd: LengthMetrics.vp(60)
+    })
     .onReady((context) => {
       this.pageInfos = context.pathStack
     })

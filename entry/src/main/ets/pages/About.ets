@@ -1,6 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { commentManager, updateManager } from '@kit.AppGalleryKit'
-import { promptAction } from '@kit.ArkUI'
+import { LengthMetrics, promptAction } from '@kit.ArkUI'
 import { call } from '@kit.TelephonyKit'
 import openLink from '../common/Openlink'
 import copy from '../common/Pasteboard'
@@ -886,7 +886,9 @@ struct About {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('关于')
+    .title('关于', {
+      paddingEnd: LengthMetrics.vp(60)
+    })
     .onReady(async (context) => {
       this.pageInfos = context.pathStack
       try {

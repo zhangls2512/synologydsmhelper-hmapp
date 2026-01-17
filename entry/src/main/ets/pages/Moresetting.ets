@@ -1,4 +1,5 @@
 import { common } from '@kit.AbilityKit'
+import { LengthMetrics } from '@kit.ArkUI'
 
 @Builder
 export function MoresettingBuilder() {
@@ -170,6 +171,8 @@ struct Moresetting {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('其他')
+    .title('其他', {
+      paddingEnd: LengthMetrics.vp(60)
+    })
   }
 }

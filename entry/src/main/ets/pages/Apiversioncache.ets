@@ -1,5 +1,5 @@
 import { common } from '@kit.AbilityKit'
-import { SegmentButtonV2Items, TabSegmentButtonV2 } from '@kit.ArkUI'
+import { LengthMetrics, SegmentButtonV2Items, TabSegmentButtonV2 } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
 import { read } from '../common/File'
 import { ApiVersionCacheItem, ApiVersionItem } from '../common/Request'
@@ -111,7 +111,9 @@ struct Apiversioncache {
       }
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('API 版本号缓存')
+    .title('API 版本号缓存', {
+      paddingEnd: LengthMetrics.vp(60)
+    })
     .onAppear(async () => {
       const filePath = this.context.cacheDir + '/apiversion.txt'
       if (fileIo.accessSync(filePath)) {

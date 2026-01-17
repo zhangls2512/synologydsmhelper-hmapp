@@ -1,6 +1,6 @@
 import { common, ConfigurationConstant } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
-import { window } from '@kit.ArkUI'
+import { LengthMetrics, window } from '@kit.ArkUI'
 import { deviceInfo } from '@kit.BasicServicesKit'
 import { fileIo } from '@kit.CoreFileKit'
 import { image } from '@kit.ImageKit'
@@ -1053,7 +1053,9 @@ struct Commonsetting {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('通用')
+    .title('通用', {
+      paddingEnd: LengthMetrics.vp(60)
+    })
     .onReady(async (context) => {
       this.pageInfos = context.pathStack
       this.allowContinue = this.commonSettingDataPreferences.getSync('allowContinue', true) as boolean

@@ -1,5 +1,5 @@
 import { appRecovery } from '@kit.AbilityKit'
-import { promptAction } from '@kit.ArkUI'
+import { LengthMetrics, promptAction } from '@kit.ArkUI'
 
 @Builder
 export function RecoverysettingBuilder() {
@@ -147,7 +147,9 @@ struct Recoverysetting {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('应用恢复设置')
+    .title('应用恢复设置', {
+      paddingEnd: LengthMetrics.vp(60)
+    })
     .onReady((context) => {
       this.pageInfos = context.pathStack
     })

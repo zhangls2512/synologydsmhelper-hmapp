@@ -1,3 +1,4 @@
+import { LengthMetrics } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
 
 @Builder
@@ -71,6 +72,8 @@ struct Deletefile {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('沙箱文件删除工具')
+    .title('沙箱文件删除工具', {
+      paddingEnd: LengthMetrics.vp(60)
+    })
   }
 }

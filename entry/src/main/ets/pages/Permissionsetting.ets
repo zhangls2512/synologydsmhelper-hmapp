@@ -1,5 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
+import { LengthMetrics } from '@kit.ArkUI'
 import { deviceInfo } from '@kit.BasicServicesKit'
 import { getPermission } from '../common/Permission'
 
@@ -227,7 +228,9 @@ struct Permissionsetting {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('权限管理')
+    .title('权限管理', {
+      paddingEnd: LengthMetrics.vp(60)
+    })
     .onAppear(() => {
       this.writePasteBoard = this.permissionSettingDataPreferences.getSync('writePasteBoard', false) as boolean
     })

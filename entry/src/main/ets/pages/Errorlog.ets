@@ -1,4 +1,5 @@
 import { common } from '@kit.AbilityKit'
+import { LengthMetrics } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
 import { hiAppEvent } from '@kit.PerformanceAnalysisKit'
 import { read } from '../common/File'
@@ -335,7 +336,9 @@ struct Errorlog {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('故障日志')
+    .title('故障日志', {
+      paddingEnd: LengthMetrics.vp(60)
+    })
     .onAppear(async () => {
       await this.get()
     })

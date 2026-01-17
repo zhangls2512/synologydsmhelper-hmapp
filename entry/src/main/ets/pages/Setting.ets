@@ -1,7 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { privacyManager } from '@kit.AppGalleryKit'
 import { preferences, uniformTypeDescriptor } from '@kit.ArkData'
-import { promptAction } from '@kit.ArkUI'
+import { LengthMetrics, promptAction } from '@kit.ArkUI'
 import { appAccount, deviceInfo } from '@kit.BasicServicesKit'
 import { fileIo, fileUri, picker } from '@kit.CoreFileKit'
 import { formProvider } from '@kit.FormKit'
@@ -1003,7 +1003,9 @@ export default struct Setting {
     .padding({
       top: $r('sys.float.ohos_id_elements_margin_vertical_m')
     })
-    .title('设置')
+    .title('设置', {
+      paddingEnd: LengthMetrics.vp(60)
+    })
     .titleMode(NavigationTitleMode.Mini)
     .onAppear(async () => {
       this.context.eventHub.on('refreshSetting', async () => {

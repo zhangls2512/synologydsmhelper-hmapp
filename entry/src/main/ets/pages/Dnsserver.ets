@@ -1,5 +1,5 @@
 import { preferences } from '@kit.ArkData'
-import { promptAction } from '@kit.ArkUI'
+import { LengthMetrics, promptAction } from '@kit.ArkUI'
 
 @Builder
 export function DnsserverBuilder() {
@@ -103,7 +103,9 @@ struct Dnsserver {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('自定义 DNS 服务器')
+    .title('自定义 DNS 服务器', {
+      paddingEnd: LengthMetrics.vp(60)
+    })
     .onReady((context) => {
       this.pageInfos = context.pathStack
       this.ip = this.debugSettingDataPreferences.getSync('dnsserverip', '') as string

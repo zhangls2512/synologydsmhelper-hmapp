@@ -1,4 +1,4 @@
-import { promptAction } from '@kit.ArkUI'
+import { LengthMetrics, promptAction } from '@kit.ArkUI'
 import { pushService } from '@kit.PushKit'
 
 @Builder
@@ -456,7 +456,9 @@ struct Infolist {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('已收集个人信息清单')
+    .title('已收集个人信息清单', {
+      paddingEnd: LengthMetrics.vp(60)
+    })
     .onReady((context) => {
       this.pageInfos = context.pathStack
     })

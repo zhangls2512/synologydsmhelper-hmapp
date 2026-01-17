@@ -1,5 +1,5 @@
 import { common } from '@kit.AbilityKit'
-import { LoadingDialog, promptAction } from '@kit.ArkUI'
+import { LengthMetrics, LoadingDialog, promptAction } from '@kit.ArkUI'
 import { notificationManager } from '@kit.NotificationKit'
 import { pushService } from '@kit.PushKit'
 import { developerRequest } from '../common/Request'
@@ -169,7 +169,9 @@ struct Notice {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('消息通知')
+    .title('消息通知', {
+      paddingEnd: LengthMetrics.vp(60)
+    })
     .onAppear(async () => {
       try {
         this.pushToken = await pushService.getToken()

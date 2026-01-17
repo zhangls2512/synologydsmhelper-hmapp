@@ -1,4 +1,4 @@
-import { promptAction } from '@kit.ArkUI'
+import { LengthMetrics, promptAction } from '@kit.ArkUI'
 import { netQuality } from '@kit.NetworkBoostKit'
 
 @Builder
@@ -222,7 +222,9 @@ struct ReportQoe {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('反馈网络传输体验')
+    .title('反馈网络传输体验', {
+      paddingEnd: LengthMetrics.vp(60)
+    })
     .onReady((context) => {
       this.pageInfos = context.pathStack
     })
