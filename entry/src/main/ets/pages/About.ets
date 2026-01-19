@@ -52,8 +52,8 @@ struct About {
                       })
                     }
                     if (data.index === 1) {
-                      await promptAction.openToast({
-                        message: '暂未上线，敬请期待'
+                      this.pageInfos.pushPath({
+                        name: 'Debuginfo'
                       })
                     }
                   })

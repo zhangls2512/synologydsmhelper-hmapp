@@ -205,13 +205,34 @@ export default struct Cleardata {
               ]
             })
             if (data.index === 1) {
-              const promises = this.setting.map(async (item) => {
-                await preferences.deletePreferences(this.context, item)
+              this.setting.forEach((item) => {
+                const dataPreferences = preferences.getPreferencesSync(this.context, {
+                  name: item
+                })
+                dataPreferences.clearSync()
+                dataPreferences.flushSync()
               })
-              await Promise.all(promises)
-              await promptAction.openToast({
-                message: '清理成功'
+              const res = await promptAction.showDialog({
+                title: '提示',
+                message: '清理成功，需重启应用生效，是否重启？',
+                buttons: [
+                  {
+                    text: '取消',
+                    color: $r('sys.color.font_primary')
+                  },
+                  {
+                    text: '重启',
+                    color: $r('sys.color.font_emphasize')
+                  }
+                ]
               })
+              if (res.index === 1) {
+                const applicationContext = this.context.getApplicationContext()
+                applicationContext.restartApp({
+                  bundleName: 'com.songjy.synologydsmhelper',
+                  abilityName: 'EntryAbility'
+                })
+              }
             }
           })
       }
