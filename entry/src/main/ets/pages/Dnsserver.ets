@@ -10,6 +10,7 @@ export function DnsserverBuilder() {
 struct Dnsserver {
   @Local ip: string = ''
   @Local port: string = '53'
+  @Local focus: boolean = false
   context = this.getUIContext().getHostContext()
   pageInfos = new NavPathStack()
   debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
@@ -31,6 +32,7 @@ struct Dnsserver {
               placeholder: '请输入IP地址',
               text: this.ip!!
             })
+              .defaultFocus(this.focus)
               .enableAutoSpacing(true)
               .layoutWeight(1)
               .maxLength(39)
@@ -109,6 +111,9 @@ struct Dnsserver {
     .onReady((context) => {
       this.pageInfos = context.pathStack
       this.ip = this.debugSettingDataPreferences.getSync('dnsserverip', '') as string
+      if (this.ip === '') {
+        this.focus = true
+      }
       this.port = String(this.debugSettingDataPreferences.getSync('dnsserverport', 53))
     })
   }

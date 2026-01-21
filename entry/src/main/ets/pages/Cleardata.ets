@@ -3,7 +3,9 @@ import { preferences } from '@kit.ArkData'
 import { promptAction } from '@kit.ArkUI'
 import { webview } from '@kit.ArkWeb'
 import { fileIo } from '@kit.CoreFileKit'
+import { getAccountInfo } from '../common/Account'
 import { getDirectorySize } from '../common/File'
+import { sha256hash } from '../common/Hash'
 import { getSizeString } from '../common/Stringformat'
 
 @ComponentV2
@@ -20,6 +22,8 @@ export default struct Cleardata {
   @Local webviewCache: boolean = false
   @Local apiVersionCache: boolean = false
   @Local apiVersionCacheSize: string = ''
+  @Local albumPhotoThumbnailCache: boolean = false
+  @Local albumPhotoThumbnailCacheSize: string = ''
   @Local log: string[] = []
   @Local allLog: boolean = false
   @Local errorLog: boolean = false
@@ -40,6 +44,23 @@ export default struct Cleardata {
     }
     if (apiVersionCacheFileExist) {
       this.apiVersionCacheSize = getSizeString(fileIo.statSync(apiVersionCacheFilePath).size)
+    }
+    const accountInfo = await getAccountInfo()
+    if (!accountInfo.id) {
+      const albumPhotoThumbnailCacheSize = await getDirectorySize(this.context.cacheDir + '/albumphotothumbnail/')
+      this.albumPhotoThumbnailCacheSize = getSizeString(albumPhotoThumbnailCacheSize)
+    }
+    if (accountInfo.id) {
+      const accounts = await fileIo.listFile(this.context.cacheDir + '/albumphotothumbnail/')
+      let size = 0
+      this.albumPhotoThumbnailCacheSize = getSizeString(size)
+      for (let i = 0; i < accounts.length; i++) {
+        const item = accounts[i]
+        if (item !== sha256hash(accountInfo.path + '\0' + accountInfo.name)) {
+          size += await getDirectorySize(this.context.cacheDir + '/albumphotothumbnail/' + item + '/')
+          this.albumPhotoThumbnailCacheSize = getSizeString(size)
+        }
+      }
     }
     const errorLogSize = await getDirectorySize(this.context.filesDir + '/log/error/')
     this.errorLogSize = getSizeString(errorLogSize)
@@ -347,6 +368,35 @@ export default struct Cleardata {
             .borderRadius(12)
             .padding(12)
             .width('100%')
+
+            Divider()
+              .padding({
+                left: 12,
+                right: 12
+              })
+            Row() {
+              Text('相册照片缩略图')
+                .fontWeight(FontWeight.Medium)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+              Text(this.albumPhotoThumbnailCacheSize)
+                .fontColor($r('sys.color.font_secondary'))
+                .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_s')
+                })
+              Checkbox({
+                name: 'albumPhotoThumbnailCache',
+                group: 'cache'
+              })
+                .select(this.albumPhotoThumbnailCache!!)
+                .shape(CheckBoxShape.ROUNDED_SQUARE)
+            }
+            .borderRadius(12)
+            .padding(12)
+            .width('100%')
           }
           .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
           .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
@@ -392,6 +442,21 @@ export default struct Cleardata {
                   const filePath = this.context.cacheDir + '/apiversion.txt'
                   if (fileIo.accessSync(filePath)) {
                     await fileIo.unlink(filePath)
+                  }
+                }
+                if (item === 'albumPhotoThumbnailCache') {
+                  const accountInfo = await getAccountInfo()
+                  if (!accountInfo.id) {
+                    await fileIo.rmdir(this.context.cacheDir + '/albumphotothumbnail')
+                  }
+                  if (accountInfo.id) {
+                    const accounts = await fileIo.listFile(this.context.cacheDir + '/albumphotothumbnail/')
+                    const rmdirpromises = accounts.map(async (item) => {
+                      if (item !== sha256hash(accountInfo.path + '\0' + accountInfo.name)) {
+                        await fileIo.rmdir(this.context.cacheDir + '/albumphotothumbnail/' + item)
+                      }
+                    })
+                    await Promise.all(rmdirpromises)
                   }
                 }
               })

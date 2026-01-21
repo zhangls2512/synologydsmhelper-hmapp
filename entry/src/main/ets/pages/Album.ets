@@ -528,7 +528,6 @@ export default struct Album {
             finished = true
             return
           }
-          const photoArray: PhotoItem[] = []
           for (let i = 0; i < photos.length; i++) {
             const item = photos[i]
             if (this.account !== account) {
