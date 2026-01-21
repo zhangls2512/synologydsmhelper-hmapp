@@ -1,7 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { display, LoadingDialog } from '@kit.ArkUI'
 import { exitAccount, getAccountInfo } from '../common/Account'
-import getPreferType from '../common/Prefertype'
+import { getPreferType } from '../common/Prefertype'
 import { dsmRequest } from '../common/Request'
 import Accountlist from './Accountlist'
 import Login from './Login'

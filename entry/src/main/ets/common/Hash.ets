@@ -1,10 +1,10 @@
-import { buffer, util } from '@kit.ArkTS'
+import { util } from '@kit.ArkTS'
 import { cryptoFramework } from '@kit.CryptoArchitectureKit'
 
-export default function sha256hash(data: string) {
+export function sha256hash(data: string) {
   const md = cryptoFramework.createMd('SHA256')
   md.updateSync({
-    data: new Uint8Array(buffer.from(data).buffer)
+    data: new util.TextEncoder().encodeInto(data)
   })
-  return new util.Base64Helper().encodeToStringSync(md.digestSync().data, util.Type.BASIC_URL_SAFE)
+  return Array.from(md.digestSync().data).map(byte => byte.toString(16).padStart(2, '0')).join('')
 }
