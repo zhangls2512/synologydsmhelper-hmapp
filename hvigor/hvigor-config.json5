@@ -1,5 +1,5 @@
 {
-  "modelVersion": "6.0.1",
+  "modelVersion": "6.0.2",
   "dependencies": {},
   "execution": {
     "optimizationStrategy": "performance"
@@ -10,6 +10,7 @@
     "ohos.arkCompile.noEmitJs": true,
     "ohos.byteCodeHar.integratedOptimization": true,
     "ohos.compile.lib.entryfile": true,
+    "ohos.defaults.autoLazyImport": true,
     "ohos.dependencies.types.enable": true,
     "ohos.obfuscationRules.optimization": true,
     "ohos.processLib.optimization": true,
