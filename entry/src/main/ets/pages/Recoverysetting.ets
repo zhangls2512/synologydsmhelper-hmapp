@@ -1,5 +1,6 @@
 import { appRecovery } from '@kit.AbilityKit'
 import { LengthMetrics, promptAction } from '@kit.ArkUI'
+import { HdsNavDestination } from '@kit.UIDesignKit'
 
 @Builder
 export function RecoverysettingBuilder() {
@@ -14,7 +15,7 @@ struct Recoverysetting {
   saveMode: appRecovery.SaveModeFlag = appRecovery.SaveModeFlag.SAVE_WITH_FILE
 
   build() {
-    NavDestination() {
+    HdsNavDestination() {
       List() {
         ListItem() {
           Column() {
@@ -147,8 +148,16 @@ struct Recoverysetting {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('应用恢复设置', {
-      paddingEnd: LengthMetrics.vp(60)
+    .titleBar({
+      padding: {
+        end: LengthMetrics.vp(60)
+      },
+      content: {
+        title: {
+          mainTitle: '应用恢复设置'
+        }
+      },
+      enableComponentSafeArea: true
     })
     .onReady((context) => {
       this.pageInfos = context.pathStack

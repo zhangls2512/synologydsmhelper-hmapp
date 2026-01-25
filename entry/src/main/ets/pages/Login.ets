@@ -1,5 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { privacyManager } from '@kit.AppGalleryKit'
+import { url } from '@kit.ArkTS'
 import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { netBoost } from '@kit.NetworkBoostKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
@@ -24,9 +25,9 @@ export default struct Login {
   @Local name: string = ''
   @Local password: string = ''
   @Local mfa: string = ''
+  @Local bz: string = ''
   @Local agree: boolean = false
-  UIContext = this.getUIContext()
-  context = this.UIContext.getHostContext() as common.UIAbilityContext
+  context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
   build() {
     List() {
@@ -176,6 +177,24 @@ export default struct Login {
             top: $r('sys.float.ohos_id_elements_margin_vertical_m')
           })
 
+          Row() {
+            Text('备注')
+              .fontWeight(FontWeight.Medium)
+              .margin({
+                right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+              })
+            TextInput({
+              placeholder: '请输入备注 (可选)',
+              text: this.bz!!
+            })
+              .enableAutoSpacing(true)
+              .layoutWeight(1)
+              .maxLength(20)
+          }
+          .margin({
+            top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+          })
+
           Button('登录')
             .enabled(this.agree)
             .margin({
@@ -243,9 +262,12 @@ export default struct Login {
                   scene: 'login',
                   sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
                 })
-                res = await dsmRequest(this.context, this.UIContext, path, 'SYNO.API.Auth',
-                  '&method=login&account=' + encodeURIComponent(this.name) + '&passwd=' +
-                  encodeURIComponent(this.password) + '&otp_code=' + this.mfa, undefined, false, true)
+                res = await dsmRequest(this.context, path, 'SYNO.API.Auth', new url.URLParams({
+                  method: 'login',
+                  account: this.name,
+                  passwd: this.password,
+                  otp_code: this.mfa
+                }).toString(), undefined, false, true)
                 netBoost.setSceneDesc({
                   scene: 'login',
                   sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
@@ -255,9 +277,12 @@ export default struct Login {
                     scene: 'login',
                     sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
                   })
-                  res = await dsmRequest(this.context, this.UIContext, path, 'SYNO.API.Auth',
-                    '&method=login&account=' + encodeURIComponent(this.name) + '&passwd=' +
-                    encodeURIComponent(this.password) + '&otp_code=' + this.mfa, undefined, true)
+                  res = await dsmRequest(this.context, path, 'SYNO.API.Auth', new url.URLParams({
+                    method: 'login',
+                    account: this.name,
+                    passwd: this.password,
+                    otp_code: this.mfa
+                  }).toString(), undefined, true)
                   netBoost.setSceneDesc({
                     scene: 'login',
                     sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
@@ -294,9 +319,12 @@ export default struct Login {
                         scene: 'login',
                         sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
                       })
-                      res = await dsmRequest(this.context, this.UIContext, path, 'SYNO.API.Auth',
-                        '&method=login&account=' + encodeURIComponent(this.name) + '&passwd=' +
-                        encodeURIComponent(this.password) + '&otp_code=' + this.mfa, undefined, false, true)
+                      res = await dsmRequest(this.context, path, 'SYNO.API.Auth', new url.URLParams({
+                        method: 'login',
+                        account: this.name,
+                        passwd: this.password,
+                        otp_code: this.mfa
+                      }).toString(), undefined, false, true)
                       netBoost.setSceneDesc({
                         scene: 'login',
                         sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
@@ -306,9 +334,12 @@ export default struct Login {
                           scene: 'login',
                           sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
                         })
-                        res = await dsmRequest(this.context, this.UIContext, path, 'SYNO.API.Auth',
-                          '&method=login&account=' + encodeURIComponent(this.name) + '&passwd=' +
-                          encodeURIComponent(this.password) + '&otp_code=' + this.mfa, undefined, true)
+                        res = await dsmRequest(this.context, path, 'SYNO.API.Auth', new url.URLParams({
+                          method: 'login',
+                          account: this.name,
+                          passwd: this.password,
+                          otp_code: this.mfa
+                        }).toString(), undefined, true)
                         netBoost.setSceneDesc({
                           scene: 'login',
                           sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
@@ -340,11 +371,13 @@ export default struct Login {
               dialogControllerProgress.close()
               if (res !== 'fail') {
                 const data = res as ResponseData
-                await setAccount(this.context, this.UIContext, {
+                await setAccount(this.context, {
                   path: path,
                   name: this.name,
                   password: this.password,
-                  sid: data.sid
+                  sid: data.sid,
+                  bz: this.bz,
+                  isLogin: 'true'
                 })
                 await promptAction.openToast({
                   message: '登录成功'

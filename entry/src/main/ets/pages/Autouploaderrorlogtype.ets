@@ -1,5 +1,6 @@
 import { preferences } from '@kit.ArkData'
 import { LengthMetrics } from '@kit.ArkUI'
+import { HdsNavDestination } from '@kit.UIDesignKit'
 
 interface Type {
   name: string,
@@ -77,7 +78,7 @@ struct Autouploaderrorlogtype {
   }
 
   build() {
-    NavDestination() {
+    HdsNavDestination() {
       List() {
         ListItem() {
           Column() {
@@ -134,8 +135,16 @@ struct Autouploaderrorlogtype {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('自动上传故障日志类型', {
-      paddingEnd: LengthMetrics.vp(60)
+    .titleBar({
+      padding: {
+        end: LengthMetrics.vp(60)
+      },
+      content: {
+        title: {
+          mainTitle: '自动上传故障日志类型'
+        }
+      },
+      enableComponentSafeArea: true
     })
     .onAppear(() => {
       this.getSetting()

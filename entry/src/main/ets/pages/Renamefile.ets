@@ -1,4 +1,5 @@
 import { common } from '@kit.AbilityKit'
+import { url } from '@kit.ArkTS'
 import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { dsmRequest } from '../common/Request'
 
@@ -8,8 +9,7 @@ export default struct Renamefile {
   @Param editPath: string = ''
   @Param editName: string = ''
   @Local name: string = ''
-  UIContext = this.getUIContext()
-  context = this.UIContext.getHostContext() as common.UIAbilityContext
+  context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
   build() {
     List() {
@@ -38,9 +38,11 @@ export default struct Renamefile {
               })
             })
             dialogControllerProgress.open()
-            const res = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.Rename',
-              '&method=rename&path=' + encodeURIComponent(JSON.stringify([this.editPath])) + '&name=' +
-              encodeURIComponent(this.name))
+            const res = await dsmRequest(this.context, '', 'SYNO.FileStation.Rename', new url.URLParams({
+              method: 'rename',
+              path: JSON.stringify([this.editPath]),
+              name: JSON.stringify(this.name)
+            }).toString())
             dialogControllerProgress.close()
             if (res !== 'fail') {
               await promptAction.openToast({

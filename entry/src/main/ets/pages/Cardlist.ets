@@ -1,5 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
+import { url } from '@kit.ArkTS'
 import { display } from '@kit.ArkUI'
 import { hdsEffect } from '@kit.UIDesignKit'
 import { getLoginStatus } from '../common/Account'
@@ -36,8 +37,10 @@ export default struct Cardlist {
     this.cards = cardSettingDataPreferences.getSync('cards', []) as string[]
     this.context.eventHub.emit('refreshCard')
     if (this.isLogin) {
-      const res =
-        await dsmRequest(this.context, this.UIContext, '', 'SYNO.Core.DSMNotify', '&method=notify&action=load')
+      const res = await dsmRequest(this.context, '', 'SYNO.Core.DSMNotify', new url.URLParams({
+        method: 'notify',
+        action: 'load'
+      }).toString())
       if (res !== 'fail') {
         const noticeres = res as NoticeResponseData
         if (noticeres.total === 0) {
@@ -176,46 +179,48 @@ export default struct Cardlist {
               })
               .width('100%')
             }
-            if (this.cards.includes('systeminfo')) {
-              ListItem() {
-                Systeminfo()
+            ForEach(this.cards, (item: string) => {
+              if (item === 'systeminfo') {
+                ListItem() {
+                  Systeminfo()
+                }
+                .margin({
+                  top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                })
               }
-              .margin({
-                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-              })
-            }
-            if (this.cards.includes('storageinfo')) {
-              ListItem() {
-                Storageinfo()
+              if (item === 'storageinfo') {
+                ListItem() {
+                  Storageinfo()
+                }
+                .margin({
+                  top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                })
               }
-              .margin({
-                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-              })
-            }
-            if (this.cards.includes('diskinfo')) {
-              ListItem() {
-                Diskinfo()
+              if (item === 'diskinfo') {
+                ListItem() {
+                  Diskinfo()
+                }
+                .margin({
+                  top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                })
               }
-              .margin({
-                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-              })
-            }
-            if (this.cards.includes('networkinfo')) {
-              ListItem() {
-                Networkinfo()
+              if (item === 'networkinfo') {
+                ListItem() {
+                  Networkinfo()
+                }
+                .margin({
+                  top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                })
               }
-              .margin({
-                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-              })
-            }
-            if (this.cards.includes('resourcemoniter')) {
-              ListItem() {
-                Resourcemoniter()
+              if (item === 'resourcemoniter') {
+                ListItem() {
+                  Resourcemoniter()
+                }
+                .margin({
+                  top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                })
               }
-              .margin({
-                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-              })
-            }
+            })
           }
         }
         .layoutWeight(1)

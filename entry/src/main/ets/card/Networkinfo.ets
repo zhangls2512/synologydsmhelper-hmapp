@@ -1,5 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
+import { url } from '@kit.ArkTS'
 import { getLoginStatus } from '../common/Account'
 import { dsmRequest } from '../common/Request'
 
@@ -25,8 +26,7 @@ interface NifItem {
 export default struct Networkinfo {
   @Local networkinfo: NetworkInfo | undefined = undefined
   @Local status: string = 'fail'
-  UIContext = this.getUIContext()
-  context = this.UIContext.getHostContext() as common.UIAbilityContext
+  context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
   build() {
     Column() {
@@ -129,8 +129,10 @@ export default struct Networkinfo {
         const isLogin = await getLoginStatus()
         if ((cardSettingDataPreferences.getSync('cards', []) as string[]).includes('networkinfo') &&
           this.status !== 'fail' && isLogin) {
-          const res =
-            await dsmRequest(this.context, this.UIContext, '', 'SYNO.Core.System', '&method=info&type=network')
+          const res = await dsmRequest(this.context, '', 'SYNO.Core.System', new url.URLParams({
+            method: 'info',
+            type: 'network'
+          }).toString())
           if (res !== 'fail') {
             this.networkinfo = res as NetworkInfo
             this.status = 'success'

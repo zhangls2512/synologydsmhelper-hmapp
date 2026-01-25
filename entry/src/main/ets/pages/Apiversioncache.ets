@@ -1,6 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { LengthMetrics, SegmentButtonV2Items, TabSegmentButtonV2 } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
+import { HdsNavDestination } from '@kit.UIDesignKit'
 import { read } from '../common/File'
 import { ApiVersionCacheItem, ApiVersionItem } from '../common/Request'
 
@@ -17,7 +18,7 @@ struct Apiversioncache {
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
   build() {
-    NavDestination() {
+    HdsNavDestination() {
       Scroll() {
         Column() {
           TabSegmentButtonV2({
@@ -111,8 +112,16 @@ struct Apiversioncache {
       }
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('API 版本号缓存', {
-      paddingEnd: LengthMetrics.vp(60)
+    .titleBar({
+      padding: {
+        end: LengthMetrics.vp(60)
+      },
+      content: {
+        title: {
+          mainTitle: 'API 版本号缓存'
+        }
+      },
+      enableComponentSafeArea: true
     })
     .onAppear(async () => {
       const filePath = this.context.cacheDir + '/apiversion.txt'

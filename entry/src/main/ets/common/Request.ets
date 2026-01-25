@@ -1,5 +1,6 @@
 import { preferences } from '@kit.ArkData'
-import { promptAction, UIContext } from '@kit.ArkUI'
+import { url } from '@kit.ArkTS'
+import { promptAction } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
 import { netBoost } from '@kit.NetworkBoostKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
@@ -119,7 +120,11 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
     }
   })
   try {
-    const response = await session.get(requestPath + '/webapi/entry.cgi?api=SYNO.API.Info&version=1&method=query')
+    const response = await session.get(requestPath + '/webapi/entry.cgi?' + new url.URLParams({
+      api: 'SYNO.API.Info',
+      version: '1',
+      method: 'query'
+    }).toString())
     session.close()
     if (response.statusCode === 200) {
       let body = ''
@@ -192,8 +197,11 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
           }
         })
         try {
-          const responseb =
-            await sessionb.get(requestPath + '/webapi/query.cgi?api=SYNO.API.Info&version=1&method=query')
+          const responseb = await sessionb.get(requestPath + '/webapi/query.cgi?' + new url.URLParams({
+            api: 'SYNO.API.Info',
+            version: '1',
+            method: 'query'
+          }).toString())
           sessionb.close()
           if (responseb.statusCode === 200) {
             let bodyb = ''
@@ -284,8 +292,8 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
   }
 }
 
-export async function dsmRequest(context: Context, UIContext: UIContext, path: string, api: string, params: string,
-  version?: number, dsm6Login?: boolean, hide102ErrorCode?: boolean): Promise<string | object> {
+export async function dsmRequest(context: Context, path: string, api: string, params: string, version?: number,
+  dsm6Login?: boolean, hide102ErrorCode?: boolean): Promise<string | object> {
   const accountInfo = await getAccountInfo()
   let requestPath = path
   if (!requestPath) {
@@ -325,9 +333,16 @@ export async function dsmRequest(context: Context, UIContext: UIContext, path: s
     }
   })
   try {
-    let path = requestPath + '/webapi/entry.cgi?api=' + api + '&version=' + apiVersion + params
+    let path = requestPath + '/webapi/entry.cgi?' + new url.URLParams({
+      api: api,
+      version: String(apiVersion)
+    }).toString() + '&' + params
     if (dsm6Login) {
-      path = requestPath + '/webapi/auth.cgi?api=' + api + '&version=' + apiVersion + params + '&session=FileStation'
+      path = requestPath + '/webapi/auth.cgi?' + new url.URLParams({
+        api: api,
+        version: String(apiVersion),
+        session: 'FileStation'
+      }).toString() + '&' + params
     }
     const response = await session.get(path)
     session.close()
@@ -350,43 +365,51 @@ export async function dsmRequest(context: Context, UIContext: UIContext, path: s
           scene: 'login',
           sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
         })
-        const loginres = await dsmRequest(context, UIContext, accountInfo.path, 'SYNO.API.Auth',
-          '&method=login&account=' + encodeURIComponent(accountInfo.name) + '&passwd=' +
-          encodeURIComponent(accountInfo.password), undefined, false, true)
+        const loginres = await dsmRequest(context, accountInfo.path, 'SYNO.API.Auth', new url.URLParams({
+          method: 'login',
+          account: accountInfo.name,
+          passwd: accountInfo.password
+        }).toString(), undefined, false, true)
         netBoost.setSceneDesc({
           scene: 'login',
           sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
         })
         if (loginres !== 'fail') {
           const data = loginres as ResponseData
-          await setAccount(context, UIContext, {
+          await setAccount(context, {
             path: accountInfo.path,
             name: accountInfo.name,
             password: accountInfo.password,
-            sid: data.sid
+            sid: data.sid,
+            bz: accountInfo.bz,
+            isLogin: 'true'
           })
-          return await dsmRequest(context, UIContext, path, api, params, version)
+          return await dsmRequest(context, path, api, params, version)
         }
         netBoost.setSceneDesc({
           scene: 'login',
           sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
         })
-        const loginresb = await dsmRequest(context, UIContext, accountInfo.path, 'SYNO.API.Auth',
-          '&method=login&account=' + encodeURIComponent(accountInfo.name) + '&passwd=' +
-          encodeURIComponent(accountInfo.password), undefined, true)
+        const loginresb = await dsmRequest(context, accountInfo.path, 'SYNO.API.Auth', new url.URLParams({
+          method: 'login',
+          account: accountInfo.name,
+          passwd: accountInfo.password
+        }).toString(), undefined, true)
         netBoost.setSceneDesc({
           scene: 'login',
           sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
         })
         if (loginresb !== 'fail') {
           const data = loginresb as ResponseData
-          await setAccount(context, UIContext, {
+          await setAccount(context, {
             path: accountInfo.path,
             name: accountInfo.name,
             password: accountInfo.password,
-            sid: data.sid
+            sid: data.sid,
+            bz: accountInfo.bz,
+            isLogin: 'true'
           })
-          return await dsmRequest(context, UIContext, path, api, params, version)
+          return await dsmRequest(context, path, api, params, version)
         }
         await promptAction.openToast({
           message: '登录态失效，请重新登录'
@@ -394,7 +417,7 @@ export async function dsmRequest(context: Context, UIContext: UIContext, path: s
         return 'fail'
       }
       if (res.error.code === 150) {
-        return await dsmRequest(context, UIContext, path, api, params, version)
+        return await dsmRequest(context, path, api, params, version)
       }
       await promptAction.openToast({
         message: 'DSM 接口调用失败，错误码：' + res.error.code

@@ -1,6 +1,7 @@
 import { preferences } from '@kit.ArkData'
 import { LengthMetrics, promptAction } from '@kit.ArkUI'
 import { webview } from '@kit.ArkWeb'
+import { HdsNavDestination } from '@kit.UIDesignKit'
 
 @Builder
 export function WebviewBuilder() {
@@ -20,7 +21,7 @@ struct Webview {
   })
 
   build() {
-    NavDestination() {
+    HdsNavDestination() {
       Web({
         src: this.url,
         controller: this.controller,
@@ -56,8 +57,16 @@ struct Webview {
         })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title(this.title, {
-      paddingEnd: LengthMetrics.vp(60)
+    .titleBar({
+      padding: {
+        end: LengthMetrics.vp(60)
+      },
+      content: {
+        title: {
+          mainTitle: this.title
+        }
+      },
+      enableComponentSafeArea: true
     })
     .onReady((context) => {
       this.url = context.pathInfo.param as string

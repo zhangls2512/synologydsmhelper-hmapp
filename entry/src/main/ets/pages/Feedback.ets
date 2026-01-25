@@ -1,5 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { LengthMetrics, LoadingDialog, promptAction } from '@kit.ArkUI'
+import { HdsNavDestination } from '@kit.UIDesignKit'
 import { developerRequest } from '../common/Request'
 
 @Builder
@@ -17,7 +18,7 @@ struct Feedback {
   pageInfos = new NavPathStack()
 
   build() {
-    NavDestination() {
+    HdsNavDestination() {
       List() {
         ListItem() {
           Column() {
@@ -145,8 +146,16 @@ struct Feedback {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('意见反馈', {
-      paddingEnd: LengthMetrics.vp(60)
+    .titleBar({
+      padding: {
+        end: LengthMetrics.vp(60)
+      },
+      content: {
+        title: {
+          mainTitle: '意见反馈'
+        }
+      },
+      enableComponentSafeArea: true
     })
     .onReady((context) => {
       this.pageInfos = context.pathStack

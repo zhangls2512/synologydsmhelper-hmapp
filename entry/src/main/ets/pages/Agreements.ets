@@ -1,6 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { privacyManager } from '@kit.AppGalleryKit'
 import { LengthMetrics, promptAction } from '@kit.ArkUI'
+import { HdsNavDestination } from '@kit.UIDesignKit'
 import openLink from '../common/Openlink'
 
 @Builder
@@ -14,7 +15,7 @@ struct Agreements {
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
   build() {
-    NavDestination() {
+    HdsNavDestination() {
       List() {
         ListItem() {
           Column() {
@@ -77,8 +78,16 @@ struct Agreements {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('服务协议与规则', {
-      paddingEnd: LengthMetrics.vp(60)
+    .titleBar({
+      padding: {
+        end: LengthMetrics.vp(60)
+      },
+      content: {
+        title: {
+          mainTitle: '服务协议与规则'
+        }
+      },
+      enableComponentSafeArea: true
     })
   }
 }

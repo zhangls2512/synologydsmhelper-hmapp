@@ -1,17 +1,12 @@
 import { common, wantAgent } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
-import { util } from '@kit.ArkTS'
+import { url, util } from '@kit.ArkTS'
 import { display, LoadingDialog, promptAction, SegmentButtonV2Items, TabSegmentButtonV2, window } from '@kit.ArkUI'
 import { backgroundTaskManager } from '@kit.BackgroundTasksKit'
 import { zlib } from '@kit.BasicServicesKit'
 import { fileIo, fileUri, picker } from '@kit.CoreFileKit'
 import { image } from '@kit.ImageKit'
-import {
-  MovingPhotoView,
-  MovingPhotoViewAttribute,
-  MovingPhotoViewController,
-  photoAccessHelper
-} from '@kit.MediaLibraryKit'
+import { MovingPhotoView, MovingPhotoViewController, photoAccessHelper } from '@kit.MediaLibraryKit'
 import { netBoost } from '@kit.NetworkBoostKit'
 import { notificationManager } from '@kit.NotificationKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
@@ -348,8 +343,11 @@ export default struct Album {
       if (refresh !== 0) {
         this.albumArray = []
         this.loadingDialogControllerProgress.open()
-        const albumres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Album',
-          '&method=list&offset=0&limit=5000')
+        const albumres = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.Album', new url.URLParams({
+          method: 'list',
+          offset: '0',
+          limit: '5000'
+        }).toString())
         this.loadingDialogControllerProgress.close()
         if (albumres !== 'fail') {
           this.albumArray = albumres['list']
@@ -362,8 +360,9 @@ export default struct Album {
         this.timelineArray = []
         this.photoArray = []
         this.loadingDialogControllerProgress.open()
-        const timelineres =
-          await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Timeline', '&method=get')
+        const timelineres = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.Timeline', new url.URLParams({
+          method: 'get'
+        }).toString())
         this.loadingDialogControllerProgress.close()
         if (timelineres !== 'fail') {
           const timelineSection = timelineres as TimelineResponse
@@ -381,8 +380,11 @@ export default struct Album {
             })
           })
           this.loadingDialogControllerProgress.open()
-          const keyres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.API.Auth.Key',
-            '&method=grant&allow_api=SYNO.FileStation.Download&allow_methods=["download"]')
+          const keyres = await dsmRequest(this.context, '', 'SYNO.API.Auth.Key', new url.URLParams({
+            method: 'grant',
+            allow_api: 'SYNO.FileStation.Download',
+            allow_methods: JSON.stringify(['download'])
+          }).toString())
           this.loadingDialogControllerProgress.close()
           if (keyres !== 'fail') {
             const tid = keyres['tid'] as string
@@ -413,8 +415,12 @@ export default struct Album {
               if (this.account !== account) {
                 return
               }
-              const photores = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Item',
-                '&method=list&offset=' + offset + '&limit=5000&additional=["resolution"]')
+              const photores = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.Item', new url.URLParams({
+                method: 'list',
+                offset: String(offset),
+                limit: '5000',
+                additional: JSON.stringify(['resolution'])
+              }).toString())
               if (photores !== 'fail') {
                 const photos = photores['list'] as PhotoResItem[]
                 if (photos.length === 0) {
@@ -427,8 +433,10 @@ export default struct Album {
                     return
                   }
                   if (!this.folderMap.has(item.folder_id)) {
-                    const folderres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Folder',
-                      '&method=get&id=' + item.folder_id)
+                    const folderres = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.Folder', new url.URLParams({
+                      method: 'get',
+                      id: String(item.folder_id)
+                    }).toString())
                     if (folderres !== 'fail') {
                       if (this.account !== account) {
                         return
@@ -486,8 +494,11 @@ export default struct Album {
   async getAlbumPhoto() {
     this.albumPhotoArray = []
     this.loadingDialogControllerProgress.open()
-    const res = await dsmRequest(this.context, this.UIContext, '', 'SYNO.API.Auth.Key',
-      '&method=grant&allow_api=SYNO.FileStation.Download&allow_methods=["download"]')
+    const res = await dsmRequest(this.context, '', 'SYNO.API.Auth.Key', new url.URLParams({
+      method: 'grant',
+      allow_api: 'SYNO.FileStation.Download',
+      allow_methods: JSON.stringify(['download'])
+    }).toString())
     this.loadingDialogControllerProgress.close()
     if (res !== 'fail') {
       const tid = res['tid'] as string
@@ -520,8 +531,13 @@ export default struct Album {
         if (this.account !== account) {
           return
         }
-        const photores = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Item',
-          '&method=list&offset=' + offset + '&limit=5000&additional=["resolution"]&album_id=' + this.previewAlbum?.id)
+        const photores = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.Item', new url.URLParams({
+          method: 'list',
+          offset: String(offset),
+          limit: '5000',
+          additional: JSON.stringify(['resolution']),
+          album_id: String(this.previewAlbum?.id)
+        }).toString())
         if (photores !== 'fail') {
           const photos = photores['list'] as PhotoResItem[]
           if (photos.length === 0) {
@@ -534,8 +550,10 @@ export default struct Album {
               return
             }
             if (!this.folderMap.has(item.folder_id)) {
-              const folderres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Folder',
-                '&method=get&id=' + item.folder_id)
+              const folderres = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.Folder', new url.URLParams({
+                method: 'get',
+                id: String(item.folder_id)
+              }).toString())
               if (folderres !== 'fail') {
                 if (this.account !== account) {
                   return
@@ -747,9 +765,13 @@ export default struct Album {
                   }
                 })
                 try {
-                  const response =
-                    await session.get(accountInfo.path + '/webapi/entry.cgi?api=SYNO.FileStation.Download&version=' +
-                      version + '&method=download&mode=download&path=' + encodeURIComponent(item.path))
+                  const response = await session.get(accountInfo.path + '/webapi/entry.cgi?' + new url.URLParams({
+                    api: 'SYNO.FileStation.Download',
+                    version: String(version),
+                    method: 'download',
+                    path: item.path,
+                    mode: 'download'
+                  }).toString())
                   dialogControllerProgress.close()
                   session.close()
                   netBoost.setSceneDesc({
@@ -960,9 +982,13 @@ export default struct Album {
                     this.totalSize = item.filesize
                     this.isShowProgressSheet = true
                     try {
-                      const response = await session.get(accountInfo.path +
-                        '/webapi/entry.cgi?api=SYNO.FileStation.Download&version=' +
-                        version + '&method=download&mode=download&path=' + encodeURIComponent(item.path))
+                      const response = await session.get(accountInfo.path + '/webapi/entry.cgi?' + new url.URLParams({
+                        api: 'SYNO.FileStation.Download',
+                        version: String(version),
+                        method: 'download',
+                        path: item.path,
+                        mode: 'download'
+                      }).toString())
                       if (response.statusCode !== 200) {
                         session.close()
                         netBoost.setSceneDesc({
@@ -1032,14 +1058,18 @@ export default struct Album {
           })
           if (data.index === 1) {
             this.deleteDialogControllerProgress.open()
-            const startres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.Delete',
-              '&method=start&path=' + encodeURIComponent(item.path))
+            const startres = await dsmRequest(this.context, '', 'SYNO.FileStation.Delete', new url.URLParams({
+              method: 'start',
+              path: item.path
+            }).toString())
             if (startres !== 'fail') {
               const taskId = startres['taskid'] as string
               let finished = false
               while (!finished) {
-                const statusres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.Delete',
-                  '&method=status&taskid=' + taskId)
+                const statusres = await dsmRequest(this.context, '', 'SYNO.FileStation.Delete', new url.URLParams({
+                  method: 'status',
+                  taskid: taskId
+                }).toString())
                 if (statusres !== 'fail') {
                   if (statusres['finished']) {
                     finished = true

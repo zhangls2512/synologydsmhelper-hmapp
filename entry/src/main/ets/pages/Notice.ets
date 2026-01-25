@@ -2,6 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { LengthMetrics, LoadingDialog, promptAction } from '@kit.ArkUI'
 import { notificationManager } from '@kit.NotificationKit'
 import { pushService } from '@kit.PushKit'
+import { HdsNavDestination } from '@kit.UIDesignKit'
 import { developerRequest } from '../common/Request'
 
 interface NoticeItem {
@@ -24,7 +25,7 @@ struct Notice {
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
   build() {
-    NavDestination() {
+    HdsNavDestination() {
       List() {
         ListItem() {
           Column() {
@@ -169,8 +170,16 @@ struct Notice {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('消息通知', {
-      paddingEnd: LengthMetrics.vp(60)
+    .titleBar({
+      padding: {
+        end: LengthMetrics.vp(60)
+      },
+      content: {
+        title: {
+          mainTitle: '消息通知'
+        }
+      },
+      enableComponentSafeArea: true
     })
     .onAppear(async () => {
       try {

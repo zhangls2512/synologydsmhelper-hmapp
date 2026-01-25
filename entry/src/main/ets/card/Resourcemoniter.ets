@@ -1,5 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
+import { url } from '@kit.ArkTS'
 import { getLoginStatus } from '../common/Account'
 import { dsmRequest } from '../common/Request'
 import { getSizeString } from '../common/Stringformat'
@@ -38,8 +39,7 @@ interface NetworkItem {
 export default struct Resourcemoniter {
   @Local resourcemoniter: ResourceMoniter | undefined = undefined
   @Local status: string = 'fail'
-  UIContext = this.getUIContext()
-  context = this.UIContext.getHostContext() as common.UIAbilityContext
+  context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
   build() {
     Column() {
@@ -101,7 +101,9 @@ export default struct Resourcemoniter {
         const isLogin = await getLoginStatus()
         if ((cardSettingDataPreferences.getSync('cards', []) as string[]).includes('resourcemoniter') &&
           this.status !== 'fail' && isLogin) {
-          const res = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Core.System.Utilization', '&method=get')
+          const res = await dsmRequest(this.context, '', 'SYNO.Core.System.Utilization', new url.URLParams({
+            method: 'get'
+          }).toString())
           if (res !== 'fail') {
             this.resourcemoniter = res as ResourceMoniter
             this.status = 'success'

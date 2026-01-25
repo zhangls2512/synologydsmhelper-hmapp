@@ -1,5 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { LengthMetrics } from '@kit.ArkUI'
+import { HdsNavDestination } from '@kit.UIDesignKit'
 
 @Builder
 export function MoresettingBuilder() {
@@ -12,7 +13,7 @@ struct Moresetting {
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
   build() {
-    NavDestination() {
+    HdsNavDestination() {
       List() {
         ListItem() {
           Column() {
@@ -171,8 +172,16 @@ struct Moresetting {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('其他', {
-      paddingEnd: LengthMetrics.vp(60)
+    .titleBar({
+      padding: {
+        end: LengthMetrics.vp(60)
+      },
+      content: {
+        title: {
+          mainTitle: '其他'
+        }
+      },
+      enableComponentSafeArea: true
     })
   }
 }

@@ -1,5 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
+import { url } from '@kit.ArkTS'
 import { getLoginStatus } from '../common/Account'
 import { dsmRequest } from '../common/Request'
 
@@ -28,8 +29,7 @@ interface SystemInfo {
 export default struct Systeminfo {
   @Local systeminfo: SystemInfo | undefined = undefined
   @Local status: string = 'fail'
-  UIContext = this.getUIContext()
-  context = this.UIContext.getHostContext() as common.UIAbilityContext
+  context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
   build() {
     Column() {
@@ -135,7 +135,9 @@ export default struct Systeminfo {
         const isLogin = await getLoginStatus()
         if ((cardSettingDataPreferences.getSync('cards', []) as string[]).includes('systeminfo') &&
           this.status !== 'fail' && isLogin) {
-          const res = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Core.System', '&method=info')
+          const res = await dsmRequest(this.context, '', 'SYNO.Core.System', new url.URLParams({
+            method: 'info'
+          }).toString())
           if (res !== 'fail') {
             this.systeminfo = res as SystemInfo
             this.status = 'success'

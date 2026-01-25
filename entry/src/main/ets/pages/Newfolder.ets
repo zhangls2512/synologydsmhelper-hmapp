@@ -1,4 +1,5 @@
 import { common } from '@kit.AbilityKit'
+import { url } from '@kit.ArkTS'
 import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { dsmRequest } from '../common/Request'
 
@@ -7,8 +8,7 @@ export default struct Newfolder {
   @Consumer() isShowNewfolderSheet: boolean = false
   @Param editPath: string = ''
   @Local name: string = ''
-  UIContext = this.getUIContext()
-  context = this.UIContext.getHostContext() as common.UIAbilityContext
+  context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
   build() {
     List() {
@@ -37,9 +37,11 @@ export default struct Newfolder {
               })
             })
             dialogControllerProgress.open()
-            const res = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.CreateFolder',
-              '&method=create&folder_path=' + encodeURIComponent(this.editPath) + '&name=' +
-              encodeURIComponent(this.name))
+            const res = await dsmRequest(this.context, '', 'SYNO.FileStation.CreateFolder', new url.URLParams({
+              method: 'create',
+              folder_path: this.editPath,
+              name: JSON.stringify(this.name)
+            }).toString())
             dialogControllerProgress.close()
             if (res !== 'fail') {
               await promptAction.openToast({

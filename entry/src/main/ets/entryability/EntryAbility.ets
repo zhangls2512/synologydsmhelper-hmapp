@@ -21,7 +21,7 @@ import { connection } from '@kit.NetworkKit'
 import { notificationManager } from '@kit.NotificationKit'
 import { hiAppEvent } from '@kit.PerformanceAnalysisKit'
 import { harmonyShare, systemShare } from '@kit.ShareKit'
-import { getAccountList, getLoginStatus } from '../common/Account'
+import { getAccountList, getLoginStatus, loginBestPathAccount } from '../common/Account'
 import { write } from '../common/File'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import openLink from '../common/Openlink'
@@ -493,6 +493,7 @@ export default class EntryAbility extends UIAbility {
       applicationContext.setSupportedProcessCache(processCache)
     }
     await this.appInit(want)
+    await loginBestPathAccount(this.context)
   }
 
   async onNewWant(want: Want) {

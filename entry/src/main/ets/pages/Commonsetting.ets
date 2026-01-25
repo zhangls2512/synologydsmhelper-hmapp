@@ -5,6 +5,7 @@ import { deviceInfo } from '@kit.BasicServicesKit'
 import { fileIo } from '@kit.CoreFileKit'
 import { image } from '@kit.ImageKit'
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
+import { HdsNavDestination } from '@kit.UIDesignKit'
 import { checkPermission, getPermission } from '../common/Permission'
 
 @Builder
@@ -49,7 +50,7 @@ struct Commonsetting {
   })
 
   build() {
-    NavDestination() {
+    HdsNavDestination() {
       List() {
         ListItem() {
           Column() {
@@ -1059,8 +1060,16 @@ struct Commonsetting {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('通用', {
-      paddingEnd: LengthMetrics.vp(60)
+    .titleBar({
+      padding: {
+        end: LengthMetrics.vp(60)
+      },
+      content: {
+        title: {
+          mainTitle: '通用'
+        }
+      },
+      enableComponentSafeArea: true
     })
     .onReady(async (context) => {
       this.pageInfos = context.pathStack

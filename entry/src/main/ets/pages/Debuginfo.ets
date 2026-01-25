@@ -1,5 +1,6 @@
 import { LengthMetrics } from '@kit.ArkUI'
 import { deviceInfo } from '@kit.BasicServicesKit'
+import { HdsNavDestination } from '@kit.UIDesignKit'
 
 @Builder
 export function DebuginfoBuilder() {
@@ -9,7 +10,7 @@ export function DebuginfoBuilder() {
 @ComponentV2
 struct Debuginfo {
   build() {
-    NavDestination() {
+    HdsNavDestination() {
       List() {
         ListItem() {
           Column() {
@@ -109,8 +110,16 @@ struct Debuginfo {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('调试信息', {
-      paddingEnd: LengthMetrics.vp(60)
+    .titleBar({
+      padding: {
+        end: LengthMetrics.vp(60)
+      },
+      content: {
+        title: {
+          mainTitle: '调试信息'
+        }
+      },
+      enableComponentSafeArea: true
     })
   }
 }

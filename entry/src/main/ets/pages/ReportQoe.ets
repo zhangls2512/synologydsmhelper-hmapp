@@ -1,5 +1,6 @@
 import { LengthMetrics, promptAction } from '@kit.ArkUI'
 import { netQuality } from '@kit.NetworkBoostKit'
+import { HdsNavDestination } from '@kit.UIDesignKit'
 
 @Builder
 export function ReportQoeBuilder() {
@@ -13,7 +14,7 @@ struct ReportQoe {
   qoeType: netQuality.QoeType = 'good'
 
   build() {
-    NavDestination() {
+    HdsNavDestination() {
       List() {
         ListItem() {
           Column() {
@@ -222,8 +223,16 @@ struct ReportQoe {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('反馈网络传输体验', {
-      paddingEnd: LengthMetrics.vp(60)
+    .titleBar({
+      padding: {
+        end: LengthMetrics.vp(60)
+      },
+      content: {
+        title: {
+          mainTitle: '反馈网络传输体验'
+        }
+      },
+      enableComponentSafeArea: true
     })
     .onReady((context) => {
       this.pageInfos = context.pathStack

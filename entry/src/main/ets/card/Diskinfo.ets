@@ -1,5 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
+import { url } from '@kit.ArkTS'
 import { getLoginStatus } from '../common/Account'
 import { dsmRequest } from '../common/Request'
 import { getSizeString } from '../common/Stringformat'
@@ -24,8 +25,7 @@ interface DiskItem {
 export default struct Diskinfo {
   @Local diskinfo: DiskInfo | undefined = undefined
   @Local status: string = 'fail'
-  UIContext = this.getUIContext()
-  context = this.UIContext.getHostContext() as common.UIAbilityContext
+  context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
   build() {
     Column() {
@@ -100,8 +100,9 @@ export default struct Diskinfo {
         const isLogin = await getLoginStatus()
         if ((cardSettingDataPreferences.getSync('cards', []) as string[]).includes('diskinfo') &&
           this.status !== 'fail' && isLogin) {
-          const res =
-            await dsmRequest(this.context, this.UIContext, '', 'SYNO.Storage.CGI.Storage', '&method=load_info')
+          const res = await dsmRequest(this.context, '', 'SYNO.Storage.CGI.Storage', new url.URLParams({
+            method: 'load_info'
+          }).toString())
           if (res !== 'fail') {
             this.diskinfo = res as DiskInfo
             this.status = 'success'

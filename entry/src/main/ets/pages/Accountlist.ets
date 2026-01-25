@@ -239,11 +239,13 @@ export default struct Accountlist {
                   this.isShowAccountlistSheet = false
                   return
                 }
-                await setAccount(this.context, this.UIContext, {
+                await setAccount(this.context, {
                   path: item.path,
                   name: item.name,
                   password: item.password,
-                  sid: item.sid
+                  sid: item.sid,
+                  bz: item.bz,
+                  isLogin: 'true'
                 })
                 await promptAction.openToast({
                   message: '登录成功'
