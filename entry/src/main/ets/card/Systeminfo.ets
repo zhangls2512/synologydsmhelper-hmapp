@@ -31,6 +31,27 @@ export default struct Systeminfo {
   @Local status: string = 'fail'
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
+  async refresh() {
+    const cardSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+      name: 'cardSetting'
+    })
+    const isLogin = await getLoginStatus()
+    if ((cardSettingDataPreferences.getSync('cards', []) as string[]).includes('systeminfo') &&
+      this.status !== 'fail' && isLogin) {
+      const res = await dsmRequest(this.context, '', 'SYNO.Core.System', new url.URLParams({
+        method: 'info'
+      }).toString())
+      if (res !== 'fail') {
+        this.systeminfo = res as SystemInfo
+        this.status = 'success'
+      }
+      if (res === 'fail') {
+        this.systeminfo = undefined
+        this.status = 'fail'
+      }
+    }
+  }
+
   build() {
     Column() {
       if (this.status === 'pending' && !this.systeminfo) {
@@ -123,31 +144,15 @@ export default struct Systeminfo {
     .borderRadius(12)
     .padding(12)
     .width('100%')
-    .onAppear(() => {
+    .onAppear(async () => {
       this.context.eventHub.on('refreshCard', () => {
         this.status = 'pending'
       })
       this.status = 'pending'
       setInterval(async () => {
-        const cardSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-          name: 'cardSetting'
-        })
-        const isLogin = await getLoginStatus()
-        if ((cardSettingDataPreferences.getSync('cards', []) as string[]).includes('systeminfo') &&
-          this.status !== 'fail' && isLogin) {
-          const res = await dsmRequest(this.context, '', 'SYNO.Core.System', new url.URLParams({
-            method: 'info'
-          }).toString())
-          if (res !== 'fail') {
-            this.systeminfo = res as SystemInfo
-            this.status = 'success'
-          }
-          if (res === 'fail') {
-            this.systeminfo = undefined
-            this.status = 'fail'
-          }
-        }
+        await this.refresh()
       }, 5000)
+      await this.refresh()
     })
     .onDisAppear(() => {
       this.context.eventHub.off('refreshCard')

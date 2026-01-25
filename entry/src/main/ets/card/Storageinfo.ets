@@ -28,6 +28,27 @@ export default struct Storageinfo {
   @Local status: string = 'fail'
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
+  async refresh() {
+    const cardSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+      name: 'cardSetting'
+    })
+    const isLogin = await getLoginStatus()
+    if ((cardSettingDataPreferences.getSync('cards', []) as string[]).includes('storageinfo') &&
+      this.status !== 'fail' && isLogin) {
+      const res = await dsmRequest(this.context, '', 'SYNO.Storage.CGI.Storage', new url.URLParams({
+        method: 'load_info'
+      }).toString())
+      if (res !== 'fail') {
+        this.storageinfo = res as StorageInfo
+        this.status = 'success'
+      }
+      if (res === 'fail') {
+        this.storageinfo = undefined
+        this.status = 'fail'
+      }
+    }
+  }
+
   build() {
     Column() {
       if (this.status === 'pending' && !this.storageinfo) {
@@ -82,31 +103,15 @@ export default struct Storageinfo {
     .borderRadius(12)
     .padding(12)
     .width('100%')
-    .onAppear(() => {
+    .onAppear(async () => {
       this.context.eventHub.on('refreshCard', () => {
         this.status = 'pending'
       })
       this.status = 'pending'
       setInterval(async () => {
-        const cardSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-          name: 'cardSetting'
-        })
-        const isLogin = await getLoginStatus()
-        if ((cardSettingDataPreferences.getSync('cards', []) as string[]).includes('storageinfo') &&
-          this.status !== 'fail' && isLogin) {
-          const res = await dsmRequest(this.context, '', 'SYNO.Storage.CGI.Storage', new url.URLParams({
-            method: 'load_info'
-          }).toString())
-          if (res !== 'fail') {
-            this.storageinfo = res as StorageInfo
-            this.status = 'success'
-          }
-          if (res === 'fail') {
-            this.storageinfo = undefined
-            this.status = 'fail'
-          }
-        }
+        await this.refresh()
       }, 5000)
+      await this.refresh()
     })
     .onDisAppear(() => {
       this.context.eventHub.off('refreshCard')

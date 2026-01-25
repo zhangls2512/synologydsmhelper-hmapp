@@ -32,6 +32,10 @@ export default struct Cardeditsetting {
     {
       name: '资源监控',
       value: 'resourcemoniter'
+    },
+    {
+      name: 'Docker容器',
+      value: 'dockercontainer'
     }
   ]
 

@@ -9,6 +9,7 @@ import { dsmRequest } from '../common/Request'
 import Cardedit from './Cardedit'
 import Noticelist from './Noticelist'
 import Diskinfo from '../card/Diskinfo'
+import Dockercontainer from '../card/Dockercontainer'
 import Networkinfo from '../card/Networkinfo'
 import Resourcemoniter from '../card/Resourcemoniter'
 import Storageinfo from '../card/Storageinfo'
@@ -215,6 +216,14 @@ export default struct Cardlist {
               if (item === 'resourcemoniter') {
                 ListItem() {
                   Resourcemoniter()
+                }
+                .margin({
+                  top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                })
+              }
+              if (item === 'dockercontainer') {
+                ListItem() {
+                  Dockercontainer()
                 }
                 .margin({
                   top: $r('sys.float.ohos_id_elements_margin_vertical_m')

@@ -384,7 +384,7 @@ export async function dsmRequest(context: Context, path: string, api: string, pa
             bz: accountInfo.bz,
             isLogin: 'true'
           })
-          return await dsmRequest(context, path, api, params, version)
+          return await dsmRequest(context, path, api, params, version, dsm6Login, hide102ErrorCode)
         }
         netBoost.setSceneDesc({
           scene: 'login',
@@ -394,7 +394,7 @@ export async function dsmRequest(context: Context, path: string, api: string, pa
           method: 'login',
           account: accountInfo.name,
           passwd: accountInfo.password
-        }).toString(), undefined, true)
+        }).toString(), undefined, true, hide102ErrorCode)
         netBoost.setSceneDesc({
           scene: 'login',
           sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
@@ -409,7 +409,7 @@ export async function dsmRequest(context: Context, path: string, api: string, pa
             bz: accountInfo.bz,
             isLogin: 'true'
           })
-          return await dsmRequest(context, path, api, params, version)
+          return await dsmRequest(context, path, api, params, version, dsm6Login, hide102ErrorCode)
         }
         await promptAction.openToast({
           message: '登录态失效，请重新登录'
@@ -417,7 +417,7 @@ export async function dsmRequest(context: Context, path: string, api: string, pa
         return 'fail'
       }
       if (res.error.code === 150) {
-        return await dsmRequest(context, path, api, params, version)
+        return await dsmRequest(context, path, api, params, version, dsm6Login, hide102ErrorCode)
       }
       await promptAction.openToast({
         message: 'DSM 接口调用失败，错误码：' + res.error.code
