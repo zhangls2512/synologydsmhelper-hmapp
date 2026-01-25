@@ -14,6 +14,10 @@ export default struct Cardeditsetting {
   })
   cardArray: CardItem[] = [
     {
+      name: '资源监控',
+      value: 'resourcemoniter'
+    },
+    {
       name: '系统信息',
       value: 'systeminfo'
     },
@@ -30,8 +34,8 @@ export default struct Cardeditsetting {
       value: 'networkinfo'
     },
     {
-      name: '资源监控',
-      value: 'resourcemoniter'
+      name: '套件',
+      value: 'package'
     },
     {
       name: 'Docker容器',

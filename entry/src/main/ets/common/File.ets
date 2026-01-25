@@ -45,7 +45,7 @@ export async function write(path: string, content: string) {
     if (!fileIo.accessSync(dir)) {
       await fileIo.mkdir(dir, true)
     }
-    const file = fileIo.openSync(path, fileIo.OpenMode.CREATE | fileIo.OpenMode.WRITE_ONLY)
+    const file = fileIo.openSync(path, fileIo.OpenMode.CREATE | fileIo.OpenMode.WRITE_ONLY | fileIo.OpenMode.TRUNC)
     await fileIo.write(file.fd, content)
     fileIo.closeSync(file)
   } catch (err) {
@@ -57,7 +57,7 @@ export async function write(path: string, content: string) {
 
 export async function writeUri(uri: string, content: string) {
   try {
-    const file = fileIo.openSync(uri, fileIo.OpenMode.WRITE_ONLY)
+    const file = fileIo.openSync(uri, fileIo.OpenMode.WRITE_ONLY | fileIo.OpenMode.TRUNC)
     await fileIo.write(file.fd, content)
     fileIo.closeSync(file)
   } catch (err) {

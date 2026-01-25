@@ -11,6 +11,7 @@ import Noticelist from './Noticelist'
 import Diskinfo from '../card/Diskinfo'
 import Dockercontainer from '../card/Dockercontainer'
 import Networkinfo from '../card/Networkinfo'
+import Package from '../card/Package'
 import Resourcemoniter from '../card/Resourcemoniter'
 import Storageinfo from '../card/Storageinfo'
 import Systeminfo from '../card/Systeminfo'
@@ -181,6 +182,14 @@ export default struct Cardlist {
               .width('100%')
             }
             ForEach(this.cards, (item: string) => {
+              if (item === 'resourcemoniter') {
+                ListItem() {
+                  Resourcemoniter()
+                }
+                .margin({
+                  top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                })
+              }
               if (item === 'systeminfo') {
                 ListItem() {
                   Systeminfo()
@@ -213,9 +222,9 @@ export default struct Cardlist {
                   top: $r('sys.float.ohos_id_elements_margin_vertical_m')
                 })
               }
-              if (item === 'resourcemoniter') {
+              if (item === 'package') {
                 ListItem() {
-                  Resourcemoniter()
+                  Package()
                 }
                 .margin({
                   top: $r('sys.float.ohos_id_elements_margin_vertical_m')

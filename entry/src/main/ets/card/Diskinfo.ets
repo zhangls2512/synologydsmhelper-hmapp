@@ -32,8 +32,8 @@ export default struct Diskinfo {
       name: 'cardSetting'
     })
     const isLogin = await getLoginStatus()
-    if ((cardSettingDataPreferences.getSync('cards', []) as string[]).includes('diskinfo') &&
-      this.status !== 'fail' && isLogin) {
+    if ((cardSettingDataPreferences.getSync('cards', []) as string[]).includes('diskinfo') && this.status !== 'fail' &&
+      isLogin) {
       const res = await dsmRequest(this.context, '', 'SYNO.Storage.CGI.Storage', new url.URLParams({
         method: 'load_info'
       }).toString())
