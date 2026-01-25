@@ -85,9 +85,9 @@ export default struct Filelist {
   debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'debugSetting'
   })
-  searchDialogControllerProgress = new CustomDialogController({
+  deleteDialogControllerProgress = new CustomDialogController({
     builder: LoadingDialog({
-      content: '搜索中...'
+      content: '删除中...'
     })
   })
   prepareDownloadDialogControllerProgress = new CustomDialogController({
@@ -95,9 +95,9 @@ export default struct Filelist {
       content: '下载准备中...'
     })
   })
-  deleteDialogControllerProgress = new CustomDialogController({
+  searchDialogControllerProgress = new CustomDialogController({
     builder: LoadingDialog({
-      content: '删除中...'
+      content: '搜索中...'
     })
   })
 
@@ -536,6 +536,49 @@ export default struct Filelist {
                 })
               }
             })
+          if (item.name.endsWith('.zip')) {
+            MenuItem({
+              startIcon: $r('app.media.compress'),
+              content: '解压缩'
+            })
+              .onClick(async () => {
+                const extractDialogControllerProgress = new CustomDialogController({
+                  builder: LoadingDialog({
+                    content: '解压缩中...'
+                  })
+                })
+                extractDialogControllerProgress.open()
+                const startres = await dsmRequest(this.context, '', 'SYNO.FileStation.Extract', new url.URLParams({
+                  method: 'start',
+                  file_path: item.path,
+                  dest_folder_path: this.getPath() + '/' + item.name.slice(0, -4),
+                  create_subfolder: 'true'
+                }).toString())
+                if (startres !== 'fail') {
+                  const taskId = startres['taskid'] as string
+                  let finished = false
+                  while (!finished) {
+                    const statusres = await dsmRequest(this.context, '', 'SYNO.FileStation.Extract', new url.URLParams({
+                      method: 'status',
+                      taskid: taskId
+                    }).toString())
+                    if (statusres !== 'fail') {
+                      if (statusres['finished']) {
+                        finished = true
+                        await promptAction.openToast({
+                          message: '解压缩成功'
+                        })
+                        this.loading = true
+                      }
+                    }
+                    if (statusres === 'fail') {
+                      finished = true
+                    }
+                  }
+                }
+                extractDialogControllerProgress.close()
+              })
+          }
         }
         MenuItem({
           startIcon: $r('app.media.share'),
@@ -1322,6 +1365,70 @@ export default struct Filelist {
               }
               if (this.multipleSelect) {
                 Blank()
+                Column() {
+                  Image($r('app.media.compress'))
+                }
+                .borderRadius(20)
+                .height(40)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+                .padding(11)
+                .stateStyles({
+                  normal: {
+                    .backgroundColor($r('sys.color.interactive_hover'))
+                  },
+                  pressed: {
+                    .backgroundColor($r('sys.color.interactive_pressed'))
+                  }
+                })
+                .visualEffect(new hdsEffect.HdsEffectBuilder()
+                  .pointLight({
+                    sourceType: hdsEffect.PointLightSourceType.SOFT,
+                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                  })
+                  .buildEffect())
+                .width(40)
+                .onClick(async () => {
+                  const compressDialogControllerProgress = new CustomDialogController({
+                    builder: LoadingDialog({
+                      content: '压缩中...'
+                    })
+                  })
+                  compressDialogControllerProgress.open()
+                  const startres = await dsmRequest(this.context, '', 'SYNO.FileStation.Compress', new url.URLParams({
+                    method: 'start',
+                    path: JSON.stringify(this.multipleSelectArray.map(item => item.path)),
+                    dest_file_path: this.getPath() + '/' + this.dirnames[this.dirnames.length-1] + '.zip'
+                  }).toString())
+                  this.multipleSelect = false
+                  this.multipleSelectArray = []
+                  if (startres !== 'fail') {
+                    const taskId = startres['taskid'] as string
+                    let finished = false
+                    while (!finished) {
+                      const statusres =
+                        await dsmRequest(this.context, '', 'SYNO.FileStation.status', new url.URLParams({
+                          method: 'status',
+                          taskid: taskId
+                        }).toString())
+                      if (statusres !== 'fail') {
+                        if (statusres['finished']) {
+                          finished = true
+                          await promptAction.openToast({
+                            message: '压缩成功'
+                          })
+                          this.loading = true
+                        }
+                      }
+                      if (statusres === 'fail') {
+                        finished = true
+                      }
+                    }
+                  }
+                  compressDialogControllerProgress.close()
+                })
+
                 if (!this.fileArray.every(item => this.multipleSelectArray.find(selectItem => selectItem.path ===
                 item.path))) {
                   Column() {
