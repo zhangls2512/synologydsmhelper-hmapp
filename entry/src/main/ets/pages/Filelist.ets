@@ -1399,7 +1399,7 @@ export default struct Filelist {
                   const startres = await dsmRequest(this.context, '', 'SYNO.FileStation.Compress', new url.URLParams({
                     method: 'start',
                     path: JSON.stringify(this.multipleSelectArray.map(item => item.path)),
-                    dest_file_path: this.getPath() + '/' + this.dirnames[this.dirnames.length-1] + '.zip'
+                    dest_file_path: this.getPath() + '/' + this.dirnames[this.dirnames.length - 1] + '.zip'
                   }).toString())
                   this.multipleSelect = false
                   this.multipleSelectArray = []
