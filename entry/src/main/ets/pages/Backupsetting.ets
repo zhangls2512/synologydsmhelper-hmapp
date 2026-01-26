@@ -1,6 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
-import { LengthMetrics, promptAction, } from '@kit.ArkUI'
+import { LengthMetrics, promptAction } from '@kit.ArkUI'
 import { HdsNavDestination } from '@kit.UIDesignKit'
 import { deviceInfo } from '@kit.BasicServicesKit'
 
@@ -23,7 +23,7 @@ struct Backupsetting {
   })
   typeArray: string[] = ['相册', '文档', '桌面']
 
-  async getSetting() {
+  getSetting() {
     this.autoTypes = this.backupSettingDataPreferences.getSync('autoTypes', []) as string[]
     this.pauseAutoWhenLowBatteryCapacityLevel =
       this.backupSettingDataPreferences.getSync('pauseAutoWhenLowBatteryCapacityLevel', true) as boolean
@@ -250,8 +250,8 @@ struct Backupsetting {
       },
       enableComponentSafeArea: true
     })
-    .onAppear(async () => {
-      await this.getSetting()
+    .onAppear(() => {
+      this.getSetting()
     })
   }
 }
