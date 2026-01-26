@@ -13,6 +13,7 @@ export default struct Cleardata {
   @Local setting: string[] = []
   @Local allSetting: boolean = false
   @Local cardSetting: boolean = false
+  @Local backupSetting: boolean = false
   @Local commonSetting: boolean = false
   @Local permissionSetting: boolean = false
   @Local debugSetting: boolean = false
@@ -119,6 +120,29 @@ export default struct Cleardata {
                 group: 'setting'
               })
                 .select(this.cardSetting!!)
+                .shape(CheckBoxShape.ROUNDED_SQUARE)
+            }
+            .borderRadius(12)
+            .padding(12)
+            .width('100%')
+
+            Divider()
+              .padding({
+                left: 12,
+                right: 12
+              })
+            Row() {
+              Text('备份')
+                .fontWeight(FontWeight.Medium)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+              Checkbox({
+                name: 'backupSetting',
+                group: 'setting'
+              })
+                .select(this.backupSetting!!)
                 .shape(CheckBoxShape.ROUNDED_SQUARE)
             }
             .borderRadius(12)
@@ -713,13 +737,6 @@ export default struct Cleardata {
                 const commonKeys = ['disallowScreenshot', 'cellularDataDownloadRemind']
                 commonKeys.forEach(item => {
                   commonSettingDataPreferences.deleteSync(item)
-                })
-                const debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-                  name: 'debugSetting'
-                })
-                const debugKeys = ['lowBatteryCapacityLevel']
-                debugKeys.forEach(item => {
-                  debugSettingDataPreferences.deleteSync(item)
                 })
               }
             })

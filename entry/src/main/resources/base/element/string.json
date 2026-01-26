@@ -9,6 +9,18 @@
       "value": "用于设备间同步账号数据。"
     },
     {
+      "name": "READ_IMAGEVIDEO_reason",
+      "value": "用于批量备份图片、视频。"
+    },
+    {
+      "name": "READ_WRITE_DESKTOP_DIRECTORY_reason",
+      "value": "用于批量备份桌面文件。"
+    },
+    {
+      "name": "READ_WRITE_DOCUMENTS_DIRECTORY_reason",
+      "value": "用于批量备份文档。"
+    },
+    {
       "name": "READ_WRITE_DOWNLOAD_DIRECTORY_reason",
       "value": "用于批量下载文件到公共下载目录。"
     },

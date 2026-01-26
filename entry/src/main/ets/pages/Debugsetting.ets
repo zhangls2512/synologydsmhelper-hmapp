@@ -2,7 +2,7 @@ import { appRecovery, common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { LengthMetrics, promptAction } from '@kit.ArkUI'
 import { webview } from '@kit.ArkWeb'
-import { deviceInfo } from '@kit.BasicServicesKit'
+import { batteryInfo, deviceInfo } from '@kit.BasicServicesKit'
 import { HdsNavDestination } from '@kit.UIDesignKit'
 
 @Builder
@@ -19,6 +19,8 @@ struct Debugsetting {
   @Local autoUploadErrorLog: boolean = false
   @Local showMemoryLevelChange: boolean = false
   @Local processCache: boolean = false
+  @Local lowBatteryCapacityLevelIndex: number = 3
+  @Local lowBatteryCapacityLevelValue: string = '低'
   @Local showNetAvailableStatusChange: boolean = false
   @Local showNetBlockStatusChange: boolean = false
   @Local showNetLost: boolean = false
@@ -58,6 +60,30 @@ struct Debugsetting {
     this.autoUploadErrorLog = this.debugSettingDataPreferences.getSync('autoUploadErrorLog', true) as boolean
     this.showMemoryLevelChange = this.debugSettingDataPreferences.getSync('showMemoryLevelChange', false) as boolean
     this.processCache = this.debugSettingDataPreferences.getSync('processCache', true) as boolean
+    const lowBatteryCapacityLevel = this.debugSettingDataPreferences.getSync('lowBatteryCapacityLevel',
+      batteryInfo.BatteryCapacityLevel.LEVEL_LOW) as batteryInfo.BatteryCapacityLevel
+    this.lowBatteryCapacityLevelIndex = lowBatteryCapacityLevel - 1
+    if (lowBatteryCapacityLevel === 1) {
+      this.lowBatteryCapacityLevelValue = '满'
+    }
+    if (lowBatteryCapacityLevel === 2) {
+      this.lowBatteryCapacityLevelValue = '高'
+    }
+    if (lowBatteryCapacityLevel === 3) {
+      this.lowBatteryCapacityLevelValue = '正常'
+    }
+    if (lowBatteryCapacityLevel === 4) {
+      this.lowBatteryCapacityLevelValue = '低'
+    }
+    if (lowBatteryCapacityLevel === 5) {
+      this.lowBatteryCapacityLevelValue = '告警'
+    }
+    if (lowBatteryCapacityLevel === 6) {
+      this.lowBatteryCapacityLevelValue = '极低'
+    }
+    if (lowBatteryCapacityLevel === 7) {
+      this.lowBatteryCapacityLevelValue = '关机'
+    }
     this.autoReportHighLatency = this.debugSettingDataPreferences.getSync('autoReportHighLatency', true) as boolean
     this.showNetAvailableStatusChange =
       this.debugSettingDataPreferences.getSync('showNetAvailableStatusChange', false) as boolean
@@ -365,6 +391,37 @@ struct Debugsetting {
                 .padding(12)
                 .width('100%')
               }
+              Divider()
+                .padding({
+                  left: 12,
+                  right: 12
+                })
+              Row() {
+                Text('电池电量低阈值')
+                  .fontWeight(FontWeight.Medium)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                Select([
+                  { value: '满' },
+                  { value: '高' },
+                  { value: '正常' },
+                  { value: '低' },
+                  { value: '告警' },
+                  { value: '极低' },
+                  { value: '关机' }
+                ])
+                  .selected(this.lowBatteryCapacityLevelIndex!!)
+                  .value(this.lowBatteryCapacityLevelValue!!)
+                  .onSelect((index) => {
+                    this.debugSettingDataPreferences.putSync('lowBatteryCapacityLevel', index + 1)
+                    this.debugSettingDataPreferences.flushSync()
+                  })
+              }
+              .borderRadius(12)
+              .padding(12)
+              .width('100%')
             }
             .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
             .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))

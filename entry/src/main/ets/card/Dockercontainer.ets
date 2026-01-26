@@ -181,7 +181,8 @@ export default struct Dockercontainer {
                       const res = await dsmRequest(this.context, '', 'SYNO.Docker.Container', new url.URLParams({
                         method: 'delete',
                         name: item.name,
-                        force: 'false'
+                        force: 'false',
+                        preserve_profile: 'false'
                       }).toString())
                       this.dialogControllerProgress.close()
                       if (res !== 'fail') {
