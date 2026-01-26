@@ -75,7 +75,7 @@ struct Backupsetting {
                         }
                         this.backupSettingDataPreferences.putSync('autoTypes', autoTypes)
                         this.backupSettingDataPreferences.flushSync()
-                        await this.getSetting()
+                        this.getSetting()
                       })
                   }
                   .borderRadius(12)
