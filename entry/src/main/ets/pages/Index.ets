@@ -194,6 +194,7 @@ struct Index {
       }
       .barBackgroundBlurStyle(BlurStyle.Regular)
       .barPosition(this.preferType === 0 ? BarPosition.End : BarPosition.Start)
+      .barWidth(this.preferType === 0 ? '100%' : 56)
       .scrollable(false)
       .vertical(this.preferType === 0 ? false : true)
       .onChange((index) => {
