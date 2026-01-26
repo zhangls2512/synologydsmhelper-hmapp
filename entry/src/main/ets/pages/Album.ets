@@ -1,18 +1,21 @@
 import { common, wantAgent } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
-import { util } from '@kit.ArkTS'
-import { display, LoadingDialog, promptAction, SegmentButtonV2Items, TabSegmentButtonV2 } from '@kit.ArkUI'
+import { url, util } from '@kit.ArkTS'
+import { display, LoadingDialog, promptAction, SegmentButtonV2Items, TabSegmentButtonV2, window } from '@kit.ArkUI'
 import { backgroundTaskManager } from '@kit.BackgroundTasksKit'
+import { zlib } from '@kit.BasicServicesKit'
 import { fileIo, fileUri, picker } from '@kit.CoreFileKit'
-import { photoAccessHelper } from '@kit.MediaLibraryKit'
+import { image } from '@kit.ImageKit'
+import { MovingPhotoView, MovingPhotoViewController, photoAccessHelper } from '@kit.MediaLibraryKit'
 import { netBoost } from '@kit.NetworkBoostKit'
 import { notificationManager } from '@kit.NotificationKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { hdsEffect } from '@kit.UIDesignKit'
 import { getAccountInfo, getLoginStatus } from '../common/Account'
 import { getDnsServer } from '../common/Dnsserver'
+import { sha256hash } from '../common/Hash'
 import { getCurrentNetworkBearerType } from '../common/Network'
-import getPreferType from '../common/Prefertype'
+import { getPreferType } from '../common/Prefertype'
 import { dsmRequest, getDsmApiMaxVersion } from '../common/Request'
 import { getSizeString, getTimeString } from '../common/Stringformat'
 import Progress from './Progress'
@@ -35,7 +38,11 @@ interface PhotoItem {
   url: string,
   path: string,
   resolution: Resolution,
-  type: string
+  type: string,
+  thumbnailUri: string,
+  movingPhoto?: photoAccessHelper.MovingPhoto,
+  movingPhotoImageUri?: string,
+  movingPhotoVideoUri?: string
 }
 
 interface PhotoResItem {
@@ -93,11 +100,13 @@ export default struct Album {
   @Local previewAlbum: AlbumItem | undefined = undefined
   @Local isShowInfoSheet: boolean = false
   @Local hoverId: number = -1
+  @Local photoItemWidth: number = 0
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   account = ''
   folderMap = new Map<number, string>()
   photoFinished = true
+  controller: MovingPhotoViewController = new MovingPhotoViewController()
   backDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'back'
   })
@@ -124,6 +133,187 @@ export default struct Album {
       minIndex += this.timelineArray[i].count
     }
     return photoIndex >= minIndex && photoIndex < minIndex + this.timelineArray[dateIndex].count
+  }
+
+  async pushPhotoIntoPhotoArray(account: string, photoItem: PhotoItem, album: boolean) {
+    if (photoItem.type === 'photo') {
+      const inPhotoItem = photoItem
+      const dir = this.context.cacheDir + '/albumphotothumbnail/' + sha256hash(account)
+      let thumbnailPath = dir + '/' + sha256hash(inPhotoItem.path) + '.jpeg'
+      if (photoItem.filename.endsWith('.mv.png')) {
+        thumbnailPath = dir + '/' + sha256hash(inPhotoItem.path) + '.mp4'
+      }
+      const thumbnailPathExist = fileIo.accessSync(thumbnailPath)
+      if (!thumbnailPathExist) {
+        if (!fileIo.accessSync(dir)) {
+          await fileIo.mkdir(dir, true)
+        }
+        if (photoItem.filename.endsWith('.mv.png')) {
+          thumbnailPath = dir + '/' + sha256hash(inPhotoItem.path) + '.zip'
+        }
+        const file = fileIo.openSync(thumbnailPath, fileIo.OpenMode.CREATE | fileIo.OpenMode.WRITE_ONLY)
+        const fileStream = fileIo.fdopenStreamSync(file.fd, 'w+')
+        netBoost.setSceneDesc({
+          scene: 'download',
+          sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
+        })
+        const session = rcp.createSession({
+          requestConfiguration: {
+            tracing: {
+              httpEventsHandler: {
+                onDataReceive: async (incomingData) => {
+                  await fileStream.write(incomingData)
+                },
+                onDataEnd: async () => {
+                  session.close()
+                  netBoost.setSceneDesc({
+                    scene: 'download',
+                    sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                  })
+                  fileStream.closeSync()
+                  if (!photoItem.filename.endsWith('.mv.png')) {
+                    const imageSource = image.createImageSource(thumbnailPath)
+                    const pixelMap = await imageSource.createPixelMap()
+                    const imageInfo = pixelMap.getImageInfoSync()
+                    let times = 1
+                    if (imageInfo.size.width > 300 || imageInfo.size.height > 300) {
+                      times = 300 / Math.max(imageInfo.size.width, imageInfo.size.height)
+                    }
+                    pixelMap.scaleSync(times, times)
+                    const file = fileIo.openSync(thumbnailPath, fileIo.OpenMode.WRITE_ONLY)
+                    const imagePacker = image.createImagePacker()
+                    await imagePacker.packToFile(pixelMap, file.fd, {
+                      format: 'image/jpeg',
+                      quality: 50
+                    })
+                    await imagePacker.release()
+                    await pixelMap.release()
+                    await imageSource.release()
+                    fileIo.closeSync(file)
+                    inPhotoItem.thumbnailUri = fileUri.getUriFromPath(thumbnailPath)
+                    if (!album) {
+                      this.photoArray.push(inPhotoItem)
+                    }
+                    if (album) {
+                      this.albumPhotoArray.push(inPhotoItem)
+                    }
+                  }
+                  if (photoItem.filename.endsWith('.mv.png')) {
+                    await fileIo.mkdir(dir + '/' + sha256hash(inPhotoItem.path))
+                    await zlib.decompressFile(thumbnailPath,
+                      dir + '/' + sha256hash(inPhotoItem.path))
+                    await fileIo.unlink(thumbnailPath)
+                    const movingPhotoFiles =
+                      await fileIo.listFile(dir + '/' + sha256hash(inPhotoItem.path))
+                    const movingPhotoFilePaths =
+                      movingPhotoFiles.map(item => dir + '/' + sha256hash(inPhotoItem.path) + '/' +
+                        item)
+                    const promises = movingPhotoFilePaths.map(async (item) => {
+                      const houzhui = item.substring(item.lastIndexOf('.'))
+                      await fileIo.rename(item, dir + '/' + sha256hash(inPhotoItem.path) + '/' +
+                      sha256hash(inPhotoItem.path) + houzhui)
+                      await fileIo.moveFile(dir + '/' + sha256hash(inPhotoItem.path) + '/' +
+                      sha256hash(inPhotoItem.path) + houzhui,
+                        dir + '/' + sha256hash(inPhotoItem.path) + houzhui)
+                    })
+                    await Promise.all(promises)
+                    await fileIo.rmdir(dir + '/' + sha256hash(inPhotoItem.path))
+                    const imageUri =
+                      fileUri.getUriFromPath(dir + '/' + sha256hash(inPhotoItem.path) + '.heic')
+                    const videoUri =
+                      fileUri.getUriFromPath(dir + '/' + sha256hash(inPhotoItem.path) + '.mp4')
+                    inPhotoItem.type = 'movingphoto'
+                    inPhotoItem.movingPhotoImageUri = imageUri
+                    inPhotoItem.movingPhotoVideoUri = videoUri
+                    inPhotoItem.movingPhoto =
+                      await photoAccessHelper.MediaAssetManager.loadMovingPhoto(this.context, imageUri, videoUri)
+                    if (!album) {
+                      this.photoArray.push(inPhotoItem)
+                    }
+                    if (album) {
+                      this.albumPhotoArray.push(inPhotoItem)
+                    }
+                  }
+                }
+              }
+            },
+            dns: {
+              dnsRules: getDnsServer(this.context)
+            },
+            security: {
+              remoteValidation: this.debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
+                'system') as 'system' | 'skip'
+            }
+          },
+          headers: {
+            referer: account.split('\0')[0]
+          }
+        })
+        try {
+          const response = await session.get(inPhotoItem.url)
+          session.close()
+          netBoost.setSceneDesc({
+            scene: 'download',
+            sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+          })
+          if (response.statusCode !== 200) {
+            session.close()
+            netBoost.setSceneDesc({
+              scene: 'download',
+              sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+            })
+            fileStream.closeSync()
+            await promptAction.openToast({
+              message: 'HTTP 请求失败，状态码：' + response.statusCode
+            })
+          }
+        } catch (err) {
+          session.close()
+          netBoost.setSceneDesc({
+            scene: 'download',
+            sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+          })
+          fileStream.closeSync()
+          await promptAction.openToast({
+            message: '下载失败，错误码：' + err.code
+          })
+        }
+      }
+      if (thumbnailPathExist) {
+        if (!photoItem.filename.endsWith('.mv.png')) {
+          inPhotoItem.thumbnailUri = fileUri.getUriFromPath(thumbnailPath)
+          if (!album) {
+            this.photoArray.push(inPhotoItem)
+          }
+          if (album) {
+            this.albumPhotoArray.push(inPhotoItem)
+          }
+        }
+        if (photoItem.filename.endsWith('.mv.png')) {
+          const imageUri = fileUri.getUriFromPath(dir + '/' + sha256hash(inPhotoItem.path) + '.heic')
+          const videoUri = fileUri.getUriFromPath(dir + '/' + sha256hash(inPhotoItem.path) + '.mp4')
+          inPhotoItem.type = 'movingphoto'
+          inPhotoItem.movingPhotoImageUri = imageUri
+          inPhotoItem.movingPhotoVideoUri = videoUri
+          inPhotoItem.movingPhoto =
+            await photoAccessHelper.MediaAssetManager.loadMovingPhoto(this.context, imageUri, videoUri)
+          if (!album) {
+            this.photoArray.push(inPhotoItem)
+          }
+          if (album) {
+            this.albumPhotoArray.push(inPhotoItem)
+          }
+        }
+      }
+    }
+    if (photoItem.type === 'video') {
+      if (!album) {
+        this.photoArray.push(photoItem)
+      }
+      if (album) {
+        this.albumPhotoArray.push(photoItem)
+      }
+    }
   }
 
   async get(refresh: number = 2, notRefreshWhenAccountSame = false) {
@@ -153,8 +343,11 @@ export default struct Album {
       if (refresh !== 0) {
         this.albumArray = []
         this.loadingDialogControllerProgress.open()
-        const albumres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Album',
-          '&method=list&offset=0&limit=5000')
+        const albumres = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.Album', new url.URLParams({
+          method: 'list',
+          offset: '0',
+          limit: '5000'
+        }).toString())
         this.loadingDialogControllerProgress.close()
         if (albumres !== 'fail') {
           this.albumArray = albumres['list']
@@ -167,8 +360,9 @@ export default struct Album {
         this.timelineArray = []
         this.photoArray = []
         this.loadingDialogControllerProgress.open()
-        const timelineres =
-          await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Timeline', '&method=get')
+        const timelineres = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.Timeline', new url.URLParams({
+          method: 'get'
+        }).toString())
         this.loadingDialogControllerProgress.close()
         if (timelineres !== 'fail') {
           const timelineSection = timelineres as TimelineResponse
@@ -186,8 +380,11 @@ export default struct Album {
             })
           })
           this.loadingDialogControllerProgress.open()
-          const keyres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.API.Auth.Key',
-            '&method=grant&allow_api=SYNO.FileStation.Download&allow_methods=["download"]')
+          const keyres = await dsmRequest(this.context, '', 'SYNO.API.Auth.Key', new url.URLParams({
+            method: 'grant',
+            allow_api: 'SYNO.FileStation.Download',
+            allow_methods: JSON.stringify(['download'])
+          }).toString())
           this.loadingDialogControllerProgress.close()
           if (keyres !== 'fail') {
             const tid = keyres['tid'] as string
@@ -218,22 +415,28 @@ export default struct Album {
               if (this.account !== account) {
                 return
               }
-              const photores = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Item',
-                '&method=list&offset=' + offset + '&limit=10&additional=["resolution"]')
+              const photores = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.Item', new url.URLParams({
+                method: 'list',
+                offset: String(offset),
+                limit: '5000',
+                additional: JSON.stringify(['resolution'])
+              }).toString())
               if (photores !== 'fail') {
                 const photos = photores['list'] as PhotoResItem[]
                 if (photos.length === 0) {
                   this.photoFinished = true
                   return
                 }
-                const photoArray: PhotoItem[] = []
-                const promises = photos.map(async (item) => {
+                for (let i = 0; i < photos.length; i++) {
+                  const item = photos[i]
                   if (this.account !== account) {
                     return
                   }
                   if (!this.folderMap.has(item.folder_id)) {
-                    const folderres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Folder',
-                      '&method=get&id=' + item.folder_id)
+                    const folderres = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.Folder', new url.URLParams({
+                      method: 'get',
+                      id: String(item.folder_id)
+                    }).toString())
                     if (folderres !== 'fail') {
                       if (this.account !== account) {
                         return
@@ -241,7 +444,7 @@ export default struct Album {
                       const folderPath = folderres['folder']['name'] as string
                       const path = '/home/Photos' + folderPath + '/'
                       this.folderMap.set(item.folder_id, path)
-                      photoArray.push({
+                      await this.pushPhotoIntoPhotoArray(account, {
                         id: item.id,
                         filename: item.filename,
                         filesize: item.filesize,
@@ -253,11 +456,12 @@ export default struct Album {
                           .map(byte => byte.toString(16).padStart(2, '0')).join(''),
                         path: path + item.filename,
                         resolution: item.additional.resolution,
-                        type: item.type
-                      })
+                        type: item.type,
+                        thumbnailUri: ''
+                      }, false)
                     }
                   } else {
-                    photoArray.push({
+                    await this.pushPhotoIntoPhotoArray(account, {
                       id: item.id,
                       filename: item.filename,
                       filesize: item.filesize,
@@ -270,27 +474,12 @@ export default struct Album {
                         .map(byte => byte.toString(16).padStart(2, '0')).join(''),
                       path: this.folderMap.get(item.folder_id) + item.filename,
                       resolution: item.additional.resolution,
-                      type: item.type
-                    })
+                      type: item.type,
+                      thumbnailUri: ''
+                    }, false)
                   }
-                })
-                await Promise.all(promises)
-                this.photoArray = this.photoArray.concat(photoArray)
-                if (this.photoArray.length >= 1000) {
-                  const promptAction = this.UIContext.getPromptAction()
-                  await promptAction.showDialog({
-                    title: '提示',
-                    message: '为避免应用因内存占用过多崩溃退出，目前仅支持加载最多 1000 张图片/视频。如需查看更多图片/视频，请耐心等待修复版本',
-                    buttons: [
-                      {
-                        text: '确定',
-                        color: $r('sys.color.font_emphasize')
-                      }
-                    ]
-                  })
-                  return
                 }
-                offset += 10
+                offset += 5000
               }
               if (photores === 'fail') {
                 this.photoFinished = true
@@ -305,8 +494,11 @@ export default struct Album {
   async getAlbumPhoto() {
     this.albumPhotoArray = []
     this.loadingDialogControllerProgress.open()
-    const res = await dsmRequest(this.context, this.UIContext, '', 'SYNO.API.Auth.Key',
-      '&method=grant&allow_api=SYNO.FileStation.Download&allow_methods=["download"]')
+    const res = await dsmRequest(this.context, '', 'SYNO.API.Auth.Key', new url.URLParams({
+      method: 'grant',
+      allow_api: 'SYNO.FileStation.Download',
+      allow_methods: JSON.stringify(['download'])
+    }).toString())
     this.loadingDialogControllerProgress.close()
     if (res !== 'fail') {
       const tid = res['tid'] as string
@@ -339,22 +531,29 @@ export default struct Album {
         if (this.account !== account) {
           return
         }
-        const photores = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Item',
-          '&method=list&offset=' + offset + '&limit=10&additional=["resolution"]&album_id=' + this.previewAlbum?.id)
+        const photores = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.Item', new url.URLParams({
+          method: 'list',
+          offset: String(offset),
+          limit: '5000',
+          additional: JSON.stringify(['resolution']),
+          album_id: String(this.previewAlbum?.id)
+        }).toString())
         if (photores !== 'fail') {
           const photos = photores['list'] as PhotoResItem[]
           if (photos.length === 0) {
             finished = true
             return
           }
-          const photoArray: PhotoItem[] = []
-          const promises = photos.map(async (item) => {
+          for (let i = 0; i < photos.length; i++) {
+            const item = photos[i]
             if (this.account !== account) {
               return
             }
             if (!this.folderMap.has(item.folder_id)) {
-              const folderres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Foto.Browse.Folder',
-                '&method=get&id=' + item.folder_id)
+              const folderres = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.Folder', new url.URLParams({
+                method: 'get',
+                id: String(item.folder_id)
+              }).toString())
               if (folderres !== 'fail') {
                 if (this.account !== account) {
                   return
@@ -362,54 +561,42 @@ export default struct Album {
                 const folderPath = folderres['folder']['name'] as string
                 const path = '/home/Photos' + folderPath + '/'
                 this.folderMap.set(item.folder_id, path)
-                photoArray.push({
+                await this.pushPhotoIntoPhotoArray(account, {
                   id: item.id,
                   filename: item.filename,
                   filesize: item.filesize,
                   time: item.time,
                   folder_id: item.folder_id,
-                  url: accountInfo.path + '/fbdownload/' + item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
+                  url: accountInfo.path + '/fbdownload/' +
+                  item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
                     '?tid=' + tid + '&mode=open&dlink=' + Array.from(textEncoder.encodeInto(path + item.filename))
                     .map(byte => byte.toString(16).padStart(2, '0')).join(''),
                   path: path + item.filename,
                   resolution: item.additional.resolution,
-                  type: item.type
-                })
+                  type: item.type,
+                  thumbnailUri: ''
+                }, true)
               }
             } else {
-              photoArray.push({
+              await this.pushPhotoIntoPhotoArray(account, {
                 id: item.id,
                 filename: item.filename,
                 filesize: item.filesize,
                 time: item.time,
                 folder_id: item.folder_id,
-                url: accountInfo.path + '/fbdownload/' + item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
+                url: accountInfo.path + '/fbdownload/' +
+                item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
                   '?tid=' + tid + '&mode=open&dlink=' +
                 Array.from(textEncoder.encodeInto(this.folderMap.get(item.folder_id) + item.filename))
                   .map(byte => byte.toString(16).padStart(2, '0')).join(''),
                 path: this.folderMap.get(item.folder_id) + item.filename,
                 resolution: item.additional.resolution,
-                type: item.type
-              })
+                type: item.type,
+                thumbnailUri: ''
+              }, true)
             }
-          })
-          await Promise.all(promises)
-          this.albumPhotoArray = this.albumPhotoArray.concat(photoArray)
-          if (this.albumPhotoArray.length >= 1000) {
-            const promptAction = this.UIContext.getPromptAction()
-            await promptAction.showDialog({
-              title: '提示',
-              message: '为避免应用因内存占用过多崩溃退出，目前仅支持加载最多 1000 张图片/视频。如需查看更多图片/视频，请耐心等待修复版本',
-              buttons: [
-                {
-                  text: '确定',
-                  color: $r('sys.color.font_emphasize')
-                }
-              ]
-            })
-            return
           }
-          offset += 10
+          offset += 5000
         }
         if (photores === 'fail') {
           finished = true
@@ -448,15 +635,16 @@ export default struct Album {
               top: $r('sys.float.ohos_id_text_margin_vertical')
             })
 
-            Text() {
-              Span('尺寸：')
-                .fontWeight(FontWeight.Medium)
-              Span(this.previewPhoto.resolution.width + 'x' + this.previewPhoto.resolution.height)
+            if (this.previewPhoto.type !== 'movingphoto') {
+              Text() {
+                Span('尺寸：')
+                  .fontWeight(FontWeight.Medium)
+                Span(this.previewPhoto.resolution.width + 'x' + this.previewPhoto.resolution.height)
+              }
+              .margin({
+                top: $r('sys.float.ohos_id_text_margin_vertical')
+              })
             }
-            .margin({
-              top: $r('sys.float.ohos_id_text_margin_vertical')
-            })
-
             Text() {
               Span('路径：')
                 .fontWeight(FontWeight.Medium)
@@ -495,97 +683,114 @@ export default struct Album {
         .onClick(() => {
           this.isShowInfoSheet = true
         })
-      MenuItem({
-        content: '下载'
-      })
-        .onClick(async () => {
-          if (item.type === 'photo') {
-            const dialogControllerProgress = new CustomDialogController({
-              builder: LoadingDialog({
-                content: '下载中...'
+      if (item.type !== 'movingphoto') {
+        MenuItem({
+          content: '下载'
+        })
+          .onClick(async () => {
+            if (item.type === 'photo') {
+              const dialogControllerProgress = new CustomDialogController({
+                builder: LoadingDialog({
+                  content: '下载中...'
+                })
               })
-            })
-            dialogControllerProgress.open()
-            const version = await getDsmApiMaxVersion(this.context, '', 'SYNO.FileStation.Download')
-            if (version !== 'fail') {
-              const dir = this.context.tempDir + '/downloadphoto'
-              if (!fileIo.accessSync(dir)) {
-                await fileIo.mkdir(dir, true)
-              }
-              const path = dir + '/' + item.filename
-              const file = fileIo.openSync(path, fileIo.OpenMode.CREATE | fileIo.OpenMode.WRITE_ONLY)
-              const fileStream = fileIo.fdopenStreamSync(file.fd, 'w+')
-              netBoost.setSceneDesc({
-                scene: 'download',
-                sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
-              })
-              const accountInfo = await getAccountInfo()
-              const session = rcp.createSession({
-                requestConfiguration: {
-                  tracing: {
-                    httpEventsHandler: {
-                      onDataReceive: async (incomingData) => {
-                        await fileStream.write(incomingData)
-                      },
-                      onDataEnd: async () => {
-                        session.close()
-                        netBoost.setSceneDesc({
-                          scene: 'download',
-                          sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-                        })
-                        fileStream.closeSync()
-                        const uri = fileUri.getUriFromPath(path)
-                        let houzhui = ''
-                        const lastDotIndex = item.filename.lastIndexOf('.')
-                        if (lastDotIndex !== -1) {
-                          houzhui = item.filename.slice(lastDotIndex + 1)
-                        }
-                        const phAccessHelper = photoAccessHelper.getPhotoAccessHelper(this.context)
-                        const uris = await phAccessHelper.showAssetsCreationDialog([uri], [{
-                          fileNameExtension: houzhui,
-                          photoType: photoAccessHelper.PhotoType.IMAGE
-                        }])
-                        if (uris.length === 1) {
-                          const srcFile = fileIo.openSync(uri)
-                          const destFile = fileIo.openSync(uris[0], fileIo.OpenMode.WRITE_ONLY)
-                          await fileIo.copyFile(srcFile.fd, destFile.fd)
-                          fileIo.closeSync(srcFile)
-                          fileIo.closeSync(destFile)
-                          await fileIo.unlink(path)
-                          await promptAction.openToast({
-                            message: '保存成功'
-                          })
-                        }
-                      }
-                    }
-                  },
-                  dns: {
-                    dnsRules: getDnsServer(this.context)
-                  },
-                  security: {
-                    remoteValidation: this.debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
-                      'system') as 'system' | 'skip'
-                  }
-                },
-                headers: {
-                  'accept-language': 'zh-CN',
-                  referer: accountInfo.path
-                },
-                cookies: {
-                  id: accountInfo.sid
+              dialogControllerProgress.open()
+              const version = await getDsmApiMaxVersion(this.context, '', 'SYNO.FileStation.Download')
+              if (version !== 'fail') {
+                const dir = this.context.tempDir + '/downloadphoto'
+                if (!fileIo.accessSync(dir)) {
+                  await fileIo.mkdir(dir, true)
                 }
-              })
-              try {
-                const response =
-                  await session.get(accountInfo.path + '/webapi/entry.cgi?api=SYNO.FileStation.Download&version=' +
-                    version + '&method=download&mode=download&path=' + encodeURIComponent(item.path))
-                dialogControllerProgress.close()
-                session.close()
+                const path = dir + '/' + item.filename
+                const file = fileIo.openSync(path, fileIo.OpenMode.CREATE | fileIo.OpenMode.WRITE_ONLY)
+                const fileStream = fileIo.fdopenStreamSync(file.fd, 'w+')
                 netBoost.setSceneDesc({
                   scene: 'download',
-                  sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                  sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
                 })
-                if (response.statusCode !== 200) {
+                const accountInfo = await getAccountInfo()
+                const session = rcp.createSession({
+                  requestConfiguration: {
+                    tracing: {
+                      httpEventsHandler: {
+                        onDataReceive: async (incomingData) => {
+                          await fileStream.write(incomingData)
+                        },
+                        onDataEnd: async () => {
+                          session.close()
+                          netBoost.setSceneDesc({
+                            scene: 'download',
+                            sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                          })
+                          fileStream.closeSync()
+                          const uri = fileUri.getUriFromPath(path)
+                          let houzhui = ''
+                          const lastDotIndex = item.filename.lastIndexOf('.')
+                          if (lastDotIndex !== -1) {
+                            houzhui = item.filename.slice(lastDotIndex + 1)
+                          }
+                          const phAccessHelper = photoAccessHelper.getPhotoAccessHelper(this.context)
+                          const uris = await phAccessHelper.showAssetsCreationDialog([uri], [{
+                            fileNameExtension: houzhui,
+                            photoType: photoAccessHelper.PhotoType.IMAGE
+                          }])
+                          if (uris.length === 1) {
+                            const srcFile = fileIo.openSync(uri)
+                            const destFile = fileIo.openSync(uris[0], fileIo.OpenMode.WRITE_ONLY)
+                            await fileIo.copyFile(srcFile.fd, destFile.fd)
+                            fileIo.closeSync(srcFile)
+                            fileIo.closeSync(destFile)
+                            await fileIo.unlink(path)
+                            await promptAction.openToast({
+                              message: '保存成功'
+                            })
+                          }
+                        }
+                      }
+                    },
+                    dns: {
+                      dnsRules: getDnsServer(this.context)
+                    },
+                    security: {
+                      remoteValidation: this.debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
+                        'system') as 'system' | 'skip'
+                    }
+                  },
+                  headers: {
+                    'accept-language': 'zh-CN',
+                    referer: accountInfo.path
+                  },
+                  cookies: {
+                    id: accountInfo.sid
+                  }
+                })
+                try {
+                  const response = await session.get(accountInfo.path + '/webapi/entry.cgi?' + new url.URLParams({
+                    api: 'SYNO.FileStation.Download',
+                    version: String(version),
+                    method: 'download',
+                    path: item.path,
+                    mode: 'download'
+                  }).toString())
+                  dialogControllerProgress.close()
+                  session.close()
+                  netBoost.setSceneDesc({
+                    scene: 'download',
+                    sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                  })
+                  if (response.statusCode !== 200) {
+                    session.close()
+                    netBoost.setSceneDesc({
+                      scene: 'download',
+                      sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                    })
+                    fileStream.closeSync()
+                    await promptAction.openToast({
+                      message: 'HTTP 请求失败，状态码：' + response.statusCode
+                    })
+                  }
+                } catch (err) {
+                  dialogControllerProgress.close()
                   session.close()
                   netBoost.setSceneDesc({
                     scene: 'download',
@@ -593,251 +798,244 @@ export default struct Album {
                   })
                   fileStream.closeSync()
                   await promptAction.openToast({
-                    message: 'HTTP 请求失败，状态码：' + response.statusCode
+                    message: '下载失败，错误码：' + err.code
                   })
                 }
-              } catch (err) {
-                dialogControllerProgress.close()
-                session.close()
-                netBoost.setSceneDesc({
-                  scene: 'download',
-                  sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-                })
-                fileStream.closeSync()
-                await promptAction.openToast({
-                  message: '下载失败，错误码：' + err.code
-                })
+                return
               }
-              return
+              dialogControllerProgress.close()
             }
-            dialogControllerProgress.close()
-          }
-          if (item.type === 'video') {
-            if (getCurrentNetworkBearerType() === 0) {
-              const cellularDataUseRemind = this.commonSettingDataPreferences.getSync('cellularDataUseRemind', 0)
-              if (cellularDataUseRemind === 0 ||
-                (cellularDataUseRemind === 1 && item.filesize > 200 * Math.pow(1024, 2))) {
-                const promptAction = this.UIContext.getPromptAction()
-                const data = await promptAction.showDialog({
-                  title: '流量使用提醒',
-                  message: '当前正在使用流量上网，下载此视频将消耗约 ' + getSizeString(item.filesize) +
-                    ' 流量，确定下载？',
-                  buttons: [
-                    {
-                      text: '取消',
-                      color: $r('sys.color.font_primary')
-                    },
-                    {
-                      text: '确定',
-                      color: $r('sys.color.font_emphasize')
-                    }
-                  ]
-                })
-                if (data.index === 0) {
-                  return
+            if (item.type === 'video') {
+              if (getCurrentNetworkBearerType() === 0) {
+                const cellularDataUseRemind = this.commonSettingDataPreferences.getSync('cellularDataUseRemind', 0)
+                if (cellularDataUseRemind === 0 ||
+                  (cellularDataUseRemind === 1 && item.filesize > 200 * Math.pow(1024, 2))) {
+                  const promptAction = this.UIContext.getPromptAction()
+                  const data = await promptAction.showDialog({
+                    title: '流量使用提醒',
+                    message: '当前正在使用流量上网，下载此视频将消耗约 ' + getSizeString(item.filesize) +
+                      ' 流量，确定下载？',
+                    buttons: [
+                      {
+                        text: '取消',
+                        color: $r('sys.color.font_primary')
+                      },
+                      {
+                        text: '确定',
+                        color: $r('sys.color.font_emphasize')
+                      }
+                    ]
+                  })
+                  if (data.index === 0) {
+                    return
+                  }
                 }
               }
-            }
-            try {
-              const documentSaveOptions = new picker.DocumentSaveOptions()
-              const selectFileDownloadPath =
-                this.commonSettingDataPreferences.getSync('selectFileDownloadPath', false)
-              if (!selectFileDownloadPath) {
-                documentSaveOptions.pickerMode = picker.DocumentPickerMode.DOWNLOAD
-              }
-              if (selectFileDownloadPath) {
-                const lastDotIndex = item.filename.lastIndexOf('.')
-                if (lastDotIndex !== -1) {
-                  documentSaveOptions.newFileNames = [item.filename.substring(0, lastDotIndex)]
-                  documentSaveOptions.fileSuffixChoices = ['.' + item.filename.substring(lastDotIndex + 1)]
-                }
-                if (lastDotIndex === -1) {
-                  documentSaveOptions.newFileNames = [item.filename]
-                  documentSaveOptions.fileSuffixChoices = ['']
-                }
-              }
-              const documentViewPicker = new picker.DocumentViewPicker(this.context)
-              const uris = await documentViewPicker.save(documentSaveOptions)
-              if (uris.length === 1) {
-                let filePath = ''
+              try {
+                const documentSaveOptions = new picker.DocumentSaveOptions()
+                const selectFileDownloadPath =
+                  this.commonSettingDataPreferences.getSync('selectFileDownloadPath', false)
                 if (!selectFileDownloadPath) {
-                  filePath = new fileUri.FileUri(uris[0] + '/' + item.filename).path
+                  documentSaveOptions.pickerMode = picker.DocumentPickerMode.DOWNLOAD
                 }
                 if (selectFileDownloadPath) {
-                  filePath = uris[0]
+                  const lastDotIndex = item.filename.lastIndexOf('.')
+                  if (lastDotIndex !== -1) {
+                    documentSaveOptions.newFileNames = [item.filename.substring(0, lastDotIndex)]
+                    documentSaveOptions.fileSuffixChoices = ['.' + item.filename.substring(lastDotIndex + 1)]
+                  }
+                  if (lastDotIndex === -1) {
+                    documentSaveOptions.newFileNames = [item.filename]
+                    documentSaveOptions.fileSuffixChoices = ['']
+                  }
                 }
-                const prepareDownloadDialogControllerProgress = new CustomDialogController({
-                  builder: LoadingDialog({
-                    content: '下载准备中...'
-                  })
-                })
-                prepareDownloadDialogControllerProgress.open()
-                const version = await getDsmApiMaxVersion(this.context, '', 'SYNO.FileStation.Download')
-                prepareDownloadDialogControllerProgress.close()
-                if (version !== 'fail') {
-                  const wandAgent = await wantAgent.getWantAgent({
-                    wants: [
-                      {
-                        bundleName: 'com.songjy.synologydsmhelper',
-                        abilityName: 'EntryAbility'
-                      }
-                    ],
-                    actionType: wantAgent.OperationType.START_ABILITY,
-                    requestCode: 0,
-                    wantAgentFlags: [wantAgent.WantAgentFlags.UPDATE_PRESENT_FLAG]
-                  })
-                  const continuousTaskNotificationInfo =
-                    await backgroundTaskManager.startBackgroundRunning(this.context, ['dataTransfer'], wandAgent)
-                  const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.WRITE_ONLY)
-                  const fileStream = fileIo.fdopenStreamSync(file.fd, 'w+')
-                  netBoost.setSceneDesc({
-                    scene: 'download',
-                    sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
-                  })
-                  const accountInfo = await getAccountInfo()
-                  const session = rcp.createSession({
-                    requestConfiguration: {
-                      transfer: {
-                        timeout: {
-                          transferMs: 0
-                        }
-                      },
-                      tracing: {
-                        httpEventsHandler: {
-                          onDataReceive: async (incomingData) => {
-                            await fileStream.write(incomingData)
-                            this.transferredSize = this.transferredSize + incomingData.byteLength
-                            try {
-                              await notificationManager.publish({
-                                content: {
-                                  notificationContentType: notificationManager.ContentType.NOTIFICATION_CONTENT_SYSTEM_LIVE_VIEW,
-                                  systemLiveView: {
-                                    typeCode: 8,
-                                    title: '正在下载文件：' + item.filename,
-                                    text: '进度：' + Number((this.transferredSize / this.totalSize).toFixed(2)) * 100 +
-                                      '% (' + getSizeString(this.transferredSize) + '/' +
-                                    getSizeString(this.totalSize) + ')'
-                                  }
-                                },
-                                id: continuousTaskNotificationInfo.notificationId,
-                                notificationSlotType: notificationManager.SlotType.LIVE_VIEW,
-                                template: {
-                                  name: 'downloadTemplate',
-                                  data: {
-                                    title: '正在下载文件，进度：' +
-                                      Number((this.transferredSize / this.totalSize).toFixed(2)) * 100 + '%',
-                                    fileName: item.filename,
-                                    progressValue: Number((this.transferredSize / this.totalSize).toFixed(2)) * 100
-                                  }
-                                }
-                              })
-                            } catch {
-                            }
-                          },
-                          onDataEnd: async () => {
-                            session.close()
-                            netBoost.setSceneDesc({
-                              scene: 'download',
-                              sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-                            })
-                            fileStream.closeSync()
-                            await backgroundTaskManager.stopBackgroundRunning(this.context)
-                            this.isShowProgressSheet = false
-                            this.context.eventHub.off('cancelDownload')
-                            if (this.transferredSize < item.filesize - 1) {
-                              this.transferredSize = 0
-                              this.totalSize = 0
-                              await promptAction.openToast({
-                                message: '下载失败'
-                              })
-                            }
-                            if (this.transferredSize >= item.filesize - 1) {
-                              this.transferredSize = 0
-                              this.totalSize = 0
-                              await promptAction.openToast({
-                                message: '下载成功'
-                              })
-                            }
-                          }
-                        }
-                      },
-                      dns: {
-                        dnsRules: getDnsServer(this.context)
-                      },
-                      security: {
-                        remoteValidation: this.debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
-                          'system') as 'system' | 'skip'
-                      }
-                    },
-                    headers: {
-                      'accept-language': 'zh-CN',
-                      referer: accountInfo.path
-                    },
-                    cookies: {
-                      id: accountInfo.sid
-                    }
-                  })
-                  backgroundTaskManager.on('continuousTaskCancel', async () => {
-                    session.cancel()
-                    await promptAction.openToast({
-                      message: '下载失败'
+                const documentViewPicker = new picker.DocumentViewPicker(this.context)
+                const uris = await documentViewPicker.save(documentSaveOptions)
+                if (uris.length === 1) {
+                  let filePath = ''
+                  if (!selectFileDownloadPath) {
+                    filePath = new fileUri.FileUri(uris[0] + '/' + item.filename).path
+                  }
+                  if (selectFileDownloadPath) {
+                    filePath = uris[0]
+                  }
+                  const prepareDownloadDialogControllerProgress = new CustomDialogController({
+                    builder: LoadingDialog({
+                      content: '下载准备中...'
                     })
                   })
-                  this.context.eventHub.on('cancelDownload', () => {
-                    session.cancel()
-                  })
-                  this.totalSize = item.filesize
-                  this.isShowProgressSheet = true
-                  try {
-                    const response = await session.get(accountInfo.path +
-                      '/webapi/entry.cgi?api=SYNO.FileStation.Download&version=' +
-                      version + '&method=download&mode=download&path=' + encodeURIComponent(item.path))
-                    if (response.statusCode !== 200) {
+                  prepareDownloadDialogControllerProgress.open()
+                  const version = await getDsmApiMaxVersion(this.context, '', 'SYNO.FileStation.Download')
+                  prepareDownloadDialogControllerProgress.close()
+                  if (version !== 'fail') {
+                    const wandAgent = await wantAgent.getWantAgent({
+                      wants: [
+                        {
+                          bundleName: 'com.songjy.synologydsmhelper',
+                          abilityName: 'EntryAbility'
+                        }
+                      ],
+                      actionType: wantAgent.OperationType.START_ABILITY,
+                      requestCode: 0,
+                      wantAgentFlags: [wantAgent.WantAgentFlags.UPDATE_PRESENT_FLAG]
+                    })
+                    const continuousTaskNotificationInfo =
+                      await backgroundTaskManager.startBackgroundRunning(this.context, ['dataTransfer'], wandAgent)
+                    const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.WRITE_ONLY)
+                    const fileStream = fileIo.fdopenStreamSync(file.fd, 'w+')
+                    netBoost.setSceneDesc({
+                      scene: 'download',
+                      sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
+                    })
+                    const accountInfo = await getAccountInfo()
+                    const session = rcp.createSession({
+                      requestConfiguration: {
+                        transfer: {
+                          timeout: {
+                            transferMs: 0
+                          }
+                        },
+                        tracing: {
+                          httpEventsHandler: {
+                            onDataReceive: async (incomingData) => {
+                              await fileStream.write(incomingData)
+                              this.transferredSize = this.transferredSize + incomingData.byteLength
+                              try {
+                                await notificationManager.publish({
+                                  content: {
+                                    notificationContentType: notificationManager.ContentType.NOTIFICATION_CONTENT_SYSTEM_LIVE_VIEW,
+                                    systemLiveView: {
+                                      typeCode: 8,
+                                      title: '正在下载文件：' + item.filename,
+                                      text: '进度：' + Number((this.transferredSize / this.totalSize).toFixed(2)) * 100 +
+                                        '% (' + getSizeString(this.transferredSize) + '/' +
+                                      getSizeString(this.totalSize) + ')'
+                                    }
+                                  },
+                                  id: continuousTaskNotificationInfo.notificationId,
+                                  notificationSlotType: notificationManager.SlotType.LIVE_VIEW,
+                                  template: {
+                                    name: 'downloadTemplate',
+                                    data: {
+                                      title: '正在下载文件，进度：' +
+                                        Number((this.transferredSize / this.totalSize).toFixed(2)) * 100 + '%',
+                                      fileName: item.filename,
+                                      progressValue: Number((this.transferredSize / this.totalSize).toFixed(2)) * 100
+                                    }
+                                  }
+                                })
+                              } catch {
+                              }
+                            },
+                            onDataEnd: async () => {
+                              session.close()
+                              netBoost.setSceneDesc({
+                                scene: 'download',
+                                sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                              })
+                              fileStream.closeSync()
+                              await backgroundTaskManager.stopBackgroundRunning(this.context)
+                              this.isShowProgressSheet = false
+                              this.context.eventHub.off('cancelDownload')
+                              if (this.transferredSize < item.filesize - 1) {
+                                this.transferredSize = 0
+                                this.totalSize = 0
+                                await promptAction.openToast({
+                                  message: '下载失败'
+                                })
+                              }
+                              if (this.transferredSize >= item.filesize - 1) {
+                                this.transferredSize = 0
+                                this.totalSize = 0
+                                await promptAction.openToast({
+                                  message: '下载成功'
+                                })
+                              }
+                            }
+                          }
+                        },
+                        dns: {
+                          dnsRules: getDnsServer(this.context)
+                        },
+                        security: {
+                          remoteValidation: this.debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
+                            'system') as 'system' | 'skip'
+                        }
+                      },
+                      headers: {
+                        'accept-language': 'zh-CN',
+                        referer: accountInfo.path
+                      },
+                      cookies: {
+                        id: accountInfo.sid
+                      }
+                    })
+                    backgroundTaskManager.on('continuousTaskCancel', async () => {
+                      session.cancel()
+                      await promptAction.openToast({
+                        message: '下载失败'
+                      })
+                    })
+                    this.context.eventHub.on('cancelDownload', () => {
+                      session.cancel()
+                    })
+                    this.totalSize = item.filesize
+                    this.isShowProgressSheet = true
+                    try {
+                      const response = await session.get(accountInfo.path + '/webapi/entry.cgi?' + new url.URLParams({
+                        api: 'SYNO.FileStation.Download',
+                        version: String(version),
+                        method: 'download',
+                        path: item.path,
+                        mode: 'download'
+                      }).toString())
+                      if (response.statusCode !== 200) {
+                        session.close()
+                        netBoost.setSceneDesc({
+                          scene: 'download',
+                          sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                        })
+                        fileStream.closeSync()
+                        await backgroundTaskManager.stopBackgroundRunning(this.context)
+                        this.isShowProgressSheet = false
+                        this.transferredSize = 0
+                        this.totalSize = 0
+                        this.context.eventHub.off('cancelDownload')
+                        await promptAction.openToast({
+                          message: 'HTTP 请求失败，状态码：' + response.statusCode
+                        })
+                      }
+                    } catch (err) {
                       session.close()
                       netBoost.setSceneDesc({
                         scene: 'download',
                         sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
                       })
                       fileStream.closeSync()
-                      await backgroundTaskManager.stopBackgroundRunning(this.context)
+                      try {
+                        await backgroundTaskManager.stopBackgroundRunning(this.context)
+                      } catch {
+                      }
                       this.isShowProgressSheet = false
                       this.transferredSize = 0
                       this.totalSize = 0
                       this.context.eventHub.off('cancelDownload')
-                      await promptAction.openToast({
-                        message: 'HTTP 请求失败，状态码：' + response.statusCode
-                      })
-                    }
-                  } catch (err) {
-                    session.close()
-                    netBoost.setSceneDesc({
-                      scene: 'download',
-                      sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-                    })
-                    fileStream.closeSync()
-                    try {
-                      await backgroundTaskManager.stopBackgroundRunning(this.context)
-                    } catch {
-                    }
-                    this.isShowProgressSheet = false
-                    this.transferredSize = 0
-                    this.totalSize = 0
-                    this.context.eventHub.off('cancelDownload')
-                    if (err.code !== 1007900992) {
-                      await promptAction.openToast({
-                        message: '下载失败，错误码：' + err.code
-                      })
+                      if (err.code !== 1007900992) {
+                        await promptAction.openToast({
+                          message: '下载失败，错误码：' + err.code
+                        })
+                      }
                     }
                   }
                 }
+              } catch (err) {
+                await promptAction.openToast({
+                  message: '发生错误，错误码：' + err.code
+                })
               }
-            } catch (err) {
-              await promptAction.openToast({
-                message: '发生错误，错误码：' + err.code
-              })
             }
-          }
-        })
+          })
+      }
       MenuItem({
         content: '删除'
       })
@@ -860,14 +1058,18 @@ export default struct Album {
           })
           if (data.index === 1) {
             this.deleteDialogControllerProgress.open()
-            const startres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.Delete',
-              '&method=start&path=' + encodeURIComponent(item.path))
+            const startres = await dsmRequest(this.context, '', 'SYNO.FileStation.Delete', new url.URLParams({
+              method: 'start',
+              path: item.path
+            }).toString())
             if (startres !== 'fail') {
               const taskId = startres['taskid'] as string
               let finished = false
               while (!finished) {
-                const statusres = await dsmRequest(this.context, this.UIContext, '', 'SYNO.FileStation.Delete',
-                  '&method=status&taskid=' + taskId)
+                const statusres = await dsmRequest(this.context, '', 'SYNO.FileStation.Delete', new url.URLParams({
+                  method: 'status',
+                  taskid: taskId
+                }).toString())
                 if (statusres !== 'fail') {
                   if (statusres['finished']) {
                     finished = true
@@ -918,74 +1120,110 @@ export default struct Album {
             }) {
               Column() {
                 if (this.selectedIndex === 0) {
-                  Scroll() {
-                    Column() {
-                      if (this.timelineArray.length === 0) {
-                        Text('无数据')
-                      }
-                      ForEach(this.timelineArray, (timelineItem: TimelineItem, timelineIndex) => {
-                        Column() {
-                          Text(timelineItem.date)
-                          List() {
-                            ForEach(this.photoArray.filter((photoItem,
-                              photoIndex): boolean => this.isPhotoVisiable(photoIndex, timelineIndex)),
-                              (photoItem: PhotoItem) => {
-                                ListItem() {
-                                  Column() {
-                                    if (photoItem.type === 'photo') {
-                                      Image(photoItem.url)
-                                        .alt($r('app.media.imageloading'))
-                                        .aspectRatio(1)
-                                        .autoResize(true)
-                                        .copyOption(CopyOptions.LocalDevice)
-                                        .objectFit(ImageFit.Auto)
-                                        .onError(async (err) => {
-                                          await promptAction.openToast({
-                                            message: '发生错误，错误信息：' + err.message
-                                          })
-                                        })
-                                        .onClick(() => {
-                                          this.previewPhoto = photoItem
-                                          this.backDataPreferences.putSync('album', true)
-                                        })
-                                    }
-                                    if (photoItem.type === 'video') {
-                                      Video({
-                                        src: photoItem.url,
-                                        posterOptions: {
-                                          showFirstFrame: true
-                                        }
-                                      })
-                                        .aspectRatio(1)
-                                        .enabled(false)
-                                        .objectFit(ImageFit.Auto)
-                                        .onError(async (err) => {
-                                          await promptAction.openToast({
-                                            message: '发生错误，错误码：' + err.code
-                                          })
-                                        })
-                                    }
-                                  }
-                                  .onClick(() => {
-                                    this.previewPhoto = photoItem
-                                    this.backDataPreferences.putSync('album', true)
-                                  })
-                                }
-                              })
+                  List() {
+                    ListItem() {
+                      Text(this.photoArray.filter(item => item.type === 'photo').length + '张照片和' +
+                      this.photoArray.filter(item => item.type === 'video').length + '个视频')
+                        .enableAutoSpacing(true)
+                        .fontColor($r('sys.color.font_secondary'))
+                        .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                    }
+                    .width('100%')
+
+                    Repeat<TimelineItem>(this.timelineArray)
+                      .each((timelineItem: RepeatItem<TimelineItem>) => {
+                        ListItemGroup() {
+                          ListItem() {
+                            Text(timelineItem.item.date)
                           }
-                          .lanes(4)
-                          .margin({
-                            top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-                          })
+
+                          ListItem() {
+                            List() {
+                              Repeat<PhotoItem>(this.photoArray.filter((photoItem,
+                                photoIndex): boolean => this.isPhotoVisiable(photoIndex, timelineItem.index)))
+                                .each((photoItem: RepeatItem<PhotoItem>) => {
+                                  ListItem() {
+                                    Column() {
+                                      if (photoItem.item.type === 'photo') {
+                                        Image(photoItem.item.url)
+                                          .alt($r('app.media.imageloading'))
+                                          .aspectRatio(1)
+                                          .autoResize(true)
+                                          .copyOption(CopyOptions.LocalDevice)
+                                          .objectFit(ImageFit.Auto)
+                                          .onError(async (err) => {
+                                            await promptAction.openToast({
+                                              message: '发生错误，错误信息：' + err.message
+                                            })
+                                          })
+                                          .onClick(() => {
+                                            this.previewPhoto = photoItem.item
+                                            this.backDataPreferences.putSync('album', true)
+                                          })
+                                      }
+                                      if (photoItem.item.type === 'movingphoto') {
+                                        MovingPhotoView({
+                                          movingPhoto: photoItem.item.movingPhoto,
+                                          controller: this.controller,
+                                          imageAIOptions: {
+                                            types: [ImageAnalyzerType.SUBJECT, ImageAnalyzerType.TEXT,
+                                              ImageAnalyzerType.OBJECT_LOOKUP]
+                                          }
+                                        })
+                                          .aspectRatio(1)
+                                          .muted(true)
+                                          .objectFit(ImageFit.Auto)
+                                          .onError(async () => {
+                                            await promptAction.openToast({
+                                              message: '加载动态照片时发生错误'
+                                            })
+                                          })
+                                          .onClick(() => {
+                                            this.previewPhoto = photoItem.item
+                                            this.backDataPreferences.putSync('album', true)
+                                          })
+                                      }
+                                      if (photoItem.item.type === 'video') {
+                                        Video({
+                                          src: photoItem.item.url,
+                                          posterOptions: {
+                                            showFirstFrame: true
+                                          }
+                                        })
+                                          .aspectRatio(1)
+                                          .enabled(false)
+                                          .objectFit(ImageFit.Auto)
+                                          .onError(async (err) => {
+                                            await promptAction.openToast({
+                                              message: '发生错误，错误码：' + err.code
+                                            })
+                                          })
+                                      }
+                                    }
+                                    .onClick(() => {
+                                      this.previewPhoto = photoItem.item
+                                      this.backDataPreferences.putSync('album', true)
+                                    })
+                                  }
+                                })
+                                .virtualScroll()
+                            }
+                            .height(Math.ceil(this.photoArray.filter((photoItem,
+                              photoIndex): boolean => this.isPhotoVisiable(photoIndex, timelineItem.index)).length /
+                              4) * this.photoItemWidth)
+                            .lanes(4)
+                            .margin({
+                              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                            })
+                          }
                         }
-                        .alignItems(HorizontalAlign.Start)
                         .margin({
-                          top: timelineIndex !== 0 ? $r('sys.float.ohos_id_elements_margin_vertical_m') : 0
+                          top: timelineItem.index !== 0 ? $r('sys.float.ohos_id_elements_margin_vertical_m') : 0
                         })
                       })
-                    }
+                      .virtualScroll()
                   }
-                  .edgeEffect(EdgeEffect.Spring)
+                  .height('100%')
                 }
                 if (this.selectedIndex === 1) {
                   if (this.albumArray.length === 0) {
@@ -1175,6 +1413,97 @@ export default struct Album {
                       })
                   )
               }
+              if (this.previewPhoto.type === 'movingphoto') {
+                MovingPhotoView({
+                  movingPhoto: this.previewPhoto.movingPhoto,
+                  controller: this.controller,
+                  imageAIOptions: {
+                    types: [ImageAnalyzerType.SUBJECT, ImageAnalyzerType.TEXT, ImageAnalyzerType.OBJECT_LOOKUP]
+                  }
+                })
+                  .autoPlay(true)
+                  .layoutWeight(1)
+                  .margin({
+                    top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                  })
+                  .objectFit(ImageFit.Contain)
+                  .width('100%')
+                  .onError(async () => {
+                    await promptAction.openToast({
+                      message: '加载动态照片时发生错误'
+                    })
+                  })
+                  .onClick(() => {
+                    this.controller.startPlayback()
+                  })
+                  .gesture(
+                    PanGesture({
+                      direction: PanDirection.Left | PanDirection.Right
+                    })
+                      .onActionEnd(async (gestureEvent) => {
+                        let photoArray: PhotoItem[] = []
+                        if (!this.previewAlbum) {
+                          photoArray = this.photoArray
+                        }
+                        if (this.previewAlbum) {
+                          photoArray = this.albumPhotoArray
+                        }
+                        const index = photoArray.findIndex(item => item.id === this.previewPhoto?.id)
+                        const maxIndex = photoArray.length - 1
+                        if (gestureEvent.offsetX > 0) {
+                          if (index !== 0) {
+                            this.previewPhoto = photoArray[index - 1]
+                            this.backDataPreferences.putSync('album', true)
+                          }
+                          if (index === 0) {
+                            await promptAction.openToast({
+                              message: '已是第一张'
+                            })
+                          }
+                        }
+                        if (gestureEvent.offsetX < 0) {
+                          if (index !== maxIndex) {
+                            this.previewPhoto = photoArray[index + 1]
+                            this.backDataPreferences.putSync('album', true)
+                          }
+                          if (index === maxIndex) {
+                            await promptAction.openToast({
+                              message: '已是最后一张'
+                            })
+                          }
+                        }
+                      })
+                  )
+                Column() {
+                  SaveButton({
+                    icon: SaveIconStyle.FULL_FILLED,
+                    text: SaveDescription.SAVE
+                  })
+                    .onClick(async (event, result) => {
+                      if (result === SaveButtonOnClickResult.SUCCESS) {
+                        const phAccessHelper = photoAccessHelper.getPhotoAccessHelper(this.context)
+                        const assetChangeRequest =
+                          photoAccessHelper.MediaAssetChangeRequest.createAssetRequest(this.context,
+                            photoAccessHelper.PhotoType.IMAGE, 'heif', {
+                              subtype: photoAccessHelper.PhotoSubtype.MOVING_PHOTO
+                            })
+                        assetChangeRequest.addResource(photoAccessHelper.ResourceType.IMAGE_RESOURCE,
+                          this.previewPhoto?.movingPhotoImageUri)
+                        assetChangeRequest.addResource(photoAccessHelper.ResourceType.VIDEO_RESOURCE,
+                          this.previewPhoto?.movingPhotoVideoUri)
+                        await phAccessHelper.applyChanges(assetChangeRequest)
+                        await promptAction.openToast({
+                          message: '保存成功'
+                        })
+                      }
+                    })
+                }
+                .margin({
+                  bottom: $r('sys.float.ohos_id_elements_margin_vertical_m'),
+                  top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                })
+                .width('100%')
+              }
               if (this.previewPhoto.type === 'video') {
                 Video({
                   src: this.previewPhoto.url,
@@ -1220,104 +1549,134 @@ export default struct Album {
             })
           }
           if (this.previewAlbum) {
-            Column() {
-              Row() {
-                Column() {
-                  Image($r('app.media.back'))
-                }
-                .borderRadius(20)
-                .height(40)
-                .margin({
-                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                })
-                .padding(11)
-                .stateStyles({
-                  normal: {
-                    .backgroundColor($r('sys.color.interactive_hover'))
-                  },
-                  pressed: {
-                    .backgroundColor($r('sys.color.interactive_pressed'))
+            List() {
+              ListItem() {
+                Row() {
+                  Column() {
+                    Image($r('app.media.back'))
                   }
-                })
-                .visualEffect(new hdsEffect.HdsEffectBuilder()
-                  .pointLight({
-                    sourceType: hdsEffect.PointLightSourceType.SOFT,
-                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                  .borderRadius(20)
+                  .height(40)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                   })
-                  .buildEffect())
-                .width(40)
-                .onClick(() => {
-                  this.previewAlbum = undefined
-                  this.backDataPreferences.putSync('album', false)
-                })
-
-                Text(this.previewAlbum.name)
-                  .fontSize($r('sys.float.ohos_id_text_size_dialog_tittle'))
-                  .fontWeight(FontWeight.Bold)
-                  .layoutWeight(1)
-                  .maxLines(1)
-                  .textOverflow({
-                    overflow: TextOverflow.Ellipsis
-                  })
-              }
-
-              Column() {
-                if (this.albumPhotoArray.length === 0) {
-                  Text('无数据')
-                }
-                List() {
-                  ForEach(this.albumPhotoArray, (item: PhotoItem) => {
-                    ListItem() {
-                      Column() {
-                        if (item.type === 'photo') {
-                          Image(item.url)
-                            .alt($r('app.media.imageloading'))
-                            .aspectRatio(1)
-                            .autoResize(true)
-                            .copyOption(CopyOptions.LocalDevice)
-                            .objectFit(ImageFit.Auto)
-                            .onError(async (err) => {
-                              await promptAction.openToast({
-                                message: '发生错误，错误信息：' + err.message
-                              })
-                            })
-                            .onClick(() => {
-                              this.previewPhoto = item
-                              this.backDataPreferences.putSync('album', true)
-                            })
-                        }
-                        if (item.type === 'video') {
-                          Video({
-                            src: item.url,
-                            posterOptions: {
-                              showFirstFrame: true
-                            }
-                          })
-                            .aspectRatio(1)
-                            .enabled(false)
-                            .objectFit(ImageFit.Auto)
-                            .onError(async (err) => {
-                              await promptAction.openToast({
-                                message: '发生错误，错误码：' + err.code
-                              })
-                            })
-                        }
-                      }
-                      .onClick(() => {
-                        this.previewPhoto = item
-                        this.backDataPreferences.putSync('album', true)
-                      })
+                  .padding(11)
+                  .stateStyles({
+                    normal: {
+                      .backgroundColor($r('sys.color.interactive_hover'))
+                    },
+                    pressed: {
+                      .backgroundColor($r('sys.color.interactive_pressed'))
                     }
                   })
+                  .visualEffect(new hdsEffect.HdsEffectBuilder()
+                    .pointLight({
+                      sourceType: hdsEffect.PointLightSourceType.SOFT,
+                      illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                    })
+                    .buildEffect())
+                  .width(40)
+                  .onClick(() => {
+                    this.previewAlbum = undefined
+                    this.backDataPreferences.putSync('album', false)
+                  })
+
+                  Text(this.previewAlbum.name)
+                    .fontSize($r('sys.float.ohos_id_text_size_dialog_tittle'))
+                    .fontWeight(FontWeight.Bold)
+                    .layoutWeight(1)
+                    .maxLines(1)
+                    .textOverflow({
+                      overflow: TextOverflow.Ellipsis
+                    })
                 }
+              }
+              .margin({
+                bottom: $r('sys.float.ohos_id_elements_margin_vertical_l')
+              })
+
+              if (this.albumPhotoArray.length === 0) {
+                ListItem() {
+                  Text('无数据')
+                }
+                .width('100%')
+              }
+              ListItem() {
+                List() {
+                  Repeat<PhotoItem>(this.albumPhotoArray)
+                    .each((photoItem: RepeatItem<PhotoItem>) => {
+                      ListItem() {
+                        Column() {
+                          if (photoItem.item.type === 'photo') {
+                            Image(photoItem.item.url)
+                              .alt($r('app.media.imageloading'))
+                              .aspectRatio(1)
+                              .autoResize(true)
+                              .copyOption(CopyOptions.LocalDevice)
+                              .objectFit(ImageFit.Auto)
+                              .onError(async (err) => {
+                                await promptAction.openToast({
+                                  message: '发生错误，错误信息：' + err.message
+                                })
+                              })
+                              .onClick(() => {
+                                this.previewPhoto = photoItem.item
+                                this.backDataPreferences.putSync('album', true)
+                              })
+                          }
+                          if (photoItem.item.type === 'movingphoto') {
+                            MovingPhotoView({
+                              movingPhoto: photoItem.item.movingPhoto,
+                              controller: this.controller,
+                              imageAIOptions: {
+                                types: [ImageAnalyzerType.SUBJECT, ImageAnalyzerType.TEXT,
+                                  ImageAnalyzerType.OBJECT_LOOKUP]
+                              }
+                            })
+                              .aspectRatio(1)
+                              .muted(true)
+                              .objectFit(ImageFit.Auto)
+                              .onError(async () => {
+                                await promptAction.openToast({
+                                  message: '加载动态照片时发生错误'
+                                })
+                              })
+                              .onClick(() => {
+                                this.previewPhoto = photoItem.item
+                                this.backDataPreferences.putSync('album', true)
+                              })
+                          }
+                          if (photoItem.item.type === 'video') {
+                            Video({
+                              src: photoItem.item.url,
+                              posterOptions: {
+                                showFirstFrame: true
+                              }
+                            })
+                              .aspectRatio(1)
+                              .enabled(false)
+                              .objectFit(ImageFit.Auto)
+                              .onError(async (err) => {
+                                await promptAction.openToast({
+                                  message: '发生错误，错误码：' + err.code
+                                })
+                              })
+                          }
+                        }
+                        .onClick(() => {
+                          this.previewPhoto = photoItem.item
+                          this.backDataPreferences.putSync('album', true)
+                        })
+                      }
+                    })
+                    .virtualScroll()
+                }
+                .height('100%')
                 .lanes(4)
               }
               .layoutWeight(1)
-              .margin({
-                top: $r('sys.float.ohos_id_elements_margin_vertical_l')
-              })
             }
-            .alignItems(HorizontalAlign.Start)
+            .edgeEffect(EdgeEffect.None)
           }
         }
       }
@@ -1334,6 +1693,11 @@ export default struct Album {
         setTimeout(() => {
           this.preferType = getPreferType(this.UIContext)
         }, 200)
+      })
+      const lastWindow = await window.getLastWindow(this.context)
+      this.photoItemWidth = (this.UIContext.px2vp(lastWindow.getWindowProperties().windowRect.width) - 32) / 4
+      lastWindow.on('windowSizeChange', (size) => {
+        this.photoItemWidth = (this.UIContext.px2vp(size.width) - 32) / 4
       })
       this.context.eventHub.on('backAlbum', () => {
         if (this.previewPhoto && !this.previewAlbum) {

@@ -1,10 +1,11 @@
 import { common, ConfigurationConstant } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
-import { window } from '@kit.ArkUI'
+import { LengthMetrics, window } from '@kit.ArkUI'
 import { deviceInfo } from '@kit.BasicServicesKit'
 import { fileIo } from '@kit.CoreFileKit'
 import { image } from '@kit.ImageKit'
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
+import { HdsNavDestination } from '@kit.UIDesignKit'
 import { checkPermission, getPermission } from '../common/Permission'
 
 @Builder
@@ -49,7 +50,7 @@ struct Commonsetting {
   })
 
   build() {
-    NavDestination() {
+    HdsNavDestination() {
       List() {
         ListItem() {
           Column() {
@@ -566,6 +567,9 @@ struct Commonsetting {
                       format: 'image/png',
                       quality: 100
                     })
+                    await imagePacker.release()
+                    await imagePixelMap.release()
+                    await imageSource.release()
                     fileIo.closeSync(file)
                     this.context.eventHub.emit('refreshIndex')
                   } catch {
@@ -606,6 +610,9 @@ struct Commonsetting {
                         format: 'image/png',
                         quality: 100
                       })
+                      await imagePacker.release()
+                      await imagePixelMap.release()
+                      await imageSource.release()
                       fileIo.closeSync(file)
                       this.context.eventHub.emit('refreshIndex')
                     } catch {
@@ -1053,7 +1060,17 @@ struct Commonsetting {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('通用')
+    .titleBar({
+      padding: {
+        end: LengthMetrics.vp(60)
+      },
+      content: {
+        title: {
+          mainTitle: '通用'
+        }
+      },
+      enableComponentSafeArea: true
+    })
     .onReady(async (context) => {
       this.pageInfos = context.pathStack
       this.allowContinue = this.commonSettingDataPreferences.getSync('allowContinue', true) as boolean

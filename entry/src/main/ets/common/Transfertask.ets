@@ -1,5 +1,6 @@
 import { wantAgent } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
+import { url } from '@kit.ArkTS'
 import { backgroundTaskManager } from '@kit.BackgroundTasksKit'
 import { deviceInfo } from '@kit.BasicServicesKit'
 import { Environment, fileIo, fileUri, picker } from '@kit.CoreFileKit'
@@ -144,9 +145,13 @@ export async function download(context: Context, id: string) {
         session.cancel()
       })
       try {
-        const response = await session.get(transferTask.accountPath +
-          '/webapi/entry.cgi?api=SYNO.FileStation.Download&version=' +
-          version + '&method=download&mode=download&path=' + encodeURIComponent(transferTask.path))
+        const response = await session.get(transferTask.accountPath + '/webapi/entry.cgi?' + new url.URLParams({
+          api: 'SYNO.FileStation.Download',
+          version: String(version),
+          method: 'download',
+          path: transferTask.path,
+          mode: 'download'
+        }).toString())
         if (response.statusCode !== 200) {
           session.close()
           netBoost.setSceneDesc({

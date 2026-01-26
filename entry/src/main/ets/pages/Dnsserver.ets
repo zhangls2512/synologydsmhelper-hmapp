@@ -1,5 +1,6 @@
 import { preferences } from '@kit.ArkData'
-import { promptAction } from '@kit.ArkUI'
+import { LengthMetrics, promptAction } from '@kit.ArkUI'
+import { HdsNavDestination } from '@kit.UIDesignKit'
 
 @Builder
 export function DnsserverBuilder() {
@@ -10,6 +11,7 @@ export function DnsserverBuilder() {
 struct Dnsserver {
   @Local ip: string = ''
   @Local port: string = '53'
+  @Local focus: boolean = false
   context = this.getUIContext().getHostContext()
   pageInfos = new NavPathStack()
   debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
@@ -17,7 +19,7 @@ struct Dnsserver {
   })
 
   build() {
-    NavDestination() {
+    HdsNavDestination() {
       List() {
         ListItem() {
           Row() {
@@ -31,6 +33,7 @@ struct Dnsserver {
               placeholder: '请输入IP地址',
               text: this.ip!!
             })
+              .defaultFocus(this.focus)
               .enableAutoSpacing(true)
               .layoutWeight(1)
               .maxLength(39)
@@ -103,10 +106,23 @@ struct Dnsserver {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('自定义 DNS 服务器')
+    .titleBar({
+      padding: {
+        end: LengthMetrics.vp(60)
+      },
+      content: {
+        title: {
+          mainTitle: '自定义 DNS 服务器'
+        }
+      },
+      enableComponentSafeArea: true
+    })
     .onReady((context) => {
       this.pageInfos = context.pathStack
       this.ip = this.debugSettingDataPreferences.getSync('dnsserverip', '') as string
+      if (this.ip === '') {
+        this.focus = true
+      }
       this.port = String(this.debugSettingDataPreferences.getSync('dnsserverport', 53))
     })
   }

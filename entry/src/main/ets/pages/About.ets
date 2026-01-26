@@ -1,7 +1,8 @@
 import { common } from '@kit.AbilityKit'
 import { commentManager, updateManager } from '@kit.AppGalleryKit'
-import { promptAction } from '@kit.ArkUI'
+import { LengthMetrics, promptAction } from '@kit.ArkUI'
 import { call } from '@kit.TelephonyKit'
+import { HdsNavDestination } from '@kit.UIDesignKit'
 import openLink from '../common/Openlink'
 import copy from '../common/Pasteboard'
 
@@ -20,7 +21,7 @@ struct About {
   pageInfos = new NavPathStack()
 
   build() {
-    NavDestination() {
+    HdsNavDestination() {
       List() {
         ListItem() {
           Column() {
@@ -52,8 +53,8 @@ struct About {
                       })
                     }
                     if (data.index === 1) {
-                      await promptAction.openToast({
-                        message: '暂未上线，敬请期待'
+                      this.pageInfos.pushPath({
+                        name: 'Debuginfo'
                       })
                     }
                   })
@@ -886,7 +887,17 @@ struct About {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('关于')
+    .titleBar({
+      padding: {
+        end: LengthMetrics.vp(60)
+      },
+      content: {
+        title: {
+          mainTitle: '关于'
+        }
+      },
+      enableComponentSafeArea: true
+    })
     .onReady(async (context) => {
       this.pageInfos = context.pathStack
       try {

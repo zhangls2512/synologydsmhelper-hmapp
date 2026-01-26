@@ -1,7 +1,8 @@
 import { common } from '@kit.AbilityKit'
 import { privacyManager } from '@kit.AppGalleryKit'
 import { preferences } from '@kit.ArkData'
-import { promptAction } from '@kit.ArkUI'
+import { LengthMetrics, promptAction } from '@kit.ArkUI'
+import { HdsNavDestination } from '@kit.UIDesignKit'
 
 @Builder
 export function ServicemodeBuilder() {
@@ -18,7 +19,7 @@ struct Servicemode {
   })
 
   build() {
-    NavDestination() {
+    HdsNavDestination() {
       List() {
         ListItem() {
           Column() {
@@ -137,7 +138,17 @@ struct Servicemode {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('应用服务模式')
+    .titleBar({
+      padding: {
+        end: LengthMetrics.vp(60)
+      },
+      content: {
+        title: {
+          mainTitle: '应用服务模式'
+        }
+      },
+      enableComponentSafeArea: true
+    })
     .onReady((context) => {
       this.pageInfos = context.pathStack
       this.allService = this.commonSettingDataPreferences.getSync('allService', true) as boolean

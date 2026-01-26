@@ -1,6 +1,7 @@
 import { preferences } from '@kit.ArkData'
-import { promptAction } from '@kit.ArkUI'
+import { LengthMetrics, promptAction } from '@kit.ArkUI'
 import { webview } from '@kit.ArkWeb'
+import { HdsNavDestination } from '@kit.UIDesignKit'
 
 @Builder
 export function WebviewBuilder() {
@@ -20,7 +21,7 @@ struct Webview {
   })
 
   build() {
-    NavDestination() {
+    HdsNavDestination() {
       Web({
         src: this.url,
         controller: this.controller,
@@ -30,6 +31,9 @@ struct Webview {
         .enableDataDetector(true)
         .enableNativeEmbedMode(true)
         .geolocationAccess(false)
+        .margin({
+          bottom: $r('sys.float.ohos_id_default_padding_bottom_fixed')
+        })
         .nestedScroll({
           scrollForward: NestedScrollMode.SELF_ONLY,
           scrollBackward: NestedScrollMode.SELF_ONLY
@@ -53,7 +57,17 @@ struct Webview {
         })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title(this.title)
+    .titleBar({
+      padding: {
+        end: LengthMetrics.vp(60)
+      },
+      content: {
+        title: {
+          mainTitle: this.title
+        }
+      },
+      enableComponentSafeArea: true
+    })
     .onReady((context) => {
       this.url = context.pathInfo.param as string
       const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {

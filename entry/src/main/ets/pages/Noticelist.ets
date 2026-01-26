@@ -1,4 +1,5 @@
 import { common } from '@kit.AbilityKit'
+import { url } from '@kit.ArkTS'
 import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { dsmRequest } from '../common/Request'
 
@@ -10,9 +11,9 @@ interface NoticeString {
 interface NoticeItem {
   level: string,
   className: string,
-  msg: string,
   title: string,
-  time?: number
+  time: number,
+  msg: string[]
 }
 
 interface NoticeResponseData {
@@ -23,8 +24,7 @@ interface NoticeResponseData {
 export default struct Noticelist {
   @Local notices: NoticeItem[] = []
   @Local loading: boolean = false
-  UIContext = this.getUIContext()
-  context = this.UIContext.getHostContext() as common.UIAbilityContext
+  context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
   getTime(time: string) {
     try {
@@ -37,26 +37,35 @@ export default struct Noticelist {
 
   async get() {
     this.loading = true
-    const res = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Core.DSMNotify', '&method=notify&action=load')
+    const res = await dsmRequest(this.context, '', 'SYNO.Core.DSMNotify', new url.URLParams({
+      method: 'notify',
+      action: 'load'
+    }).toString())
     if (res !== 'fail') {
       const noticeres = res as NoticeResponseData
-      const resa =
-        await dsmRequest(this.context, this.UIContext, '', 'SYNO.Core.DSMNotify.Strings', '&method=get&lang=chs')
+      const resa = await dsmRequest(this.context, '', 'SYNO.Core.DSMNotify.Strings', new url.URLParams({
+        method: 'get',
+        lang: 'chs'
+      }).toString())
       if (resa !== 'fail') {
         this.loading = false
         const noticeString = resa as Record<string, NoticeString>
         this.notices = noticeres.items.map((item): NoticeItem => {
+          const msgJson = JSON.parse(item.msg[0]) as object
           return {
             level: item.level,
             className: noticeString[item.title].title,
-            msg: item.msg[0],
-            title: noticeString[item.title].msg
+            title: noticeString[item.title].msg.replace(/%(\w+)%/g, (match): string => msgJson[match]),
+            time: item.time,
+            msg: []
           }
         })
       }
       if (resa === 'fail') {
-        const resb =
-          await dsmRequest(this.context, this.UIContext, '', 'SYNO.Core.Desktop.UIString', '&method=getjs&lang=chs')
+        const resb = await dsmRequest(this.context, '', 'SYNO.Core.Desktop.UIString', new url.URLParams({
+          method: 'getjs',
+          lang: 'chs'
+        }).toString())
         this.loading = false
         if (resb !== 'fail') {
           const noticeString = resb as string
@@ -69,9 +78,9 @@ export default struct Noticelist {
             return {
               level: '',
               className: noticeJson[filterTitle[0]][filterTitle[1]],
-              msg: item.msg[0],
               title: item.msg[0],
-              time: (item.time as number) * 1000
+              time: item.time,
+              msg: []
             }
           })
         }
@@ -106,8 +115,11 @@ export default struct Noticelist {
                 })
               })
               dialogControllerProgress.open()
-              const res = await dsmRequest(this.context, this.UIContext, '', 'SYNO.Core.DSMNotify',
-                '&method=notify&action=apply&clean=all')
+              const res = await dsmRequest(this.context, '', 'SYNO.Core.DSMNotify', new url.URLParams({
+                method: 'notify',
+                action: 'apply',
+                clean: 'all'
+              }).toString())
               dialogControllerProgress.close()
               if (res !== 'fail') {
                 await promptAction.openToast({
@@ -205,7 +217,7 @@ export default struct Noticelist {
                 .margin({
                   right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                 })
-              Text(item.time ? String(new Date(item.time)) : this.getTime(item.msg))
+              Text(String(new Date(item.time * 1000)))
                 .fontColor($r('sys.color.font_secondary'))
                 .fontSize($r('sys.float.ohos_id_text_size_body2'))
                 .layoutWeight(1)

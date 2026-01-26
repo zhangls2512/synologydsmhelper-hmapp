@@ -14,6 +14,10 @@ export default struct Cardeditsetting {
   })
   cardArray: CardItem[] = [
     {
+      name: '资源监控',
+      value: 'resourcemoniter'
+    },
+    {
       name: '系统信息',
       value: 'systeminfo'
     },
@@ -30,63 +34,104 @@ export default struct Cardeditsetting {
       value: 'networkinfo'
     },
     {
-      name: '资源监控',
-      value: 'resourcemoniter'
+      name: '套件',
+      value: 'package'
+    },
+    {
+      name: 'Docker容器',
+      value: 'dockercontainer'
     }
   ]
 
-  getSetting() {
-    this.cards = this.cardSettingDataPreferences.getSync('cards', []) as string[]
-  }
-
   build() {
     List() {
-      ListItem() {
-        Column() {
-          ForEach(this.cardArray, (item: CardItem, index) => {
-            if (index !== 0) {
-              Divider()
-                .padding({
-                  left: 12,
-                  right: 12
-                })
-            }
+      ForEach(this.cards, (item: string, index) => {
+        ListItem() {
+          Column() {
             Row() {
-              Text(item.name)
+              Text(this.cardArray.find(cardItem => cardItem.value === item)?.name)
                 .enableAutoSpacing(true)
-                .fontWeight(FontWeight.Medium)
                 .layoutWeight(1)
                 .margin({
                   right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                 })
-              Toggle({
-                type: ToggleType.Switch,
-                isOn: this.cards.includes(item.value)
-              })
-                .onChange((isOn) => {
-                  let cardlist: string[] = []
-                  if (!isOn) {
-                    cardlist = this.cards.filter(inItem => inItem !== item.value)
-                  }
-                  if (isOn) {
-                    cardlist = [...this.cards, item.value]
-                  }
-                  this.cardSettingDataPreferences.putSync('cards', cardlist)
+              if (index !== 0) {
+                Image($r('app.media.up'))
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                  .width('8%')
+                  .onClick(() => {
+                    const temp = this.cards[index]
+                    this.cards[index] = this.cards[index - 1]
+                    this.cards[index - 1] = temp
+                    this.cardSettingDataPreferences.putSync('cards', this.cards)
+                    this.cardSettingDataPreferences.flushSync()
+                  })
+              }
+              if (index !== this.cards.length - 1) {
+                Image($r('app.media.down'))
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                  .width('8%')
+                  .onClick(() => {
+                    const temp = this.cards[index]
+                    this.cards[index] = this.cards[index + 1]
+                    this.cards[index + 1] = temp
+                    this.cardSettingDataPreferences.putSync('cards', this.cards)
+                    this.cardSettingDataPreferences.flushSync()
+                  })
+              }
+              Image($r('app.media.delete'))
+                .width('8%')
+                .onClick(() => {
+                  this.cards.splice(index, 1)
+                  this.cardSettingDataPreferences.putSync('cards', this.cards)
                   this.cardSettingDataPreferences.flushSync()
-                  this.getSetting()
                 })
             }
             .borderRadius(12)
             .padding(12)
             .width('100%')
-          })
+          }
+          .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+          .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+          .padding($r('sys.float.ohos_id_corner_radius_mark'))
         }
-        .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-        .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
-        .padding($r('sys.float.ohos_id_corner_radius_mark'))
-      }
-      .margin({
-        top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+        .margin({
+          top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+        })
+      })
+      ForEach(this.cardArray.filter(item => !this.cards.includes(item.value)), (item: CardItem) => {
+        ListItem() {
+          Column() {
+            Row() {
+              Text(item.name)
+                .enableAutoSpacing(true)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+              Image($r('app.media.add'))
+                .width('8%')
+                .onClick(() => {
+                  this.cards.push(item.value)
+                  this.cardSettingDataPreferences.putSync('cards', this.cards)
+                  this.cardSettingDataPreferences.flushSync()
+                })
+            }
+            .borderRadius(12)
+            .padding(12)
+            .width('100%')
+          }
+          .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+          .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+          .padding($r('sys.float.ohos_id_corner_radius_mark'))
+        }
+        .margin({
+          top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+        })
       })
     }
     .padding({
@@ -95,7 +140,7 @@ export default struct Cardeditsetting {
       right: $r('sys.float.ohos_id_elements_margin_horizontal_l')
     })
     .onAppear(() => {
-      this.getSetting()
+      this.cards = this.cardSettingDataPreferences.getSync('cards', []) as string[]
     })
   }
 }
