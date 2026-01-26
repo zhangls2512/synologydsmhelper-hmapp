@@ -57,10 +57,10 @@ export default struct Cardeditsetting {
                 })
               if (index !== 0) {
                 Image($r('app.media.up'))
+                  .height(24)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                   })
-                  .width('8%')
                   .onClick(() => {
                     const temp = this.cards[index]
                     this.cards[index] = this.cards[index - 1]
@@ -71,10 +71,10 @@ export default struct Cardeditsetting {
               }
               if (index !== this.cards.length - 1) {
                 Image($r('app.media.down'))
+                  .height(24)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                   })
-                  .width('8%')
                   .onClick(() => {
                     const temp = this.cards[index]
                     this.cards[index] = this.cards[index + 1]
@@ -84,7 +84,7 @@ export default struct Cardeditsetting {
                   })
               }
               Image($r('app.media.delete'))
-                .width('8%')
+                .height(24)
                 .onClick(() => {
                   this.cards.splice(index, 1)
                   this.cardSettingDataPreferences.putSync('cards', this.cards)
@@ -114,7 +114,7 @@ export default struct Cardeditsetting {
                   right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                 })
               Image($r('app.media.add'))
-                .width('8%')
+                .height(24)
                 .onClick(() => {
                   this.cards.push(item.value)
                   this.cardSettingDataPreferences.putSync('cards', this.cards)
