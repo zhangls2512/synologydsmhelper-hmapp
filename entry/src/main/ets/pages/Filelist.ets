@@ -1390,7 +1390,10 @@ export default struct Filelist {
                   .buildEffect())
                 .width(40)
                 .onClick(async () => {
-                  const compressDialogControllerProgress = new CustomDialogController({
+                  await promptAction.openToast({
+                    message: '敬请期待'
+                  })
+                  /*const compressDialogControllerProgress = new CustomDialogController({
                     builder: LoadingDialog({
                       content: '压缩中...'
                     })
@@ -1426,7 +1429,7 @@ export default struct Filelist {
                       }
                     }
                   }
-                  compressDialogControllerProgress.close()
+                  compressDialogControllerProgress.close()*/
                 })
 
                 if (!this.fileArray.every(item => this.multipleSelectArray.find(selectItem => selectItem.path ===
