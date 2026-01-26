@@ -65,7 +65,7 @@ struct Backupsetting {
                       type: ToggleType.Switch,
                       isOn: this.autoTypes.includes(item)
                     })
-                      .onChange(async (isOn) => {
+                      .onChange((isOn) => {
                         let autoTypes: string[] = []
                         if (!isOn) {
                           autoTypes = this.autoTypes.filter(inItem => inItem !== item)
