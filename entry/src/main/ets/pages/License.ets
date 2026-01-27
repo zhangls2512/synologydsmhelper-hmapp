@@ -1,4 +1,6 @@
 import { common } from '@kit.AbilityKit'
+import { LengthMetrics } from '@kit.ArkUI'
+import { HdsNavDestination } from '@kit.UIDesignKit'
 import openLink from '../common/Openlink'
 
 interface Item {
@@ -23,7 +25,7 @@ struct License {
   ]
 
   build() {
-    NavDestination() {
+    HdsNavDestination() {
       List() {
         ListItem() {
           Text() {
@@ -109,6 +111,16 @@ struct License {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('资质证照')
+    .titleBar({
+      padding: {
+        end: LengthMetrics.vp(60)
+      },
+      content: {
+        title: {
+          mainTitle: '资质证照'
+        }
+      },
+      enableComponentSafeArea: true
+    })
   }
 }

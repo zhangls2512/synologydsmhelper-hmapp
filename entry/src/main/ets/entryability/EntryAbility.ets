@@ -21,7 +21,7 @@ import { connection } from '@kit.NetworkKit'
 import { notificationManager } from '@kit.NotificationKit'
 import { hiAppEvent } from '@kit.PerformanceAnalysisKit'
 import { harmonyShare, systemShare } from '@kit.ShareKit'
-import { getAccountList, getLoginStatus } from '../common/Account'
+import { getAccountList, getLoginStatus, loginBestPathAccount } from '../common/Account'
 import { write } from '../common/File'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import openLink from '../common/Openlink'
@@ -409,7 +409,8 @@ export default class EntryAbility extends UIAbility {
       const statusBar = commonSettingDataPreferences.getSync('statusBar', false)
       if (statusBar) {
         const fileData = this.context.resourceManager.getRawFileContentSync('icon.png')
-        const pixelMap = await image.createImageSource(fileData.buffer).createPixelMap()
+        const imageSource = image.createImageSource(fileData.buffer)
+        const pixelMap = await imageSource.createPixelMap()
         statusBarManager.addToStatusBar(this.context, {
           icons: {
             black: pixelMap,
@@ -423,6 +424,8 @@ export default class EntryAbility extends UIAbility {
             loadingStatus: true
           }
         })
+        await pixelMap.release()
+        await imageSource.release()
         statusBarManager.updateStatusBarMenu(this.context, [
           [
             {
@@ -490,6 +493,7 @@ export default class EntryAbility extends UIAbility {
       applicationContext.setSupportedProcessCache(processCache)
     }
     await this.appInit(want)
+    await loginBestPathAccount(this.context)
   }
 
   async onNewWant(want: Want) {
@@ -528,7 +532,7 @@ export default class EntryAbility extends UIAbility {
   }
 
   async onContinue(wantParam: Record<string, Object>) {
-    if (wantParam.version !== 40) {
+    if (wantParam.version !== 41) {
       await promptAction.openToast({
         message: '接续失败，原因：目标端应用版本号与发起端不匹配'
       })

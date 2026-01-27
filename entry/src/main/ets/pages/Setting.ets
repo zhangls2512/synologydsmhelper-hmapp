@@ -1,11 +1,12 @@
 import { common } from '@kit.AbilityKit'
 import { privacyManager } from '@kit.AppGalleryKit'
 import { preferences, uniformTypeDescriptor } from '@kit.ArkData'
-import { promptAction } from '@kit.ArkUI'
+import { LengthMetrics, promptAction } from '@kit.ArkUI'
 import { appAccount, deviceInfo } from '@kit.BasicServicesKit'
 import { fileIo, fileUri, picker } from '@kit.CoreFileKit'
 import { formProvider } from '@kit.FormKit'
 import { harmonyShare, systemShare } from '@kit.ShareKit'
+import { HdsNavigation, HdsNavigationTitleMode } from '@kit.UIDesignKit'
 import { getAccountInfo, getAccountList, getLoginStatus, importAccounts } from '../common/Account'
 import { write, writeUri } from '../common/File'
 import openLink from '../common/Openlink'
@@ -54,7 +55,7 @@ export default struct Setting {
   }
 
   build() {
-    Navigation(this.pageInfos) {
+    HdsNavigation(this.pageInfos) {
       List() {
         ListItem() {
           Column() {
@@ -1003,8 +1004,18 @@ export default struct Setting {
     .padding({
       top: $r('sys.float.ohos_id_elements_margin_vertical_m')
     })
-    .title('设置')
-    .titleMode(NavigationTitleMode.Mini)
+    .titleBar({
+      padding: {
+        end: LengthMetrics.vp(60)
+      },
+      content: {
+        title: {
+          mainTitle: '设置'
+        }
+      },
+      enableComponentSafeArea: true
+    })
+    .titleMode(HdsNavigationTitleMode.MINI)
     .onAppear(async () => {
       this.context.eventHub.on('refreshSetting', async () => {
         await this.getSetting()

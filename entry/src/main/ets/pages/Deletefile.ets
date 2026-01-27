@@ -1,4 +1,6 @@
+import { LengthMetrics } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
+import { HdsNavDestination } from '@kit.UIDesignKit'
 
 @Builder
 export function DeletefileBuilder() {
@@ -10,7 +12,7 @@ struct Deletefile {
   @Local fileUri: string = ''
 
   build() {
-    NavDestination() {
+    HdsNavDestination() {
       List() {
         ListItem() {
           TextInput({
@@ -71,6 +73,16 @@ struct Deletefile {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('沙箱文件删除工具')
+    .titleBar({
+      padding: {
+        end: LengthMetrics.vp(60)
+      },
+      content: {
+        title: {
+          mainTitle: '沙箱文件删除工具'
+        }
+      },
+      enableComponentSafeArea: true
+    })
   }
 }

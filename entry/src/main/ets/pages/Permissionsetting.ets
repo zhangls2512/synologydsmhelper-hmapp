@@ -1,6 +1,9 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
+import { LengthMetrics } from '@kit.ArkUI'
 import { deviceInfo } from '@kit.BasicServicesKit'
+import { policy } from '@kit.NetworkKit'
+import { HdsNavDestination } from '@kit.UIDesignKit'
 import { getPermission } from '../common/Permission'
 
 @Builder
@@ -11,6 +14,7 @@ export function PermissionsettingBuilder() {
 @ComponentV2
 struct Permissionsetting {
   @Local writePasteBoard: boolean = false
+  @Local hoverId: number = -1
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
   dataSync = getPermission('ohos.permission.DISTRIBUTED_DATASYNC')
   readWriteDownloadDirectory = getPermission('ohos.permission.READ_WRITE_DOWNLOAD_DIRECTORY')
@@ -19,7 +23,7 @@ struct Permissionsetting {
   })
 
   build() {
-    NavDestination() {
+    HdsNavDestination() {
       List() {
         ListItem() {
           Column() {
@@ -59,6 +63,52 @@ struct Permissionsetting {
         }
         .margin({
           top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+        })
+
+        ListItem() {
+          Column() {
+            Row() {
+              Text('联网')
+                .fontWeight(FontWeight.Medium)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+              Image($r('app.media.right'))
+                .fillColor($r('sys.color.icon_fourth'))
+                .height(12)
+                .width(12)
+            }
+            .borderRadius(12)
+            .padding(12)
+            .stateStyles({
+              normal: {
+                .backgroundColor(this.hoverId === 0 ? $r('sys.color.interactive_hover') :
+                  $r('sys.color.ohos_id_color_card_bg'))
+              },
+              pressed: {
+                .backgroundColor($r('sys.color.interactive_pressed'))
+              }
+            })
+            .width('100%')
+            .onHover((isHover) => {
+              if (!isHover) {
+                this.hoverId = -1
+              }
+              if (isHover) {
+                this.hoverId = 0
+              }
+            })
+            .onClick(async () => {
+              await policy.showAppNetPolicySettings(this.context)
+            })
+          }
+          .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+          .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+          .padding($r('sys.float.ohos_id_corner_radius_mark'))
+        }
+        .margin({
+          top: $r('sys.float.ohos_id_elements_margin_vertical_l')
         })
 
         ListItem() {
@@ -227,7 +277,17 @@ struct Permissionsetting {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('权限管理')
+    .titleBar({
+      padding: {
+        end: LengthMetrics.vp(60)
+      },
+      content: {
+        title: {
+          mainTitle: '权限管理'
+        }
+      },
+      enableComponentSafeArea: true
+    })
     .onAppear(() => {
       this.writePasteBoard = this.permissionSettingDataPreferences.getSync('writePasteBoard', false) as boolean
     })

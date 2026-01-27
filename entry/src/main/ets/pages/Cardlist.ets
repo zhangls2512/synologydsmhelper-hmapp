@@ -1,14 +1,17 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
+import { url } from '@kit.ArkTS'
 import { display } from '@kit.ArkUI'
 import { hdsEffect } from '@kit.UIDesignKit'
 import { getLoginStatus } from '../common/Account'
-import getPreferType from '../common/Prefertype'
+import { getPreferType } from '../common/Prefertype'
 import { dsmRequest } from '../common/Request'
 import Cardedit from './Cardedit'
 import Noticelist from './Noticelist'
 import Diskinfo from '../card/Diskinfo'
+import Dockercontainer from '../card/Dockercontainer'
 import Networkinfo from '../card/Networkinfo'
+import Package from '../card/Package'
 import Resourcemoniter from '../card/Resourcemoniter'
 import Storageinfo from '../card/Storageinfo'
 import Systeminfo from '../card/Systeminfo'
@@ -36,8 +39,10 @@ export default struct Cardlist {
     this.cards = cardSettingDataPreferences.getSync('cards', []) as string[]
     this.context.eventHub.emit('refreshCard')
     if (this.isLogin) {
-      const res =
-        await dsmRequest(this.context, this.UIContext, '', 'SYNO.Core.DSMNotify', '&method=notify&action=load')
+      const res = await dsmRequest(this.context, '', 'SYNO.Core.DSMNotify', new url.URLParams({
+        method: 'notify',
+        action: 'load'
+      }).toString())
       if (res !== 'fail') {
         const noticeres = res as NoticeResponseData
         if (noticeres.total === 0) {
@@ -176,46 +181,64 @@ export default struct Cardlist {
               })
               .width('100%')
             }
-            if (this.cards.includes('systeminfo')) {
-              ListItem() {
-                Systeminfo()
+            ForEach(this.cards, (item: string) => {
+              if (item === 'resourcemoniter') {
+                ListItem() {
+                  Resourcemoniter()
+                }
+                .margin({
+                  top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                })
               }
-              .margin({
-                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-              })
-            }
-            if (this.cards.includes('storageinfo')) {
-              ListItem() {
-                Storageinfo()
+              if (item === 'systeminfo') {
+                ListItem() {
+                  Systeminfo()
+                }
+                .margin({
+                  top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                })
               }
-              .margin({
-                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-              })
-            }
-            if (this.cards.includes('diskinfo')) {
-              ListItem() {
-                Diskinfo()
+              if (item === 'storageinfo') {
+                ListItem() {
+                  Storageinfo()
+                }
+                .margin({
+                  top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                })
               }
-              .margin({
-                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-              })
-            }
-            if (this.cards.includes('networkinfo')) {
-              ListItem() {
-                Networkinfo()
+              if (item === 'diskinfo') {
+                ListItem() {
+                  Diskinfo()
+                }
+                .margin({
+                  top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                })
               }
-              .margin({
-                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-              })
-            }
-            if (this.cards.includes('resourcemoniter')) {
-              ListItem() {
-                Resourcemoniter()
+              if (item === 'networkinfo') {
+                ListItem() {
+                  Networkinfo()
+                }
+                .margin({
+                  top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                })
               }
-              .margin({
-                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-              })
-            }
+              if (item === 'package') {
+                ListItem() {
+                  Package()
+                }
+                .margin({
+                  top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                })
+              }
+              if (item === 'dockercontainer') {
+                ListItem() {
+                  Dockercontainer()
+                }
+                .margin({
+                  top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                })
+              }
+            })
           }
         }
         .layoutWeight(1)

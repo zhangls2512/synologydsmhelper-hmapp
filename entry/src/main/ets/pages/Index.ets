@@ -4,9 +4,10 @@ import { taskpool } from '@kit.ArkTS'
 import { display } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
 import { image } from '@kit.ImageKit'
+import { HdsTabs, HdsTabsController } from '@kit.UIDesignKit'
 import { importAccounts } from '../common/Account'
 import { getCurrentNetworkBearerType } from '../common/Network'
-import getPreferType from '../common/Prefertype'
+import { getPreferType } from '../common/Prefertype'
 import { download } from '../common/Transfertask'
 import Accountlist from './Accountlist'
 import Album from './Album'
@@ -44,6 +45,7 @@ struct Index {
   @Local isShowCleardataSheet: boolean = false
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
+  controller = new HdsTabsController()
   backDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'back'
   })
@@ -74,22 +76,22 @@ struct Index {
     }
   }
 
-  get() {
-    this.backgroundImagePixelMap = this.getBackgroundImage()
+  async get() {
+    this.backgroundImagePixelMap = await this.getBackgroundImage()
     const oldShowAlbum = this.showAlbum
     this.showAlbum = this.commonSettingDataPreferences.getSync('showAlbum', true) as boolean
     if (oldShowAlbum !== this.showAlbum) {
       if (!oldShowAlbum) {
         if (this.index === 2) {
-          this.index = 3
+          this.controller.changeIndex(3)
         }
       }
       if (oldShowAlbum) {
         if (this.index === 2) {
-          this.index = 0
+          this.controller.changeIndex(0)
         }
         if (this.index === 3) {
-          this.index = 2
+          this.controller.changeIndex(2)
         }
       }
     }
@@ -103,12 +105,13 @@ struct Index {
     }
   }
 
-  getBackgroundImage() {
+  async getBackgroundImage() {
     const backgroundImagePath = this.context.filesDir + '/media/backgroundimage.png'
     const res = fileIo.accessSync(backgroundImagePath)
     if (res) {
       const backgroundImageSource = image.createImageSource(backgroundImagePath)
-      return backgroundImageSource.createPixelMapSync()
+      const backgroundImagePixelMap = await backgroundImageSource.createPixelMap()
+      return backgroundImagePixelMap
     }
     return
   }
@@ -158,8 +161,8 @@ struct Index {
             left: $r('sys.float.ohos_id_elements_margin_horizontal_l')
           })
       }
-      Tabs({
-        index: $$this.index
+      HdsTabs({
+        controller: this.controller
       }) {
         TabContent() {
           Cardlist()
@@ -191,8 +194,12 @@ struct Index {
       }
       .barBackgroundBlurStyle(BlurStyle.Regular)
       .barPosition(this.preferType === 0 ? BarPosition.End : BarPosition.Start)
+      .barWidth(this.preferType === 0 ? '100%' : 56)
       .scrollable(false)
       .vertical(this.preferType === 0 ? false : true)
+      .onChange((index) => {
+        this.index = index
+      })
       .onAnimationStart((index, targetIndex) => {
         if (targetIndex === 0) {
           this.title = '卡片'
@@ -236,7 +243,40 @@ struct Index {
       bottom: this.preferType === 0 ? 36 : 0,
       top: this.preferType === 0 ? 12 : 0
     })
-    .onAppear(() => {
+    .onAppear(async () => {
+      setInterval(async () => {
+        const transferTaskArray: TransferTaskItem[] = []
+        const transferTaskDataPreferences = preferences.getPreferencesSync(this.context, {
+          name: 'transferTask'
+        })
+        const transferTaskObject = transferTaskDataPreferences.getAllSync() as object
+        const transferTaskIdArray = Object.keys(transferTaskObject)
+        transferTaskIdArray.forEach(item => {
+          const transferTaskString = transferTaskObject[item] as string
+          const transferTask = JSON.parse(transferTaskString) as TransferTaskItem
+          transferTaskArray.push(transferTask)
+        })
+        if (!transferTaskArray.find(item => item.status === 'processing')) {
+          const pendingTransferTaskArray = transferTaskArray.filter(item => item.status === 'pending')
+          for (let i = 0; i < pendingTransferTaskArray.length; i++) {
+            const item = pendingTransferTaskArray[i]
+            let exec = true
+            if (getCurrentNetworkBearerType() === 0) {
+              const cellularDataUseRemind = this.commonSettingDataPreferences.getSync('cellularDataUseRemind', 0)
+              if (cellularDataUseRemind === 0 ||
+                (cellularDataUseRemind === 1 && item.totalSize > 200 * Math.pow(1024, 2))) {
+                exec = false
+              }
+            }
+            if (exec) {
+              item.status = 'processing'
+              transferTaskDataPreferences.putSync(item.id, JSON.stringify(item))
+              const task = new taskpool.LongTask(download, this.context, item.id)
+              await taskpool.execute(task)
+            }
+          }
+        }
+      }, 1000)
       this.context.eventHub.on('clearData', () => {
         if (!this.isShowCleardataSheet) {
           this.isShowCleardataSheet = true
@@ -248,26 +288,26 @@ struct Index {
         }
       })
       this.context.eventHub.on('card', () => {
-        this.index = 0
+        this.controller.changeIndex(0)
         this.context.eventHub.emit('refreshCardlist')
       })
       this.context.eventHub.on('file', () => {
-        this.index = 1
+        this.controller.changeIndex(1)
         this.context.eventHub.emit('refreshFilelist')
       })
       this.context.eventHub.on('album', () => {
         if (this.showAlbum) {
-          this.index = 2
+          this.controller.changeIndex(2)
           this.context.eventHub.emit('refreshAlbum')
         }
       })
       this.context.eventHub.on('me', () => {
         if (!this.showAlbum) {
-          this.index = 2
+          this.controller.changeIndex(2)
           this.context.eventHub.emit('refreshMe')
         }
         if (this.showAlbum) {
-          this.index = 3
+          this.controller.changeIndex(3)
           this.context.eventHub.emit('refreshMe')
         }
       })
@@ -298,44 +338,10 @@ struct Index {
           this.preferType = getPreferType(this.UIContext)
         }, 200)
       })
-      this.context.eventHub.on('refreshIndex', () => {
-        this.get()
+      this.context.eventHub.on('refreshIndex', async () => {
+        await this.get()
       })
-      this.get()
-      setInterval(async () => {
-        const transferTaskArray: TransferTaskItem[] = []
-        const transferTaskDataPreferences = preferences.getPreferencesSync(this.context, {
-          name: 'transferTask'
-        })
-        const transferTaskObject = transferTaskDataPreferences.getAllSync() as object
-        const transferTaskIdArray = Object.keys(transferTaskObject)
-        transferTaskIdArray.forEach(item => {
-          const transferTaskString = transferTaskObject[item] as string
-          const transferTask = JSON.parse(transferTaskString) as TransferTaskItem
-          transferTaskArray.push(transferTask)
-        })
-        if (!transferTaskArray.find(item => item.status === 'processing')) {
-          const pendingTransferTaskArray = transferTaskArray.filter(item => item.status === 'pending')
-          for (let i = 0; i < pendingTransferTaskArray.length; i++) {
-            const item = pendingTransferTaskArray[i]
-            let exec = true
-            if (getCurrentNetworkBearerType() === 0) {
-              const cellularDataUseRemind = this.commonSettingDataPreferences.getSync('cellularDataUseRemind', 0)
-              if (cellularDataUseRemind === 0 ||
-                (cellularDataUseRemind === 1 && item.totalSize > 200 * Math.pow(1024, 2))) {
-                exec = false
-              }
-            }
-            if (exec) {
-              item.status = 'processing'
-              transferTaskDataPreferences.putSync(item.id, JSON.stringify(item))
-              const task = new taskpool.LongTask(download, this.context, item.id)
-              await taskpool.execute(task)
-              return
-            }
-          }
-        }
-      }, 1000)
+      await this.get()
     })
     .onDisAppear(() => {
       this.context.eventHub.off('refreshIndex')

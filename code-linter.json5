@@ -26,6 +26,7 @@
     "@typescript-eslint/no-empty-function": "off",
     "@typescript-eslint/no-extra-non-null-assertion": "off",
     "@typescript-eslint/no-extra-parens": "off",
+    "@typescript-eslint/no-invalid-this": "off",
     "@typescript-eslint/no-magic-numbers": "off",
     "@typescript-eslint/no-misused-promises": "off",
     "@typescript-eslint/no-non-null-assertion": "off",
@@ -33,6 +34,7 @@
     "@typescript-eslint/no-unnecessary-condition": "off",
     "@typescript-eslint/no-unnecessary-type-assertion": "off",
     "@typescript-eslint/prefer-for-of": "off",
+    "@typescript-eslint/prefer-optional-chain": "off",
     "@typescript-eslint/prefer-readonly-parameter-types": "off",
     "@typescript-eslint/quotes": [
       "error",

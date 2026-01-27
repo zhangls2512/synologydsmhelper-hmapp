@@ -1,5 +1,6 @@
-import { LoadingDialog, promptAction } from '@kit.ArkUI'
+import { LengthMetrics, LoadingDialog, promptAction } from '@kit.ArkUI'
 import { rcp } from '@kit.RemoteCommunicationKit'
+import { HdsNavDestination } from '@kit.UIDesignKit'
 import { getDnsServer } from '../common/Dnsserver'
 
 interface Response {
@@ -25,7 +26,7 @@ struct Networktest {
   context = this.getUIContext().getHostContext()
 
   build() {
-    NavDestination() {
+    HdsNavDestination() {
       List() {
         ListItem() {
           Column() {
@@ -242,6 +243,16 @@ struct Networktest {
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
-    .title('网络测试')
+    .titleBar({
+      padding: {
+        end: LengthMetrics.vp(60)
+      },
+      content: {
+        title: {
+          mainTitle: '网络测试'
+        }
+      },
+      enableComponentSafeArea: true
+    })
   }
 }

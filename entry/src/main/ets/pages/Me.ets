@@ -1,7 +1,8 @@
 import { common } from '@kit.AbilityKit'
+import { url } from '@kit.ArkTS'
 import { display, LoadingDialog } from '@kit.ArkUI'
 import { exitAccount, getAccountInfo } from '../common/Account'
-import getPreferType from '../common/Prefertype'
+import { getPreferType } from '../common/Prefertype'
 import { dsmRequest } from '../common/Request'
 import Accountlist from './Accountlist'
 import Login from './Login'
@@ -237,8 +238,9 @@ export default struct Me {
                 })
                 if (data.index === 1) {
                   this.dialogControllerProgress.open()
-                  const res =
-                    await dsmRequest(this.context, this.UIContext, '', 'SYNO.Core.System', '&method=reboot', 2)
+                  const res = await dsmRequest(this.context, '', 'SYNO.Core.System', new url.URLParams({
+                    method: 'reboot'
+                  }).toString(), 2)
                   this.dialogControllerProgress.close()
                   if (res !== 'fail') {
                     await promptAction.openToast({
@@ -309,8 +311,9 @@ export default struct Me {
                 })
                 if (data.index === 1) {
                   this.dialogControllerProgress.open()
-                  const res =
-                    await dsmRequest(this.context, this.UIContext, '', 'SYNO.Core.System', '&method=shutdown', 2)
+                  const res = await dsmRequest(this.context, '', 'SYNO.Core.System', new url.URLParams({
+                    method: 'shutdown'
+                  }).toString(), 2)
                   this.dialogControllerProgress.close()
                   if (res !== 'fail') {
                     await promptAction.openToast({
@@ -475,11 +478,11 @@ export default struct Me {
                   })
                 })
                 dialogControllerProgress.open()
-                await exitAccount(this.context, this.UIContext, true)
+                await exitAccount(this.context, true)
                 dialogControllerProgress.close()
               }
               if (data.index === 1) {
-                await exitAccount(this.context, this.UIContext, false)
+                await exitAccount(this.context, false)
               }
               await promptAction.openToast({
                 message: '退出成功'

@@ -1,5 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
+import { url } from '@kit.ArkTS'
 import { getLoginStatus } from '../common/Account'
 import { dsmRequest } from '../common/Request'
 
@@ -25,8 +26,29 @@ interface NifItem {
 export default struct Networkinfo {
   @Local networkinfo: NetworkInfo | undefined = undefined
   @Local status: string = 'fail'
-  UIContext = this.getUIContext()
-  context = this.UIContext.getHostContext() as common.UIAbilityContext
+  context = this.getUIContext().getHostContext() as common.UIAbilityContext
+
+  async refresh() {
+    const cardSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+      name: 'cardSetting'
+    })
+    const isLogin = await getLoginStatus()
+    if ((cardSettingDataPreferences.getSync('cards', []) as string[]).includes('networkinfo') &&
+      this.status !== 'fail' && isLogin) {
+      const res = await dsmRequest(this.context, '', 'SYNO.Core.System', new url.URLParams({
+        method: 'info',
+        type: 'network'
+      }).toString())
+      if (res !== 'fail') {
+        this.networkinfo = res as NetworkInfo
+        this.status = 'success'
+      }
+      if (res === 'fail') {
+        this.networkinfo = undefined
+        this.status = 'fail'
+      }
+    }
+  }
 
   build() {
     Column() {
@@ -117,30 +139,15 @@ export default struct Networkinfo {
     .borderRadius(12)
     .padding(12)
     .width('100%')
-    .onAppear(() => {
+    .onAppear(async () => {
       this.context.eventHub.on('refreshCard', () => {
         this.status = 'pending'
       })
       this.status = 'pending'
       setInterval(async () => {
-        const cardSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-          name: 'cardSetting'
-        })
-        const isLogin = await getLoginStatus()
-        if ((cardSettingDataPreferences.getSync('cards', []) as string[]).includes('networkinfo') &&
-          this.status !== 'fail' && isLogin) {
-          const res =
-            await dsmRequest(this.context, this.UIContext, '', 'SYNO.Core.System', '&method=info&type=network')
-          if (res !== 'fail') {
-            this.networkinfo = res as NetworkInfo
-            this.status = 'success'
-          }
-          if (res === 'fail') {
-            this.networkinfo = undefined
-            this.status = 'fail'
-          }
-        }
+        await this.refresh()
       }, 5000)
+      await this.refresh()
     })
     .onDisAppear(() => {
       this.context.eventHub.off('refreshCard')
