@@ -470,17 +470,19 @@ export default struct Cleardata {
                 }
                 if (item === 'albumPhotoThumbnailCache') {
                   const accountInfo = await getAccountInfo()
-                  if (!accountInfo.id) {
-                    await fileIo.rmdir(this.context.cacheDir + '/albumphotothumbnail')
-                  }
-                  if (accountInfo.id) {
-                    const accounts = await fileIo.listFile(this.context.cacheDir + '/albumphotothumbnail/')
-                    const rmdirpromises = accounts.map(async (item) => {
-                      if (item !== sha256hash(accountInfo.path + '\0' + accountInfo.name)) {
-                        await fileIo.rmdir(this.context.cacheDir + '/albumphotothumbnail/' + item)
-                      }
-                    })
-                    await Promise.all(rmdirpromises)
+                  if (fileIo.accessSync(this.context.cacheDir + '/albumphotothumbnail')) {
+                    if (!accountInfo.id) {
+                      await fileIo.rmdir(this.context.cacheDir + '/albumphotothumbnail')
+                    }
+                    if (accountInfo.id) {
+                      const accounts = await fileIo.listFile(this.context.cacheDir + '/albumphotothumbnail/')
+                      const rmdirpromises = accounts.map(async (item) => {
+                        if (item !== sha256hash(accountInfo.path + '\0' + accountInfo.name)) {
+                          await fileIo.rmdir(this.context.cacheDir + '/albumphotothumbnail/' + item)
+                        }
+                      })
+                      await Promise.all(rmdirpromises)
+                    }
                   }
                 }
               })

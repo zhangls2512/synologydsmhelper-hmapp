@@ -210,8 +210,9 @@ export default struct Dockercontainer {
     .padding(12)
     .width('100%')
     .onAppear(async () => {
-      this.context.eventHub.on('refreshCard', () => {
+      this.context.eventHub.on('refreshCard', async () => {
         this.status = 'pending'
+        await this.refresh()
       })
       this.status = 'pending'
       setInterval(async () => {

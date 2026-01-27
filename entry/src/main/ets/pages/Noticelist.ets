@@ -13,7 +13,8 @@ interface NoticeItem {
   className: string,
   title: string,
   time: number,
-  msg: string[]
+  msg: string[],
+  mailContent?: string
 }
 
 interface NoticeResponseData {
@@ -78,7 +79,7 @@ export default struct Noticelist {
             return {
               level: '',
               className: noticeJson[filterTitle[0]][filterTitle[1]],
-              title: item.msg[0],
+              title: item.mailContent ? item.mailContent : item.msg[0],
               time: item.time,
               msg: []
             }
