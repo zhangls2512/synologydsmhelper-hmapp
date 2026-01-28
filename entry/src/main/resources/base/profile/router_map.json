@@ -16,6 +16,11 @@
       "buildFunction": "DebugsettingBuilder"
     },
     {
+      "name": "Sandboxfilelist",
+      "pageSourceFile": "src/main/ets/pages/Sandboxfilelist.ets",
+      "buildFunction": "SandboxfilelistBuilder"
+    },
+    {
       "name": "Synologyproductdownloadcenter",
       "pageSourceFile": "src/main/ets/pages/Synologyproductdownloadcenter.ets",
       "buildFunction": "SynologyproductdownloadcenterBuilder"
@@ -94,11 +99,6 @@
       "name": "Errorlog",
       "pageSourceFile": "src/main/ets/pages/Errorlog.ets",
       "buildFunction": "ErrorlogBuilder"
-    },
-    {
-      "name": "Deletefile",
-      "pageSourceFile": "src/main/ets/pages/Deletefile.ets",
-      "buildFunction": "DeletefileBuilder"
     },
     {
       "name": "License",

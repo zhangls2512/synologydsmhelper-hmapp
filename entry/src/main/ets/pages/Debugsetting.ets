@@ -446,8 +446,7 @@ struct Debugsetting {
               })
             Column() {
               Row() {
-                Text('沙箱文件删除工具')
-                  .fontColor($r('sys.color.warning'))
+                Text('沙箱文件管理器')
                   .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
@@ -480,7 +479,7 @@ struct Debugsetting {
               })
               .onClick(() => {
                 this.pageInfos.pushPath({
-                  name: 'Deletefile'
+                  name: 'Sandboxfilelist'
                 })
               })
 

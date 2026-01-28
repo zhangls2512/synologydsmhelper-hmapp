@@ -247,11 +247,10 @@ export default struct Setting {
                   const array = await getAccountList()
                   const filePath = this.context.tempDir + '/synologydsmhelperaccounts.txt'
                   await write(filePath, JSON.stringify(array))
-                  const file = fileIo.openSync(filePath)
                   const shareData = new systemShare.SharedData({
                     utd: uniformTypeDescriptor.UniformDataType.PLAIN_TEXT,
                     title: 'synologydsmhelperaccounts.txt',
-                    description: getSizeString(fileIo.statSync(file.fd).size),
+                    description: getSizeString(fileIo.statSync(filePath).size),
                     uri: fileUri.getUriFromPath(filePath)
                   })
                   harmonyShare.on('knockShare', async (sharableTarget) => {
@@ -271,7 +270,6 @@ export default struct Setting {
                       }
                     ],
                     onDidDisappear: async () => {
-                      fileIo.closeSync(file)
                       await fileIo.unlink(filePath)
                       harmonyShare.off('knockShare')
                       harmonyShare.off('gesturesShare')

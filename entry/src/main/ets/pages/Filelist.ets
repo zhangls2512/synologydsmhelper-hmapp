@@ -4,7 +4,6 @@ import { fastbuffer, url, util } from '@kit.ArkTS'
 import { display, LoadingDialog, promptAction } from '@kit.ArkUI'
 import { backgroundTaskManager } from '@kit.BackgroundTasksKit'
 import { fileIo, fileUri, picker } from '@kit.CoreFileKit'
-import { fileManagerService } from '@kit.FileManagerServiceKit'
 import { netBoost } from '@kit.NetworkBoostKit'
 import { notificationManager } from '@kit.NotificationKit'
 import { filePreview } from '@kit.PreviewKit'
@@ -13,6 +12,7 @@ import { systemShare } from '@kit.ShareKit'
 import { hdsEffect } from '@kit.UIDesignKit'
 import { getAccountInfo, getLoginStatus } from '../common/Account'
 import { getDnsServer } from '../common/Dnsserver'
+import { getFileTypeIcon } from '../common/File'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import { getPreferType } from '../common/Prefertype'
 import { dsmRequest, getDsmApiMaxVersion } from '../common/Request'
@@ -101,24 +101,10 @@ export default struct Filelist {
     })
   })
 
-  getFileTypeIcon(name: string) {
-    let houzhui = ''
-    const lastDotIndex = name.lastIndexOf('.')
-    if (lastDotIndex !== -1) {
-      houzhui = '.' + name.slice(lastDotIndex + 1)
-    }
-    try {
-      const fileType = uniformTypeDescriptor.getUniformDataTypeByFilenameExtension(houzhui)
-      return fileManagerService.getFileIconSync(fileType)
-    } catch {
-      return fileManagerService.getFileIconSync('.aaa')
-    }
-  }
-
   getPath() {
     let path = ''
     this.dirnames.forEach(item => {
-      path = path + '/' + item
+      path += '/' + item
     })
     return path
   }
@@ -1508,6 +1494,12 @@ export default struct Filelist {
             refreshing: $$this.loading
           }) {
             List() {
+              if (this.fileArray.length === 0) {
+                ListItem() {
+                  Text('无数据')
+                }
+                .width('100%')
+              }
               ForEach(this.fileArray, (item: FileItem, index) => {
                 ListItem() {
                   Column() {
@@ -1539,7 +1531,7 @@ export default struct Filelist {
                           })
                       }
                       if (!item.isdir) {
-                        Image(this.getFileTypeIcon(item.name))
+                        Image(getFileTypeIcon(item.name))
                           .fillColor($r('sys.color.icon_secondary'))
                           .height(24)
                           .margin({

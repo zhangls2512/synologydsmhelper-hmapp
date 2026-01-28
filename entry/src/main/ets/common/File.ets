@@ -1,6 +1,8 @@
+import { uniformTypeDescriptor } from '@kit.ArkData'
 import { util } from '@kit.ArkTS'
 import { promptAction } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
+import { fileManagerService } from '@kit.FileManagerServiceKit'
 
 export async function read(path: string, ignoreNotexist = false) {
   try {
@@ -82,4 +84,18 @@ export async function getDirectorySize(path: string) {
   } catch {
   }
   return totalSize
+}
+
+export function getFileTypeIcon(name: string) {
+  let houzhui = ''
+  const lastDotIndex = name.lastIndexOf('.')
+  if (lastDotIndex !== -1) {
+    houzhui = '.' + name.slice(lastDotIndex + 1)
+  }
+  try {
+    const fileType = uniformTypeDescriptor.getUniformDataTypeByFilenameExtension(houzhui)
+    return fileManagerService.getFileIconSync(fileType)
+  } catch {
+    return fileManagerService.getFileIconSync('.aaa')
+  }
 }
