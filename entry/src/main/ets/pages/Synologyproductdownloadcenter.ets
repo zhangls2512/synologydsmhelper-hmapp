@@ -108,7 +108,7 @@ struct Synologyproductdownloadcenter {
                   await session.get('https://www.synology.cn/api/support/findDownloadInfo?' + new url.URLParams({
                     lang: 'zh-cn',
                     product: this.product
-                  }))
+                  }).toString())
                 session.close()
                 dialogControllerProgress.close()
                 if (response.statusCode === 200) {
@@ -190,7 +190,7 @@ struct Synologyproductdownloadcenter {
                   if (res.info.androids) {
                     res.info.androids.detail.forEach(itema => {
                       itema.items.forEach(itemb => {
-                        const downloadUrl = itemb.files.find(item => item.is_china === true)?.url
+                        const downloadUrl = itemb.files.find(item => item.is_china)?.url
                         const allDownloadsUrl = itemb.notes.find(item => item.label === 'all_downloads')?.url
                         const releaseNotesUrl = itemb.notes.find(item => item.label === 'release_notes')?.url
                         this.files.push({

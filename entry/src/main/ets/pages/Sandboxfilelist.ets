@@ -101,7 +101,7 @@ struct Sandboxfilelist {
       this.fileArray = []
       try {
         const files = await fileIo.listFile(path)
-        const promises = files.map(async (item) => {
+        const promises = files.map(item => {
           const itemPath = path + '/' + item
           const isDir = fileIo.statSync(itemPath).isDirectory()
           if (!isDir) {
