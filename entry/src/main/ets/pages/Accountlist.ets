@@ -244,6 +244,7 @@ export default struct Accountlist {
                   name: item.name,
                   password: item.password,
                   sid: item.sid,
+                  synotoken: item.synotoken,
                   bz: item.bz,
                   isLogin: 'true'
                 })

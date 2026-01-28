@@ -466,7 +466,8 @@ export default struct Filelist {
                       },
                       headers: {
                         'accept-language': 'zh-CN',
-                        referer: accountInfo.path
+                        referer: accountInfo.path,
+                        'x-syno-token': accountInfo.synotoken
                       },
                       cookies: {
                         id: accountInfo.sid
@@ -789,7 +790,8 @@ export default struct Filelist {
                     errCode: 0,
                     type: 'download',
                     accountPath: accountInfo.path,
-                    accountSid: accountInfo.sid
+                    accountSid: accountInfo.sid,
+                    accountSynotoken: accountInfo.synotoken
                   }))
                 })
                 await promptAction.openToast({
@@ -1810,7 +1812,8 @@ export default struct Filelist {
                               },
                               headers: {
                                 'accept-language': 'zh-CN',
-                                referer: accountInfo.path
+                                referer: accountInfo.path,
+                                'x-syno-token': accountInfo.synotoken
                               },
                               cookies: {
                                 id: accountInfo.sid

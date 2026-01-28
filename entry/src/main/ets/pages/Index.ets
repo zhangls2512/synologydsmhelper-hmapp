@@ -27,7 +27,8 @@ export interface TransferTaskItem {
   errCode: number,
   type: string,
   accountPath: string,
-  accountSid: string
+  accountSid: string,
+  accountSynotoken: string
 }
 
 @Entry

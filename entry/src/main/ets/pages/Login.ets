@@ -9,10 +9,9 @@ import { getDnsServer } from '../common/Dnsserver'
 import openLink from '../common/Openlink'
 import { dsmRequest } from '../common/Request'
 
-export interface ResponseData {
-  account: string,
+export interface LoginResponseData {
   sid: string,
-  device_id: string
+  synotoken: string
 }
 
 @ComponentV2
@@ -266,7 +265,8 @@ export default struct Login {
                   method: 'login',
                   account: this.name,
                   passwd: this.password,
-                  otp_code: this.mfa
+                  otp_code: this.mfa,
+                  enable_syno_token: 'yes'
                 }).toString(), undefined, false, true)
                 netBoost.setSceneDesc({
                   scene: 'login',
@@ -281,7 +281,8 @@ export default struct Login {
                     method: 'login',
                     account: this.name,
                     passwd: this.password,
-                    otp_code: this.mfa
+                    otp_code: this.mfa,
+                    enable_syno_token: 'yes'
                   }).toString(), undefined, true)
                   netBoost.setSceneDesc({
                     scene: 'login',
@@ -323,7 +324,8 @@ export default struct Login {
                         method: 'login',
                         account: this.name,
                         passwd: this.password,
-                        otp_code: this.mfa
+                        otp_code: this.mfa,
+                        enable_syno_token: 'yes'
                       }).toString(), undefined, false, true)
                       netBoost.setSceneDesc({
                         scene: 'login',
@@ -338,7 +340,8 @@ export default struct Login {
                           method: 'login',
                           account: this.name,
                           passwd: this.password,
-                          otp_code: this.mfa
+                          otp_code: this.mfa,
+                          enable_syno_token: 'yes'
                         }).toString(), undefined, true)
                         netBoost.setSceneDesc({
                           scene: 'login',
@@ -370,12 +373,13 @@ export default struct Login {
               }
               dialogControllerProgress.close()
               if (res !== 'fail') {
-                const data = res as ResponseData
+                const data = res as LoginResponseData
                 await setAccount(this.context, {
                   path: path,
                   name: this.name,
                   password: this.password,
                   sid: data.sid,
+                  synotoken: data.synotoken,
                   bz: this.bz,
                   isLogin: 'true'
                 })

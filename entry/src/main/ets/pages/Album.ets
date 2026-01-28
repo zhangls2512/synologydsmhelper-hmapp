@@ -5,13 +5,12 @@ import { display, LoadingDialog, promptAction, SegmentButtonV2Items, TabSegmentB
 import { backgroundTaskManager } from '@kit.BackgroundTasksKit'
 import { zlib } from '@kit.BasicServicesKit'
 import { fileIo, fileUri, picker } from '@kit.CoreFileKit'
-import { image } from '@kit.ImageKit'
 import { MovingPhotoView, MovingPhotoViewController, photoAccessHelper } from '@kit.MediaLibraryKit'
 import { netBoost } from '@kit.NetworkBoostKit'
 import { notificationManager } from '@kit.NotificationKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { hdsEffect } from '@kit.UIDesignKit'
-import { getAccountInfo, getLoginStatus } from '../common/Account'
+import { AccountInfo, getAccountInfo, getLoginStatus } from '../common/Account'
 import { getDnsServer } from '../common/Dnsserver'
 import { sha256hash } from '../common/Hash'
 import { getCurrentNetworkBearerType } from '../common/Network'
@@ -25,8 +24,14 @@ interface Resolution {
   width: number
 }
 
+interface PhotoThumbnail {
+  sm: string,
+  cache_key: string
+}
+
 interface PhotoAdditional {
-  resolution: Resolution
+  resolution: Resolution,
+  thumbnail: PhotoThumbnail
 }
 
 interface PhotoItem {
@@ -135,13 +140,23 @@ export default struct Album {
     return photoIndex >= minIndex && photoIndex < minIndex + this.timelineArray[dateIndex].count
   }
 
-  async pushPhotoIntoPhotoArray(account: string, photoItem: PhotoItem, album: boolean) {
+  async pushPhotoIntoPhotoArray(account: AccountInfo, photoItem: PhotoItem, thumbnail: PhotoThumbnail, album: boolean) {
     if (photoItem.type === 'photo') {
       const inPhotoItem = photoItem
-      const dir = this.context.cacheDir + '/albumphotothumbnail/' + sha256hash(account)
+      const dir = this.context.cacheDir + '/albumphotothumbnail/' + sha256hash(account.path + '\0' + account.name)
       let thumbnailPath = dir + '/' + sha256hash(inPhotoItem.path) + '.jpeg'
+      let requestPath = inPhotoItem.url
       if (photoItem.filename.endsWith('.mv.png')) {
         thumbnailPath = dir + '/' + sha256hash(inPhotoItem.path) + '.mp4'
+      }
+      if (thumbnail.sm === 'ready') {
+        requestPath = account.path + '/synofoto/api/v2/p/Thumbnail/get?' + new url.URLParams({
+          id: String(inPhotoItem.id),
+          cache_key: thumbnail.cache_key,
+          type: 'unit',
+          size: 'sm',
+          SynoToken: account.synotoken.replace('.', '')
+        }).toString()
       }
       const thumbnailPathExist = fileIo.accessSync(thumbnailPath)
       if (!thumbnailPathExist) {
@@ -172,24 +187,6 @@ export default struct Album {
                   })
                   fileStream.closeSync()
                   if (!photoItem.filename.endsWith('.mv.png')) {
-                    const imageSource = image.createImageSource(thumbnailPath)
-                    const pixelMap = await imageSource.createPixelMap()
-                    const imageInfo = pixelMap.getImageInfoSync()
-                    let times = 1
-                    if (imageInfo.size.width > 300 || imageInfo.size.height > 300) {
-                      times = 300 / Math.max(imageInfo.size.width, imageInfo.size.height)
-                    }
-                    pixelMap.scaleSync(times, times)
-                    const file = fileIo.openSync(thumbnailPath, fileIo.OpenMode.WRITE_ONLY)
-                    const imagePacker = image.createImagePacker()
-                    await imagePacker.packToFile(pixelMap, file.fd, {
-                      format: 'image/jpeg',
-                      quality: 50
-                    })
-                    await imagePacker.release()
-                    await pixelMap.release()
-                    await imageSource.release()
-                    fileIo.closeSync(file)
                     inPhotoItem.thumbnailUri = fileUri.getUriFromPath(thumbnailPath)
                     if (!album) {
                       this.photoArray.push(inPhotoItem)
@@ -246,11 +243,14 @@ export default struct Album {
             }
           },
           headers: {
-            referer: account.split('\0')[0]
+            referer: account.path
+          },
+          cookies: {
+            id: account.sid
           }
         })
         try {
-          const response = await session.get(inPhotoItem.url)
+          const response = await session.get(requestPath)
           session.close()
           netBoost.setSceneDesc({
             scene: 'download',
@@ -419,7 +419,7 @@ export default struct Album {
                 method: 'list',
                 offset: String(offset),
                 limit: '5000',
-                additional: JSON.stringify(['resolution'])
+                additional: JSON.stringify(['resolution', 'thumbnail'])
               }).toString())
               if (photores !== 'fail') {
                 const photos = photores['list'] as PhotoResItem[]
@@ -444,7 +444,7 @@ export default struct Album {
                       const folderPath = folderres['folder']['name'] as string
                       const path = '/home/Photos' + folderPath + '/'
                       this.folderMap.set(item.folder_id, path)
-                      await this.pushPhotoIntoPhotoArray(account, {
+                      await this.pushPhotoIntoPhotoArray(accountInfo, {
                         id: item.id,
                         filename: item.filename,
                         filesize: item.filesize,
@@ -458,10 +458,10 @@ export default struct Album {
                         resolution: item.additional.resolution,
                         type: item.type,
                         thumbnailUri: ''
-                      }, false)
+                      }, item.additional.thumbnail, false)
                     }
                   } else {
-                    await this.pushPhotoIntoPhotoArray(account, {
+                    await this.pushPhotoIntoPhotoArray(accountInfo, {
                       id: item.id,
                       filename: item.filename,
                       filesize: item.filesize,
@@ -476,7 +476,7 @@ export default struct Album {
                       resolution: item.additional.resolution,
                       type: item.type,
                       thumbnailUri: ''
-                    }, false)
+                    }, item.additional.thumbnail, false)
                   }
                 }
                 offset += 5000
@@ -535,7 +535,7 @@ export default struct Album {
           method: 'list',
           offset: String(offset),
           limit: '5000',
-          additional: JSON.stringify(['resolution']),
+          additional: JSON.stringify(['resolution', 'thumbnail']),
           album_id: String(this.previewAlbum?.id)
         }).toString())
         if (photores !== 'fail') {
@@ -561,7 +561,7 @@ export default struct Album {
                 const folderPath = folderres['folder']['name'] as string
                 const path = '/home/Photos' + folderPath + '/'
                 this.folderMap.set(item.folder_id, path)
-                await this.pushPhotoIntoPhotoArray(account, {
+                await this.pushPhotoIntoPhotoArray(accountInfo, {
                   id: item.id,
                   filename: item.filename,
                   filesize: item.filesize,
@@ -575,10 +575,10 @@ export default struct Album {
                   resolution: item.additional.resolution,
                   type: item.type,
                   thumbnailUri: ''
-                }, true)
+                }, item.additional.thumbnail, true)
               }
             } else {
-              await this.pushPhotoIntoPhotoArray(account, {
+              await this.pushPhotoIntoPhotoArray(accountInfo, {
                 id: item.id,
                 filename: item.filename,
                 filesize: item.filesize,
@@ -593,7 +593,7 @@ export default struct Album {
                 resolution: item.additional.resolution,
                 type: item.type,
                 thumbnailUri: ''
-              }, true)
+              }, item.additional.thumbnail, true)
             }
           }
           offset += 5000
@@ -758,7 +758,8 @@ export default struct Album {
                   },
                   headers: {
                     'accept-language': 'zh-CN',
-                    referer: accountInfo.path
+                    referer: accountInfo.path,
+                    'x-syno-token': accountInfo.synotoken
                   },
                   cookies: {
                     id: accountInfo.sid
@@ -964,7 +965,8 @@ export default struct Album {
                       },
                       headers: {
                         'accept-language': 'zh-CN',
-                        referer: accountInfo.path
+                        referer: accountInfo.path,
+                        'x-syno-token': accountInfo.synotoken
                       },
                       cookies: {
                         id: accountInfo.sid

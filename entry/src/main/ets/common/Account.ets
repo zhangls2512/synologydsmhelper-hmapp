@@ -13,6 +13,7 @@ export interface AccountInfo {
   name: string,
   password: string,
   sid: string,
+  synotoken: string,
   bz: string,
   isLogin: string
 }
@@ -22,6 +23,7 @@ interface InAccountInfo {
   name: string,
   password: string,
   sid: string,
+  synotoken: string,
   bz: string,
   isLogin: string
 }
@@ -39,6 +41,7 @@ export async function setAccount(context: Context, accountInfo: InAccountInfo) {
   if (accountIndex !== -1) {
     const id = accounts[accountIndex].id
     await appAccountManager.setCredential(id, 'sid', accountInfo.sid)
+    await appAccountManager.setCredential(id, 'synotoken', accountInfo.synotoken)
     await appAccountManager.setCustomData(id, 'bz', accountInfo.bz)
     await appAccountManager.setCustomData(id, 'isLogin', accountInfo.isLogin)
   }
@@ -60,6 +63,7 @@ export async function setAccount(context: Context, accountInfo: InAccountInfo) {
     })
     await appAccountManager.setCredential(id, 'password', accountInfo.password)
     await appAccountManager.setCredential(id, 'sid', accountInfo.sid)
+    await appAccountManager.setCredential(id, 'synotoken', accountInfo.synotoken)
     if (oldAccountIndex !== -1) {
       await removeAccount(accounts[oldAccountIndex].id)
     }
@@ -91,6 +95,7 @@ export async function getAccountInfo(): Promise<AccountInfo> {
     name: '',
     password: '',
     sid: '',
+    synotoken: '',
     bz: '',
     isLogin: 'false'
   }
@@ -101,11 +106,6 @@ export async function getAccountList(): Promise<AccountInfo[]> {
   const appAccountIds = await appAccountManager.getAccountsByOwner('com.songjy.synologydsmhelper')
   const appAccounts: AccountInfo[] = []
   const promises = appAccountIds.map(async (item) => {
-    let bz = ''
-    try {
-      bz = appAccountManager.getCustomDataSync(item.name, 'bz')
-    } catch {
-    }
     const id = item.name
     try {
       appAccounts.push({
@@ -114,32 +114,12 @@ export async function getAccountList(): Promise<AccountInfo[]> {
         name: appAccountManager.getCustomDataSync(id, 'name'),
         password: await appAccountManager.getCredential(id, 'password'),
         sid: await appAccountManager.getCredential(id, 'sid'),
-        bz: bz,
+        synotoken: await appAccountManager.getCredential(id, 'synotoken'),
+        bz: appAccountManager.getCustomDataSync(item.name, 'bz'),
         isLogin: appAccountManager.getCustomDataSync(item.name, 'isLogin')
       })
     } catch {
-      const accountInfo: AccountInfo = {
-        id: id,
-        path: appAccountManager.getCustomDataSync(id, 'path'),
-        name: appAccountManager.getCustomDataSync(id, 'name'),
-        password: await appAccountManager.getCredential(id, 'password'),
-        sid: appAccountManager.getCustomDataSync(id, 'sid'),
-        bz: bz,
-        isLogin: appAccountManager.getCustomDataSync(item.name, 'isLogin')
-      }
-      appAccounts.push(accountInfo)
-      await removeAccount(id)
-      const newId = util.generateRandomUUID()
-      await appAccountManager.createAccount(newId, {
-        customData: {
-          path: accountInfo.path,
-          name: accountInfo.name,
-          bz: bz,
-          isLogin: accountInfo.isLogin
-        }
-      })
-      await appAccountManager.setCredential(id, 'password', accountInfo.password)
-      await appAccountManager.setCredential(id, 'sid', accountInfo.sid)
+      await removeAccount(id, true)
     }
   })
   await Promise.all(promises)
@@ -160,14 +140,16 @@ export async function exitAccount(context: Context, logout: boolean) {
   }
 }
 
-export async function removeAccount(id: string) {
+export async function removeAccount(id: string, hideToast?: boolean) {
   const accounts = await getAccountList()
   if (accounts.find(item => item.id === id)) {
     const appAccountManager = appAccount.createAppAccountManager()
     await appAccountManager.removeAccount(id)
-    await promptAction.openToast({
-      message: '删除成功'
-    })
+    if (!hideToast) {
+      await promptAction.openToast({
+        message: '删除成功'
+      })
+    }
   }
 }
 
@@ -189,6 +171,7 @@ export async function importAccounts(context: Context, UIContext: UIContext, uri
         name: item.name,
         password: item.password,
         sid: item.sid,
+        synotoken: item.synotoken,
         bz: bz,
         isLogin: item.isLogin
       })
@@ -253,6 +236,7 @@ export async function loginBestPathAccount(context: Context) {
           name: bestPathAccount.name,
           password: bestPathAccount.password,
           sid: bestPathAccount.sid,
+          synotoken: bestPathAccount.synotoken,
           bz: bestPathAccount.bz,
           isLogin: 'true'
         })

@@ -7,7 +7,7 @@ import { rcp } from '@kit.RemoteCommunicationKit'
 import { getAccountInfo, setAccount } from './Account'
 import { getDnsServer } from './Dnsserver'
 import { read, write } from './File'
-import { ResponseData } from '../pages/Login'
+import { LoginResponseData } from '../pages/Login'
 
 export interface ApiVersionItem {
   name: string,
@@ -116,7 +116,8 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
     },
     headers: {
       'accept-language': 'zh-CN',
-      referer: requestPath
+      referer: requestPath,
+      'x-syno-token': accountInfo.synotoken
     }
   })
   try {
@@ -193,7 +194,8 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
           },
           headers: {
             'accept-language': 'zh-CN',
-            referer: requestPath
+            referer: requestPath,
+            'x-syno-token': accountInfo.synotoken
           }
         })
         try {
@@ -326,7 +328,8 @@ export async function dsmRequest(context: Context, path: string, api: string, pa
     },
     headers: {
       'accept-language': 'zh-CN',
-      referer: requestPath
+      referer: requestPath,
+      'x-syno-token': accountInfo.synotoken
     },
     cookies: {
       id: accountInfo.sid
@@ -368,19 +371,21 @@ export async function dsmRequest(context: Context, path: string, api: string, pa
         const loginres = await dsmRequest(context, accountInfo.path, 'SYNO.API.Auth', new url.URLParams({
           method: 'login',
           account: accountInfo.name,
-          passwd: accountInfo.password
+          passwd: accountInfo.password,
+          enable_syno_token: 'yes'
         }).toString(), undefined, false, true)
         netBoost.setSceneDesc({
           scene: 'login',
           sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
         })
         if (loginres !== 'fail') {
-          const data = loginres as ResponseData
+          const data = loginres as LoginResponseData
           await setAccount(context, {
             path: accountInfo.path,
             name: accountInfo.name,
             password: accountInfo.password,
             sid: data.sid,
+            synotoken: data.synotoken,
             bz: accountInfo.bz,
             isLogin: 'true'
           })
@@ -393,19 +398,21 @@ export async function dsmRequest(context: Context, path: string, api: string, pa
         const loginresb = await dsmRequest(context, accountInfo.path, 'SYNO.API.Auth', new url.URLParams({
           method: 'login',
           account: accountInfo.name,
-          passwd: accountInfo.password
+          passwd: accountInfo.password,
+          enable_syno_token: 'yes'
         }).toString(), undefined, true, hide102ErrorCode)
         netBoost.setSceneDesc({
           scene: 'login',
           sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
         })
         if (loginresb !== 'fail') {
-          const data = loginresb as ResponseData
+          const data = loginresb as LoginResponseData
           await setAccount(context, {
             path: accountInfo.path,
             name: accountInfo.name,
             password: accountInfo.password,
             sid: data.sid,
+            synotoken: data.synotoken,
             bz: accountInfo.bz,
             isLogin: 'true'
           })
