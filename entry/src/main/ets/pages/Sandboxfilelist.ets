@@ -315,7 +315,7 @@ struct Sandboxfilelist {
                   .stateStyles({
                     normal: {
                       .backgroundColor(this.hoverId === index ? $r('sys.color.interactive_hover') :
-                        $r('sys.color.background_secondary'))
+                        $r('app.color.sheet_background'))
                     },
                     pressed: {
                       .backgroundColor($r('sys.color.comp_background_secondary'))
