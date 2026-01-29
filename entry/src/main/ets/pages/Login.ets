@@ -266,6 +266,7 @@ export default struct Login {
                   account: this.name,
                   passwd: this.password,
                   otp_code: this.mfa,
+                  session: 'webui',
                   enable_syno_token: 'yes'
                 }).toString(), undefined, false, true)
                 netBoost.setSceneDesc({
@@ -282,6 +283,7 @@ export default struct Login {
                     account: this.name,
                     passwd: this.password,
                     otp_code: this.mfa,
+                    session: 'webui',
                     enable_syno_token: 'yes'
                   }).toString(), undefined, true)
                   netBoost.setSceneDesc({
@@ -325,6 +327,7 @@ export default struct Login {
                         account: this.name,
                         passwd: this.password,
                         otp_code: this.mfa,
+                        session: 'webui',
                         enable_syno_token: 'yes'
                       }).toString(), undefined, false, true)
                       netBoost.setSceneDesc({
@@ -341,6 +344,7 @@ export default struct Login {
                           account: this.name,
                           passwd: this.password,
                           otp_code: this.mfa,
+                          session: 'webui',
                           enable_syno_token: 'yes'
                         }).toString(), undefined, true)
                         netBoost.setSceneDesc({

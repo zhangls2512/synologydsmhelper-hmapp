@@ -372,6 +372,7 @@ export async function dsmRequest(context: Context, path: string, api: string, pa
           method: 'login',
           account: accountInfo.name,
           passwd: accountInfo.password,
+          session: 'webui',
           enable_syno_token: 'yes'
         }).toString(), undefined, false, true)
         netBoost.setSceneDesc({
@@ -399,6 +400,7 @@ export async function dsmRequest(context: Context, path: string, api: string, pa
           method: 'login',
           account: accountInfo.name,
           passwd: accountInfo.password,
+          session: 'webui',
           enable_syno_token: 'yes'
         }).toString(), undefined, true, hide102ErrorCode)
         netBoost.setSceneDesc({

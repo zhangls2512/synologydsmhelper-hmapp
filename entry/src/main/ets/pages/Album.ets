@@ -1147,7 +1147,7 @@ export default struct Album {
                                   ListItem() {
                                     Column() {
                                       if (photoItem.item.type === 'photo') {
-                                        Image(photoItem.item.url)
+                                        Image(photoItem.item.thumbnailUri)
                                           .alt($r('app.media.imageloading'))
                                           .aspectRatio(1)
                                           .autoResize(true)
@@ -1610,7 +1610,7 @@ export default struct Album {
                       ListItem() {
                         Column() {
                           if (photoItem.item.type === 'photo') {
-                            Image(photoItem.item.url)
+                            Image(photoItem.item.thumbnailUri)
                               .alt($r('app.media.imageloading'))
                               .aspectRatio(1)
                               .autoResize(true)

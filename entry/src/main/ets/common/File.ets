@@ -26,7 +26,7 @@ export async function read(path: string, ignoreNotexist = false) {
 export async function readUri(uri: string) {
   try {
     const file = fileIo.openSync(uri)
-    const size = fileIo.statSync(file.fd).size
+    const size = fileIo.statSync(uri).size
     const filebuffer = new ArrayBuffer(size)
     await fileIo.read(file.fd, filebuffer)
     fileIo.closeSync(file)
