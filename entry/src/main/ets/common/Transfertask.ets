@@ -8,11 +8,11 @@ import { netBoost } from '@kit.NetworkBoostKit'
 import { notificationManager } from '@kit.NotificationKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { getDnsServer } from './Dnsserver'
+import { write } from './File'
 import { getPermission } from './Permission'
 import { DsmResponse, getDsmApiMaxVersion } from './Request'
 import { getSizeString } from './Stringformat'
 import { TransferTaskItem } from '../pages/Index'
-import { write } from './File'
 
 @Concurrent
 export async function download(context: Context, id: string) {
