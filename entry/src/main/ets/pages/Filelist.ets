@@ -387,7 +387,9 @@ export default struct Filelist {
                           httpEventsHandler: {
                             onDataReceive: async (incomingData) => {
                               await fileStream.write(incomingData)
-                              this.transferredSize = this.transferredSize + incomingData.byteLength
+                            },
+                            onDownloadProgress: async (totalSize, transferredSize) => {
+                              this.transferredSize = transferredSize
                               try {
                                 await notificationManager.publish({
                                   content: {
@@ -395,9 +397,8 @@ export default struct Filelist {
                                     systemLiveView: {
                                       typeCode: 8,
                                       title: '正在下载文件：' + item.name,
-                                      text: '进度：' + Number((this.transferredSize / this.totalSize).toFixed(2)) * 100 +
-                                        '% (' + getSizeString(this.transferredSize) + '/' +
-                                      getSizeString(this.totalSize) + ')'
+                                      text: '进度：' + Number((transferredSize / totalSize).toFixed(2)) * 100 + '% (' +
+                                      getSizeString(transferredSize) + '/' + getSizeString(totalSize) + ')'
                                     }
                                   },
                                   id: continuousTaskNotificationInfo.notificationId,
@@ -406,9 +407,9 @@ export default struct Filelist {
                                     name: 'downloadTemplate',
                                     data: {
                                       title: '正在下载文件，进度：' +
-                                        Number((this.transferredSize / this.totalSize).toFixed(2)) * 100 + '%',
+                                        Number((transferredSize / totalSize).toFixed(2)) * 100 + '%',
                                       fileName: item.name,
-                                      progressValue: Number((this.transferredSize / this.totalSize).toFixed(2)) * 100
+                                      progressValue: Number((transferredSize / totalSize).toFixed(2)) * 100
                                     }
                                   }
                                 })
@@ -425,20 +426,11 @@ export default struct Filelist {
                               await backgroundTaskManager.stopBackgroundRunning(this.context)
                               this.isShowProgressSheet = false
                               this.context.eventHub.off('cancelDownload')
-                              if (this.transferredSize < item.additional.size - 1) {
-                                this.transferredSize = 0
-                                this.totalSize = 0
-                                await promptAction.openToast({
-                                  message: '下载失败'
-                                })
-                              }
-                              if (this.transferredSize >= item.additional.size - 1) {
-                                this.transferredSize = 0
-                                this.totalSize = 0
-                                await promptAction.openToast({
-                                  message: '下载成功'
-                                })
-                              }
+                              this.transferredSize = 0
+                              this.totalSize = 0
+                              await promptAction.openToast({
+                                message: '下载完成'
+                              })
                             }
                           }
                         },
@@ -451,7 +443,6 @@ export default struct Filelist {
                         }
                       },
                       headers: {
-                        'accept-language': 'zh-CN',
                         referer: accountInfo.path,
                         'x-syno-token': accountInfo.synotoken
                       },
@@ -1205,6 +1196,68 @@ export default struct Filelist {
                 }
               })
 
+              if (!this.copyMovePath && !this.multipleSelect) {
+                Blank()
+                Column() {
+                  Image($r('app.media.upload'))
+                }
+                .borderRadius(20)
+                .height(40)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+                .padding(11)
+                .stateStyles({
+                  normal: {
+                    .backgroundColor($r('sys.color.interactive_hover'))
+                  },
+                  pressed: {
+                    .backgroundColor($r('sys.color.interactive_pressed'))
+                  }
+                })
+                .visualEffect(new hdsEffect.HdsEffectBuilder()
+                  .pointLight({
+                    sourceType: hdsEffect.PointLightSourceType.SOFT,
+                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                  })
+                  .buildEffect())
+                .width(40)
+                .onClick(async () => {
+                  const documentViewPicker = new picker.DocumentViewPicker(this.context)
+                  const uris = await documentViewPicker.select()
+                  if (uris.length > 0) {
+                    const transferTaskDataPreferences = preferences.getPreferencesSync(this.context, {
+                      name: 'transferTask'
+                    })
+                    const accountInfo = await getAccountInfo()
+                    let count = 0
+                    uris.forEach(item => {
+                      const size = fileIo.statSync(item).size
+                      if (size <= 2147483647) {
+                        const id = util.generateRandomUUID()
+                        transferTaskDataPreferences.putSync(id, JSON.stringify({
+                          id: id,
+                          path: this.getPath(),
+                          name: new fileUri.FileUri(item).name,
+                          transferredSize: 0,
+                          totalSize: size,
+                          status: 'pending',
+                          errCode: 0,
+                          type: 'upload',
+                          accountPath: accountInfo.path,
+                          accountSid: accountInfo.sid,
+                          accountSynotoken: accountInfo.synotoken,
+                          srcFileUri: item
+                        }))
+                        count++
+                      }
+                    })
+                    await promptAction.openToast({
+                      message: count + ' 项传输任务已添加'
+                    })
+                  }
+                })
+              }
               if (this.copyMovePath) {
                 Blank()
                 Column() {
@@ -1710,7 +1763,9 @@ export default struct Filelist {
                                   httpEventsHandler: {
                                     onDataReceive: async (incomingData) => {
                                       await fileStream.write(incomingData)
-                                      this.transferredSize = this.transferredSize + incomingData.byteLength
+                                    },
+                                    onDownloadProgress: async (totalSize, transferredSize) => {
+                                      this.transferredSize = transferredSize
                                       try {
                                         await notificationManager.publish({
                                           content: {
@@ -1718,10 +1773,9 @@ export default struct Filelist {
                                             systemLiveView: {
                                               typeCode: 8,
                                               title: '正在下载文件：' + item.name,
-                                              text: '进度：' +
-                                                Number((this.transferredSize / this.totalSize).toFixed(2)) * 100 +
-                                                '% (' + getSizeString(this.transferredSize) + '/' +
-                                              getSizeString(this.totalSize) + ')'
+                                              text: '进度：' + Number((transferredSize / totalSize).toFixed(2)) * 100 +
+                                                '% (' + getSizeString(transferredSize) + '/' +
+                                              getSizeString(totalSize) + ')'
                                             }
                                           },
                                           id: continuousTaskNotificationInfo.notificationId,
@@ -1730,11 +1784,9 @@ export default struct Filelist {
                                             name: 'downloadTemplate',
                                             data: {
                                               title: '正在下载文件，进度：' +
-                                                Number((this.transferredSize / this.totalSize).toFixed(2)) * 100 + '%',
+                                                Number((transferredSize / totalSize).toFixed(2)) * 100 + '%',
                                               fileName: item.name,
-                                              progressValue: Number((this.transferredSize /
-                                              this.totalSize).toFixed(2)) *
-                                                100
+                                              progressValue: Number((transferredSize / totalSize).toFixed(2)) * 100
                                             }
                                           }
                                         })
@@ -1751,45 +1803,35 @@ export default struct Filelist {
                                       await backgroundTaskManager.stopBackgroundRunning(this.context)
                                       this.isShowProgressSheet = false
                                       this.context.eventHub.off('cancelDownload')
-                                      if (this.transferredSize < item.additional.size - 1) {
-                                        this.transferredSize = 0
-                                        this.totalSize = 0
-                                        await promptAction.openToast({
-                                          message: '下载失败'
-                                        })
-                                        await fileIo.unlink(filePath)
-                                      }
-                                      if (this.transferredSize >= item.additional.size - 1) {
-                                        this.transferredSize = 0
-                                        this.totalSize = 0
-                                        const uri = fileUri.getUriFromPath(filePath)
-                                        const filePreviewType =
-                                          this.commonSettingDataPreferences.getSync('filePreviewType', 0)
-                                        if (filePreviewType === 0) {
-                                          const canPreview = await filePreview.canPreview(this.context, uri)
-                                          if (!canPreview) {
-                                            await promptAction.openToast({
-                                              message: '此类型不支持预览'
-                                            })
-                                          }
-                                          if (canPreview) {
-                                            await filePreview.openPreview(this.context, {
-                                              title: item.name,
-                                              uri: uri,
-                                              mimeType: ''
-                                            })
-                                          }
-                                        }
-                                        if (filePreviewType === 1) {
-                                          await this.context.startAbility({
-                                            action: 'ohos.want.action.viewData',
-                                            uri: uri,
-                                            parameters: {
-                                              'ohos.ability.params.showDefaultPicker': true
-                                            },
-                                            flags: wantConstant.Flags.FLAG_AUTH_READ_URI_PERMISSION
+                                      this.transferredSize = 0
+                                      this.totalSize = 0
+                                      const uri = fileUri.getUriFromPath(filePath)
+                                      const filePreviewType =
+                                        this.commonSettingDataPreferences.getSync('filePreviewType', 0)
+                                      if (filePreviewType === 0) {
+                                        const canPreview = await filePreview.canPreview(this.context, uri)
+                                        if (!canPreview) {
+                                          await promptAction.openToast({
+                                            message: '此类型不支持预览'
                                           })
                                         }
+                                        if (canPreview) {
+                                          await filePreview.openPreview(this.context, {
+                                            title: item.name,
+                                            uri: uri,
+                                            mimeType: ''
+                                          })
+                                        }
+                                      }
+                                      if (filePreviewType === 1) {
+                                        await this.context.startAbility({
+                                          action: 'ohos.want.action.viewData',
+                                          uri: uri,
+                                          parameters: {
+                                            'ohos.ability.params.showDefaultPicker': true
+                                          },
+                                          flags: wantConstant.Flags.FLAG_AUTH_READ_URI_PERMISSION
+                                        })
                                       }
                                     }
                                   }
@@ -1803,7 +1845,6 @@ export default struct Filelist {
                                 }
                               },
                               headers: {
-                                'accept-language': 'zh-CN',
                                 referer: accountInfo.path,
                                 'x-syno-token': accountInfo.synotoken
                               },

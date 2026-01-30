@@ -155,7 +155,7 @@ export default struct Album {
           cache_key: thumbnail.cache_key,
           type: 'unit',
           size: 'sm',
-          SynoToken: account.synotoken.replace('.', '')
+          SynoToken: account.synotoken
         }).toString()
       }
       const thumbnailPathExist = fileIo.accessSync(thumbnailPath)
@@ -757,7 +757,6 @@ export default struct Album {
                     }
                   },
                   headers: {
-                    'accept-language': 'zh-CN',
                     referer: accountInfo.path,
                     'x-syno-token': accountInfo.synotoken
                   },
@@ -900,7 +899,9 @@ export default struct Album {
                           httpEventsHandler: {
                             onDataReceive: async (incomingData) => {
                               await fileStream.write(incomingData)
-                              this.transferredSize = this.transferredSize + incomingData.byteLength
+                            },
+                            onDownloadProgress: async (totalSize, transferredSize) => {
+                              this.transferredSize = transferredSize
                               try {
                                 await notificationManager.publish({
                                   content: {
@@ -908,9 +909,8 @@ export default struct Album {
                                     systemLiveView: {
                                       typeCode: 8,
                                       title: '正在下载文件：' + item.filename,
-                                      text: '进度：' + Number((this.transferredSize / this.totalSize).toFixed(2)) * 100 +
-                                        '% (' + getSizeString(this.transferredSize) + '/' +
-                                      getSizeString(this.totalSize) + ')'
+                                      text: '进度：' + Number((transferredSize / totalSize).toFixed(2)) * 100 + '% (' +
+                                      getSizeString(transferredSize) + '/' + getSizeString(totalSize) + ')'
                                     }
                                   },
                                   id: continuousTaskNotificationInfo.notificationId,
@@ -919,9 +919,9 @@ export default struct Album {
                                     name: 'downloadTemplate',
                                     data: {
                                       title: '正在下载文件，进度：' +
-                                        Number((this.transferredSize / this.totalSize).toFixed(2)) * 100 + '%',
+                                        Number((transferredSize / totalSize).toFixed(2)) * 100 + '%',
                                       fileName: item.filename,
-                                      progressValue: Number((this.transferredSize / this.totalSize).toFixed(2)) * 100
+                                      progressValue: Number((transferredSize / totalSize).toFixed(2)) * 100
                                     }
                                   }
                                 })
@@ -938,20 +938,11 @@ export default struct Album {
                               await backgroundTaskManager.stopBackgroundRunning(this.context)
                               this.isShowProgressSheet = false
                               this.context.eventHub.off('cancelDownload')
-                              if (this.transferredSize < item.filesize - 1) {
-                                this.transferredSize = 0
-                                this.totalSize = 0
-                                await promptAction.openToast({
-                                  message: '下载失败'
-                                })
-                              }
-                              if (this.transferredSize >= item.filesize - 1) {
-                                this.transferredSize = 0
-                                this.totalSize = 0
-                                await promptAction.openToast({
-                                  message: '下载成功'
-                                })
-                              }
+                              this.transferredSize = 0
+                              this.totalSize = 0
+                              await promptAction.openToast({
+                                message: '下载完成'
+                              })
                             }
                           }
                         },
@@ -964,7 +955,6 @@ export default struct Album {
                         }
                       },
                       headers: {
-                        'accept-language': 'zh-CN',
                         referer: accountInfo.path,
                         'x-syno-token': accountInfo.synotoken
                       },
@@ -1078,6 +1068,13 @@ export default struct Album {
                     await promptAction.openToast({
                       message: '删除成功'
                     })
+                    if (item.type === 'photo') {
+                      await fileIo.unlink(new fileUri.FileUri(item.thumbnailUri).path)
+                    }
+                    if (item.type === 'movingphoto') {
+                      await fileIo.unlink(new fileUri.FileUri(item.movingPhotoImageUri).path)
+                      await fileIo.unlink(new fileUri.FileUri(item.movingPhotoVideoUri).path)
+                    }
                     this.previewPhoto = undefined
                     this.backDataPreferences.putSync('album', false)
                     await this.get()

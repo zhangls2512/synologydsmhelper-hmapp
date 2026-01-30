@@ -23,7 +23,7 @@ interface Error {
   code: number
 }
 
-interface DsmResponse {
+export interface DsmResponse {
   data: object,
   error: Error,
   success: boolean
@@ -37,17 +37,17 @@ interface DeveloperErrorResponse {
 
 async function getCacheApiVersion(context: Context, path: string, api: string) {
   let apiVersionCacheValue = ''
-  const apiVersionCacheDataPreferences = preferences.getPreferencesSync(context, {
-    name: 'apiVersionCache'
+  const cacheDataPreferences = preferences.getPreferencesSync(context, {
+    name: 'cache'
   })
   const filePath = context.cacheDir + '/apiversion.txt'
-  if (!apiVersionCacheDataPreferences.getSync('apiVersionCache', '')) {
-    apiVersionCacheValue = apiVersionCacheDataPreferences.getSync('apiVersionCache', '') as string
+  if (!cacheDataPreferences.getSync('apiVersion', '')) {
+    apiVersionCacheValue = cacheDataPreferences.getSync('apiVersion', '') as string
   } else {
     if (!fileIo.accessSync(filePath)) {
       return -1
     } else {
-      const filestring = await read(filePath, true)
+      const filestring = await read(filePath)
       if (filestring !== 'fail') {
         apiVersionCacheValue = filestring
       } else {
@@ -73,7 +73,7 @@ async function getCacheApiVersion(context: Context, path: string, api: string) {
         }
       }
     } catch {
-      await preferences.deletePreferences(context, 'apiVersionCache')
+      await preferences.deletePreferences(context, 'apiVersion')
       if (fileIo.accessSync(filePath)) {
         await fileIo.unlink(filePath)
       }
@@ -115,7 +115,6 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
       }
     },
     headers: {
-      'accept-language': 'zh-CN',
       referer: requestPath,
       'x-syno-token': accountInfo.synotoken
     }
@@ -143,12 +142,12 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
         const version = res.data[api].maxVersion as number
         if (cacheApiVersionSetting) {
           let apiVersionCache: ApiVersionCacheItem[] = []
-          const apiVersionCacheDataPreferences = preferences.getPreferencesSync(context, {
-            name: 'apiVersionCache'
+          const cacheDataPreferences = preferences.getPreferencesSync(context, {
+            name: 'cache'
           })
           try {
-            apiVersionCache = JSON.parse(apiVersionCacheDataPreferences.getSync('apiVersionCache',
-              '') as string) as ApiVersionCacheItem[]
+            apiVersionCache =
+              JSON.parse(cacheDataPreferences.getSync('apiVersion', '') as string) as ApiVersionCacheItem[]
           } catch {
           }
           const apiVersionCacheItem = apiVersionCache.find(item => item.path === requestPath)
@@ -175,7 +174,7 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
             }
           }
           const apiVersionCacheValue = JSON.stringify(apiVersionCache)
-          apiVersionCacheDataPreferences.putSync('apiVersionCache', apiVersionCacheValue)
+          cacheDataPreferences.putSync('apiVersion', apiVersionCacheValue)
           const filePath = context.cacheDir + '/apiversion.txt'
           await write(filePath, apiVersionCacheValue)
         }
@@ -193,7 +192,6 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
             }
           },
           headers: {
-            'accept-language': 'zh-CN',
             referer: requestPath,
             'x-syno-token': accountInfo.synotoken
           }
@@ -221,11 +219,11 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
               const version = resb.data[api].maxVersion as number
               if (cacheApiVersionSetting) {
                 let apiVersionCache: ApiVersionCacheItem[] = []
-                const apiVersionCacheDataPreferences = preferences.getPreferencesSync(context, {
-                  name: 'apiVersionCache'
+                const cacheDataPreferences = preferences.getPreferencesSync(context, {
+                  name: 'cache'
                 })
                 try {
-                  apiVersionCache = JSON.parse(apiVersionCacheDataPreferences.getSync('apiVersionCache',
+                  apiVersionCache = JSON.parse(cacheDataPreferences.getSync('apiVersion',
                     '') as string) as ApiVersionCacheItem[]
                 } catch {
                 }
@@ -253,7 +251,7 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
                   }
                 }
                 const apiVersionCacheValue = JSON.stringify(apiVersionCache)
-                apiVersionCacheDataPreferences.putSync('apiVersionCache', apiVersionCacheValue)
+                cacheDataPreferences.putSync('apiVersion', apiVersionCacheValue)
                 const filePath = context.cacheDir + '/apiversion.txt'
                 await write(filePath, apiVersionCacheValue)
               }

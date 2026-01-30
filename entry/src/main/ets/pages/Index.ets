@@ -8,7 +8,7 @@ import { HdsTabs, HdsTabsController } from '@kit.UIDesignKit'
 import { importAccounts } from '../common/Account'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import { getPreferType } from '../common/Prefertype'
-import { download } from '../common/Transfertask'
+import { download, upload } from '../common/Transfertask'
 import Accountlist from './Accountlist'
 import Album from './Album'
 import Cardlist from './Cardlist'
@@ -28,7 +28,8 @@ export interface TransferTaskItem {
   type: string,
   accountPath: string,
   accountSid: string,
-  accountSynotoken: string
+  accountSynotoken: string,
+  srcFileUri: string
 }
 
 @Entry
@@ -47,6 +48,7 @@ struct Index {
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   controller = new HdsTabsController()
+  intervalId = -1
   backDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'back'
   })
@@ -245,7 +247,7 @@ struct Index {
       top: this.preferType === 0 ? 12 : 0
     })
     .onAppear(async () => {
-      setInterval(async () => {
+      this.intervalId = setInterval(async () => {
         const transferTaskArray: TransferTaskItem[] = []
         const transferTaskDataPreferences = preferences.getPreferencesSync(this.context, {
           name: 'transferTask'
@@ -272,8 +274,14 @@ struct Index {
             if (exec) {
               item.status = 'processing'
               transferTaskDataPreferences.putSync(item.id, JSON.stringify(item))
-              const task = new taskpool.LongTask(download, this.context, item.id)
-              await taskpool.execute(task)
+              if (item.type === 'download') {
+                const task = new taskpool.LongTask(download, this.context, item.id)
+                await taskpool.execute(task)
+              }
+              if (item.type === 'upload') {
+                const task = new taskpool.LongTask(upload, this.context, item.id)
+                await taskpool.execute(task)
+              }
             }
           }
         }
@@ -345,6 +353,7 @@ struct Index {
       await this.get()
     })
     .onDisAppear(() => {
+      clearInterval(this.intervalId)
       this.context.eventHub.off('refreshIndex')
       this.context.eventHub.off('uploadErrorLog')
       this.context.eventHub.off('dialog')

@@ -1,7 +1,17 @@
 import { common } from '@kit.AbilityKit'
+import { preferences } from '@kit.ArkData'
 import { url } from '@kit.ArkTS'
 import { LoadingDialog, promptAction } from '@kit.ArkUI'
+import { fileIo } from '@kit.CoreFileKit'
+import { getAccountInfo } from '../common/Account'
+import { read, write } from '../common/File'
 import { dsmRequest } from '../common/Request'
+import { sha256hash } from '../common/Hash'
+
+interface NoticeJsonString {
+  jsonString: string,
+  dsmVersion: number
+}
 
 interface NoticeString {
   msg: string,
@@ -36,6 +46,80 @@ export default struct Noticelist {
     }
   }
 
+  async getNoticeJsonString(): Promise<NoticeJsonString | 'fail'> {
+    const accountInfo = await getAccountInfo()
+    const filePath6 = this.context.cacheDir + '/noticejsonstring/' + sha256hash(accountInfo.path) + '.6.txt'
+    const filePath7 = this.context.cacheDir + '/noticejsonstring/' + sha256hash(accountInfo.path) + '.7.txt'
+    let exist6 = fileIo.accessSync(filePath6)
+    let exist7 = fileIo.accessSync(filePath7)
+    const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+      name: 'commonSetting'
+    })
+    const cacheNoticeJsonString = commonSettingDataPreferences.getSync('cacheNoticeJsonString', true)
+    if (!cacheNoticeJsonString) {
+      exist6 = false
+      exist7 = false
+    }
+    if (!exist6 && !exist7) {
+      const res7 = await dsmRequest(this.context, '', 'SYNO.Core.DSMNotify.Strings', new url.URLParams({
+        method: 'get',
+        lang: 'chs'
+      }).toString())
+      if (res7 !== 'fail') {
+        const noticeJsonString7 = JSON.stringify(res7)
+        if (cacheNoticeJsonString) {
+          await write(filePath7, noticeJsonString7)
+        }
+        return {
+          jsonString: noticeJsonString7,
+          dsmVersion: 7
+        }
+      } else {
+        const res6 = await dsmRequest(this.context, '', 'SYNO.Core.Desktop.UIString', new url.URLParams({
+          method: 'getjs',
+          lang: 'chs'
+        }).toString())
+        if (res6 !== 'fail') {
+          const noticeString = res6 as string
+          const startIndex = noticeString.indexOf('=')
+          const endIndex = noticeString.indexOf('}}')
+          const noticeJsonString6 = noticeString.substring(startIndex + 1, endIndex + 2)
+          if (cacheNoticeJsonString) {
+            await write(filePath6, noticeJsonString6)
+          }
+          return {
+            jsonString: noticeJsonString6,
+            dsmVersion: 6
+          }
+        } else {
+          return 'fail'
+        }
+      }
+    } else {
+      let filestring = ''
+      if (exist6) {
+        filestring = await read(filePath6)
+      } else {
+        filestring = await read(filePath7)
+      }
+      if (filestring !== 'fail') {
+        if (exist6) {
+          return {
+            jsonString: filestring,
+            dsmVersion: 6
+          }
+        } else {
+          return {
+            jsonString: filestring,
+            dsmVersion: 7
+          }
+        }
+      } else {
+        return 'fail'
+      }
+    }
+  }
+
   async get() {
     this.loading = true
     const res = await dsmRequest(this.context, '', 'SYNO.Core.DSMNotify', new url.URLParams({
@@ -44,47 +128,41 @@ export default struct Noticelist {
     }).toString())
     if (res !== 'fail') {
       const noticeres = res as NoticeResponseData
-      const resa = await dsmRequest(this.context, '', 'SYNO.Core.DSMNotify.Strings', new url.URLParams({
-        method: 'get',
-        lang: 'chs'
-      }).toString())
-      if (resa !== 'fail') {
-        this.loading = false
-        const noticeString = resa as Record<string, NoticeString>
-        this.notices = noticeres.items.map((item): NoticeItem => {
-          const msgJson = JSON.parse(item.msg[0]) as object
-          return {
-            level: item.level,
-            className: noticeString[item.title].title,
-            title: noticeString[item.title].msg.replace(/%(\w+)%/g, (match): string => msgJson[match]),
-            time: item.time,
-            msg: []
+      if (noticeres.items.length > 0) {
+        const noticeJsonString = await this.getNoticeJsonString()
+        if (noticeJsonString !== 'fail') {
+          this.loading = false
+          if (noticeJsonString.dsmVersion === 6) {
+            const noticeJson = JSON.parse(noticeJsonString.jsonString) as Record<string, Record<string, string>>
+            this.notices = noticeres.items.map((item): NoticeItem => {
+              const filterTitle = item.title.split(':')
+              return {
+                level: '',
+                className: noticeJson[filterTitle[0]][filterTitle[1]],
+                title: item.mailContent ? item.mailContent : item.msg[0],
+                time: item.time,
+                msg: []
+              }
+            })
           }
-        })
-      }
-      if (resa === 'fail') {
-        const resb = await dsmRequest(this.context, '', 'SYNO.Core.Desktop.UIString', new url.URLParams({
-          method: 'getjs',
-          lang: 'chs'
-        }).toString())
-        this.loading = false
-        if (resb !== 'fail') {
-          const noticeString = resb as string
-          const startIndex = noticeString.indexOf('=')
-          const endIndex = noticeString.indexOf('}}')
-          const noticeJsonString = noticeString.substring(startIndex + 1, endIndex + 2)
-          const noticeJson = JSON.parse(noticeJsonString) as Record<string, Record<string, string>>
-          this.notices = noticeres.items.map((item): NoticeItem => {
-            const filterTitle = item.title.split(':')
-            return {
-              level: '',
-              className: noticeJson[filterTitle[0]][filterTitle[1]],
-              title: item.mailContent ? item.mailContent : item.msg[0],
-              time: item.time,
-              msg: []
-            }
-          })
+          if (noticeJsonString.dsmVersion === 7) {
+            const noticeString = JSON.parse(noticeJsonString.jsonString) as Record<string, NoticeString>
+            this.notices = noticeres.items.map((item): NoticeItem => {
+              const msgJson = JSON.parse(item.msg[0]) as object
+              return {
+                level: item.level,
+                className: noticeString[item.title].title,
+                title: noticeString[item.title].msg.replace(/%(\w+)%/g, (match): string => msgJson[match]),
+                time: item.time,
+                msg: []
+              }
+            })
+          }
         }
+      }
+      if (noticeres.items.length === 0) {
+        this.loading = false
+        this.notices = []
       }
     }
     if (res === 'fail') {
