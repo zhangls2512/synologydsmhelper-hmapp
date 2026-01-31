@@ -161,6 +161,16 @@
         }
       },
       {
+        "name": "ohos.permission.MEDIA_LOCATION",
+        "reason": "$string:MEDIA_LOCATION_reason",
+        "usedScene": {
+          "abilities": [
+            "EntryAbility"
+          ],
+          "when": "inuse"
+        }
+      },
+      {
         "name": "ohos.permission.READ_IMAGEVIDEO",
         "reason": "$string:READ_IMAGEVIDEO_reason",
         "usedScene": {

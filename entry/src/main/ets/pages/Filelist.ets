@@ -423,7 +423,8 @@ export default struct Filelist {
                                 sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
                               })
                               fileStream.closeSync()
-                              await backgroundTaskManager.stopBackgroundRunning(this.context)
+                              await backgroundTaskManager.stopBackgroundRunning(this.context,
+                                continuousTaskNotificationInfo.continuousTaskId)
                               this.isShowProgressSheet = false
                               this.context.eventHub.off('cancelDownload')
                               this.transferredSize = 0
@@ -470,13 +471,6 @@ export default struct Filelist {
                         mode: 'download'
                       }).toString())
                       if (response.statusCode !== 200) {
-                        session.close()
-                        netBoost.setSceneDesc({
-                          scene: 'download',
-                          sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-                        })
-                        fileStream.closeSync()
-                        await backgroundTaskManager.stopBackgroundRunning(this.context)
                         this.isShowProgressSheet = false
                         this.transferredSize = 0
                         this.totalSize = 0
@@ -486,16 +480,6 @@ export default struct Filelist {
                         })
                       }
                     } catch (err) {
-                      session.close()
-                      netBoost.setSceneDesc({
-                        scene: 'download',
-                        sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-                      })
-                      fileStream.closeSync()
-                      try {
-                        await backgroundTaskManager.stopBackgroundRunning(this.context)
-                      } catch {
-                      }
                       this.isShowProgressSheet = false
                       this.transferredSize = 0
                       this.totalSize = 0
@@ -880,7 +864,8 @@ export default struct Filelist {
                       }
                       if (statusres['finished']) {
                         finished = true
-                        await backgroundTaskManager.stopBackgroundRunning(this.context)
+                        await backgroundTaskManager.stopBackgroundRunning(this.context,
+                          continuousTaskNotificationInfo.continuousTaskId)
                         await promptAction.openToast({
                           message: '复制成功'
                         })
@@ -1230,30 +1215,25 @@ export default struct Filelist {
                       name: 'transferTask'
                     })
                     const accountInfo = await getAccountInfo()
-                    let count = 0
                     uris.forEach(item => {
-                      const size = fileIo.statSync(item).size
-                      if (size <= 2147483647) {
-                        const id = util.generateRandomUUID()
-                        transferTaskDataPreferences.putSync(id, JSON.stringify({
-                          id: id,
-                          path: this.getPath(),
-                          name: new fileUri.FileUri(item).name,
-                          transferredSize: 0,
-                          totalSize: size,
-                          status: 'pending',
-                          errCode: 0,
-                          type: 'upload',
-                          accountPath: accountInfo.path,
-                          accountSid: accountInfo.sid,
-                          accountSynotoken: accountInfo.synotoken,
-                          srcFileUri: item
-                        }))
-                        count++
-                      }
+                      const id = util.generateRandomUUID()
+                      transferTaskDataPreferences.putSync(id, JSON.stringify({
+                        id: id,
+                        path: this.getPath(),
+                        name: new fileUri.FileUri(item).name,
+                        transferredSize: 0,
+                        totalSize: fileIo.statSync(item).size,
+                        status: 'pending',
+                        errCode: 0,
+                        type: 'upload',
+                        accountPath: accountInfo.path,
+                        accountSid: accountInfo.sid,
+                        accountSynotoken: accountInfo.synotoken,
+                        srcFileUri: item
+                      }))
                     })
                     await promptAction.openToast({
-                      message: count + ' 项传输任务已添加'
+                      message: uris.length + ' 项传输任务已添加'
                     })
                   }
                 })
@@ -1390,7 +1370,8 @@ export default struct Filelist {
                         }
                         if (statusres['finished']) {
                           finished = true
-                          await backgroundTaskManager.stopBackgroundRunning(this.context)
+                          await backgroundTaskManager.stopBackgroundRunning(this.context,
+                            continuousTaskNotificationInfo.continuousTaskId)
                           await promptAction.openToast({
                             message: text + '成功'
                           })
@@ -1800,7 +1781,8 @@ export default struct Filelist {
                                         sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
                                       })
                                       fileStream.closeSync()
-                                      await backgroundTaskManager.stopBackgroundRunning(this.context)
+                                      await backgroundTaskManager.stopBackgroundRunning(this.context,
+                                        continuousTaskNotificationInfo.continuousTaskId)
                                       this.isShowProgressSheet = false
                                       this.context.eventHub.off('cancelDownload')
                                       this.transferredSize = 0
@@ -1873,14 +1855,7 @@ export default struct Filelist {
                                   mode: 'download'
                                 }).toString())
                               if (response.statusCode !== 200) {
-                                session.close()
-                                netBoost.setSceneDesc({
-                                  scene: 'download',
-                                  sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-                                })
-                                fileStream.closeSync()
                                 await fileIo.unlink(filePath)
-                                await backgroundTaskManager.stopBackgroundRunning(this.context)
                                 this.isShowProgressSheet = false
                                 this.transferredSize = 0
                                 this.totalSize = 0
@@ -1890,17 +1865,7 @@ export default struct Filelist {
                                 })
                               }
                             } catch (err) {
-                              session.close()
-                              netBoost.setSceneDesc({
-                                scene: 'download',
-                                sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-                              })
-                              fileStream.closeSync()
                               await fileIo.unlink(filePath)
-                              try {
-                                await backgroundTaskManager.stopBackgroundRunning(this.context)
-                              } catch {
-                              }
                               this.isShowProgressSheet = false
                               this.transferredSize = 0
                               this.totalSize = 0

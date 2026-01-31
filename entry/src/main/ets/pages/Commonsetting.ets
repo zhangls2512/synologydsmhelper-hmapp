@@ -552,7 +552,6 @@ struct Commonsetting {
                     const pickerres = await photoPicker.select({
                       MIMEType: photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE,
                       maxSelectNumber: 1,
-                      isPhotoTakingSupported: false,
                       isOriginalSupported: false
                     })
                     const fileSource = fileIo.openSync(pickerres.photoUris[0])
@@ -598,7 +597,6 @@ struct Commonsetting {
                       const pickerres = await photoPicker.select({
                         MIMEType: photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE,
                         maxSelectNumber: 1,
-                        isPhotoTakingSupported: false,
                         isOriginalSupported: false
                       })
                       const fileSource = fileIo.openSync(pickerres.photoUris[0])

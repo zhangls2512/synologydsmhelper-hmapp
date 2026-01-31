@@ -1,4 +1,4 @@
-import { common } from '@kit.AbilityKit'
+import { common, wantConstant } from '@kit.AbilityKit'
 import { uniformTypeDescriptor } from '@kit.ArkData'
 import { LengthMetrics, promptAction } from '@kit.ArkUI'
 import { fileIo, fileUri } from '@kit.CoreFileKit'
@@ -335,8 +335,13 @@ struct Sandboxfilelist {
                       const uri = fileUri.getUriFromPath(item.path)
                       const canPreview = await filePreview.canPreview(this.context, uri)
                       if (!canPreview) {
-                        await promptAction.openToast({
-                          message: '此类型不支持预览'
+                        await this.context.startAbility({
+                          action: 'ohos.want.action.viewData',
+                          uri: uri,
+                          parameters: {
+                            'ohos.ability.params.showDefaultPicker': true
+                          },
+                          flags: wantConstant.Flags.FLAG_AUTH_READ_URI_PERMISSION
                         })
                       }
                       if (canPreview) {

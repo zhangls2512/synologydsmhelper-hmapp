@@ -48,7 +48,6 @@ struct Index {
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   controller = new HdsTabsController()
-  intervalId = -1
   backDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'back'
   })
@@ -247,7 +246,7 @@ struct Index {
       top: this.preferType === 0 ? 12 : 0
     })
     .onAppear(async () => {
-      this.intervalId = setInterval(async () => {
+      setInterval(async () => {
         const transferTaskArray: TransferTaskItem[] = []
         const transferTaskDataPreferences = preferences.getPreferencesSync(this.context, {
           name: 'transferTask'
@@ -353,7 +352,6 @@ struct Index {
       await this.get()
     })
     .onDisAppear(() => {
-      clearInterval(this.intervalId)
       this.context.eventHub.off('refreshIndex')
       this.context.eventHub.off('uploadErrorLog')
       this.context.eventHub.off('dialog')
