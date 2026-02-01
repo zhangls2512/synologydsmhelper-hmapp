@@ -5,6 +5,7 @@ import { display, LoadingDialog, promptAction, SegmentButtonV2Items, TabSegmentB
 import { backgroundTaskManager } from '@kit.BackgroundTasksKit'
 import { zlib } from '@kit.BasicServicesKit'
 import { fileIo, fileUri, picker } from '@kit.CoreFileKit'
+import { mapCommon, MapComponent, petalMaps, site } from '@kit.MapKit'
 import { MovingPhotoView, MovingPhotoViewController, photoAccessHelper } from '@kit.MediaLibraryKit'
 import { netBoost } from '@kit.NetworkBoostKit'
 import { notificationManager } from '@kit.NotificationKit'
@@ -31,9 +32,24 @@ interface PhotoThumbnail {
   cache_key: string
 }
 
+interface PhotoExif {
+  aperture: string,
+  camera: string,
+  exposure_time: string,
+  focal_length: string,
+  iso: string
+}
+
+interface PhotoGps {
+  latitude: number,
+  longitude: number
+}
+
 interface PhotoAdditional {
   resolution: Resolution,
-  thumbnail: PhotoThumbnail
+  thumbnail: PhotoThumbnail,
+  exif: PhotoExif,
+  gps: PhotoGps
 }
 
 interface PhotoItem {
@@ -44,7 +60,7 @@ interface PhotoItem {
   folder_id: number,
   url: string,
   path: string,
-  resolution: Resolution,
+  additional: PhotoAdditional,
   type: string,
   thumbnailUri: string,
   movingPhoto?: photoAccessHelper.MovingPhoto,
@@ -108,6 +124,7 @@ export default struct Album {
   @Local isShowInfoSheet: boolean = false
   @Local hoverId: number = -1
   @Local photoItemWidth: number = 0
+  @Local photoAddress: string = ''
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   account = ''
@@ -415,7 +432,7 @@ export default struct Album {
                 method: 'list',
                 offset: String(offset),
                 limit: '5000',
-                additional: JSON.stringify(['resolution', 'thumbnail'])
+                additional: JSON.stringify(['exif', 'gps', 'resolution', 'thumbnail'])
               }).toString())
               if (photores !== 'fail') {
                 const photos = photores['list'] as PhotoResItem[]
@@ -454,7 +471,7 @@ export default struct Album {
                           '?tid=' + tid + '&mode=open&dlink=' + Array.from(textEncoder.encodeInto(path + item.filename))
                           .map(byte => byte.toString(16).padStart(2, '0')).join(''),
                         path: path + item.filename,
-                        resolution: item.additional.resolution,
+                        additional: item.additional,
                         type: item.type,
                         thumbnailUri: ''
                       }, item.additional.thumbnail, false)
@@ -467,12 +484,11 @@ export default struct Album {
                       time: item.time,
                       folder_id: item.folder_id,
                       url: accountInfo.path + '/fbdownload/' +
-                      item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
-                        '?tid=' + tid + '&mode=open&dlink=' +
+                      item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') + '?tid=' + tid + '&mode=open&dlink=' +
                       Array.from(textEncoder.encodeInto(this.folderMap.get(item.folder_id) + item.filename))
                         .map(byte => byte.toString(16).padStart(2, '0')).join(''),
                       path: this.folderMap.get(item.folder_id) + item.filename,
-                      resolution: item.additional.resolution,
+                      additional: item.additional,
                       type: item.type,
                       thumbnailUri: ''
                     }, item.additional.thumbnail, false)
@@ -534,7 +550,7 @@ export default struct Album {
           method: 'list',
           offset: String(offset),
           limit: '5000',
-          additional: JSON.stringify(['resolution', 'thumbnail']),
+          additional: JSON.stringify(['exif', 'gps', 'resolution', 'thumbnail']),
           album_id: String(this.previewAlbum?.id)
         }).toString())
         if (photores !== 'fail') {
@@ -558,7 +574,10 @@ export default struct Album {
                   return
                 }
                 const folderPath = folderres['folder']['name'] as string
-                const path = '/home/Photos' + folderPath + '/'
+                let path = '/home/Photos' + folderPath
+                if (folderPath !== '/') {
+                  path += '/'
+                }
                 this.folderMap.set(item.folder_id, path)
                 await this.pushPhotoIntoPhotoArray(accountInfo, {
                   id: item.id,
@@ -566,12 +585,11 @@ export default struct Album {
                   filesize: item.filesize,
                   time: item.time,
                   folder_id: item.folder_id,
-                  url: accountInfo.path + '/fbdownload/' +
-                  item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
+                  url: accountInfo.path + '/fbdownload/' + item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
                     '?tid=' + tid + '&mode=open&dlink=' + Array.from(textEncoder.encodeInto(path + item.filename))
                     .map(byte => byte.toString(16).padStart(2, '0')).join(''),
                   path: path + item.filename,
-                  resolution: item.additional.resolution,
+                  additional: item.additional,
                   type: item.type,
                   thumbnailUri: ''
                 }, item.additional.thumbnail, true)
@@ -589,7 +607,7 @@ export default struct Album {
                 Array.from(textEncoder.encodeInto(this.folderMap.get(item.folder_id) + item.filename))
                   .map(byte => byte.toString(16).padStart(2, '0')).join(''),
                 path: this.folderMap.get(item.folder_id) + item.filename,
-                resolution: item.additional.resolution,
+                additional: item.additional,
                 type: item.type,
                 thumbnailUri: ''
               }, item.additional.thumbnail, true)
@@ -604,6 +622,23 @@ export default struct Album {
     }
   }
 
+  getDayNightMode() {
+    const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+      name: 'commonSetting'
+    })
+    const colorMode = commonSettingDataPreferences.getSync('colorMode', 0)
+    if (colorMode === 0) {
+      return mapCommon.DayNightMode.AUTO
+    }
+    if (colorMode === 1) {
+      return mapCommon.DayNightMode.DAY
+    }
+    if (colorMode === 2) {
+      return mapCommon.DayNightMode.NIGHT
+    }
+    return mapCommon.DayNightMode.AUTO
+  }
+
   @Builder
   InfoSheetBuilder() {
     List() {
@@ -615,6 +650,7 @@ export default struct Album {
                 .fontWeight(FontWeight.Medium)
               Span(this.previewPhoto.filename)
             }
+            .enableAutoSpacing(true)
 
             Text() {
               Span('时间：')
@@ -638,7 +674,8 @@ export default struct Album {
               Text() {
                 Span('尺寸：')
                   .fontWeight(FontWeight.Medium)
-                Span(this.previewPhoto.resolution.width + 'x' + this.previewPhoto.resolution.height)
+                Span(this.previewPhoto.additional.resolution.width + 'x' +
+                this.previewPhoto.additional.resolution.height)
               }
               .margin({
                 top: $r('sys.float.ohos_id_text_margin_vertical')
@@ -649,9 +686,125 @@ export default struct Album {
                 .fontWeight(FontWeight.Medium)
               Span(this.previewPhoto.path)
             }
+            .enableAutoSpacing(true)
             .margin({
               top: $r('sys.float.ohos_id_text_margin_vertical')
             })
+
+            if (this.previewPhoto.additional.exif.camera) {
+              Text() {
+                Span('相机型号：')
+                  .fontWeight(FontWeight.Medium)
+                Span(this.previewPhoto.additional.exif.camera)
+              }
+              .margin({
+                top: $r('sys.float.ohos_id_text_margin_vertical')
+              })
+            }
+            if (this.previewPhoto.additional.exif.aperture) {
+              Text() {
+                Span('光圈：')
+                  .fontWeight(FontWeight.Medium)
+                Span(this.previewPhoto.additional.exif.aperture)
+              }
+              .margin({
+                top: $r('sys.float.ohos_id_text_margin_vertical')
+              })
+            }
+            if (this.previewPhoto.additional.exif.exposure_time) {
+              Text() {
+                Span('曝光时间：')
+                  .fontWeight(FontWeight.Medium)
+                Span(this.previewPhoto.additional.exif.exposure_time)
+              }
+              .margin({
+                top: $r('sys.float.ohos_id_text_margin_vertical')
+              })
+            }
+            if (this.previewPhoto.additional.exif.focal_length) {
+              Text() {
+                Span('焦距：')
+                  .fontWeight(FontWeight.Medium)
+                Span(this.previewPhoto.additional.exif.focal_length)
+              }
+              .margin({
+                top: $r('sys.float.ohos_id_text_margin_vertical')
+              })
+            }
+            if (this.previewPhoto.additional.exif.iso) {
+              Text() {
+                Span('感光度：')
+                  .fontWeight(FontWeight.Medium)
+                Span(this.previewPhoto.additional.exif.iso)
+              }
+              .margin({
+                top: $r('sys.float.ohos_id_text_margin_vertical')
+              })
+            }
+            if (this.previewPhoto.additional.gps) {
+              Text() {
+                Span('纬度：')
+                  .fontWeight(FontWeight.Medium)
+                Span(String(this.previewPhoto.additional.gps.latitude))
+              }
+              .margin({
+                top: $r('sys.float.ohos_id_text_margin_vertical')
+              })
+
+              Text() {
+                Span('经度：')
+                  .fontWeight(FontWeight.Medium)
+                Span(String(this.previewPhoto.additional.gps.longitude))
+              }
+              .margin({
+                top: $r('sys.float.ohos_id_text_margin_vertical')
+              })
+
+              Text() {
+                Span('地点：')
+                  .fontWeight(FontWeight.Medium)
+                Span(String(this.photoAddress))
+                  .fontColor($r('sys.color.font_emphasize'))
+              }
+              .margin({
+                top: $r('sys.float.ohos_id_text_margin_vertical')
+              })
+              .onClick(async () => {
+                if (this.previewPhoto) {
+                  await petalMaps.openMapPoiDetail(this.context, {
+                    destinationPosition: {
+                      latitude: this.previewPhoto.additional.gps.latitude,
+                      longitude: this.previewPhoto.additional.gps.longitude
+                    }
+                  })
+                }
+              })
+
+              MapComponent({
+                mapOptions: {
+                  position: {
+                    target: {
+                      latitude: this.previewPhoto.additional.gps.latitude,
+                      longitude: this.previewPhoto.additional.gps.longitude
+                    },
+                    zoom: 17
+                  },
+                  rotateGesturesEnabled: false,
+                  scrollGesturesEnabled: false,
+                  zoomGesturesEnabled: false,
+                  tiltGesturesEnabled: false,
+                  zoomControlsEnabled: false,
+                  compassControlsEnabled: false,
+                  dayNightMode: this.getDayNightMode()
+                },
+                mapCallback: () => {
+                }
+              })
+                .height(300)
+                .margin({
+                  top: $r('sys.float.ohos_id_text_margin_vertical')
+                })
+            }
           }
           .alignItems(HorizontalAlign.Start)
           .margin({
@@ -1300,7 +1453,17 @@ export default struct Album {
                                               message: '发生错误，错误信息：' + err.message
                                             })
                                           })
-                                          .onClick(() => {
+                                          .onClick(async () => {
+                                            if (photoItem.item.additional.gps) {
+                                              const res = await site.reverseGeocode({
+                                                location: {
+                                                  latitude: photoItem.item.additional.gps.latitude,
+                                                  longitude: photoItem.item.additional.gps.longitude
+                                                },
+                                                language: 'zh-CN'
+                                              })
+                                              this.photoAddress = res.addressDescription
+                                            }
                                             this.previewPhoto = photoItem.item
                                             this.backDataPreferences.putSync('album', true)
                                           })
@@ -1322,7 +1485,17 @@ export default struct Album {
                                               message: '加载动态照片时发生错误'
                                             })
                                           })
-                                          .onClick(() => {
+                                          .onClick(async () => {
+                                            if (photoItem.item.additional.gps) {
+                                              const res = await site.reverseGeocode({
+                                                location: {
+                                                  latitude: photoItem.item.additional.gps.latitude,
+                                                  longitude: photoItem.item.additional.gps.longitude
+                                                },
+                                                language: 'zh-CN'
+                                              })
+                                              this.photoAddress = res.addressDescription
+                                            }
                                             this.previewPhoto = photoItem.item
                                             this.backDataPreferences.putSync('album', true)
                                           })
@@ -1344,7 +1517,17 @@ export default struct Album {
                                           })
                                       }
                                     }
-                                    .onClick(() => {
+                                    .onClick(async () => {
+                                      if (photoItem.item.additional.gps) {
+                                        const res = await site.reverseGeocode({
+                                          location: {
+                                            latitude: photoItem.item.additional.gps.latitude,
+                                            longitude: photoItem.item.additional.gps.longitude
+                                          },
+                                          language: 'zh-CN'
+                                        })
+                                        this.photoAddress = res.addressDescription
+                                      }
                                       this.previewPhoto = photoItem.item
                                       this.backDataPreferences.putSync('album', true)
                                     })
@@ -1534,6 +1717,16 @@ export default struct Album {
                         const maxIndex = photoArray.length - 1
                         if (gestureEvent.offsetX > 0) {
                           if (index !== 0) {
+                            if (photoArray[index - 1].additional.gps) {
+                              const res = await site.reverseGeocode({
+                                location: {
+                                  latitude: photoArray[index - 1].additional.gps.latitude,
+                                  longitude: photoArray[index - 1].additional.gps.longitude
+                                },
+                                language: 'zh-CN'
+                              })
+                              this.photoAddress = res.addressDescription
+                            }
                             this.previewPhoto = photoArray[index - 1]
                             this.backDataPreferences.putSync('album', true)
                           }
@@ -1545,6 +1738,16 @@ export default struct Album {
                         }
                         if (gestureEvent.offsetX < 0) {
                           if (index !== maxIndex) {
+                            if (photoArray[index + 1].additional.gps) {
+                              const res = await site.reverseGeocode({
+                                location: {
+                                  latitude: photoArray[index + 1].additional.gps.latitude,
+                                  longitude: photoArray[index + 1].additional.gps.longitude
+                                },
+                                language: 'zh-CN'
+                              })
+                              this.photoAddress = res.addressDescription
+                            }
                             this.previewPhoto = photoArray[index + 1]
                             this.backDataPreferences.putSync('album', true)
                           }
@@ -1596,6 +1799,16 @@ export default struct Album {
                         const maxIndex = photoArray.length - 1
                         if (gestureEvent.offsetX > 0) {
                           if (index !== 0) {
+                            if (photoArray[index - 1].additional.gps) {
+                              const res = await site.reverseGeocode({
+                                location: {
+                                  latitude: photoArray[index - 1].additional.gps.latitude,
+                                  longitude: photoArray[index - 1].additional.gps.longitude
+                                },
+                                language: 'zh-CN'
+                              })
+                              this.photoAddress = res.addressDescription
+                            }
                             this.previewPhoto = photoArray[index - 1]
                             this.backDataPreferences.putSync('album', true)
                           }
@@ -1607,6 +1820,16 @@ export default struct Album {
                         }
                         if (gestureEvent.offsetX < 0) {
                           if (index !== maxIndex) {
+                            if (photoArray[index + 1].additional.gps) {
+                              const res = await site.reverseGeocode({
+                                location: {
+                                  latitude: photoArray[index + 1].additional.gps.latitude,
+                                  longitude: photoArray[index + 1].additional.gps.longitude
+                                },
+                                language: 'zh-CN'
+                              })
+                              this.photoAddress = res.addressDescription
+                            }
                             this.previewPhoto = photoArray[index + 1]
                             this.backDataPreferences.putSync('album', true)
                           }
@@ -1764,7 +1987,17 @@ export default struct Album {
                                   message: '发生错误，错误信息：' + err.message
                                 })
                               })
-                              .onClick(() => {
+                              .onClick(async () => {
+                                if (photoItem.item.additional.gps) {
+                                  const res = await site.reverseGeocode({
+                                    location: {
+                                      latitude: photoItem.item.additional.gps.latitude,
+                                      longitude: photoItem.item.additional.gps.longitude
+                                    },
+                                    language: 'zh-CN'
+                                  })
+                                  this.photoAddress = res.addressDescription
+                                }
                                 this.previewPhoto = photoItem.item
                                 this.backDataPreferences.putSync('album', true)
                               })
@@ -1786,7 +2019,17 @@ export default struct Album {
                                   message: '加载动态照片时发生错误'
                                 })
                               })
-                              .onClick(() => {
+                              .onClick(async () => {
+                                if (photoItem.item.additional.gps) {
+                                  const res = await site.reverseGeocode({
+                                    location: {
+                                      latitude: photoItem.item.additional.gps.latitude,
+                                      longitude: photoItem.item.additional.gps.longitude
+                                    },
+                                    language: 'zh-CN'
+                                  })
+                                  this.photoAddress = res.addressDescription
+                                }
                                 this.previewPhoto = photoItem.item
                                 this.backDataPreferences.putSync('album', true)
                               })
@@ -1808,7 +2051,17 @@ export default struct Album {
                               })
                           }
                         }
-                        .onClick(() => {
+                        .onClick(async () => {
+                          if (photoItem.item.additional.gps) {
+                            const res = await site.reverseGeocode({
+                              location: {
+                                latitude: photoItem.item.additional.gps.latitude,
+                                longitude: photoItem.item.additional.gps.longitude
+                              },
+                              language: 'zh-CN'
+                            })
+                            this.photoAddress = res.addressDescription
+                          }
                           this.previewPhoto = photoItem.item
                           this.backDataPreferences.putSync('album', true)
                         })
