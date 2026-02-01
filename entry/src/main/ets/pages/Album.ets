@@ -438,7 +438,10 @@ export default struct Album {
                         return
                       }
                       const folderPath = folderres['folder']['name'] as string
-                      const path = '/home/Photos' + folderPath + '/'
+                      let path = '/home/Photos' + folderPath
+                      if (folderPath !== '/') {
+                        path += '/'
+                      }
                       this.folderMap.set(item.folder_id, path)
                       await this.pushPhotoIntoPhotoArray(accountInfo, {
                         id: item.id,
