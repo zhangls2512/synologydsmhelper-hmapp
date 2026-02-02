@@ -146,7 +146,7 @@ export default struct Setting {
                   const uris = await documentViewPicker.select(documentSelectOptions)
                   if (uris.length === 1) {
                     const uri = uris[0]
-                    await importAccounts(this.context, this.UIContext, uri)
+                    await importAccounts(this.context, uri)
                     await this.getSetting()
                   }
                 })

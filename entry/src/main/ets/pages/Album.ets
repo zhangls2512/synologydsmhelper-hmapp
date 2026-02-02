@@ -11,7 +11,7 @@ import { netBoost } from '@kit.NetworkBoostKit'
 import { notificationManager } from '@kit.NotificationKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { hdsEffect } from '@kit.UIDesignKit'
-import { AccountInfo, getAccountInfo, getLoginStatus } from '../common/Account'
+import { AccountInfo, getAccountHash, getAccountInfo, getLoginStatus } from '../common/Account'
 import { getDnsServer } from '../common/Dnsserver'
 import { write } from '../common/File'
 import { sha256hash } from '../common/Hash'
@@ -159,22 +159,23 @@ export default struct Album {
     return photoIndex >= minIndex && photoIndex < minIndex + this.timelineArray[dateIndex].count
   }
 
-  async pushPhotoIntoPhotoArray(account: AccountInfo, photoItem: PhotoItem, thumbnail: PhotoThumbnail, album: boolean) {
+  async pushPhotoIntoPhotoArray(accountInfo: AccountInfo, photoItem: PhotoItem, thumbnail: PhotoThumbnail,
+    album: boolean) {
     if (photoItem.type === 'photo') {
       const inPhotoItem = photoItem
-      const dir = this.context.cacheDir + '/albumphotothumbnail/' + sha256hash(account.path + '\0' + account.name)
+      const dir = this.context.cacheDir + '/albumphotothumbnail/' + getAccountHash(accountInfo)
       let thumbnailPath = dir + '/' + sha256hash(inPhotoItem.path) + '.jpeg'
       let requestPath = inPhotoItem.url
       if (photoItem.filename.endsWith('.mv.png')) {
         thumbnailPath = dir + '/' + sha256hash(inPhotoItem.path) + '.mp4'
       }
       if (thumbnail.sm === 'ready') {
-        requestPath = account.path + '/synofoto/api/v2/p/Thumbnail/get?' + new url.URLParams({
+        requestPath = accountInfo.path + '/synofoto/api/v2/p/Thumbnail/get?' + new url.URLParams({
           id: String(inPhotoItem.id),
           cache_key: thumbnail.cache_key,
           type: 'unit',
           size: 'sm',
-          SynoToken: account.synotoken
+          SynoToken: accountInfo.synotoken
         }).toString()
       }
       const thumbnailPathExist = fileIo.accessSync(thumbnailPath)
@@ -256,10 +257,10 @@ export default struct Album {
             }
           },
           headers: {
-            referer: account.path
+            referer: accountInfo.path
           },
           cookies: {
-            id: account.sid
+            id: accountInfo.sid
           }
         })
         try {
@@ -341,7 +342,7 @@ export default struct Album {
     }
     if (this.isLogin) {
       const accountInfo = await getAccountInfo()
-      const account = accountInfo.path + '\0' + accountInfo.name
+      const account = getAccountHash(accountInfo)
       if (this.account !== account) {
         this.timelineArray = []
         this.photoArray = []
@@ -518,7 +519,7 @@ export default struct Album {
     if (res !== 'fail') {
       const tid = res['tid'] as string
       const accountInfo = await getAccountInfo()
-      const account = accountInfo.path + '\0' + accountInfo.name
+      const account = getAccountHash(accountInfo)
       const textEncoder = new util.TextEncoder()
       if (getCurrentNetworkBearerType() === 0) {
         const promptAction = this.UIContext.getPromptAction()

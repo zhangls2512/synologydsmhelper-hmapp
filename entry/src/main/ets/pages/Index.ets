@@ -320,7 +320,7 @@ struct Index {
         }
       })
       this.context.eventHub.on('wantUri', async (wantUri: string) => {
-        await importAccounts(this.context, this.UIContext, wantUri)
+        await importAccounts(this.context, wantUri)
       })
       const promptAction = this.UIContext.getPromptAction()
       this.context.eventHub.on('dialog', async (title: string, message: string) => {

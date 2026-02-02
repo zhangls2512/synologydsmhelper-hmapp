@@ -10,7 +10,7 @@ import { filePreview } from '@kit.PreviewKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { systemShare } from '@kit.ShareKit'
 import { hdsEffect } from '@kit.UIDesignKit'
-import { getAccountInfo, getLoginStatus } from '../common/Account'
+import { getAccountHash, getAccountInfo, getLoginStatus } from '../common/Account'
 import { getDnsServer } from '../common/Dnsserver'
 import { getFileTypeIcon } from '../common/File'
 import { getCurrentNetworkBearerType } from '../common/Network'
@@ -117,7 +117,7 @@ export default struct Filelist {
     }
     if (this.isLogin) {
       const accountInfo = await getAccountInfo()
-      const account = accountInfo.path + '\0' + accountInfo.name
+      const account = getAccountHash(accountInfo)
       if (this.account !== account) {
         this.dirnames = []
       }

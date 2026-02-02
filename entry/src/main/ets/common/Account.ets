@@ -5,6 +5,7 @@ import { appAccount } from '@kit.BasicServicesKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { getDnsServer } from './Dnsserver'
 import { readUri } from './File'
+import { sha256hash } from './Hash'
 import { dsmRequest } from './Request'
 
 export interface AccountInfo {
@@ -101,6 +102,14 @@ export async function getAccountInfo(): Promise<AccountInfo> {
   }
 }
 
+export function getAccountHash(accountInfo: AccountInfo): string {
+  if (accountInfo.bz) {
+    return sha256hash(accountInfo.bz)
+  } else {
+    return sha256hash(accountInfo.path + '\0' + accountInfo.name)
+  }
+}
+
 export async function getAccountList(): Promise<AccountInfo[]> {
   const appAccountManager = appAccount.createAppAccountManager()
   const appAccountIds = await appAccountManager.getAccountsByOwner('com.songjy.synologydsmhelper')
@@ -153,7 +162,7 @@ export async function removeAccount(id: string, hideToast?: boolean) {
   }
 }
 
-export async function importAccounts(context: Context, UIContext: UIContext, uri: string) {
+export async function importAccounts(context: Context, uri: string) {
   try {
     const array = await getAccountList()
     if (array.length > 0) {
