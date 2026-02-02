@@ -1,5 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { privacyManager } from '@kit.AppGalleryKit'
+import { preferences } from '@kit.ArkData'
 import { url } from '@kit.ArkTS'
 import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { netBoost } from '@kit.NetworkBoostKit'
@@ -390,6 +391,15 @@ export default struct Login {
                 await promptAction.openToast({
                   message: '登录成功'
                 })
+                this.context.eventHub.emit('refreshCardlist')
+                this.context.eventHub.emit('refreshFilelist')
+                const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+                  name: 'commonSetting'
+                })
+                if (commonSettingDataPreferences.getSync('showAlbum', true)) {
+                  this.context.eventHub.emit('refreshAlbum')
+                }
+                this.context.eventHub.emit('refreshMe')
                 this.isShowLoginSheet = false
               }
             })

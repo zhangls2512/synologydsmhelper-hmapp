@@ -3,6 +3,13 @@ import { preferences } from '@kit.ArkData'
 import { LengthMetrics, promptAction } from '@kit.ArkUI'
 import { HdsNavDestination } from '@kit.UIDesignKit'
 import { deviceInfo } from '@kit.BasicServicesKit'
+import { getAccountHash, getAccountInfo } from '../common/Account'
+import { read, write } from '../common/File'
+import { checkPermission } from '../common/Permission'
+
+interface BackupSetting {
+  autoTypes: string[]
+}
 
 @Builder
 export function BackupsettingBuilder() {
@@ -12,22 +19,24 @@ export function BackupsettingBuilder() {
 @ComponentV2
 struct Backupsetting {
   @Local autoTypes: string[] = []
-  @Local pauseAutoWhenLowBatteryCapacityLevel: boolean = false
-  @Local pauseAutoWhenPowerSave: boolean = false
+  @Local deleteAfterSuccess: boolean = false
   @Local hoverId: number = -1
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   pageInfos = new NavPathStack()
+  typeArray: string[] = ['相册', '文档', '桌面']
   backupSettingDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'backupSetting'
   })
-  typeArray: string[] = ['相册', '文档', '桌面']
 
-  getSetting() {
-    this.autoTypes = this.backupSettingDataPreferences.getSync('autoTypes', []) as string[]
-    this.pauseAutoWhenLowBatteryCapacityLevel =
-      this.backupSettingDataPreferences.getSync('pauseAutoWhenLowBatteryCapacityLevel', true) as boolean
-    this.pauseAutoWhenPowerSave = this.backupSettingDataPreferences.getSync('pauseAutoWhenPowerSave', true) as boolean
+  async getSetting() {
+    const accountInfo = await getAccountInfo()
+    const filePath = this.context.filesDir + '/backupsetting/' + getAccountHash(accountInfo) + '.txt'
+    const filestring = await read(filePath, true)
+    if (filestring !== 'fail') {
+      this.autoTypes = (JSON.parse(filestring) as BackupSetting).autoTypes
+    }
+    this.deleteAfterSuccess = this.backupSettingDataPreferences.getSync('deleteAfterSuccess', true) as boolean
   }
 
   build() {
@@ -35,7 +44,7 @@ struct Backupsetting {
       List() {
         ListItem() {
           Column() {
-            Text('自动备份')
+            Text('自动备份' + JSON.stringify(this.autoTypes))
               .fontColor($r('sys.color.font_secondary'))
               .fontSize($r('sys.float.ohos_id_text_size_body2'))
               .fontWeight(FontWeight.Medium)
@@ -65,17 +74,33 @@ struct Backupsetting {
                       type: ToggleType.Switch,
                       isOn: this.autoTypes.includes(item)
                     })
-                      .onChange((isOn) => {
-                        let autoTypes: string[] = []
+                      .onChange(async (isOn) => {
                         if (!isOn) {
-                          autoTypes = this.autoTypes.filter(inItem => inItem !== item)
+                          this.autoTypes = this.autoTypes.filter(inItem => inItem !== item)
                         }
                         if (isOn) {
-                          autoTypes = [...this.autoTypes, item]
+                          this.autoTypes = Array.from(new Set([...this.autoTypes, item]))
+                          let res = true
+                          if (item === '相册') {
+                            res = await checkPermission(this.context, this.UIContext, 'ohos.permission.READ_IMAGEVIDEO')
+                          }
+                          if (item === '文档') {
+                            res = await checkPermission(this.context, this.UIContext,
+                              'ohos.permission.READ_WRITE_DOCUMENTS_DIRECTORY')
+                          }
+                          if (item === '桌面') {
+                            res = await checkPermission(this.context, this.UIContext,
+                              'ohos.permission.READ_WRITE_DESKTOP_DIRECTORY')
+                          }
+                          if (!res) {
+                            this.autoTypes = this.autoTypes.filter(inItem => inItem !== item)
+                          }
                         }
-                        this.backupSettingDataPreferences.putSync('autoTypes', autoTypes)
-                        this.backupSettingDataPreferences.flushSync()
-                        this.getSetting()
+                        const accountInfo = await getAccountInfo()
+                        await write(this.context.filesDir + '/backupsetting/' + getAccountHash(accountInfo) + '.txt',
+                          JSON.stringify({
+                            autoTypes: this.autoTypes
+                          }))
                       })
                   }
                   .borderRadius(12)
@@ -167,66 +192,29 @@ struct Backupsetting {
 
         ListItem() {
           Column() {
-            Text('暂停自动备份')
-              .fontColor($r('sys.color.font_secondary'))
-              .fontSize($r('sys.float.ohos_id_text_size_body2'))
-              .fontWeight(FontWeight.Medium)
-              .margin({
-                bottom: 6,
-                left: 12,
-                right: 12
+            Row() {
+              Text('备份成功后自动删除备份任务')
+                .fontWeight(FontWeight.Medium)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+              Toggle({
+                type: ToggleType.Switch,
+                isOn: this.deleteAfterSuccess!!
               })
-            Column() {
-              Row() {
-                Text('电池电量低')
-                  .fontWeight(FontWeight.Medium)
-                  .layoutWeight(1)
-                  .margin({
-                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                  })
-                Toggle({
-                  type: ToggleType.Switch,
-                  isOn: this.pauseAutoWhenLowBatteryCapacityLevel!!
+                .onChange((isOn) => {
+                  this.backupSettingDataPreferences.putSync('deleteAfterSuccess', isOn)
+                  this.backupSettingDataPreferences.flushSync()
                 })
-                  .onChange((isOn) => {
-                    this.backupSettingDataPreferences.putSync('pauseAutoWhenLowBatteryCapacityLevel', isOn)
-                    this.backupSettingDataPreferences.flushSync()
-                  })
-              }
-              .borderRadius(12)
-              .padding(12)
-              .width('100%')
-
-              Divider()
-                .padding({
-                  left: 12,
-                  right: 12
-                })
-              Row() {
-                Text('系统开启 (超级) 省电模式')
-                  .fontWeight(FontWeight.Medium)
-                  .layoutWeight(1)
-                  .margin({
-                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                  })
-                Toggle({
-                  type: ToggleType.Switch,
-                  isOn: this.pauseAutoWhenPowerSave!!
-                })
-                  .onChange((isOn) => {
-                    this.backupSettingDataPreferences.putSync('pauseAutoWhenPowerSave', isOn)
-                    this.backupSettingDataPreferences.flushSync()
-                  })
-              }
-              .borderRadius(12)
-              .padding(12)
-              .width('100%')
             }
-            .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-            .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
-            .padding($r('sys.float.ohos_id_corner_radius_mark'))
+            .borderRadius(12)
+            .padding(12)
+            .width('100%')
           }
-          .alignItems(HorizontalAlign.Start)
+          .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+          .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+          .padding($r('sys.float.ohos_id_corner_radius_mark'))
         }
         .margin({
           top: $r('sys.float.ohos_id_elements_margin_vertical_l')
@@ -250,8 +238,8 @@ struct Backupsetting {
       },
       enableComponentSafeArea: true
     })
-    .onAppear(() => {
-      this.getSetting()
+    .onAppear(async () => {
+      await this.getSetting()
     })
   }
 }

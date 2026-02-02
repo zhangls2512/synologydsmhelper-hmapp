@@ -14,6 +14,7 @@ export default struct Cleardata {
   @Local allSetting: boolean = false
   @Local cardSetting: boolean = false
   @Local backupSetting: boolean = false
+  @Local backupSettingSize: string = ''
   @Local commonSetting: boolean = false
   @Local permissionSetting: boolean = false
   @Local debugSetting: boolean = false
@@ -40,6 +41,8 @@ export default struct Cleardata {
   context = this.UIContext.getHostContext() as common.UIAbilityContext
 
   async getSize() {
+    const backupSettingSize = await getDirectorySize(this.context.filesDir + '/backupsetting')
+    this.backupSettingSize = getSizeString(backupSettingSize)
     const apiVersionCacheFilePath = this.context.cacheDir + '/apiversion.txt'
     const apiVersionCacheFileExist = fileIo.accessSync(apiVersionCacheFilePath)
     if (!apiVersionCacheFileExist) {
@@ -144,6 +147,12 @@ export default struct Cleardata {
                 .layoutWeight(1)
                 .margin({
                   right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+              Text(this.backupSettingSize)
+                .fontColor($r('sys.color.font_secondary'))
+                .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_s')
                 })
               Checkbox({
                 name: 'backupSetting',
@@ -257,13 +266,23 @@ export default struct Cleardata {
               ]
             })
             if (data.index === 1) {
-              this.setting.forEach((item) => {
-                const dataPreferences = preferences.getPreferencesSync(this.context, {
-                  name: item
-                })
-                dataPreferences.clearSync()
-                dataPreferences.flushSync()
+              const promises = this.setting.map(async (item) => {
+                if (item !== 'backupSetting') {
+                  const dataPreferences = preferences.getPreferencesSync(this.context, {
+                    name: item
+                  })
+                  dataPreferences.clearSync()
+                  dataPreferences.flushSync()
+                }
+                if (item === 'backupSetting') {
+                  const backupSettingDir = this.context.filesDir + '/backupsetting'
+                  if (fileIo.accessSync(backupSettingDir)) {
+                    await fileIo.rmdir(backupSettingDir)
+                  }
+                }
               })
+              await Promise.all(promises)
+              await this.getSize()
               const res = await promptAction.showDialog({
                 title: '提示',
                 message: '清理成功，需重启应用生效，是否重启？',
