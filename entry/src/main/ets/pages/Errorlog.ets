@@ -27,8 +27,8 @@ struct Errorlog {
 
   async get() {
     this.errorLogArray = []
-    try {
-      const errorLogDir = this.context.filesDir + '/log/error/'
+    const errorLogDir = this.context.filesDir + '/log/error/'
+    if (fileIo.accessSync(errorLogDir)) {
       const errorLogFileName = await fileIo.listFile(errorLogDir)
       const errorLogFilePath = errorLogFileName.map(item => errorLogDir + item)
       const promises = errorLogFilePath.map(async (item) => {
@@ -58,14 +58,13 @@ struct Errorlog {
         }
       })
       await Promise.all(promises)
-    } catch {
     }
   }
 
   async filter(type: string) {
     this.errorLogArray = []
-    try {
-      const errorLogDir = this.context.filesDir + '/log/error/'
+    const errorLogDir = this.context.filesDir + '/log/error/'
+    if (fileIo.accessSync(errorLogDir)) {
       const errorLogFileName = await fileIo.listFile(errorLogDir)
       const errorLogFilePath = errorLogFileName.map(item => errorLogDir + item)
       const promises = errorLogFilePath.map(async (item) => {
@@ -97,7 +96,6 @@ struct Errorlog {
         }
       })
       await Promise.all(promises)
-    } catch {
     }
   }
 

@@ -199,42 +199,33 @@ export async function upload(context: Context, id: string) {
       header += '--' + transferTask.id + '\r\ncontent-disposition: form-data; name="file"; filename="' +
       transferTask.name + '"\r\n\r\n'
       await write(filePath, header)
-      const size = fileIo.statSync(transferTask.srcFileUri).size
-      if (size > 2147483647) {
-        await fileIo.unlink(filePath)
-        if (transferTask.srcFileUri.endsWith('.mv.png')) {
-          await fileIo.unlink(new fileUri.FileUri(transferTask.srcFileUri).path)
-        }
-        transferTask.status = 'fail'
-        transferTask.errCode = -2
-        transferTaskDataPreferences.putSync(id, JSON.stringify(transferTask))
-        return
+      const srcFile = fileIo.openSync(transferTask.srcFileUri)
+      const inStream = fileIo.fdopenStreamSync(srcFile.fd, 'r')
+      const outStream = fileIo.createStreamSync(filePath, 'a')
+      let offset = 0
+      let read = 0
+      let size = 1048576
+      if (transferTask.totalSize < size) {
+        size = transferTask.totalSize
       }
-      const filebuffer = new ArrayBuffer(size)
-      const file = fileIo.openSync(transferTask.srcFileUri)
-      await fileIo.read(file.fd, filebuffer)
-      fileIo.closeSync(file)
-      const fileb = fileIo.openSync(filePath, fileIo.OpenMode.READ_WRITE)
-      await fileIo.write(fileb.fd, filebuffer, {
+      const buf = new ArrayBuffer(size)
+      read = await inStream.read(buf, {
+        offset: offset
+      })
+      while (read > 0) {
+        await outStream.write(buf)
+        offset += read
+        read = await inStream.read(buf, {
+          offset: offset
+        })
+      }
+      inStream.closeSync()
+      outStream.closeSync()
+      const file = fileIo.openSync(filePath, fileIo.OpenMode.WRITE_ONLY)
+      await fileIo.write(file.fd, '\r\n\r\n--' + transferTask.id + '--', {
         offset: fileIo.statSync(filePath).size
       })
-      await fileIo.write(fileb.fd, '\r\n\r\n--' + transferTask.id + '--', {
-        offset: fileIo.statSync(filePath).size
-      })
-      const sizeb = fileIo.statSync(filePath).size
-      if (sizeb > 2147483647) {
-        await fileIo.unlink(filePath)
-        if (transferTask.srcFileUri.endsWith('.mv.png')) {
-          await fileIo.unlink(new fileUri.FileUri(transferTask.srcFileUri).path)
-        }
-        transferTask.status = 'fail'
-        transferTask.errCode = -2
-        transferTaskDataPreferences.putSync(id, JSON.stringify(transferTask))
-        return
-      }
-      const filebufferb = new ArrayBuffer(sizeb)
-      await fileIo.read(fileb.fd, filebufferb)
-      fileIo.closeSync(fileb)
+      const stream = fileIo.createStreamSync(filePath, 'r')
       const wandAgent = await wantAgent.getWantAgent({
         wants: [
           {
@@ -321,10 +312,10 @@ export async function upload(context: Context, id: string) {
         session.cancel()
       })
       try {
-        const response =
-          await session.post(transferTask.accountPath + '/webapi/entry.cgi?api=SYNO.FileStation.Upload&version=' +
-            version + '&method=upload&SynoToken=' +
-          transferTask.accountSynotoken, filebufferb)
+        const response = await session.uploadFromStream(transferTask.accountPath +
+          '/webapi/entry.cgi?api=SYNO.FileStation.Upload&version=' + version + '&method=upload&SynoToken=' +
+        transferTask.accountSynotoken, new rcp.UploadFromStream(stream))
+        stream.closeSync()
         await fileIo.unlink(filePath)
         if (transferTask.srcFileUri.endsWith('.mv.png')) {
           await fileIo.unlink(new fileUri.FileUri(transferTask.srcFileUri).path)
@@ -350,6 +341,7 @@ export async function upload(context: Context, id: string) {
           transferTaskDataPreferences.putSync(id, JSON.stringify(transferTask))
         }
       } catch (err) {
+        stream.closeSync()
         await fileIo.unlink(filePath)
         if (transferTask.srcFileUri.endsWith('.mv.png')) {
           await fileIo.unlink(new fileUri.FileUri(transferTask.srcFileUri).path)
