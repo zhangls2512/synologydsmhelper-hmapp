@@ -1206,13 +1206,15 @@ export default struct Album {
                     await promptAction.openToast({
                       message: '删除成功'
                     })
-                    if (item.type === 'photo') {
-                      await fileIo.unlink(new fileUri.FileUri(item.thumbnailUri).path)
-                    }
-                    if (item.type === 'movingphoto') {
-                      await fileIo.unlink(new fileUri.FileUri(item.movingPhotoImageUri).path)
-                      await fileIo.unlink(new fileUri.FileUri(item.movingPhotoVideoUri).path)
-                    }
+                    setTimeout(async () => {
+                      if (item.type === 'photo') {
+                        await fileIo.unlink(new fileUri.FileUri(item.thumbnailUri).path)
+                      }
+                      if (item.type === 'movingphoto') {
+                        await fileIo.unlink(new fileUri.FileUri(item.movingPhotoImageUri).path)
+                        await fileIo.unlink(new fileUri.FileUri(item.movingPhotoVideoUri).path)
+                      }
+                    }, 5000)
                     this.previewPhoto = undefined
                     this.backDataPreferences.putSync('album', false)
                     await this.get()
@@ -1317,6 +1319,7 @@ export default struct Album {
                         fetchColumns: ['uri'],
                         predicates: predicates
                       })
+                      await phAccessHelper.release()
                       const photoAsset = await fetchResult.getFirstObject()
                       const id = util.generateRandomUUID()
                       transferTaskDataPreferences.putSync(id, JSON.stringify({
@@ -1333,7 +1336,6 @@ export default struct Album {
                         accountSynotoken: accountInfo.synotoken,
                         srcFileUri: item
                       }))
-                      await phAccessHelper.release()
                     })
                     await Promise.all(promises)
                     if (pickerres.photoUris.length > 0) {
@@ -1362,6 +1364,7 @@ export default struct Album {
                         fetchColumns: ['uri', 'title'],
                         predicates: predicates
                       })
+                      await phAccessHelper.release()
                       const photoAsset = await fetchResult.getFirstObject()
                       const dir = this.context.tempDir + '/upload/movingphoto/'
                       await photoAccessHelper.MediaAssetManager.requestMovingPhoto(this.context, photoAsset, {
@@ -1397,7 +1400,6 @@ export default struct Album {
                           }
                         }
                       })
-                      await phAccessHelper.release()
                     })
                     await Promise.all(promises)
                     if (pickerres.photoUris.length > 0) {

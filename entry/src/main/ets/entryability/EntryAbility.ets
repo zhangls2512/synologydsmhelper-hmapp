@@ -411,6 +411,7 @@ export default class EntryAbility extends UIAbility {
         const fileData = this.context.resourceManager.getRawFileContentSync('icon.png')
         const imageSource = image.createImageSource(fileData.buffer)
         const pixelMap = await imageSource.createPixelMap()
+        await imageSource.release()
         statusBarManager.addToStatusBar(this.context, {
           icons: {
             black: pixelMap,
@@ -425,7 +426,6 @@ export default class EntryAbility extends UIAbility {
           }
         })
         await pixelMap.release()
-        await imageSource.release()
         statusBarManager.updateStatusBarMenu(this.context, [
           [
             {

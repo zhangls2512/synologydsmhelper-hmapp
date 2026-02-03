@@ -23,7 +23,7 @@ export default struct Player {
       const bookParserHandler = await bookParser.getDefaultHandler(this.src)
       await this.readerComponentController.init(this.context)
       this.readerComponentController.registerBookParser(bookParserHandler)
-      this.readerComponentController.startPlay(0, '')
+      await this.readerComponentController.startPlay(0, '')
     })
     .onDisAppear(() => {
       this.readerComponentController.releaseBook()

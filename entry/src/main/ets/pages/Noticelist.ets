@@ -171,20 +171,21 @@ export default struct Noticelist {
   }
 
   build() {
-    List() {
-      if (this.loading) {
-        ListItem() {
+    Scroll() {
+      Column() {
+        if (this.loading) {
           LoadingProgress()
+            .margin({
+              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+            })
             .width('20%')
         }
-        .margin({
-          top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-        })
-        .width('100%')
-      }
-      if (!this.loading) {
-        ListItem() {
+        if (!this.loading) {
           Button('清除全部')
+            .margin({
+              bottom: $r('sys.float.ohos_id_elements_margin_vertical_m'),
+              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+            })
             .role(ButtonRole.ERROR)
             .width('100%')
             .onClick(async () => {
@@ -208,113 +209,112 @@ export default struct Noticelist {
               }
             })
         }
-        .margin({
-          bottom: $r('sys.float.ohos_id_elements_margin_vertical_m'),
-          top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-        })
-      }
-      if (this.notices.length === 0 && !this.loading) {
-        ListItem() {
-          Text('无消息')
-        }
-        .margin({
-          top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-        })
-        .width('100%')
-      }
-      ForEach(this.notices, (item: NoticeItem) => {
-        ListItem() {
-          Column() {
-            Row() {
-              Text('层级')
-                .fontWeight(FontWeight.Medium)
-                .margin({
-                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                })
-              Text(item.level === 'NOTIFICATION_INFO' ? '信息' :
-                item.level === 'NOTIFICATION_WARN' ? '警告' :
-                  item.level === 'NOTIFICATION_ERROR' ? '重要' : '未知')
-                .fontColor($r('sys.color.font_secondary'))
-                .fontSize($r('sys.float.ohos_id_text_size_body2'))
-                .layoutWeight(1)
-                .textAlign(TextAlign.End)
+        List() {
+          if (this.notices.length === 0 && !this.loading) {
+            ListItem() {
+              Text('无消息')
             }
-            .borderRadius(12)
-            .padding(12)
-            .width('100%')
-
-            Divider()
-              .padding({
-                left: 12,
-                right: 12
-              })
-            Row() {
-              Text('类别')
-                .fontWeight(FontWeight.Medium)
-                .margin({
-                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                })
-              Text(item.className !== '' ? item.className : '未知')
-                .fontColor($r('sys.color.font_secondary'))
-                .fontSize($r('sys.float.ohos_id_text_size_body2'))
-                .layoutWeight(1)
-                .textAlign(TextAlign.End)
-            }
-            .borderRadius(12)
-            .padding(12)
-            .width('100%')
-
-            Divider()
-              .padding({
-                left: 12,
-                right: 12
-              })
-            Row() {
-              Text('主题')
-                .enableAutoSpacing(true)
-                .fontWeight(FontWeight.Medium)
-                .margin({
-                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                })
-              Text(item.title)
-                .fontColor($r('sys.color.font_secondary'))
-                .fontSize($r('sys.float.ohos_id_text_size_body2'))
-                .layoutWeight(1)
-                .textAlign(TextAlign.End)
-            }
-            .borderRadius(12)
-            .padding(12)
-            .width('100%')
-
-            Divider()
-              .padding({
-                left: 12,
-                right: 12
-              })
-            Row() {
-              Text('时间')
-                .fontWeight(FontWeight.Medium)
-                .margin({
-                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                })
-              Text(String(new Date(item.time * 1000)))
-                .fontColor($r('sys.color.font_secondary'))
-                .fontSize($r('sys.float.ohos_id_text_size_body2'))
-                .layoutWeight(1)
-                .textAlign(TextAlign.End)
-            }
-            .borderRadius(12)
-            .padding(12)
+            .margin({
+              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+            })
             .width('100%')
           }
-          .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-          .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
-          .padding($r('sys.float.ohos_id_corner_radius_mark'))
+          ForEach(this.notices, (item: NoticeItem) => {
+            ListItem() {
+              Column() {
+                Row() {
+                  Text('层级')
+                    .fontWeight(FontWeight.Medium)
+                    .margin({
+                      right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                    })
+                  Text(item.level === 'NOTIFICATION_INFO' ? '信息' :
+                    item.level === 'NOTIFICATION_WARN' ? '警告' :
+                      item.level === 'NOTIFICATION_ERROR' ? '重要' : '未知')
+                    .fontColor($r('sys.color.font_secondary'))
+                    .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                    .layoutWeight(1)
+                    .textAlign(TextAlign.End)
+                }
+                .borderRadius(12)
+                .padding(12)
+                .width('100%')
+
+                Divider()
+                  .padding({
+                    left: 12,
+                    right: 12
+                  })
+                Row() {
+                  Text('类别')
+                    .fontWeight(FontWeight.Medium)
+                    .margin({
+                      right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                    })
+                  Text(item.className !== '' ? item.className : '未知')
+                    .fontColor($r('sys.color.font_secondary'))
+                    .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                    .layoutWeight(1)
+                    .textAlign(TextAlign.End)
+                }
+                .borderRadius(12)
+                .padding(12)
+                .width('100%')
+
+                Divider()
+                  .padding({
+                    left: 12,
+                    right: 12
+                  })
+                Row() {
+                  Text('主题')
+                    .enableAutoSpacing(true)
+                    .fontWeight(FontWeight.Medium)
+                    .margin({
+                      right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                    })
+                  Text(item.title)
+                    .fontColor($r('sys.color.font_secondary'))
+                    .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                    .layoutWeight(1)
+                    .textAlign(TextAlign.End)
+                }
+                .borderRadius(12)
+                .padding(12)
+                .width('100%')
+
+                Divider()
+                  .padding({
+                    left: 12,
+                    right: 12
+                  })
+                Row() {
+                  Text('时间')
+                    .fontWeight(FontWeight.Medium)
+                    .margin({
+                      right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                    })
+                  Text(String(new Date(item.time * 1000)))
+                    .fontColor($r('sys.color.font_secondary'))
+                    .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                    .layoutWeight(1)
+                    .textAlign(TextAlign.End)
+                }
+                .borderRadius(12)
+                .padding(12)
+                .width('100%')
+              }
+              .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+              .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+              .padding($r('sys.float.ohos_id_corner_radius_mark'))
+            }
+            .margin({
+              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+            })
+          })
         }
-        .margin({
-          top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-        })
-      })
+        .layoutWeight(1)
+      }
     }
     .padding({
       bottom: $r('sys.float.ohos_id_default_padding_bottom_fixed'),
