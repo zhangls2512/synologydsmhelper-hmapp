@@ -16,6 +16,7 @@ export default struct Dockercontainer {
   @Local status: string = 'fail'
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
+  intervalId = -1
   dialogControllerProgress = new CustomDialogController({
     builder: LoadingDialog({
       content: '加载中...'
@@ -215,12 +216,15 @@ export default struct Dockercontainer {
         await this.refresh()
       })
       this.status = 'pending'
-      setInterval(async () => {
+      this.intervalId = setInterval(async () => {
         await this.refresh()
       }, 5000)
       await this.refresh()
     })
     .onDisAppear(() => {
+      if (this.intervalId !== -1) {
+        clearInterval(this.intervalId)
+      }
       this.context.eventHub.off('refreshCard')
     })
   }

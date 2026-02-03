@@ -21,6 +21,7 @@ export default struct Package {
   @Local installPackageArray: InstallPackageItem[] | undefined = undefined
   @Local status: string = 'fail'
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
+  intervalId = -1
   dialogControllerProgress = new CustomDialogController({
     builder: LoadingDialog({
       content: '加载中...'
@@ -164,12 +165,15 @@ export default struct Package {
         await this.refresh()
       })
       this.status = 'pending'
-      setInterval(async () => {
+      this.intervalId = setInterval(async () => {
         await this.refresh()
       }, 10000)
       await this.refresh()
     })
     .onDisAppear(() => {
+      if (this.intervalId !== -1) {
+        clearInterval(this.intervalId)
+      }
       this.context.eventHub.off('refreshCard')
     })
   }

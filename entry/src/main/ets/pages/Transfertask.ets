@@ -9,6 +9,7 @@ export default struct Transfertask {
   @Local selectedIndex: number = 0
   @Local transferTaskArray: TransferTaskItem[] = []
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
+  intervalId = -1
 
   build() {
     Scroll() {
@@ -199,7 +200,7 @@ export default struct Transfertask {
       right: $r('sys.float.ohos_id_elements_margin_horizontal_l')
     })
     .onAppear(() => {
-      setInterval(() => {
+      this.intervalId = setInterval(() => {
         const transferTaskArray: TransferTaskItem[] = []
         const transferTaskDataPreferences = preferences.getPreferencesSync(this.context, {
           name: 'transferTask'
@@ -213,6 +214,11 @@ export default struct Transfertask {
         })
         this.transferTaskArray = transferTaskArray
       }, 100)
+    })
+    .onDisAppear(() => {
+      if (this.intervalId !== -1) {
+        clearInterval(this.intervalId)
+      }
     })
   }
 }

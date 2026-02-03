@@ -7,6 +7,7 @@ export default struct Progresssheet {
   @Consumer() totalSize: number = 0
   @Local oneSecondBeforeTransferredSize: number = 0
   @Local oneSecondTransferredSize: number = 0
+  intervalId = -1
 
   getSizeString(size: number) {
     if (size < Math.pow(1024, 1)) {
@@ -94,10 +95,15 @@ export default struct Progresssheet {
       right: $r('sys.float.ohos_id_elements_margin_horizontal_l')
     })
     .onAppear(() => {
-      setInterval(() => {
+      this.intervalId = setInterval(() => {
         this.oneSecondTransferredSize = this.transferredSize - this.oneSecondBeforeTransferredSize
         this.oneSecondBeforeTransferredSize = this.transferredSize
       }, 1000)
+    })
+    .onDisAppear(() => {
+      if (this.intervalId !== -1) {
+        clearInterval(this.intervalId)
+      }
     })
   }
 }

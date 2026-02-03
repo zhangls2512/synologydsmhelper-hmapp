@@ -13,6 +13,7 @@ import { hdsEffect } from '@kit.UIDesignKit'
 import { getAccountHash, getAccountInfo, getLoginStatus } from '../common/Account'
 import { getDnsServer } from '../common/Dnsserver'
 import { getFileTypeIcon } from '../common/File'
+import { sha256hash } from '../common/Hash'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import { getPreferType } from '../common/Prefertype'
 import { dsmRequest, getDsmApiMaxVersion } from '../common/Request'
@@ -20,6 +21,7 @@ import { getSizeString, getTimeString } from '../common/Stringformat'
 import Newfolder from './Newfolder'
 import Player from './Player'
 import Progress from './Progress'
+import Reader from './Reader'
 import Renamefile from './Renamefile'
 
 interface Time {
@@ -50,6 +52,7 @@ interface ShareLinkItem {
 export default struct Filelist {
   @Provider() isShowNewfolderSheet: boolean = false
   @Provider() isShowPlayerSheet: boolean = false
+  @Provider() isShowReaderSheet: boolean = false
   @Provider() isShowProgressSheet: boolean = false
   @Provider() isShowRenamefileSheet: boolean = false
   @Provider() transferredSize: number = 0
@@ -252,6 +255,13 @@ export default struct Filelist {
   @Builder
   PlayerSheetBuilder() {
     Player({
+      src: this.src
+    })
+  }
+
+  @Builder
+  ReaderSheetBuilder() {
+    Reader({
       src: this.src
     })
   }
@@ -1093,6 +1103,16 @@ export default struct Filelist {
           }
           .justifyContent(FlexAlign.SpaceBetween)
           .width('100%')
+          .bindSheet(this.isShowReaderSheet!!, this.ReaderSheetBuilder(), {
+            preferType: this.preferType,
+            title: {
+              title: this.srcName
+            },
+            onDisappear: () => {
+              this.src = ''
+              this.srcName = ''
+            }
+          })
 
           Text() {
             ForEach(this.dirnames, (item: string, index) => {
@@ -1661,10 +1681,9 @@ export default struct Filelist {
                             const accountInfo = await getAccountInfo()
                             const bytes = new util.TextEncoder().encodeInto(item.path)
                             const dlink = Array.from(bytes).map(byte => byte.toString(16).padStart(2, '0')).join('')
-                            this.src =
-                              accountInfo.path + '/fbdownload/' +
-                              item.name.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
-                                '?tid=' + tid + '&mode=open&dlink=' + dlink
+                            this.src = accountInfo.path + '/fbdownload/' +
+                            item.name.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') + '?tid=' + tid +
+                              '&mode=open&dlink=' + dlink
                             this.srcName = item.name
                             this.isShowPlayerSheet = true
                           }
@@ -1703,7 +1722,8 @@ export default struct Filelist {
                           }
                         }
                         try {
-                          const previewDir = this.context.tempDir + '/preview'
+                          const previewDir =
+                            this.context.tempDir + '/preview/' + this.account + '/' + sha256hash(item.path)
                           if (!fileIo.accessSync(previewDir)) {
                             await fileIo.mkdir(previewDir)
                           }
@@ -1791,18 +1811,33 @@ export default struct Filelist {
                                       const filePreviewType =
                                         this.commonSettingDataPreferences.getSync('filePreviewType', 0)
                                       if (filePreviewType === 0) {
-                                        const canPreview = await filePreview.canPreview(this.context, uri)
-                                        if (!canPreview) {
-                                          await promptAction.openToast({
-                                            message: '此类型不支持预览'
-                                          })
+                                        const supportedReaderFormats = ['.txt', '.epub', '.mobi', '.azw', '.azw3']
+                                        if (!supportedReaderFormats.some(formatItem => item.name.endsWith(formatItem))) {
+                                          const canPreview = await filePreview.canPreview(this.context, uri)
+                                          if (!canPreview) {
+                                            await promptAction.openToast({
+                                              message: '此类型不支持预览'
+                                            })
+                                          }
+                                          if (canPreview) {
+                                            await filePreview.openPreview(this.context, {
+                                              title: item.name,
+                                              uri: uri,
+                                              mimeType: ''
+                                            })
+                                          }
                                         }
-                                        if (canPreview) {
-                                          await filePreview.openPreview(this.context, {
-                                            title: item.name,
-                                            uri: uri,
-                                            mimeType: ''
-                                          })
+                                        if (supportedReaderFormats.some(formatItem => item.name.endsWith(formatItem))) {
+                                          const dir = this.context.tempDir + '/preview/reader/' + this.account + '/' +
+                                          sha256hash(item.name)
+                                          if (!fileIo.accessSync(dir)) {
+                                            await fileIo.mkdir(dir, true)
+                                          }
+                                          const newFilePath = dir + '/' + item.name
+                                          await fileIo.moveFile(filePath, newFilePath)
+                                          this.src = newFilePath
+                                          this.srcName = item.name
+                                          this.isShowReaderSheet = true
                                         }
                                       }
                                       if (filePreviewType === 1) {

@@ -30,6 +30,7 @@ export default struct Systeminfo {
   @Local systeminfo: SystemInfo | undefined = undefined
   @Local status: string = 'fail'
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
+  intervalId = -1
 
   async refresh() {
     const cardSettingDataPreferences = preferences.getPreferencesSync(this.context, {
@@ -150,12 +151,15 @@ export default struct Systeminfo {
         await this.refresh()
       })
       this.status = 'pending'
-      setInterval(async () => {
+      this.intervalId = setInterval(async () => {
         await this.refresh()
       }, 5000)
       await this.refresh()
     })
     .onDisAppear(() => {
+      if (this.intervalId !== -1) {
+        clearInterval(this.intervalId)
+      }
       this.context.eventHub.off('refreshCard')
     })
   }
