@@ -62,12 +62,17 @@ export default class EntryAbility extends UIAbility {
       const fileUri = uriList[0] as string
       this.context.eventHub.emit('wantUri', fileUri)
     }
-    if (want.uri) {
-      if (want.uri === 'storage:///clearcache') {
+    if (want.parameters?.linkFeature) {
+      const linkFeature = want.parameters.linkFeature
+      if (linkFeature === 'AppStorageMgmt') {
         this.context.eventHub.emit('clearData')
-      } else {
-        this.context.eventHub.emit('wantUri', want.uri)
       }
+      if (linkFeature === 'AppNotificationMgmt') {
+        this.context.eventHub.emit('notice')
+      }
+    }
+    if (want.uri && !want.parameters?.linkFeature) {
+      this.context.eventHub.emit('wantUri', want.uri)
     }
     try {
       const sharedData = await systemShare.getSharedData(want)

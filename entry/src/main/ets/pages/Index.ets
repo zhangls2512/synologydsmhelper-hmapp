@@ -15,6 +15,7 @@ import Cardlist from './Cardlist'
 import Cleardata from './Cleardata'
 import Filelist from './Filelist'
 import Me from './Me'
+import Notice from './Notice'
 import Uploaderrorlog from './Uploaderrorlog'
 
 export interface TransferTaskItem {
@@ -45,6 +46,7 @@ struct Index {
   @Local title: string = '首页'
   @Local showAlbum: boolean = false
   @Local isShowCleardataSheet: boolean = false
+  @Local isShowNoticeSheet: boolean = false
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   controller = new HdsTabsController()
@@ -141,6 +143,11 @@ struct Index {
   }
 
   @Builder
+  NoticeSheetBuilder() {
+    Notice()
+  }
+
+  @Builder
   AccountlistSheetBuilder() {
     Accountlist()
   }
@@ -182,6 +189,12 @@ struct Index {
           Filelist()
         }
         .tabBar(this.tabBuilder(1, $r('app.media.file'), '文件'))
+        .bindSheet(this.isShowNoticeSheet!!, this.NoticeSheetBuilder(), {
+          preferType: this.preferType,
+          title: {
+            title: '消息通知'
+          }
+        })
 
         if (this.showAlbum) {
           TabContent() {
@@ -291,6 +304,11 @@ struct Index {
           this.isShowCleardataSheet = true
         }
       })
+      this.context.eventHub.on('notice', () => {
+        if (!this.isShowNoticeSheet) {
+          this.isShowNoticeSheet = true
+        }
+      })
       this.context.eventHub.on('accountList', () => {
         if (!this.isShowAccountlistSheet) {
           this.isShowAccountlistSheet = true
@@ -365,6 +383,7 @@ struct Index {
       this.context.eventHub.off('file')
       this.context.eventHub.off('card')
       this.context.eventHub.off('accountList')
+      this.context.eventHub.off('notice')
       this.context.eventHub.off('clearData')
       display.off('change')
     })

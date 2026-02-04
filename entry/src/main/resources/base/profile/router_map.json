@@ -1,11 +1,6 @@
 {
   "routerMap": [
     {
-      "name": "Notice",
-      "pageSourceFile": "src/main/ets/pages/Notice.ets",
-      "buildFunction": "NoticeBuilder"
-    },
-    {
       "name": "About",
       "pageSourceFile": "src/main/ets/pages/About.ets",
       "buildFunction": "AboutBuilder"

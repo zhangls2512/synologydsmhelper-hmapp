@@ -189,7 +189,7 @@ export async function upload(context: Context, id: string) {
   try {
     const version = await getDsmApiMaxVersion(context, transferTask.accountPath, 'SYNO.FileStation.Upload')
     if (version !== 'fail') {
-      const filePath = context.tempDir + '/upload/' + transferTask.id + '.txt'
+      const filePath = context.tempDir + '/upload/' + transferTask.id
       let header =
         '--' + transferTask.id + '\r\ncontent-disposition: form-data; name="api"\r\n\r\nSYNO.FileStation.Upload\r\n'
       header += '--' + transferTask.id + '\r\ncontent-disposition: form-data; name="version"\r\n\r\n' + version + '\r\n'

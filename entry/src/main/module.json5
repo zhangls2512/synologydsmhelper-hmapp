@@ -48,8 +48,11 @@
               },
               {
                 "scheme": "storage",
-                "path": "clearcache",
                 "linkFeature": "AppStorageMgmt"
+              },
+              {
+                "scheme": "notification",
+                "linkFeature": "AppNotificationMgmt"
               }
             ]
           },
