@@ -163,7 +163,8 @@ export default struct Album {
     album: boolean) {
     if (photoItem.type === 'photo') {
       const inPhotoItem = photoItem
-      const dir = this.context.cacheDir + '/albumphotothumbnail/' + getAccountHash(accountInfo)
+      const account = getAccountHash(accountInfo)
+      const dir = this.context.cacheDir + '/albumphotothumbnail/' + account
       let thumbnailPath = dir + '/' + sha256hash(inPhotoItem.path) + '.jpeg'
       let requestPath = inPhotoItem.url
       if (photoItem.filename.endsWith('.mv.png')) {
@@ -206,6 +207,9 @@ export default struct Album {
                     sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
                   })
                   fileStream.closeSync()
+                  if (this.account !== account) {
+                    return
+                  }
                   if (!photoItem.filename.endsWith('.mv.png')) {
                     inPhotoItem.thumbnailUri = fileUri.getUriFromPath(thumbnailPath)
                     if (!album) {
@@ -443,24 +447,24 @@ export default struct Album {
                 }
                 for (let i = 0; i < photos.length; i++) {
                   const item = photos[i]
-                  if (this.account !== account) {
-                    return
-                  }
                   if (!this.folderMap.has(item.folder_id)) {
+                    if (this.account !== account) {
+                      return
+                    }
                     const folderres = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.Folder', new url.URLParams({
                       method: 'get',
                       id: String(item.folder_id)
                     }).toString())
                     if (folderres !== 'fail') {
-                      if (this.account !== account) {
-                        return
-                      }
                       const folderPath = folderres['folder']['name'] as string
                       let path = '/home/Photos' + folderPath
                       if (folderPath !== '/') {
                         path += '/'
                       }
                       this.folderMap.set(item.folder_id, path)
+                      if (this.account !== account) {
+                        return
+                      }
                       await this.pushPhotoIntoPhotoArray(accountInfo, {
                         id: item.id,
                         filename: item.filename,
@@ -478,6 +482,9 @@ export default struct Album {
                       }, item.additional.thumbnail, false)
                     }
                   } else {
+                    if (this.account !== account) {
+                      return
+                    }
                     await this.pushPhotoIntoPhotoArray(accountInfo, {
                       id: item.id,
                       filename: item.filename,
@@ -543,8 +550,9 @@ export default struct Album {
       }
       let finished = false
       let offset = 0
+      const albumId = this.previewAlbum?.id
       while (!finished) {
-        if (this.account !== account) {
+        if (this.account !== account || this.previewAlbum?.id !== albumId) {
           return
         }
         const photores = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.Item', new url.URLParams({
@@ -562,24 +570,24 @@ export default struct Album {
           }
           for (let i = 0; i < photos.length; i++) {
             const item = photos[i]
-            if (this.account !== account) {
-              return
-            }
             if (!this.folderMap.has(item.folder_id)) {
+              if (this.account !== account || this.previewAlbum?.id !== albumId) {
+                return
+              }
               const folderres = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.Folder', new url.URLParams({
                 method: 'get',
                 id: String(item.folder_id)
               }).toString())
               if (folderres !== 'fail') {
-                if (this.account !== account) {
-                  return
-                }
                 const folderPath = folderres['folder']['name'] as string
                 let path = '/home/Photos' + folderPath
                 if (folderPath !== '/') {
                   path += '/'
                 }
                 this.folderMap.set(item.folder_id, path)
+                if (this.account !== account || this.previewAlbum?.id !== albumId) {
+                  return
+                }
                 await this.pushPhotoIntoPhotoArray(accountInfo, {
                   id: item.id,
                   filename: item.filename,
@@ -596,6 +604,9 @@ export default struct Album {
                 }, item.additional.thumbnail, true)
               }
             } else {
+              if (this.account !== account || this.previewAlbum?.id !== albumId) {
+                return
+              }
               await this.pushPhotoIntoPhotoArray(accountInfo, {
                 id: item.id,
                 filename: item.filename,
@@ -1458,14 +1469,21 @@ export default struct Album {
                                           })
                                           .onClick(async () => {
                                             if (photoItem.item.additional.gps) {
-                                              const res = await site.reverseGeocode({
-                                                location: {
-                                                  latitude: photoItem.item.additional.gps.latitude,
-                                                  longitude: photoItem.item.additional.gps.longitude
-                                                },
-                                                language: 'zh-CN'
-                                              })
-                                              this.photoAddress = res.addressDescription
+                                              try {
+                                                const res = await site.reverseGeocode({
+                                                  location: {
+                                                    latitude: photoItem.item.additional.gps.latitude,
+                                                    longitude: photoItem.item.additional.gps.longitude
+                                                  },
+                                                  language: 'zh-CN'
+                                                })
+                                                this.photoAddress = res.addressDescription
+                                              } catch (err) {
+                                                await promptAction.openToast({
+                                                  message: '发生错误，错误码：' + err.code
+                                                })
+                                                this.photoAddress = '地址获取失败，可尝试点此跳转系统地图查看'
+                                              }
                                             }
                                             this.previewPhoto = photoItem.item
                                             this.backDataPreferences.putSync('album', true)
@@ -1490,14 +1508,21 @@ export default struct Album {
                                           })
                                           .onClick(async () => {
                                             if (photoItem.item.additional.gps) {
-                                              const res = await site.reverseGeocode({
-                                                location: {
-                                                  latitude: photoItem.item.additional.gps.latitude,
-                                                  longitude: photoItem.item.additional.gps.longitude
-                                                },
-                                                language: 'zh-CN'
-                                              })
-                                              this.photoAddress = res.addressDescription
+                                              try {
+                                                const res = await site.reverseGeocode({
+                                                  location: {
+                                                    latitude: photoItem.item.additional.gps.latitude,
+                                                    longitude: photoItem.item.additional.gps.longitude
+                                                  },
+                                                  language: 'zh-CN'
+                                                })
+                                                this.photoAddress = res.addressDescription
+                                              } catch (err) {
+                                                await promptAction.openToast({
+                                                  message: '发生错误，错误码：' + err.code
+                                                })
+                                                this.photoAddress = '地址获取失败，可尝试点此跳转系统地图查看'
+                                              }
                                             }
                                             this.previewPhoto = photoItem.item
                                             this.backDataPreferences.putSync('album', true)
@@ -1522,14 +1547,21 @@ export default struct Album {
                                     }
                                     .onClick(async () => {
                                       if (photoItem.item.additional.gps) {
-                                        const res = await site.reverseGeocode({
-                                          location: {
-                                            latitude: photoItem.item.additional.gps.latitude,
-                                            longitude: photoItem.item.additional.gps.longitude
-                                          },
-                                          language: 'zh-CN'
-                                        })
-                                        this.photoAddress = res.addressDescription
+                                        try {
+                                          const res = await site.reverseGeocode({
+                                            location: {
+                                              latitude: photoItem.item.additional.gps.latitude,
+                                              longitude: photoItem.item.additional.gps.longitude
+                                            },
+                                            language: 'zh-CN'
+                                          })
+                                          this.photoAddress = res.addressDescription
+                                        } catch (err) {
+                                          await promptAction.openToast({
+                                            message: '发生错误，错误码：' + err.code
+                                          })
+                                          this.photoAddress = '地址获取失败，可尝试点此跳转系统地图查看'
+                                        }
                                       }
                                       this.previewPhoto = photoItem.item
                                       this.backDataPreferences.putSync('album', true)
@@ -1721,14 +1753,21 @@ export default struct Album {
                         if (gestureEvent.offsetX > 0) {
                           if (index !== 0) {
                             if (photoArray[index - 1].additional.gps) {
-                              const res = await site.reverseGeocode({
-                                location: {
-                                  latitude: photoArray[index - 1].additional.gps.latitude,
-                                  longitude: photoArray[index - 1].additional.gps.longitude
-                                },
-                                language: 'zh-CN'
-                              })
-                              this.photoAddress = res.addressDescription
+                              try {
+                                const res = await site.reverseGeocode({
+                                  location: {
+                                    latitude: photoArray[index - 1].additional.gps.latitude,
+                                    longitude: photoArray[index - 1].additional.gps.longitude
+                                  },
+                                  language: 'zh-CN'
+                                })
+                                this.photoAddress = res.addressDescription
+                              } catch (err) {
+                                await promptAction.openToast({
+                                  message: '发生错误，错误码：' + err.code
+                                })
+                                this.photoAddress = '地址获取失败，可尝试点此跳转系统地图查看'
+                              }
                             }
                             this.previewPhoto = photoArray[index - 1]
                             this.backDataPreferences.putSync('album', true)
@@ -1742,14 +1781,21 @@ export default struct Album {
                         if (gestureEvent.offsetX < 0) {
                           if (index !== maxIndex) {
                             if (photoArray[index + 1].additional.gps) {
-                              const res = await site.reverseGeocode({
-                                location: {
-                                  latitude: photoArray[index + 1].additional.gps.latitude,
-                                  longitude: photoArray[index + 1].additional.gps.longitude
-                                },
-                                language: 'zh-CN'
-                              })
-                              this.photoAddress = res.addressDescription
+                              try {
+                                const res = await site.reverseGeocode({
+                                  location: {
+                                    latitude: photoArray[index + 1].additional.gps.latitude,
+                                    longitude: photoArray[index + 1].additional.gps.longitude
+                                  },
+                                  language: 'zh-CN'
+                                })
+                                this.photoAddress = res.addressDescription
+                              } catch (err) {
+                                await promptAction.openToast({
+                                  message: '发生错误，错误码：' + err.code
+                                })
+                                this.photoAddress = '地址获取失败，可尝试点此跳转系统地图查看'
+                              }
                             }
                             this.previewPhoto = photoArray[index + 1]
                             this.backDataPreferences.putSync('album', true)
@@ -1803,14 +1849,21 @@ export default struct Album {
                         if (gestureEvent.offsetX > 0) {
                           if (index !== 0) {
                             if (photoArray[index - 1].additional.gps) {
-                              const res = await site.reverseGeocode({
-                                location: {
-                                  latitude: photoArray[index - 1].additional.gps.latitude,
-                                  longitude: photoArray[index - 1].additional.gps.longitude
-                                },
-                                language: 'zh-CN'
-                              })
-                              this.photoAddress = res.addressDescription
+                              try {
+                                const res = await site.reverseGeocode({
+                                  location: {
+                                    latitude: photoArray[index - 1].additional.gps.latitude,
+                                    longitude: photoArray[index - 1].additional.gps.longitude
+                                  },
+                                  language: 'zh-CN'
+                                })
+                                this.photoAddress = res.addressDescription
+                              } catch (err) {
+                                await promptAction.openToast({
+                                  message: '发生错误，错误码：' + err.code
+                                })
+                                this.photoAddress = '地址获取失败，可尝试点此跳转系统地图查看'
+                              }
                             }
                             this.previewPhoto = photoArray[index - 1]
                             this.backDataPreferences.putSync('album', true)
@@ -1824,14 +1877,21 @@ export default struct Album {
                         if (gestureEvent.offsetX < 0) {
                           if (index !== maxIndex) {
                             if (photoArray[index + 1].additional.gps) {
-                              const res = await site.reverseGeocode({
-                                location: {
-                                  latitude: photoArray[index + 1].additional.gps.latitude,
-                                  longitude: photoArray[index + 1].additional.gps.longitude
-                                },
-                                language: 'zh-CN'
-                              })
-                              this.photoAddress = res.addressDescription
+                              try {
+                                const res = await site.reverseGeocode({
+                                  location: {
+                                    latitude: photoArray[index + 1].additional.gps.latitude,
+                                    longitude: photoArray[index + 1].additional.gps.longitude
+                                  },
+                                  language: 'zh-CN'
+                                })
+                                this.photoAddress = res.addressDescription
+                              } catch (err) {
+                                await promptAction.openToast({
+                                  message: '发生错误，错误码：' + err.code
+                                })
+                                this.photoAddress = '地址获取失败，可尝试点此跳转系统地图查看'
+                              }
                             }
                             this.previewPhoto = photoArray[index + 1]
                             this.backDataPreferences.putSync('album', true)
@@ -1992,14 +2052,21 @@ export default struct Album {
                               })
                               .onClick(async () => {
                                 if (photoItem.item.additional.gps) {
-                                  const res = await site.reverseGeocode({
-                                    location: {
-                                      latitude: photoItem.item.additional.gps.latitude,
-                                      longitude: photoItem.item.additional.gps.longitude
-                                    },
-                                    language: 'zh-CN'
-                                  })
-                                  this.photoAddress = res.addressDescription
+                                  try {
+                                    const res = await site.reverseGeocode({
+                                      location: {
+                                        latitude: photoItem.item.additional.gps.latitude,
+                                        longitude: photoItem.item.additional.gps.longitude
+                                      },
+                                      language: 'zh-CN'
+                                    })
+                                    this.photoAddress = res.addressDescription
+                                  } catch (err) {
+                                    await promptAction.openToast({
+                                      message: '发生错误，错误码：' + err.code
+                                    })
+                                    this.photoAddress = '地址获取失败，可尝试点此跳转系统地图查看'
+                                  }
                                 }
                                 this.previewPhoto = photoItem.item
                                 this.backDataPreferences.putSync('album', true)
@@ -2024,14 +2091,21 @@ export default struct Album {
                               })
                               .onClick(async () => {
                                 if (photoItem.item.additional.gps) {
-                                  const res = await site.reverseGeocode({
-                                    location: {
-                                      latitude: photoItem.item.additional.gps.latitude,
-                                      longitude: photoItem.item.additional.gps.longitude
-                                    },
-                                    language: 'zh-CN'
-                                  })
-                                  this.photoAddress = res.addressDescription
+                                  try {
+                                    const res = await site.reverseGeocode({
+                                      location: {
+                                        latitude: photoItem.item.additional.gps.latitude,
+                                        longitude: photoItem.item.additional.gps.longitude
+                                      },
+                                      language: 'zh-CN'
+                                    })
+                                    this.photoAddress = res.addressDescription
+                                  } catch (err) {
+                                    await promptAction.openToast({
+                                      message: '发生错误，错误码：' + err.code
+                                    })
+                                    this.photoAddress = '地址获取失败，可尝试点此跳转系统地图查看'
+                                  }
                                 }
                                 this.previewPhoto = photoItem.item
                                 this.backDataPreferences.putSync('album', true)
@@ -2056,14 +2130,21 @@ export default struct Album {
                         }
                         .onClick(async () => {
                           if (photoItem.item.additional.gps) {
-                            const res = await site.reverseGeocode({
-                              location: {
-                                latitude: photoItem.item.additional.gps.latitude,
-                                longitude: photoItem.item.additional.gps.longitude
-                              },
-                              language: 'zh-CN'
-                            })
-                            this.photoAddress = res.addressDescription
+                            try {
+                              const res = await site.reverseGeocode({
+                                location: {
+                                  latitude: photoItem.item.additional.gps.latitude,
+                                  longitude: photoItem.item.additional.gps.longitude
+                                },
+                                language: 'zh-CN'
+                              })
+                              this.photoAddress = res.addressDescription
+                            } catch (err) {
+                              await promptAction.openToast({
+                                message: '发生错误，错误码：' + err.code
+                              })
+                              this.photoAddress = '地址获取失败，可尝试点此跳转系统地图查看'
+                            }
                           }
                           this.previewPhoto = photoItem.item
                           this.backDataPreferences.putSync('album', true)
