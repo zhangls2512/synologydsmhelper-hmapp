@@ -176,7 +176,7 @@ export default struct Notice {
       })
       this.loading = false
       if (res !== 'fail') {
-        this.noticeArray = JSON.parse(res).data as NoticeItem[]
+        this.noticeArray = JSON.parse(res).data
       }
     })
   }

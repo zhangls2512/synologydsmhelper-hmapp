@@ -85,16 +85,11 @@ export default struct Uploaderrorlog {
           .margin({
             top: $r('sys.float.ohos_id_elements_margin_vertical_m')
           })
-        }
-        .alignItems(HorizontalAlign.Start)
-      }
-      .margin({
-        top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-      })
 
-      ListItem() {
-        Column() {
           Button('上传')
+            .margin({
+              top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+            })
             .width('100%')
             .onClick(async () => {
               const dialogControllerProgress = new CustomDialogController({
@@ -118,21 +113,16 @@ export default struct Uploaderrorlog {
                 this.isShowUploaderrorlogSheet = false
               }
             })
-        }
-      }
-      .margin({
-        top: $r('sys.float.ohos_id_elements_margin_vertical_l')
-      })
-
-      ListItem() {
-        Column() {
           Text('建议填写联系方式，便于开发者排查、处理问题。')
             .fontWeight(FontWeight.Medium)
+            .margin({
+              top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+            })
         }
         .alignItems(HorizontalAlign.Start)
       }
       .margin({
-        top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+        top: $r('sys.float.ohos_id_elements_margin_vertical_m')
       })
     }
     .padding({

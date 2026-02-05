@@ -289,43 +289,38 @@ export default struct Accountlist {
       }
       if (this.bzId) {
         ListItem() {
-          TextInput({
-            placeholder: '请输入备注',
-            text: this.bz!!
-          })
-            .enableAutoSpacing(true)
-            .maxLength(20)
-        }
-        .margin({
-          top: $r('sys.float.ohos_id_elements_margin_vertical_l')
-        })
-        .padding({
-          left: $r('sys.float.ohos_id_elements_margin_horizontal_l'),
-          right: $r('sys.float.ohos_id_elements_margin_horizontal_l')
-        })
-
-        ListItem() {
-          Row() {
-            Button('取消')
-              .buttonStyle(ButtonStyleMode.NORMAL)
-              .layoutWeight(1)
-              .onClick(() => {
-                this.bzId = ''
-                this.bz = ''
-              })
-            Blank()
-              .width($r('sys.float.ohos_id_elements_margin_horizontal_m'))
-            Button('保存')
-              .layoutWeight(1)
-              .onClick(async () => {
-                await setAccountBz(this.bzId, this.bz)
-                await promptAction.openToast({
-                  message: '保存成功'
+          Column() {
+            TextInput({
+              placeholder: '请输入备注',
+              text: this.bz!!
+            })
+              .enableAutoSpacing(true)
+              .maxLength(20)
+            Row() {
+              Button('取消')
+                .buttonStyle(ButtonStyleMode.NORMAL)
+                .layoutWeight(1)
+                .onClick(() => {
+                  this.bzId = ''
+                  this.bz = ''
                 })
-                this.bzId = ''
-                this.bz = ''
-                this.accountArray = await getAccountList()
-              })
+              Blank()
+                .width($r('sys.float.ohos_id_elements_margin_horizontal_m'))
+              Button('保存')
+                .layoutWeight(1)
+                .onClick(async () => {
+                  await setAccountBz(this.bzId, this.bz)
+                  await promptAction.openToast({
+                    message: '保存成功'
+                  })
+                  this.bzId = ''
+                  this.bz = ''
+                  this.accountArray = await getAccountList()
+                })
+            }
+            .margin({
+              top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+            })
           }
         }
         .margin({

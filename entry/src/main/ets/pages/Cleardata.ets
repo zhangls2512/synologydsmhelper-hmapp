@@ -481,83 +481,81 @@ export default struct Cleardata {
           .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
           .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
           .padding($r('sys.float.ohos_id_corner_radius_mark'))
+
+          Button('清理缓存')
+            .enabled(this.cache.length > 0)
+            .margin({
+              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+            })
+            .role(ButtonRole.ERROR)
+            .width('100%')
+            .onClick(async () => {
+              const promptAction = this.UIContext.getPromptAction()
+              const data = await promptAction.showDialog({
+                title: '提示',
+                message: '清理成功后性能可能略微降低，但不会影响正常使用。确定清理？',
+                buttons: [
+                  {
+                    text: '取消',
+                    color: $r('sys.color.font_primary')
+                  },
+                  {
+                    text: '清理',
+                    color: $r('sys.color.warning')
+                  }
+                ]
+              })
+              if (data.index === 1) {
+                const promises = this.cache.map(async (item) => {
+                  if (item === 'appCache') {
+                    await bundleManager.cleanBundleCacheFilesForSelf()
+                  }
+                  if (item === 'webviewCache') {
+                    webview.WebviewController.removeAllCache(true)
+                  }
+                  if (item === 'apiVersionCache') {
+                    const filePath = this.context.cacheDir + '/apiversion.txt'
+                    if (fileIo.accessSync(filePath)) {
+                      await fileIo.unlink(filePath)
+                    }
+                  }
+                  if (item === 'noticeJsonStringCache') {
+                    const directory = this.context.cacheDir + '/noticejsonstring'
+                    if (fileIo.accessSync(directory)) {
+                      await fileIo.rmdir(directory)
+                    }
+                  }
+                  if (item === 'albumPhotoThumbnailCache') {
+                    const accountInfo = await getAccountInfo()
+                    const albumPhotoThumbnailDirectory = this.context.cacheDir + '/albumphotothumbnail/'
+                    if (fileIo.accessSync(albumPhotoThumbnailDirectory)) {
+                      if (!accountInfo.id) {
+                        await fileIo.rmdir(albumPhotoThumbnailDirectory)
+                      }
+                      if (accountInfo.id) {
+                        const accounts = await fileIo.listFile(albumPhotoThumbnailDirectory)
+                        const rmdirpromises = accounts.map(async (item) => {
+                          if (item !== sha256hash(accountInfo.path + '\0' + accountInfo.name)) {
+                            await fileIo.rmdir(albumPhotoThumbnailDirectory + item)
+                          }
+                        })
+                        await Promise.all(rmdirpromises)
+                      }
+                    }
+                  }
+                })
+                await Promise.all(promises)
+                await promptAction.openToast({
+                  message: '清理成功'
+                })
+                await this.getSize()
+              }
+            })
         }
         .alignItems(HorizontalAlign.Start)
       }
       .margin({
         top: $r('sys.float.ohos_id_elements_margin_vertical_l')
-      })
-
-      ListItem() {
-        Button('清理缓存')
-          .enabled(this.cache.length > 0)
-          .role(ButtonRole.ERROR)
-          .width('100%')
-          .onClick(async () => {
-            const promptAction = this.UIContext.getPromptAction()
-            const data = await promptAction.showDialog({
-              title: '提示',
-              message: '清理成功后性能可能略微降低，但不会影响正常使用。确定清理？',
-              buttons: [
-                {
-                  text: '取消',
-                  color: $r('sys.color.font_primary')
-                },
-                {
-                  text: '清理',
-                  color: $r('sys.color.warning')
-                }
-              ]
-            })
-            if (data.index === 1) {
-              const promises = this.cache.map(async (item) => {
-                if (item === 'appCache') {
-                  await bundleManager.cleanBundleCacheFilesForSelf()
-                }
-                if (item === 'webviewCache') {
-                  webview.WebviewController.removeAllCache(true)
-                }
-                if (item === 'apiVersionCache') {
-                  const filePath = this.context.cacheDir + '/apiversion.txt'
-                  if (fileIo.accessSync(filePath)) {
-                    await fileIo.unlink(filePath)
-                  }
-                }
-                if (item === 'noticeJsonStringCache') {
-                  const directory = this.context.cacheDir + '/noticejsonstring'
-                  if (fileIo.accessSync(directory)) {
-                    await fileIo.rmdir(directory)
-                  }
-                }
-                if (item === 'albumPhotoThumbnailCache') {
-                  const accountInfo = await getAccountInfo()
-                  const albumPhotoThumbnailDirectory = this.context.cacheDir + '/albumphotothumbnail/'
-                  if (fileIo.accessSync(albumPhotoThumbnailDirectory)) {
-                    if (!accountInfo.id) {
-                      await fileIo.rmdir(albumPhotoThumbnailDirectory)
-                    }
-                    if (accountInfo.id) {
-                      const accounts = await fileIo.listFile(albumPhotoThumbnailDirectory)
-                      const rmdirpromises = accounts.map(async (item) => {
-                        if (item !== sha256hash(accountInfo.path + '\0' + accountInfo.name)) {
-                          await fileIo.rmdir(albumPhotoThumbnailDirectory + item)
-                        }
-                      })
-                      await Promise.all(rmdirpromises)
-                    }
-                  }
-                }
-              })
-              await Promise.all(promises)
-              await promptAction.openToast({
-                message: '清理成功'
-              })
-              await this.getSize()
-            }
-          })
-      }
-      .margin({
-        top: $r('sys.float.ohos_id_elements_margin_vertical_m')
       })
 
       ListItem() {
@@ -624,57 +622,55 @@ export default struct Cleardata {
           .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
           .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
           .padding($r('sys.float.ohos_id_corner_radius_mark'))
+
+          Button('清理日志')
+            .enabled(this.log.length > 0)
+            .margin({
+              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+            })
+            .role(ButtonRole.ERROR)
+            .width('100%')
+            .onClick(async () => {
+              const promptAction = this.UIContext.getPromptAction()
+              const data = await promptAction.showDialog({
+                title: '提示',
+                message: '日志有助于开发者定位问题。清理成功后无法恢复，确定清理？',
+                buttons: [
+                  {
+                    text: '取消',
+                    color: $r('sys.color.font_primary')
+                  },
+                  {
+                    text: '清理',
+                    color: $r('sys.color.warning')
+                  }
+                ]
+              })
+              if (data.index === 1) {
+                const promises = this.log.map(async (item) => {
+                  if (item === 'errorLog') {
+                    const errorLogDir = this.context.filesDir + '/log/error/'
+                    if (fileIo.accessSync(errorLogDir)) {
+                      const fileNames = await fileIo.listFile(errorLogDir)
+                      const promises = fileNames.map(async (item) => {
+                        await fileIo.unlink(errorLogDir + item)
+                      })
+                      await Promise.all(promises)
+                    }
+                  }
+                })
+                await Promise.all(promises)
+                await promptAction.openToast({
+                  message: '清理成功'
+                })
+                await this.getSize()
+              }
+            })
         }
         .alignItems(HorizontalAlign.Start)
       }
       .margin({
         top: $r('sys.float.ohos_id_elements_margin_vertical_l')
-      })
-
-      ListItem() {
-        Button('清理日志')
-          .enabled(this.log.length > 0)
-          .role(ButtonRole.ERROR)
-          .width('100%')
-          .onClick(async () => {
-            const promptAction = this.UIContext.getPromptAction()
-            const data = await promptAction.showDialog({
-              title: '提示',
-              message: '日志有助于开发者定位问题。清理成功后无法恢复，确定清理？',
-              buttons: [
-                {
-                  text: '取消',
-                  color: $r('sys.color.font_primary')
-                },
-                {
-                  text: '清理',
-                  color: $r('sys.color.warning')
-                }
-              ]
-            })
-            if (data.index === 1) {
-              const promises = this.log.map(async (item) => {
-                if (item === 'errorLog') {
-                  const errorLogDir = this.context.filesDir + '/log/error/'
-                  if (fileIo.accessSync(errorLogDir)) {
-                    const fileNames = await fileIo.listFile(errorLogDir)
-                    const promises = fileNames.map(async (item) => {
-                      await fileIo.unlink(errorLogDir + item)
-                    })
-                    await Promise.all(promises)
-                  }
-                }
-              })
-              await Promise.all(promises)
-              await promptAction.openToast({
-                message: '清理成功'
-              })
-              await this.getSize()
-            }
-          })
-      }
-      .margin({
-        top: $r('sys.float.ohos_id_elements_margin_vertical_m')
       })
 
       ListItem() {
@@ -764,54 +760,52 @@ export default struct Cleardata {
           .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
           .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
           .padding($r('sys.float.ohos_id_corner_radius_mark'))
+
+          Button('清理无用数据')
+            .enabled(this.nouse.length > 0)
+            .margin({
+              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+            })
+            .role(ButtonRole.ERROR)
+            .width('100%')
+            .onClick(async () => {
+              const promises = this.nouse.map(async (item) => {
+                if (item === 'tempFileNouse') {
+                  const tempDir = this.context.tempDir
+                  const tempFiles = await fileIo.listFile(tempDir)
+                  const promises = tempFiles.map(async (item) => {
+                    const path = tempDir + '/' + item
+                    const isDirectory = fileIo.statSync(path)
+                    if (!isDirectory) {
+                      await fileIo.unlink(path)
+                    }
+                    if (isDirectory) {
+                      await fileIo.rmdir(path)
+                    }
+                  })
+                  await Promise.all(promises)
+                }
+                if (item === 'settingNouse') {
+                  const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+                    name: 'commonSetting'
+                  })
+                  const commonKeys = ['disallowScreenshot', 'cellularDataDownloadRemind']
+                  commonKeys.forEach(item => {
+                    commonSettingDataPreferences.deleteSync(item)
+                  })
+                }
+              })
+              await Promise.all(promises)
+              await promptAction.openToast({
+                message: '清理成功'
+              })
+              await this.getSize()
+            })
         }
         .alignItems(HorizontalAlign.Start)
       }
       .margin({
         top: $r('sys.float.ohos_id_elements_margin_vertical_l')
-      })
-
-      ListItem() {
-        Button('清理无用数据')
-          .enabled(this.nouse.length > 0)
-          .role(ButtonRole.ERROR)
-          .width('100%')
-          .onClick(async () => {
-            const promises = this.nouse.map(async (item) => {
-              if (item === 'tempFileNouse') {
-                const tempDir = this.context.tempDir
-                const tempFiles = await fileIo.listFile(tempDir)
-                const promises = tempFiles.map(async (item) => {
-                  const path = tempDir + '/' + item
-                  const isDirectory = fileIo.statSync(path)
-                  if (!isDirectory) {
-                    await fileIo.unlink(path)
-                  }
-                  if (isDirectory) {
-                    await fileIo.rmdir(path)
-                  }
-                })
-                await Promise.all(promises)
-              }
-              if (item === 'settingNouse') {
-                const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-                  name: 'commonSetting'
-                })
-                const commonKeys = ['disallowScreenshot', 'cellularDataDownloadRemind']
-                commonKeys.forEach(item => {
-                  commonSettingDataPreferences.deleteSync(item)
-                })
-              }
-            })
-            await Promise.all(promises)
-            await promptAction.openToast({
-              message: '清理成功'
-            })
-            await this.getSize()
-          })
-      }
-      .margin({
-        top: $r('sys.float.ohos_id_elements_margin_vertical_m')
       })
     }
     .padding({

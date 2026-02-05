@@ -220,7 +220,7 @@ export default struct Album {
                     }
                   }
                   if (photoItem.filename.endsWith('.mv.png')) {
-                    await fileIo.mkdir(dir + '/' + sha256hash(inPhotoItem.path))
+                    await fileIo.mkdir(dir + '/' + sha256hash(inPhotoItem.path), true)
                     await zlib.decompressFile(thumbnailPath, dir + '/' + sha256hash(inPhotoItem.path))
                     await fileIo.unlink(thumbnailPath)
                     const movingPhotoFiles = await fileIo.listFile(dir + '/' + sha256hash(inPhotoItem.path))

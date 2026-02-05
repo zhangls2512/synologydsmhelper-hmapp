@@ -14,48 +14,47 @@ export default struct Renamefile {
   build() {
     List() {
       ListItem() {
-        TextInput({
-          placeholder: '请输入名称',
-          text: this.name!!
-        })
-          .defaultFocus(true)
-          .enableAutoSpacing(true)
-      }
-
-      ListItem() {
-        Button('重命名')
-          .width('100%')
-          .onClick(async () => {
-            if (!this.name) {
-              await promptAction.openToast({
-                message: '请输入名称'
-              })
-              return
-            }
-            const dialogControllerProgress = new CustomDialogController({
-              builder: LoadingDialog({
-                content: '重命名中...'
-              })
-            })
-            dialogControllerProgress.open()
-            const res = await dsmRequest(this.context, '', 'SYNO.FileStation.Rename', new url.URLParams({
-              method: 'rename',
-              path: JSON.stringify([this.editPath]),
-              name: JSON.stringify(this.name)
-            }).toString())
-            dialogControllerProgress.close()
-            if (res !== 'fail') {
-              await promptAction.openToast({
-                message: '重命名成功'
-              })
-              this.context.eventHub.emit('refreshFilelist')
-              this.isShowRenamefileSheet = false
-            }
+        Column() {
+          TextInput({
+            placeholder: '请输入名称',
+            text: this.name!!
           })
+            .defaultFocus(true)
+            .enableAutoSpacing(true)
+          Button('重命名')
+            .margin({
+              top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+            })
+            .width('100%')
+            .onClick(async () => {
+              if (!this.name) {
+                await promptAction.openToast({
+                  message: '请输入名称'
+                })
+                return
+              }
+              const dialogControllerProgress = new CustomDialogController({
+                builder: LoadingDialog({
+                  content: '重命名中...'
+                })
+              })
+              dialogControllerProgress.open()
+              const res = await dsmRequest(this.context, '', 'SYNO.FileStation.Rename', new url.URLParams({
+                method: 'rename',
+                path: JSON.stringify([this.editPath]),
+                name: JSON.stringify(this.name)
+              }).toString())
+              dialogControllerProgress.close()
+              if (res !== 'fail') {
+                await promptAction.openToast({
+                  message: '重命名成功'
+                })
+                this.context.eventHub.emit('refreshFilelist')
+                this.isShowRenamefileSheet = false
+              }
+            })
+        }
       }
-      .margin({
-        top: $r('sys.float.ohos_id_elements_margin_vertical_l')
-      })
     }
     .padding({
       bottom: $r('sys.float.ohos_id_default_padding_bottom_fixed'),

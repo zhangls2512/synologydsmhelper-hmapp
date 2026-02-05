@@ -24,35 +24,34 @@ struct Addressgroup {
     HdsNavDestination() {
       List() {
         ListItem() {
-          TextInput({
-            placeholder: '请输入地址组名称',
-            text: this.addressGroupName!!
-          })
-            .enableAutoSpacing(true)
-        }
-        .margin({
-          top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-        })
-
-        ListItem() {
-          Button('添加')
-            .enabled(this.addressGroupName !== '' ? true : false)
-            .width('100%')
-            .onClick(async () => {
-              if (this.addressGroup.find(item => item.name === this.addressGroupName)) {
-                await promptAction.openToast({
-                  message: '名称已存在'
-                })
-                return
-              }
-              this.addressGroup.push({
-                name: this.addressGroupName,
-                list: []
-              })
-              this.addressGroupListItemInput.push('')
-              await write(this.context.filesDir + '/addressgroup.txt', JSON.stringify(this.addressGroup))
-              this.addressGroupName = ''
+          Column() {
+            TextInput({
+              placeholder: '请输入地址组名称',
+              text: this.addressGroupName!!
             })
+              .enableAutoSpacing(true)
+            Button('添加')
+              .enabled(this.addressGroupName !== '' ? true : false)
+              .margin({
+                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+              })
+              .width('100%')
+              .onClick(async () => {
+                if (this.addressGroup.find(item => item.name === this.addressGroupName)) {
+                  await promptAction.openToast({
+                    message: '名称已存在'
+                  })
+                  return
+                }
+                this.addressGroup.push({
+                  name: this.addressGroupName,
+                  list: []
+                })
+                this.addressGroupListItemInput.push('')
+                await write(this.context.filesDir + '/addressgroup.txt', JSON.stringify(this.addressGroup))
+                this.addressGroupName = ''
+              })
+          }
         }
         .margin({
           top: $r('sys.float.ohos_id_elements_margin_vertical_m')
@@ -82,34 +81,33 @@ struct Addressgroup {
           })
 
           ListItem() {
-            TextInput({
-              placeholder: '请输入地址',
-              text: this.addressGroupListItemInput[index]!!
-            })
-              .enableAutoSpacing(true)
-          }
-          .margin({
-            top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-          })
-
-          ListItem() {
-            Button('添加')
-              .enabled(this.addressGroupListItemInput[index] !== '' ? true : false)
-              .width('100%')
-              .onClick(async () => {
-                if (Array.from(new Set(this.addressGroup.flatMap(item => item.list)))
-                  .find(item => item === this.addressGroupListItemInput[index])) {
-                  await promptAction.openToast({
-                    message: '地址已存在'
-                  })
-                  return
-                }
-                const addressGroup = [...this.addressGroup]
-                addressGroup[index].list.push(this.addressGroupListItemInput[index])
-                this.addressGroup = addressGroup
-                await write(this.context.filesDir + '/addressgroup.txt', JSON.stringify(this.addressGroup))
-                this.addressGroupListItemInput[index] = ''
+            Column() {
+              TextInput({
+                placeholder: '请输入地址',
+                text: this.addressGroupListItemInput[index]!!
               })
+                .enableAutoSpacing(true)
+              Button('添加')
+                .enabled(this.addressGroupListItemInput[index] !== '' ? true : false)
+                .margin({
+                  top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                })
+                .width('100%')
+                .onClick(async () => {
+                  if (Array.from(new Set(this.addressGroup.flatMap(item => item.list)))
+                    .find(item => item === this.addressGroupListItemInput[index])) {
+                    await promptAction.openToast({
+                      message: '地址已存在'
+                    })
+                    return
+                  }
+                  const addressGroup = [...this.addressGroup]
+                  addressGroup[index].list.push(this.addressGroupListItemInput[index])
+                  this.addressGroup = addressGroup
+                  await write(this.context.filesDir + '/addressgroup.txt', JSON.stringify(this.addressGroup))
+                  this.addressGroupListItemInput[index] = ''
+                })
+            }
           }
           .margin({
             top: $r('sys.float.ohos_id_elements_margin_vertical_m')

@@ -31,59 +31,59 @@ export default struct Progresssheet {
   build() {
     List() {
       ListItem() {
-        Row() {
-          Progress({
-            value: Number((this.transferredSize / this.totalSize).toFixed(2)) * 100,
-            total: 100,
-            type: ProgressType.Ring
-          })
-            .margin({
-              right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+        Column() {
+          Row() {
+            Progress({
+              value: Number((this.transferredSize / this.totalSize).toFixed(2)) * 100,
+              total: 100,
+              type: ProgressType.Ring
             })
-            .width(40)
-          Column() {
-            Text('进度：' + Number((this.transferredSize / this.totalSize).toFixed(2)) * 100 + '%')
-              .fontWeight(FontWeight.Medium)
-            Text(getSizeString(this.transferredSize) + '/' + getSizeString(this.totalSize) + ' (' +
-            getSizeString(this.oneSecondTransferredSize) + '/s)')
-              .fontColor($r('sys.color.font_secondary'))
-              .fontSize($r('sys.float.ohos_id_text_size_body2'))
               .margin({
-                top: $r('sys.float.ohos_id_text_margin_vertical')
+                right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
               })
-          }
-          .alignItems(HorizontalAlign.Start)
-          .layoutWeight(1)
-        }
-      }
-      .margin({
-        top: $r('sys.float.ohos_id_elements_margin_vertical_l')
-      })
-
-      ListItem() {
-        Button('取消')
-          .role(ButtonRole.ERROR)
-          .width('100%')
-          .onClick(async () => {
-            const promptAction = this.getUIContext().getPromptAction()
-            const data = await promptAction.showDialog({
-              title: '提示',
-              message: '取消会导致已下载到本地的文件不完整，确定取消？',
-              buttons: [
-                {
-                  text: '取消',
-                  color: $r('sys.color.font_primary')
-                },
-                {
-                  text: '确定',
-                  color: $r('sys.color.warning')
-                }
-              ]
-            })
-            if (data.index === 1) {
-              this.isShowProgressSheet = false
+              .width(40)
+            Column() {
+              Text('进度：' + Number((this.transferredSize / this.totalSize).toFixed(2)) * 100 + '%')
+                .fontWeight(FontWeight.Medium)
+              Text(getSizeString(this.transferredSize) + '/' + getSizeString(this.totalSize) + ' (' +
+              getSizeString(this.oneSecondTransferredSize) + '/s)')
+                .fontColor($r('sys.color.font_secondary'))
+                .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                .margin({
+                  top: $r('sys.float.ohos_id_text_margin_vertical')
+                })
             }
-          })
+            .alignItems(HorizontalAlign.Start)
+            .layoutWeight(1)
+          }
+
+          Button('取消')
+            .margin({
+              top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+            })
+            .role(ButtonRole.ERROR)
+            .width('100%')
+            .onClick(async () => {
+              const promptAction = this.getUIContext().getPromptAction()
+              const data = await promptAction.showDialog({
+                title: '提示',
+                message: '取消会导致已下载到本地的文件不完整，确定取消？',
+                buttons: [
+                  {
+                    text: '取消',
+                    color: $r('sys.color.font_primary')
+                  },
+                  {
+                    text: '确定',
+                    color: $r('sys.color.warning')
+                  }
+                ]
+              })
+              if (data.index === 1) {
+                this.isShowProgressSheet = false
+              }
+            })
+        }
       }
       .margin({
         top: $r('sys.float.ohos_id_elements_margin_vertical_l')

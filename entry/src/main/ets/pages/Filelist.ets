@@ -1725,7 +1725,7 @@ export default struct Filelist {
                           const previewDir =
                             this.context.tempDir + '/preview/' + this.account + '/' + sha256hash(item.path)
                           if (!fileIo.accessSync(previewDir)) {
-                            await fileIo.mkdir(previewDir)
+                            await fileIo.mkdir(previewDir, true)
                           }
                           const filePath = previewDir + '/' + item.name
                           this.prepareDownloadDialogControllerProgress.open()
