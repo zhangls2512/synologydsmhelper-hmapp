@@ -164,7 +164,7 @@ export default struct Album {
     if (photoItem.type === 'photo') {
       const inPhotoItem = photoItem
       const account = getAccountHash(accountInfo)
-      const dir = this.context.cacheDir + '/albumphotothumbnail/' + account
+      const dir = getAccountHash(accountInfo, this.context, this.context.cacheDir + '/albumphotothumbnail')
       let thumbnailPath = dir + '/' + sha256hash(inPhotoItem.path) + '.jpeg'
       let requestPath = inPhotoItem.url
       if (photoItem.filename.endsWith('.mv.png')) {

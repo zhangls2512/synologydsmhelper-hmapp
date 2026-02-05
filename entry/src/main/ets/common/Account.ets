@@ -2,11 +2,13 @@ import { preferences } from '@kit.ArkData'
 import { url, util } from '@kit.ArkTS'
 import { promptAction } from '@kit.ArkUI'
 import { appAccount } from '@kit.BasicServicesKit'
+import { fileIo } from '@kit.CoreFileKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { getDnsServer } from './Dnsserver'
 import { readUri } from './File'
 import { sha256hash } from './Hash'
 import { dsmRequest } from './Request'
+import { AddressGroupItem } from '../pages/Addressgroup'
 
 export interface AccountInfo {
   id: string,
@@ -102,11 +104,26 @@ export async function getAccountInfo(): Promise<AccountInfo> {
   }
 }
 
-export function getAccountHash(accountInfo: AccountInfo): string {
-  if (accountInfo.bz) {
-    return sha256hash(accountInfo.bz)
-  } else {
+export function getAccountHash(accountInfo: AccountInfo, context?: Context, pathStart?: string): string {
+  if (!pathStart) {
     return sha256hash(accountInfo.path + '\0' + accountInfo.name)
+  } else {
+    const path = pathStart + '/' + sha256hash(accountInfo.path + '\0' + accountInfo.name)
+    const filePath = context?.filesDir + '/addressgroup.txt'
+    if (fileIo.accessSync(filePath)) {
+      const addressGroup = JSON.parse(fileIo.readTextSync(filePath)) as AddressGroupItem[]
+      for (let i = 0; i < addressGroup.length; i++) {
+        if (addressGroup[i].list.includes(accountInfo.path)) {
+          for (let j = 0; j < addressGroup[i].list.length; j++) {
+            const tempPath = pathStart + '/' + sha256hash(addressGroup[i].list[j] + '\0' + accountInfo.name)
+            if (fileIo.accessSync(tempPath)) {
+              return tempPath
+            }
+          }
+        }
+      }
+    }
+    return path
   }
 }
 
@@ -198,57 +215,61 @@ export async function importAccounts(context: Context, uri: string) {
 
 export async function loginBestPathAccount(context: Context) {
   const currentAccountInfo = await getAccountInfo()
-  if (currentAccountInfo.bz) {
-    const accountList = await getAccountList()
-    const sameBzAccountList = accountList.filter(item => item.bz === currentAccountInfo.bz)
-    if (sameBzAccountList.length > 1) {
-      let bestPathAccountId = ''
-      const debugSettingDataPreferences = preferences.getPreferencesSync(context, {
-        name: 'debugSetting'
-      })
-      const promises = sameBzAccountList.map(async (item, index) => {
-        const session = rcp.createSession({
-          requestConfiguration: {
-            dns: {
-              dnsRules: getDnsServer(context)
-            },
-            security: {
-              remoteValidation: debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
-                'system') as 'system' | 'skip'
+  if (currentAccountInfo.path) {
+    const filePath = context.filesDir + '/addressgroup.txt'
+    if (fileIo.accessSync(filePath)) {
+      const addressGroup = JSON.parse(fileIo.readTextSync(filePath)) as AddressGroupItem[]
+      for (let i = 0; i < addressGroup.length; i++) {
+        if (addressGroup[i].list.includes(currentAccountInfo.path)) {
+          let bestPath = ''
+          const debugSettingDataPreferences = preferences.getPreferencesSync(context, {
+            name: 'debugSetting'
+          })
+          const promises = addressGroup[i].list.map(async (item, index) => {
+            const session = rcp.createSession({
+              requestConfiguration: {
+                dns: {
+                  dnsRules: getDnsServer(context)
+                },
+                security: {
+                  remoteValidation: debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
+                    'system') as 'system' | 'skip'
+                }
+              }
+            })
+            context.eventHub.on('cancelTry' + index, (cancelTryIndex: number) => {
+              if (cancelTryIndex !== index) {
+                session.cancel()
+              }
+              context.eventHub.off('cancelTry' + index)
+            })
+            try {
+              const response = await session.get(item + '/webapi/entry.cgi')
+              session.close()
+              if (response.statusCode === 200) {
+                bestPath = item
+                for (let j = 0; j < addressGroup[i].list.length; j++) {
+                  context.eventHub.emit('cancelTry' + j, index)
+                }
+              }
+            } catch {
+              session.close()
             }
+          })
+          await Promise.all(promises)
+          if (bestPath && bestPath !== currentAccountInfo.path) {
+            await setAccount(context, {
+              path: bestPath,
+              name: currentAccountInfo.name,
+              password: currentAccountInfo.password,
+              sid: currentAccountInfo.sid,
+              synotoken: currentAccountInfo.synotoken,
+              bz: currentAccountInfo.bz,
+              isLogin: 'true'
+            })
           }
-        })
-        context.eventHub.on('cancelTry' + index, (cancelTryIndex: number) => {
-          if (cancelTryIndex !== index) {
-            session.cancel()
-          }
-          context.eventHub.off('cancelTry' + index)
-        })
-        try {
-          const response = await session.get(item.path + '/webapi/entry.cgi')
-          session.close()
-          if (response.statusCode === 200) {
-            bestPathAccountId = item.id
-            for (let i = 0; i < sameBzAccountList.length; i++) {
-              context.eventHub.emit('cancelTry' + i, index)
-            }
-          }
-        } catch {
-          session.close()
+          return
         }
-      })
-      await Promise.all(promises)
-      const bestPathAccount = sameBzAccountList.find(item => item.id === bestPathAccountId)
-      if (bestPathAccount && bestPathAccountId !== currentAccountInfo.id) {
-        await setAccount(context, {
-          path: bestPathAccount.path,
-          name: bestPathAccount.name,
-          password: bestPathAccount.password,
-          sid: bestPathAccount.sid,
-          synotoken: bestPathAccount.synotoken,
-          bz: bestPathAccount.bz,
-          isLogin: 'true'
-        })
       }
     }
   }

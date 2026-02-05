@@ -277,6 +277,48 @@ export default struct Setting {
                   })
                 })
               }
+              Divider()
+                .padding({
+                  left: 12,
+                  right: 12
+                })
+              Row() {
+                Text('地址组')
+                  .fontWeight(FontWeight.Medium)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                Image($r('app.media.right'))
+                  .fillColor($r('sys.color.icon_fourth'))
+                  .height(12)
+                  .width(12)
+              }
+              .borderRadius(12)
+              .padding(12)
+              .stateStyles({
+                normal: {
+                  .backgroundColor(this.hoverId === 3 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
+                },
+                pressed: {
+                  .backgroundColor($r('sys.color.interactive_pressed'))
+                }
+              })
+              .width('100%')
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 3
+                }
+              })
+              .onClick(() => {
+                this.pageInfos.pushPath({
+                  name: 'Addressgroup'
+                })
+              })
             }
             .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
             .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
@@ -307,7 +349,7 @@ export default struct Setting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 3 ? $r('sys.color.interactive_hover') :
+                  .backgroundColor(this.hoverId === 4 ? $r('sys.color.interactive_hover') :
                     $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
@@ -320,7 +362,7 @@ export default struct Setting {
                   this.hoverId = -1
                 }
                 if (isHover) {
-                  this.hoverId = 3
+                  this.hoverId = 4
                 }
               })
               .onClick(() => {
@@ -366,7 +408,7 @@ export default struct Setting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 4 ? $r('sys.color.interactive_hover') :
+                  .backgroundColor(this.hoverId === 5 ? $r('sys.color.interactive_hover') :
                     $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
@@ -379,7 +421,7 @@ export default struct Setting {
                   this.hoverId = -1
                 }
                 if (isHover) {
-                  this.hoverId = 4
+                  this.hoverId = 5
                 }
               })
               .onClick(() => {
@@ -409,7 +451,7 @@ export default struct Setting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 5 ? $r('sys.color.interactive_hover') :
+                  .backgroundColor(this.hoverId === 6 ? $r('sys.color.interactive_hover') :
                     $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
@@ -422,7 +464,7 @@ export default struct Setting {
                   this.hoverId = -1
                 }
                 if (isHover) {
-                  this.hoverId = 5
+                  this.hoverId = 6
                 }
               })
               .onClick(() => {
@@ -459,7 +501,7 @@ export default struct Setting {
             .padding(12)
             .stateStyles({
               normal: {
-                .backgroundColor(this.hoverId === 6 ? $r('sys.color.interactive_hover') :
+                .backgroundColor(this.hoverId === 7 ? $r('sys.color.interactive_hover') :
                   $r('sys.color.ohos_id_color_card_bg'))
               },
               pressed: {
@@ -472,7 +514,7 @@ export default struct Setting {
                 this.hoverId = -1
               }
               if (isHover) {
-                this.hoverId = 6
+                this.hoverId = 7
               }
             })
             .onClick(() => {
@@ -515,7 +557,7 @@ export default struct Setting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 7 ? $r('sys.color.interactive_hover') :
+                  .backgroundColor(this.hoverId === 8 ? $r('sys.color.interactive_hover') :
                     $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
@@ -528,7 +570,7 @@ export default struct Setting {
                   this.hoverId = -1
                 }
                 if (isHover) {
-                  this.hoverId = 7
+                  this.hoverId = 8
                 }
               })
               .onClick(() => {
@@ -564,7 +606,7 @@ export default struct Setting {
                 .padding(12)
                 .stateStyles({
                   normal: {
-                    .backgroundColor(this.hoverId === 8 ? $r('sys.color.interactive_hover') :
+                    .backgroundColor(this.hoverId === 9 ? $r('sys.color.interactive_hover') :
                       $r('sys.color.ohos_id_color_card_bg'))
                   },
                   pressed: {
@@ -577,7 +619,7 @@ export default struct Setting {
                     this.hoverId = -1
                   }
                   if (isHover) {
-                    this.hoverId = 8
+                    this.hoverId = 9
                   }
                 })
                 .onClick(async () => {
@@ -603,7 +645,7 @@ export default struct Setting {
                 .padding(12)
                 .stateStyles({
                   normal: {
-                    .backgroundColor(this.hoverId === 9 ? $r('sys.color.interactive_hover') :
+                    .backgroundColor(this.hoverId === 10 ? $r('sys.color.interactive_hover') :
                       $r('sys.color.ohos_id_color_card_bg'))
                   },
                   pressed: {
@@ -616,7 +658,7 @@ export default struct Setting {
                     this.hoverId = -1
                   }
                   if (isHover) {
-                    this.hoverId = 9
+                    this.hoverId = 10
                   }
                 })
                 .onClick(async () => {
@@ -663,7 +705,7 @@ export default struct Setting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 10 ? $r('sys.color.interactive_hover') :
+                  .backgroundColor(this.hoverId === 11 ? $r('sys.color.interactive_hover') :
                     $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
@@ -676,7 +718,7 @@ export default struct Setting {
                   this.hoverId = -1
                 }
                 if (isHover) {
-                  this.hoverId = 10
+                  this.hoverId = 11
                 }
               })
               .onClick(async () => {
@@ -716,7 +758,7 @@ export default struct Setting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 11 ? $r('sys.color.interactive_hover') :
+                  .backgroundColor(this.hoverId === 12 ? $r('sys.color.interactive_hover') :
                     $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
@@ -729,7 +771,7 @@ export default struct Setting {
                   this.hoverId = -1
                 }
                 if (isHover) {
-                  this.hoverId = 11
+                  this.hoverId = 12
                 }
               })
               .onClick(async () => {
@@ -757,7 +799,7 @@ export default struct Setting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 12 ? $r('sys.color.interactive_hover') :
+                  .backgroundColor(this.hoverId === 13 ? $r('sys.color.interactive_hover') :
                     $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
@@ -770,7 +812,7 @@ export default struct Setting {
                   this.hoverId = -1
                 }
                 if (isHover) {
-                  this.hoverId = 12
+                  this.hoverId = 13
                 }
               })
               .onClick(() => {
@@ -800,7 +842,7 @@ export default struct Setting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 13 ? $r('sys.color.interactive_hover') :
+                  .backgroundColor(this.hoverId === 14 ? $r('sys.color.interactive_hover') :
                     $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
@@ -813,7 +855,7 @@ export default struct Setting {
                   this.hoverId = -1
                 }
                 if (isHover) {
-                  this.hoverId = 13
+                  this.hoverId = 14
                 }
               })
               .onClick(async () => {
@@ -864,7 +906,7 @@ export default struct Setting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 14 ? $r('sys.color.interactive_hover') :
+                  .backgroundColor(this.hoverId === 15 ? $r('sys.color.interactive_hover') :
                     $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
@@ -877,7 +919,7 @@ export default struct Setting {
                   this.hoverId = -1
                 }
                 if (isHover) {
-                  this.hoverId = 14
+                  this.hoverId = 15
                 }
               })
               .onClick(() => {
@@ -907,7 +949,7 @@ export default struct Setting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 15 ? $r('sys.color.interactive_hover') :
+                  .backgroundColor(this.hoverId === 16 ? $r('sys.color.interactive_hover') :
                     $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
@@ -920,7 +962,7 @@ export default struct Setting {
                   this.hoverId = -1
                 }
                 if (isHover) {
-                  this.hoverId = 15
+                  this.hoverId = 16
                 }
               })
               .onClick(() => {
@@ -966,7 +1008,7 @@ export default struct Setting {
             .padding(12)
             .stateStyles({
               normal: {
-                .backgroundColor(this.hoverId === 16 ? $r('sys.color.interactive_hover') :
+                .backgroundColor(this.hoverId === 17 ? $r('sys.color.interactive_hover') :
                   $r('sys.color.ohos_id_color_card_bg'))
               },
               pressed: {
@@ -979,7 +1021,7 @@ export default struct Setting {
                 this.hoverId = -1
               }
               if (isHover) {
-                this.hoverId = 16
+                this.hoverId = 17
               }
             })
             .onClick(() => {
@@ -1009,7 +1051,7 @@ export default struct Setting {
             .padding(12)
             .stateStyles({
               normal: {
-                .backgroundColor(this.hoverId === 17 ? $r('sys.color.interactive_hover') :
+                .backgroundColor(this.hoverId === 18 ? $r('sys.color.interactive_hover') :
                   $r('sys.color.ohos_id_color_card_bg'))
               },
               pressed: {
@@ -1022,7 +1064,7 @@ export default struct Setting {
                 this.hoverId = -1
               }
               if (isHover) {
-                this.hoverId = 17
+                this.hoverId = 18
               }
             })
             .onClick(() => {

@@ -5,6 +5,7 @@ import { rcp } from '@kit.RemoteCommunicationKit'
 import { hdsEffect } from '@kit.UIDesignKit'
 import { AccountInfo, getAccountList, removeAccount, setAccount, setAccountBz } from '../common/Account'
 import { getDnsServer } from '../common/Dnsserver'
+import copy from '../common/Pasteboard'
 
 @ComponentV2
 export default struct Accountlist {
@@ -26,6 +27,13 @@ export default struct Accountlist {
   @Builder
   MenuBuilder(item: AccountInfo) {
     Menu() {
+      MenuItem({
+        startIcon: $r('app.media.copytext'),
+        content: '复制地址'
+      })
+        .onClick(async () => {
+          await copy(this.context, this.UIContext, item.path)
+        })
       MenuItem({
         startIcon: $r('app.media.edit'),
         content: '编辑备注'

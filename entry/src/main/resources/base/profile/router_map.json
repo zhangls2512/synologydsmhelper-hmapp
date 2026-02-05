@@ -1,6 +1,11 @@
 {
   "routerMap": [
     {
+      "name": "Addressgroup",
+      "pageSourceFile": "src/main/ets/pages/Addressgroup.ets",
+      "buildFunction": "AddressgroupBuilder"
+    },
+    {
       "name": "About",
       "pageSourceFile": "src/main/ets/pages/About.ets",
       "buildFunction": "AboutBuilder"
