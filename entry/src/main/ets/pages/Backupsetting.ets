@@ -8,7 +8,7 @@ import { generateBackupTaskList } from '../common/Backup'
 import { read, write } from '../common/File'
 import { checkPermission } from '../common/Permission'
 
-interface BackupSetting {
+export interface BackupSetting {
   autoTypes: string[]
 }
 

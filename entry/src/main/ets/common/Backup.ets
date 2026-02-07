@@ -6,6 +6,7 @@ import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { AccountInfo, getAccountHash, getAccountInfo } from './Account'
 import { read, write } from './File'
 import { getPermission } from './Permission'
+import { BackupSetting } from '../pages/Backupsetting'
 
 export interface BackupTask {
   id: string,
@@ -234,5 +235,20 @@ export async function generateBackupTaskList(context: Context, type: string) {
       }
     })
     await Promise.all(promises)
+  }
+}
+
+export async function autoBackup(context: Context) {
+  const accountInfo = await getAccountInfo()
+  if (accountInfo.id) {
+    const filePath = context.filesDir + '/backupsetting/' + getAccountHash(accountInfo) + '.txt'
+    const filestring = await read(filePath, true)
+    if (filestring !== 'fail') {
+      const autoTypes = (JSON.parse(filestring) as BackupSetting).autoTypes
+      const promises = autoTypes.map(async (item) => {
+        await generateBackupTaskList(context, item)
+      })
+      await Promise.all(promises)
+    }
   }
 }

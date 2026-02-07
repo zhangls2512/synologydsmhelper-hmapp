@@ -22,6 +22,7 @@ import { notificationManager } from '@kit.NotificationKit'
 import { hiAppEvent } from '@kit.PerformanceAnalysisKit'
 import { harmonyShare, systemShare } from '@kit.ShareKit'
 import { getAccountList, getLoginStatus, loginBestPathAccount } from '../common/Account'
+import { autoBackup } from '../common/Backup'
 import { write } from '../common/File'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import openLink from '../common/Openlink'
@@ -499,6 +500,7 @@ export default class EntryAbility extends UIAbility {
     }
     await this.appInit(want)
     await loginBestPathAccount(this.context)
+    await autoBackup(this.context)
   }
 
   async onNewWant(want: Want) {

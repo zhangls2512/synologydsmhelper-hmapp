@@ -6,6 +6,7 @@ import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { netBoost } from '@kit.NetworkBoostKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { setAccount } from '../common/Account'
+import { autoBackup } from '../common/Backup'
 import { getDnsServer } from '../common/Dnsserver'
 import openLink from '../common/Openlink'
 import { dsmRequest } from '../common/Request'
@@ -401,6 +402,7 @@ export default struct Login {
                 }
                 this.context.eventHub.emit('refreshMe')
                 this.isShowLoginSheet = false
+                await autoBackup(this.context)
               }
             })
           Row() {
