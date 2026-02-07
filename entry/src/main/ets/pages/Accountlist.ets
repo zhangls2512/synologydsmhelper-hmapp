@@ -148,7 +148,7 @@ export default struct Accountlist {
       if (!this.bzId) {
         if (this.accountArray.length === 0) {
           ListItem() {
-            Text('无账号')
+            Text('无数据')
           }
           .margin({
             top: $r('sys.float.ohos_id_elements_margin_vertical_l')

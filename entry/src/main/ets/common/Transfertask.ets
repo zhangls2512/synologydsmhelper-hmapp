@@ -7,6 +7,7 @@ import { Environment, fileIo, fileUri, picker } from '@kit.CoreFileKit'
 import { netBoost } from '@kit.NetworkBoostKit'
 import { notificationManager } from '@kit.NotificationKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
+import { deleteBackupTask, updateBackupTaskStatus } from './Backup'
 import { getDnsServer } from './Dnsserver'
 import { write } from './File'
 import { getPermission } from './Permission'
@@ -44,7 +45,7 @@ export async function download(context: Context, id: string) {
         filePath = new fileUri.FileUri(uris[0] + '/' + transferTask.name).path
       }
     }
-    const version = await getDsmApiMaxVersion(context, transferTask.accountPath, 'SYNO.FileStation.Download')
+    const version = await getDsmApiMaxVersion(context, transferTask.accountInfo.path, 'SYNO.FileStation.Download')
     if (version !== 'fail') {
       const wandAgent = await wantAgent.getWantAgent({
         wants: [
@@ -128,18 +129,18 @@ export async function download(context: Context, id: string) {
           }
         },
         headers: {
-          referer: transferTask.path
+          referer: transferTask.path,
+          'x-syno-token': transferTask.accountInfo.synotoken
         },
         cookies: {
-          id: transferTask.accountSid,
-          'x-syno-token': transferTask.accountSynotoken
+          id: transferTask.accountInfo.sid
         }
       })
       backgroundTaskManager.on('continuousTaskCancel', () => {
         session.cancel()
       })
       try {
-        const response = await session.get(transferTask.accountPath + '/webapi/entry.cgi?' + new url.URLParams({
+        const response = await session.get(transferTask.accountInfo.path + '/webapi/entry.cgi?' + new url.URLParams({
           api: 'SYNO.FileStation.Download',
           version: String(version),
           method: 'download',
@@ -187,7 +188,7 @@ export async function upload(context: Context, id: string) {
   transferTask.status = 'processing'
   transferTaskDataPreferences.putSync(id, JSON.stringify(transferTask))
   try {
-    const version = await getDsmApiMaxVersion(context, transferTask.accountPath, 'SYNO.FileStation.Upload')
+    const version = await getDsmApiMaxVersion(context, transferTask.accountInfo.path, 'SYNO.FileStation.Upload')
     if (version !== 'fail') {
       const filePath = context.tempDir + '/upload/' + transferTask.id
       let header =
@@ -196,6 +197,7 @@ export async function upload(context: Context, id: string) {
       header += '--' + transferTask.id + '\r\ncontent-disposition: form-data; name="method"\r\n\r\nupload\r\n'
       header += '--' + transferTask.id + '\r\ncontent-disposition: form-data; name="path"\r\n\r\n' + transferTask.path +
         '\r\n'
+      header += '--' + transferTask.id + '\r\ncontent-disposition: form-data; name="create_parents"\r\n\r\ntrue\r\n'
       header += '--' + transferTask.id + '\r\ncontent-disposition: form-data; name="file"; filename="' +
       transferTask.name + '"\r\n\r\n'
       await write(filePath, header)
@@ -225,7 +227,6 @@ export async function upload(context: Context, id: string) {
       await fileIo.write(file.fd, '\r\n\r\n--' + transferTask.id + '--', {
         offset: fileIo.statSync(filePath).size
       })
-      const stream = fileIo.createStreamSync(filePath, 'r')
       const wandAgent = await wantAgent.getWantAgent({
         wants: [
           {
@@ -301,24 +302,31 @@ export async function upload(context: Context, id: string) {
         },
         headers: {
           'content-type': 'multipart/form-data; boundary=' + transferTask.id,
-          referer: transferTask.path
+          referer: transferTask.path,
+          'x-syno-token': transferTask.accountInfo.synotoken
         },
         cookies: {
-          id: transferTask.accountSid,
-          'x-syno-token': transferTask.accountSynotoken
+          id: transferTask.accountInfo.sid
         }
       })
       backgroundTaskManager.on('continuousTaskCancel', () => {
         session.cancel()
       })
       try {
-        const response = await session.uploadFromStream(transferTask.accountPath +
+        const response = await session.uploadFromFile(transferTask.accountInfo.path +
           '/webapi/entry.cgi?api=SYNO.FileStation.Upload&version=' + version + '&method=upload&SynoToken=' +
-        transferTask.accountSynotoken, new rcp.UploadFromStream(stream))
-        stream.closeSync()
+        transferTask.accountInfo.synotoken, new rcp.UploadFromFile(filePath))
         await fileIo.unlink(filePath)
         if (transferTask.srcFileUri.endsWith('.mv.png')) {
           await fileIo.unlink(new fileUri.FileUri(transferTask.srcFileUri).path)
+        }
+        if (response.statusCode !== 200) {
+          transferTask.status = 'fail'
+          transferTask.errCode = response.statusCode
+          transferTaskDataPreferences.putSync(id, JSON.stringify(transferTask))
+          if (transferTask.backupTaskId) {
+            await updateBackupTaskStatus(context, transferTask.accountInfo, transferTask.backupTaskId, false)
+          }
         }
         if (response.statusCode === 200) {
           let body = ''
@@ -329,19 +337,26 @@ export async function upload(context: Context, id: string) {
           if (!res.success) {
             transferTask.status = 'fail'
             transferTask.errCode = res.error.code
+            if (transferTask.backupTaskId) {
+              await updateBackupTaskStatus(context, transferTask.accountInfo, transferTask.backupTaskId, false)
+            }
           }
           if (res.success) {
             transferTask.status = 'success'
+            if (transferTask.backupTaskId) {
+              await updateBackupTaskStatus(context, transferTask.accountInfo, transferTask.backupTaskId, true)
+              const backupSettingDataPreferences = preferences.getPreferencesSync(context, {
+                name: 'backupSetting'
+              })
+              const deleteAfterSuccess = backupSettingDataPreferences.getSync('deleteAfterSuccess', true)
+              if (deleteAfterSuccess) {
+                await deleteBackupTask(context, transferTask.accountInfo, transferTask.backupTaskId)
+              }
+            }
           }
           transferTaskDataPreferences.putSync(id, JSON.stringify(transferTask))
         }
-        if (response.statusCode !== 200) {
-          transferTask.status = 'fail'
-          transferTask.errCode = response.statusCode
-          transferTaskDataPreferences.putSync(id, JSON.stringify(transferTask))
-        }
       } catch (err) {
-        stream.closeSync()
         await fileIo.unlink(filePath)
         if (transferTask.srcFileUri.endsWith('.mv.png')) {
           await fileIo.unlink(new fileUri.FileUri(transferTask.srcFileUri).path)
@@ -355,20 +370,32 @@ export async function upload(context: Context, id: string) {
           transferTask.status = 'fail'
           transferTask.errCode = err.code
           transferTaskDataPreferences.putSync(id, JSON.stringify(transferTask))
+          if (transferTask.backupTaskId) {
+            await updateBackupTaskStatus(context, transferTask.accountInfo, transferTask.backupTaskId, false)
+          }
         }
         if (err.code === 1007900992) {
           transferTask.status = 'cancel'
           transferTaskDataPreferences.putSync(id, JSON.stringify(transferTask))
+          if (transferTask.backupTaskId) {
+            await updateBackupTaskStatus(context, transferTask.accountInfo, transferTask.backupTaskId, false)
+          }
         }
       }
     } else {
       transferTask.status = 'fail'
       transferTask.errCode = -1
       transferTaskDataPreferences.putSync(id, JSON.stringify(transferTask))
+      if (transferTask.backupTaskId) {
+        await updateBackupTaskStatus(context, transferTask.accountInfo, transferTask.backupTaskId, false)
+      }
     }
   } catch (err) {
     transferTask.status = 'fail'
     transferTask.errCode = err.code
     transferTaskDataPreferences.putSync(id, JSON.stringify(transferTask))
+    if (transferTask.backupTaskId) {
+      await updateBackupTaskStatus(context, transferTask.accountInfo, transferTask.backupTaskId, false)
+    }
   }
 }

@@ -212,7 +212,7 @@ export default struct Noticelist {
         List() {
           if (this.notices.length === 0 && !this.loading) {
             ListItem() {
-              Text('无消息')
+              Text('无数据')
             }
             .margin({
               top: $r('sys.float.ohos_id_elements_margin_vertical_m')

@@ -277,6 +277,7 @@ struct Permissionsetting {
               Span('管理此权限。')
                 .fontColor($r('sys.color.font_secondary'))
             }
+            .enableAutoSpacing(true)
             .fontSize($r('sys.float.ohos_id_text_size_body3'))
             .margin({
               top: 6,
@@ -336,6 +337,7 @@ struct Permissionsetting {
                 Span('管理此权限。')
                   .fontColor($r('sys.color.font_secondary'))
               }
+              .enableAutoSpacing(true)
               .fontSize($r('sys.float.ohos_id_text_size_body3'))
               .margin({
                 top: 6,
@@ -394,6 +396,7 @@ struct Permissionsetting {
                 Span('管理此权限。')
                   .fontColor($r('sys.color.font_secondary'))
               }
+              .enableAutoSpacing(true)
               .fontSize($r('sys.float.ohos_id_text_size_body3'))
               .margin({
                 top: 6,

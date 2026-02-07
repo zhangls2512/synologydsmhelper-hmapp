@@ -760,9 +760,7 @@ export default struct Filelist {
                     status: 'pending',
                     errCode: 0,
                     type: 'download',
-                    accountPath: accountInfo.path,
-                    accountSid: accountInfo.sid,
-                    accountSynotoken: accountInfo.synotoken
+                    accountInfo: accountInfo
                   }))
                 })
                 await promptAction.openToast({
@@ -1246,9 +1244,7 @@ export default struct Filelist {
                         status: 'pending',
                         errCode: 0,
                         type: 'upload',
-                        accountPath: accountInfo.path,
-                        accountSid: accountInfo.sid,
-                        accountSynotoken: accountInfo.synotoken,
+                        accountInfo: accountInfo,
                         srcFileUri: item
                       }))
                     })
@@ -1811,7 +1807,7 @@ export default struct Filelist {
                                       const filePreviewType =
                                         this.commonSettingDataPreferences.getSync('filePreviewType', 0)
                                       if (filePreviewType === 0) {
-                                        const supportedReaderFormats = ['.txt', '.epub', '.mobi', '.azw', '.azw3']
+                                        const supportedReaderFormats = ['.epub', '.mobi', '.azw', '.azw3']
                                         if (!supportedReaderFormats.some(formatItem => item.name.endsWith(formatItem))) {
                                           const canPreview = await filePreview.canPreview(this.context, uri)
                                           if (!canPreview) {

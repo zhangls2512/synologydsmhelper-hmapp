@@ -215,7 +215,7 @@ export async function importAccounts(context: Context, uri: string) {
 
 export async function loginBestPathAccount(context: Context) {
   const currentAccountInfo = await getAccountInfo()
-  if (currentAccountInfo.path) {
+  if (currentAccountInfo.id) {
     const filePath = context.filesDir + '/addressgroup.txt'
     if (fileIo.accessSync(filePath)) {
       const addressGroup = JSON.parse(fileIo.readTextSync(filePath)) as AddressGroupItem[]

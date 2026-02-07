@@ -5,7 +5,7 @@ import { display } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
 import { image } from '@kit.ImageKit'
 import { HdsTabs, HdsTabsController } from '@kit.UIDesignKit'
-import { importAccounts } from '../common/Account'
+import { AccountInfo, importAccounts } from '../common/Account'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import { getPreferType } from '../common/Prefertype'
 import { download, upload } from '../common/Transfertask'
@@ -27,10 +27,9 @@ export interface TransferTaskItem {
   status: string,
   errCode: number,
   type: string,
-  accountPath: string,
-  accountSid: string,
-  accountSynotoken: string,
-  srcFileUri: string
+  accountInfo: AccountInfo,
+  srcFileUri: string,
+  backupTaskId: string
 }
 
 @Entry

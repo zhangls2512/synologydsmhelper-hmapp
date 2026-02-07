@@ -261,7 +261,8 @@ export default struct Album {
             }
           },
           headers: {
-            referer: accountInfo.path
+            referer: accountInfo.path,
+            'x-syno-token': accountInfo.synotoken
           },
           cookies: {
             id: accountInfo.sid
@@ -1342,9 +1343,7 @@ export default struct Album {
                         status: 'pending',
                         errCode: 0,
                         type: 'upload',
-                        accountPath: accountInfo.path,
-                        accountSid: accountInfo.sid,
-                        accountSynotoken: accountInfo.synotoken,
+                        accountInfo: accountInfo,
                         srcFileUri: item
                       }))
                     })
@@ -1403,9 +1402,7 @@ export default struct Album {
                               status: 'pending',
                               errCode: 0,
                               type: 'upload',
-                              accountPath: accountInfo.path,
-                              accountSid: accountInfo.sid,
-                              accountSynotoken: accountInfo.synotoken,
+                              accountInfo: accountInfo,
                               srcFileUri: fileUri.getUriFromPath(dir + id + '.mv.png')
                             }))
                           }

@@ -10,19 +10,19 @@
     },
     {
       "name": "MEDIA_LOCATION_reason",
-      "value": "用于在上传、备份图片、视频到用户群晖DSM时保留其中的地理位置信息。"
+      "value": "用于上传、备份保留地理位置信息的图片、视频到用户群晖DSM。"
     },
     {
       "name": "READ_IMAGEVIDEO_reason",
-      "value": "用于批量备份图片、视频。"
+      "value": "用于备份图片、视频到用户群晖DSM。"
     },
     {
       "name": "READ_WRITE_DESKTOP_DIRECTORY_reason",
-      "value": "用于批量备份桌面文件。"
+      "value": "用于备份桌面文件到用户群晖DSM。"
     },
     {
       "name": "READ_WRITE_DOCUMENTS_DIRECTORY_reason",
-      "value": "用于批量备份文档。"
+      "value": "用于备份文档到用户群晖DSM。"
     },
     {
       "name": "READ_WRITE_DOWNLOAD_DIRECTORY_reason",

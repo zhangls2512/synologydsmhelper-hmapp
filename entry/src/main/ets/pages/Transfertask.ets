@@ -29,7 +29,7 @@ export default struct Transfertask {
           if (this.selectedIndex === 0) {
             if (this.transferTaskArray.filter(item => item.type === 'download').length === 0) {
               ListItem() {
-                Text('无下载任务')
+                Text('无数据')
               }
               .margin({
                 top: $r('sys.float.ohos_id_elements_margin_vertical_m')
@@ -111,7 +111,7 @@ export default struct Transfertask {
           if (this.selectedIndex === 1) {
             if (this.transferTaskArray.filter(item => item.type === 'upload').length === 0) {
               ListItem() {
-                Text('无上传任务')
+                Text('无数据')
               }
               .margin({
                 top: $r('sys.float.ohos_id_elements_margin_vertical_m')

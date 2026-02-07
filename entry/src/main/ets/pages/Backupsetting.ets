@@ -1,9 +1,10 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
-import { LengthMetrics, promptAction } from '@kit.ArkUI'
-import { HdsNavDestination } from '@kit.UIDesignKit'
+import { LengthMetrics, LoadingDialog, promptAction } from '@kit.ArkUI'
 import { deviceInfo } from '@kit.BasicServicesKit'
+import { HdsNavDestination } from '@kit.UIDesignKit'
 import { getAccountHash, getAccountInfo } from '../common/Account'
+import { generateBackupTaskList } from '../common/Backup'
 import { read, write } from '../common/File'
 import { checkPermission } from '../common/Permission'
 
@@ -44,7 +45,7 @@ struct Backupsetting {
       List() {
         ListItem() {
           Column() {
-            Text('自动备份' + JSON.stringify(this.autoTypes))
+            Text('自动备份')
               .fontColor($r('sys.color.font_secondary'))
               .fontSize($r('sys.float.ohos_id_text_size_body2'))
               .fontWeight(FontWeight.Medium)
@@ -121,7 +122,7 @@ struct Backupsetting {
 
         ListItem() {
           Column() {
-            Text('手动全量备份')
+            Text('手动备份')
               .fontColor($r('sys.color.font_secondary'))
               .fontSize($r('sys.float.ohos_id_text_size_body2'))
               .fontWeight(FontWeight.Medium)
@@ -173,9 +174,31 @@ struct Backupsetting {
                     }
                   })
                   .onClick(async () => {
-                    await promptAction.openToast({
-                      message: '敬请期待'
-                    })
+                    let res = false
+                    if (item === '相册') {
+                      res = await checkPermission(this.context, this.UIContext, 'ohos.permission.READ_IMAGEVIDEO')
+                    }
+                    if (item === '文档') {
+                      res = await checkPermission(this.context, this.UIContext,
+                        'ohos.permission.READ_WRITE_DOCUMENTS_DIRECTORY')
+                    }
+                    if (item === '桌面') {
+                      res = await checkPermission(this.context, this.UIContext,
+                        'ohos.permission.READ_WRITE_DESKTOP_DIRECTORY')
+                    }
+                    if (res) {
+                      const dialogControllerProgress = new CustomDialogController({
+                        builder: LoadingDialog({
+                          content: '备份准备中...'
+                        })
+                      })
+                      dialogControllerProgress.open()
+                      await generateBackupTaskList(this.context, item)
+                      dialogControllerProgress.close()
+                      await promptAction.openToast({
+                        message: '备份已开始'
+                      })
+                    }
                   })
                 }
               })
@@ -219,6 +242,54 @@ struct Backupsetting {
         .margin({
           top: $r('sys.float.ohos_id_elements_margin_vertical_l')
         })
+
+        ListItem() {
+          Column() {
+            Row() {
+              Text('备份任务')
+                .fontWeight(FontWeight.Medium)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+              Image($r('app.media.right'))
+                .fillColor($r('sys.color.icon_fourth'))
+                .height(12)
+                .width(12)
+            }
+            .borderRadius(12)
+            .padding(12)
+            .stateStyles({
+              normal: {
+                .backgroundColor(this.hoverId === 3 ? $r('sys.color.interactive_hover') :
+                  $r('sys.color.ohos_id_color_card_bg'))
+              },
+              pressed: {
+                .backgroundColor($r('sys.color.interactive_pressed'))
+              }
+            })
+            .width('100%')
+            .onHover((isHover) => {
+              if (!isHover) {
+                this.hoverId = -1
+              }
+              if (isHover) {
+                this.hoverId = 3
+              }
+            })
+            .onClick(() => {
+              this.pageInfos.pushPath({
+                name: 'Backuptask'
+              })
+            })
+          }
+          .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+          .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+          .padding($r('sys.float.ohos_id_corner_radius_mark'))
+        }
+        .margin({
+          top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+        })
       }
       .padding({
         bottom: $r('sys.float.ohos_id_default_padding_bottom_fixed'),
@@ -238,7 +309,8 @@ struct Backupsetting {
       },
       enableComponentSafeArea: true
     })
-    .onAppear(async () => {
+    .onReady(async (context) => {
+      this.pageInfos = context.pathStack
       await this.getSetting()
     })
   }
