@@ -1,6 +1,6 @@
 import { dataSharePredicates, preferences } from '@kit.ArkData'
 import { util } from '@kit.ArkTS'
-import { deviceInfo } from '@kit.BasicServicesKit'
+import { deviceInfo, zlib } from '@kit.BasicServicesKit'
 import { Environment, fileIo, fileUri } from '@kit.CoreFileKit'
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { AccountInfo, getAccountHash, getAccountInfo } from './Account'
@@ -15,14 +15,6 @@ export interface BackupTask {
   modifyTime: number,
   path: string,
   status: string
-}
-
-interface PhotoItem {
-  uri: string,
-  name: string,
-  size: number,
-  modifyTime: number,
-  albumId: number
 }
 
 interface AlbumItem {
@@ -40,9 +32,9 @@ export async function startBackupTask(context: Context, id: string) {
       const transferTaskDataPreferences = preferences.getPreferencesSync(context, {
         name: 'transferTask'
       })
-      const id = util.generateRandomUUID()
-      transferTaskDataPreferences.putSync(id, JSON.stringify({
-        id: id,
+      const transferTaskId = util.generateRandomUUID()
+      transferTaskDataPreferences.putSync(transferTaskId, JSON.stringify({
+        id: transferTaskId,
         path: backupTask.path,
         name: new fileUri.FileUri(backupTask.srcFileUri).name,
         transferredSize: 0,
@@ -133,52 +125,97 @@ export async function generateBackupTaskList(context: Context, type: string) {
           }
         })
         const photoRes = await phAccessHelper.getAssets({
-          fetchColumns: ['uri', 'display_name', 'size', 'date_modified', 'title', 'owner_album_id'],
+          fetchColumns: ['uri', 'display_name', 'size', 'date_modified', 'owner_album_id'],
           predicates: new dataSharePredicates.DataSharePredicates()
         })
         await phAccessHelper.release()
         const photos = await photoRes.getAllObjects()
-        const photoArray = photos.map((item): PhotoItem => {
-          return {
-            uri: item.uri,
-            name: item.displayName,
-            size: item.get('size') as number,
-            modifyTime: item.get('date_modified') as number,
-            albumId: item.get('owner_album_id') as number
+        const promises = photos.map(async (item) => {
+          if (!item.displayName.endsWith('.heic')) {
+            if (item.get('date_modified') > latestMotifyTime) {
+              const backupTaskIndex =
+                backupTaskArray.findIndex(backupTaskItem => backupTaskItem.srcFileUri === item.uri)
+              if (backupTaskIndex !== -1) {
+                backupTaskArray.splice(backupTaskIndex, 1)
+                await deleteBackupTask(context, accountInfo, backupTaskArray[backupTaskIndex].id)
+              }
+              let albumName = ''
+              const album = albumArray.find(albumItem => albumItem.id === String(item.get('owner_album_id')))
+              if (album) {
+                albumName = '/' + album.name
+              }
+              const id = util.generateRandomUUID()
+              backupTaskArray.push({
+                id: id,
+                type: type,
+                srcFileUri: item.uri,
+                modifyTime: item.get('date_modified') as number,
+                path: '/home/Photos/backup/' + deviceInfo.marketName + albumName,
+                status: 'pending'
+              })
+              await write(dirPath + id + '.txt', JSON.stringify({
+                id: id,
+                type: type,
+                srcFileUri: item.uri,
+                modifyTime: item.get('date_modified') as number,
+                path: '/home/Photos/backup/' + deviceInfo.marketName + albumName,
+                status: 'pending'
+              }))
+            }
+          }
+          if (item.displayName.endsWith('.heic')) {
+            if (item.get('date_modified') > latestMotifyTime) {
+              const dir = context.tempDir + '/upload/movingphoto/'
+              await photoAccessHelper.MediaAssetManager.requestMovingPhoto(context, item, {
+                deliveryMode: photoAccessHelper.DeliveryMode.BALANCE_MODE
+              }, {
+                async onDataPrepared(movingPhoto) {
+                  const name = item.displayName.substring(0, item.displayName.lastIndexOf('.'))
+                  const imageFilePath = dir + name + '.jpg'
+                  const videoFilePath = dir + name + '.mp4'
+                  await write(imageFilePath, '')
+                  await write(videoFilePath, '')
+                  await movingPhoto.requestContent(fileUri.getUriFromPath(imageFilePath),
+                    fileUri.getUriFromPath(videoFilePath))
+                  await zlib.compressFiles([imageFilePath, videoFilePath], dir + name, {})
+                  await fileIo.rename(dir + name + '.zip', dir + name + '.mv.png')
+                  await fileIo.unlink(imageFilePath)
+                  await fileIo.unlink(videoFilePath)
+                  const uri = fileUri.getUriFromPath(dir + name + '.mv.png')
+                  const backupTaskIndex = backupTaskArray.findIndex(backupTaskItem => backupTaskItem.srcFileUri === uri)
+                  if (backupTaskIndex !== -1) {
+                    backupTaskArray.splice(backupTaskIndex, 1)
+                    await deleteBackupTask(context, accountInfo, backupTaskArray[backupTaskIndex].id)
+                  }
+                  let albumName = ''
+                  const album = albumArray.find(albumItem => albumItem.id === String(item.get('owner_album_id')))
+                  if (album) {
+                    albumName = '/' + album.name
+                  }
+                  const id = util.generateRandomUUID()
+                  backupTaskArray.push({
+                    id: id,
+                    type: type,
+                    srcFileUri: uri,
+                    modifyTime: item.get('date_modified') as number,
+                    path: '/home/Photos/backup/' + deviceInfo.marketName + albumName,
+                    status: 'pending'
+                  })
+                  await write(dirPath + id + '.txt', JSON.stringify({
+                    id: id,
+                    type: type,
+                    srcFileUri: uri,
+                    modifyTime: item.get('date_modified') as number,
+                    path: '/home/Photos/backup/' + deviceInfo.marketName + albumName,
+                    status: 'pending'
+                  }))
+                  await startBackupTask(context, id)
+                }
+              })
+            }
           }
         })
-        for (let i = 0; i < photoArray.length; i++) {
-          const item = photoArray[i]
-          if (item.modifyTime > latestMotifyTime) {
-            const backupTaskIndex = backupTaskArray.findIndex(backupTaskItem => backupTaskItem.srcFileUri === item.uri)
-            if (backupTaskIndex !== -1) {
-              backupTaskArray.splice(backupTaskIndex, 1)
-              await deleteBackupTask(context, accountInfo, backupTaskArray[backupTaskIndex].id)
-            }
-            let albumName = ''
-            const album = albumArray.find(albumItem => albumItem.id === String(item.albumId))
-            if (album) {
-              albumName = '/' + album.name
-            }
-            const id = util.generateRandomUUID()
-            backupTaskArray.push({
-              id: id,
-              type: type,
-              srcFileUri: item.uri,
-              modifyTime: item.modifyTime,
-              path: '/home/Photos/backup/' + deviceInfo.marketName + albumName,
-              status: 'pending'
-            })
-            await write(dirPath + id + '.txt', JSON.stringify({
-              id: id,
-              type: type,
-              srcFileUri: item.uri,
-              modifyTime: item.modifyTime,
-              path: '/home/Photos/backup/' + deviceInfo.marketName + albumName,
-              status: 'pending'
-            }))
-          }
-        }
+        await Promise.all(promises)
       }
     }
     let dir = ''

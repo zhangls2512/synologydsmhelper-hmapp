@@ -165,20 +165,7 @@ export default struct Album {
       const inPhotoItem = photoItem
       const account = getAccountHash(accountInfo)
       const dir = getAccountHash(accountInfo, this.context, this.context.cacheDir + '/albumphotothumbnail')
-      let thumbnailPath = dir + '/' + sha256hash(inPhotoItem.path) + '.jpeg'
-      let requestPath = inPhotoItem.url
-      if (photoItem.filename.endsWith('.mv.png')) {
-        thumbnailPath = dir + '/' + sha256hash(inPhotoItem.path) + '.mp4'
-      }
-      if (thumbnail.sm === 'ready') {
-        requestPath = accountInfo.path + '/synofoto/api/v2/p/Thumbnail/get?' + new url.URLParams({
-          id: String(inPhotoItem.id),
-          cache_key: thumbnail.cache_key,
-          type: 'unit',
-          size: 'sm',
-          SynoToken: accountInfo.synotoken
-        }).toString()
-      }
+      let thumbnailPath = dir + '/' + sha256hash(inPhotoItem.path) + '.jpg'
       const thumbnailPathExist = fileIo.accessSync(thumbnailPath)
       if (!thumbnailPathExist) {
         if (!fileIo.accessSync(dir)) {
@@ -200,7 +187,7 @@ export default struct Album {
                 onDataReceive: async (incomingData) => {
                   await fileStream.write(incomingData)
                 },
-                onDataEnd: async () => {
+                onDataEnd: () => {
                   session.close()
                   netBoost.setSceneDesc({
                     scene: 'download',
@@ -210,17 +197,17 @@ export default struct Album {
                   if (this.account !== account) {
                     return
                   }
-                  if (!photoItem.filename.endsWith('.mv.png')) {
-                    inPhotoItem.thumbnailUri = fileUri.getUriFromPath(thumbnailPath)
-                    if (!album) {
-                      this.photoArray.push(inPhotoItem)
-                    }
-                    if (album) {
-                      this.albumPhotoArray.push(inPhotoItem)
-                    }
+                  //if (!photoItem.filename.endsWith('.mv.png')) {
+                  inPhotoItem.thumbnailUri = fileUri.getUriFromPath(thumbnailPath)
+                  if (!album) {
+                    this.photoArray.push(inPhotoItem)
                   }
+                  if (album) {
+                    this.albumPhotoArray.push(inPhotoItem)
+                  }
+                  /*}
                   if (photoItem.filename.endsWith('.mv.png')) {
-                    await fileIo.mkdir(dir + '/' + sha256hash(inPhotoItem.path), true)
+                    await fileIo.mkdir(dir + '/' + sha256hash(inPhotoItem.path))
                     await zlib.decompressFile(thumbnailPath, dir + '/' + sha256hash(inPhotoItem.path))
                     await fileIo.unlink(thumbnailPath)
                     const movingPhotoFiles = await fileIo.listFile(dir + '/' + sha256hash(inPhotoItem.path))
@@ -235,7 +222,7 @@ export default struct Album {
                     })
                     await Promise.all(promises)
                     await fileIo.rmdir(dir + '/' + sha256hash(inPhotoItem.path))
-                    const imageUri = fileUri.getUriFromPath(dir + '/' + sha256hash(inPhotoItem.path) + '.heic')
+                    const imageUri = fileUri.getUriFromPath(dir + '/' + sha256hash(inPhotoItem.path) + '.jpg')
                     const videoUri = fileUri.getUriFromPath(dir + '/' + sha256hash(inPhotoItem.path) + '.mp4')
                     inPhotoItem.type = 'movingphoto'
                     inPhotoItem.movingPhotoImageUri = imageUri
@@ -248,7 +235,7 @@ export default struct Album {
                     if (album) {
                       this.albumPhotoArray.push(inPhotoItem)
                     }
-                  }
+                  }*/
                 }
               }
             },
@@ -269,6 +256,16 @@ export default struct Album {
           }
         })
         try {
+          let requestPath = inPhotoItem.url
+          if (thumbnail.sm === 'ready') {
+            requestPath = accountInfo.path + '/synofoto/api/v2/p/Thumbnail/get?' + new url.URLParams({
+              id: String(inPhotoItem.id),
+              cache_key: thumbnail.cache_key,
+              type: 'unit',
+              size: 'sm',
+              SynoToken: accountInfo.synotoken
+            }).toString()
+          }
           const response = await session.get(requestPath)
           session.close()
           netBoost.setSceneDesc({
@@ -309,7 +306,7 @@ export default struct Album {
           }
         }
         if (photoItem.filename.endsWith('.mv.png')) {
-          const imageUri = fileUri.getUriFromPath(dir + '/' + sha256hash(inPhotoItem.path) + '.heic')
+          const imageUri = fileUri.getUriFromPath(dir + '/' + sha256hash(inPhotoItem.path) + '.jpg')
           const videoUri = fileUri.getUriFromPath(dir + '/' + sha256hash(inPhotoItem.path) + '.mp4')
           inPhotoItem.type = 'movingphoto'
           inPhotoItem.movingPhotoImageUri = imageUri
@@ -1299,41 +1296,23 @@ export default struct Album {
                   })
                   const accountInfo = await getAccountInfo()
                   await checkPermission(this.context, this.UIContext, 'ohos.permission.MEDIA_LOCATION', true)
-                  const promptAction = this.UIContext.getPromptAction()
-                  const data = await promptAction.showActionMenu({
-                    title: '选择上传类型',
-                    buttons: [
-                      {
-                        text: '图片、视频',
-                        color: $r('sys.color.font_primary')
-                      },
-                      {
-                        text: '动态照片',
-                        color: $r('sys.color.font_primary')
-                      }
-                    ]
+                  const photoPicker = new photoAccessHelper.PhotoViewPicker()
+                  const pickerres = await photoPicker.select({
+                    maxSelectNumber: 500,
+                    isOriginalSupported: false
                   })
-                  if (data.index === 0) {
-                    const photoPicker = new photoAccessHelper.PhotoViewPicker()
-                    const pickerres = await photoPicker.select({
-                      maxSelectNumber: 500,
-                      fileSizeFilter: {
-                        filterOperator: photoAccessHelper.FilterOperator.LESS_THAN,
-                        fileSize: 2147483647
-                      },
-                      isOriginalSupported: false
+                  const promises = pickerres.photoUris.map(async (item) => {
+                    const phAccessHelper = photoAccessHelper.getPhotoAccessHelper(this.context)
+                    const predicates = new dataSharePredicates.DataSharePredicates()
+                    predicates.equalTo('uri', item)
+                    const fetchResult = await phAccessHelper.getAssets({
+                      fetchColumns: [],
+                      predicates: predicates
                     })
-                    const promises = pickerres.photoUris.map(async (item) => {
-                      const phAccessHelper = photoAccessHelper.getPhotoAccessHelper(this.context)
-                      const predicates = new dataSharePredicates.DataSharePredicates()
-                      predicates.equalTo('uri', item)
-                      const fetchResult = await phAccessHelper.getAssets({
-                        fetchColumns: ['uri'],
-                        predicates: predicates
-                      })
-                      await phAccessHelper.release()
-                      const photoAsset = await fetchResult.getFirstObject()
-                      const id = util.generateRandomUUID()
+                    await phAccessHelper.release()
+                    const photoAsset = await fetchResult.getFirstObject()
+                    const id = util.generateRandomUUID()
+                    if (!photoAsset.displayName.endsWith('.heic')) {
                       transferTaskDataPreferences.putSync(id, JSON.stringify({
                         id: id,
                         path: '/home/Photos',
@@ -1346,75 +1325,45 @@ export default struct Album {
                         accountInfo: accountInfo,
                         srcFileUri: item
                       }))
-                    })
-                    await Promise.all(promises)
-                    if (pickerres.photoUris.length > 0) {
-                      await promptAction.openToast({
-                        message: pickerres.photoUris.length + ' 项传输任务已添加'
-                      })
                     }
-                  }
-                  if (data.index === 1) {
-                    const photoPicker = new photoAccessHelper.PhotoViewPicker()
-                    const pickerres = await photoPicker.select({
-                      MIMEType: photoAccessHelper.PhotoViewMIMETypes.MOVING_PHOTO_IMAGE_TYPE,
-                      maxSelectNumber: 500,
-                      fileSizeFilter: {
-                        filterOperator: photoAccessHelper.FilterOperator.LESS_THAN,
-                        fileSize: 2147483647
-                      },
-                      isPhotoTakingSupported: false,
-                      isOriginalSupported: false
-                    })
-                    const promises = pickerres.photoUris.map(async (item) => {
-                      const phAccessHelper = photoAccessHelper.getPhotoAccessHelper(this.context)
-                      const predicates = new dataSharePredicates.DataSharePredicates()
-                      predicates.equalTo('uri', item)
-                      const fetchResult = await phAccessHelper.getAssets({
-                        fetchColumns: ['uri', 'title'],
-                        predicates: predicates
-                      })
-                      await phAccessHelper.release()
-                      const photoAsset = await fetchResult.getFirstObject()
+                    if (photoAsset.displayName.endsWith('.heic')) {
                       const dir = this.context.tempDir + '/upload/movingphoto/'
                       await photoAccessHelper.MediaAssetManager.requestMovingPhoto(this.context, photoAsset, {
-                        deliveryMode: photoAccessHelper.DeliveryMode.HIGH_QUALITY_MODE
+                        deliveryMode: photoAccessHelper.DeliveryMode.BALANCE_MODE
                       }, {
                         async onDataPrepared(movingPhoto) {
-                          if (movingPhoto) {
-                            const id = util.generateRandomUUID()
-                            const imageFilePath = dir + id + '.heic'
-                            const videoFilePath = dir + id + '.mp4'
-                            await write(imageFilePath, '')
-                            await write(videoFilePath, '')
-                            await movingPhoto.requestContent(fileUri.getUriFromPath(imageFilePath),
-                              fileUri.getUriFromPath(videoFilePath))
-                            await zlib.compressFiles([imageFilePath, videoFilePath], dir + id + '.mv.png', {})
-                            await fileIo.rename(dir + id + '.mv.png.zip', dir + id + '.mv.png')
-                            await fileIo.unlink(imageFilePath)
-                            await fileIo.unlink(videoFilePath)
-                            transferTaskDataPreferences.putSync(id, JSON.stringify({
-                              id: id,
-                              path: '/home/Photos',
-                              name: photoAsset.displayName.slice(0, -5) + '.mv.png',
-                              transferredSize: 0,
-                              totalSize: fileIo.statSync(dir + id + '.mv.png').size,
-                              status: 'pending',
-                              errCode: 0,
-                              type: 'upload',
-                              accountInfo: accountInfo,
-                              srcFileUri: fileUri.getUriFromPath(dir + id + '.mv.png')
-                            }))
-                          }
+                          const name = photoAsset.displayName.substring(0, photoAsset.displayName.lastIndexOf('.'))
+                          const imageFilePath = dir + name + '.jpg'
+                          const videoFilePath = dir + name + '.mp4'
+                          await write(imageFilePath, '')
+                          await write(videoFilePath, '')
+                          await movingPhoto.requestContent(fileUri.getUriFromPath(imageFilePath),
+                            fileUri.getUriFromPath(videoFilePath))
+                          await zlib.compressFiles([imageFilePath, videoFilePath], dir + name, {})
+                          await fileIo.rename(dir + name + '.zip', dir + name + '.mv.png')
+                          await fileIo.unlink(imageFilePath)
+                          await fileIo.unlink(videoFilePath)
+                          transferTaskDataPreferences.putSync(id, JSON.stringify({
+                            id: id,
+                            path: '/home/Photos',
+                            name: photoAsset.displayName.slice(0, -5) + '.mv.png',
+                            transferredSize: 0,
+                            totalSize: fileIo.statSync(dir + name + '.mv.png').size,
+                            status: 'pending',
+                            errCode: 0,
+                            type: 'upload',
+                            accountInfo: accountInfo,
+                            srcFileUri: fileUri.getUriFromPath(dir + name + '.mv.png')
+                          }))
                         }
                       })
-                    })
-                    await Promise.all(promises)
-                    if (pickerres.photoUris.length > 0) {
-                      await promptAction.openToast({
-                        message: pickerres.photoUris.length + ' 项传输任务已添加'
-                      })
                     }
+                  })
+                  await Promise.all(promises)
+                  if (pickerres.photoUris.length > 0) {
+                    await promptAction.openToast({
+                      message: pickerres.photoUris.length + ' 项传输任务已添加'
+                    })
                   }
                 })
               }
@@ -1911,7 +1860,7 @@ export default struct Album {
                         const phAccessHelper = photoAccessHelper.getPhotoAccessHelper(this.context)
                         const assetChangeRequest =
                           photoAccessHelper.MediaAssetChangeRequest.createAssetRequest(this.context,
-                            photoAccessHelper.PhotoType.IMAGE, 'heif', {
+                            photoAccessHelper.PhotoType.IMAGE, 'heic', {
                               subtype: photoAccessHelper.PhotoSubtype.MOVING_PHOTO
                             })
                         assetChangeRequest.addResource(photoAccessHelper.ResourceType.IMAGE_RESOURCE,

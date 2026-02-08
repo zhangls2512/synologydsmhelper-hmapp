@@ -45,7 +45,7 @@ struct Backupsetting {
       List() {
         ListItem() {
           Column() {
-            Text('自动备份')
+            Text('自动')
               .fontColor($r('sys.color.font_secondary'))
               .fontSize($r('sys.float.ohos_id_text_size_body2'))
               .fontWeight(FontWeight.Medium)
@@ -122,7 +122,7 @@ struct Backupsetting {
 
         ListItem() {
           Column() {
-            Text('手动备份')
+            Text('手动')
               .fontColor($r('sys.color.font_secondary'))
               .fontSize($r('sys.float.ohos_id_text_size_body2'))
               .fontWeight(FontWeight.Medium)
