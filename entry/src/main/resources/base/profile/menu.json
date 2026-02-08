@@ -2,7 +2,7 @@
   "fileContextMenu": [
     {
       "abilityName": "EntryAbility",
-      "menuItem": "$string:app_name",
+      "menuItem": "$string:importAccount",
       "menuHandler": "clickMenu",
       "menuContext": [
         {

@@ -5,6 +5,10 @@
       "value": "SynDSM助手"
     },
     {
+      "name": "importAccount",
+      "value": "导入账号"
+    },
+    {
       "name": "DISTRIBUTED_DATASYNC_reason",
       "value": "用于设备间同步账号数据。"
     },
