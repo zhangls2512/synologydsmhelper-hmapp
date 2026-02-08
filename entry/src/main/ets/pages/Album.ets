@@ -187,7 +187,7 @@ export default struct Album {
                 onDataReceive: async (incomingData) => {
                   await fileStream.write(incomingData)
                 },
-                onDataEnd: async () => {
+                onDataEnd: () => {
                   session.close()
                   netBoost.setSceneDesc({
                     scene: 'download',
