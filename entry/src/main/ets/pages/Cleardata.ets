@@ -13,6 +13,8 @@ export default struct Cleardata {
   @Local setting: string[] = []
   @Local allSetting: boolean = false
   @Local cardSetting: boolean = false
+  @Local backupSetting: boolean = false
+  @Local backupSettingSize: string = ''
   @Local commonSetting: boolean = false
   @Local permissionSetting: boolean = false
   @Local debugSetting: boolean = false
@@ -22,6 +24,8 @@ export default struct Cleardata {
   @Local webviewCache: boolean = false
   @Local apiVersionCache: boolean = false
   @Local apiVersionCacheSize: string = ''
+  @Local noticeJsonStringCache: boolean = false
+  @Local noticeJsonStringCacheSize: string = ''
   @Local albumPhotoThumbnailCache: boolean = false
   @Local albumPhotoThumbnailCacheSize: string = ''
   @Local log: string[] = []
@@ -37,6 +41,8 @@ export default struct Cleardata {
   context = this.UIContext.getHostContext() as common.UIAbilityContext
 
   async getSize() {
+    const backupSettingSize = await getDirectorySize(this.context.filesDir + '/backupsetting')
+    this.backupSettingSize = getSizeString(backupSettingSize)
     const apiVersionCacheFilePath = this.context.cacheDir + '/apiversion.txt'
     const apiVersionCacheFileExist = fileIo.accessSync(apiVersionCacheFilePath)
     if (!apiVersionCacheFileExist) {
@@ -45,24 +51,29 @@ export default struct Cleardata {
     if (apiVersionCacheFileExist) {
       this.apiVersionCacheSize = getSizeString(fileIo.statSync(apiVersionCacheFilePath).size)
     }
+    const noticeJsonStringCacheSize = await getDirectorySize(this.context.cacheDir + '/noticejsonstring')
+    this.noticeJsonStringCacheSize = getSizeString(noticeJsonStringCacheSize)
     const accountInfo = await getAccountInfo()
     if (!accountInfo.id) {
-      const albumPhotoThumbnailCacheSize = await getDirectorySize(this.context.cacheDir + '/albumphotothumbnail/')
+      const albumPhotoThumbnailCacheSize = await getDirectorySize(this.context.cacheDir + '/albumphotothumbnail')
       this.albumPhotoThumbnailCacheSize = getSizeString(albumPhotoThumbnailCacheSize)
     }
     if (accountInfo.id) {
-      const accounts = await fileIo.listFile(this.context.cacheDir + '/albumphotothumbnail/')
-      let size = 0
-      this.albumPhotoThumbnailCacheSize = getSizeString(size)
-      for (let i = 0; i < accounts.length; i++) {
-        const item = accounts[i]
-        if (item !== sha256hash(accountInfo.path + '\0' + accountInfo.name)) {
-          size += await getDirectorySize(this.context.cacheDir + '/albumphotothumbnail/' + item + '/')
-          this.albumPhotoThumbnailCacheSize = getSizeString(size)
+      const albumPhotoThumbnailDirectory = this.context.cacheDir + '/albumphotothumbnail/'
+      if (fileIo.accessSync(albumPhotoThumbnailDirectory)) {
+        const accounts = await fileIo.listFile(albumPhotoThumbnailDirectory)
+        let size = 0
+        this.albumPhotoThumbnailCacheSize = getSizeString(size)
+        for (let i = 0; i < accounts.length; i++) {
+          const item = accounts[i]
+          if (item !== sha256hash(accountInfo.path + '\0' + accountInfo.name)) {
+            size += await getDirectorySize(albumPhotoThumbnailDirectory + item)
+            this.albumPhotoThumbnailCacheSize = getSizeString(size)
+          }
         }
       }
     }
-    const errorLogSize = await getDirectorySize(this.context.filesDir + '/log/error/')
+    const errorLogSize = await getDirectorySize(this.context.filesDir + '/log/error')
     this.errorLogSize = getSizeString(errorLogSize)
     const tempFileNouseSize = await getDirectorySize(this.context.tempDir)
     this.tempFileNouseSize = getSizeString(tempFileNouseSize)
@@ -119,6 +130,35 @@ export default struct Cleardata {
                 group: 'setting'
               })
                 .select(this.cardSetting!!)
+                .shape(CheckBoxShape.ROUNDED_SQUARE)
+            }
+            .borderRadius(12)
+            .padding(12)
+            .width('100%')
+
+            Divider()
+              .padding({
+                left: 12,
+                right: 12
+              })
+            Row() {
+              Text('备份')
+                .fontWeight(FontWeight.Medium)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+              Text(this.backupSettingSize)
+                .fontColor($r('sys.color.font_secondary'))
+                .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_s')
+                })
+              Checkbox({
+                name: 'backupSetting',
+                group: 'setting'
+              })
+                .select(this.backupSetting!!)
                 .shape(CheckBoxShape.ROUNDED_SQUARE)
             }
             .borderRadius(12)
@@ -226,13 +266,23 @@ export default struct Cleardata {
               ]
             })
             if (data.index === 1) {
-              this.setting.forEach((item) => {
-                const dataPreferences = preferences.getPreferencesSync(this.context, {
-                  name: item
-                })
-                dataPreferences.clearSync()
-                dataPreferences.flushSync()
+              const promises = this.setting.map(async (item) => {
+                if (item !== 'backupSetting') {
+                  const dataPreferences = preferences.getPreferencesSync(this.context, {
+                    name: item
+                  })
+                  dataPreferences.clearSync()
+                  dataPreferences.flushSync()
+                }
+                if (item === 'backupSetting') {
+                  const backupSettingDir = this.context.filesDir + '/backupsetting'
+                  if (fileIo.accessSync(backupSettingDir)) {
+                    await fileIo.rmdir(backupSettingDir)
+                  }
+                }
               })
+              await Promise.all(promises)
+              await this.getSize()
               const res = await promptAction.showDialog({
                 title: '提示',
                 message: '清理成功，需重启应用生效，是否重启？',
@@ -375,6 +425,36 @@ export default struct Cleardata {
                 right: 12
               })
             Row() {
+              Text('消息JSON字符串')
+                .enableAutoSpacing(true)
+                .fontWeight(FontWeight.Medium)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+              Text(this.noticeJsonStringCacheSize)
+                .fontColor($r('sys.color.font_secondary'))
+                .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_s')
+                })
+              Checkbox({
+                name: 'noticeJsonStringCache',
+                group: 'cache'
+              })
+                .select(this.noticeJsonStringCache!!)
+                .shape(CheckBoxShape.ROUNDED_SQUARE)
+            }
+            .borderRadius(12)
+            .padding(12)
+            .width('100%')
+
+            Divider()
+              .padding({
+                left: 12,
+                right: 12
+              })
+            Row() {
               Text('相册照片缩略图')
                 .fontWeight(FontWeight.Medium)
                 .layoutWeight(1)
@@ -401,75 +481,81 @@ export default struct Cleardata {
           .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
           .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
           .padding($r('sys.float.ohos_id_corner_radius_mark'))
+
+          Button('清理缓存')
+            .enabled(this.cache.length > 0)
+            .margin({
+              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+            })
+            .role(ButtonRole.ERROR)
+            .width('100%')
+            .onClick(async () => {
+              const promptAction = this.UIContext.getPromptAction()
+              const data = await promptAction.showDialog({
+                title: '提示',
+                message: '清理成功后性能可能略微降低，但不会影响正常使用。确定清理？',
+                buttons: [
+                  {
+                    text: '取消',
+                    color: $r('sys.color.font_primary')
+                  },
+                  {
+                    text: '清理',
+                    color: $r('sys.color.warning')
+                  }
+                ]
+              })
+              if (data.index === 1) {
+                const promises = this.cache.map(async (item) => {
+                  if (item === 'appCache') {
+                    await bundleManager.cleanBundleCacheFilesForSelf()
+                  }
+                  if (item === 'webviewCache') {
+                    webview.WebviewController.removeAllCache(true)
+                  }
+                  if (item === 'apiVersionCache') {
+                    const filePath = this.context.cacheDir + '/apiversion.txt'
+                    if (fileIo.accessSync(filePath)) {
+                      await fileIo.unlink(filePath)
+                    }
+                  }
+                  if (item === 'noticeJsonStringCache') {
+                    const directory = this.context.cacheDir + '/noticejsonstring'
+                    if (fileIo.accessSync(directory)) {
+                      await fileIo.rmdir(directory)
+                    }
+                  }
+                  if (item === 'albumPhotoThumbnailCache') {
+                    const accountInfo = await getAccountInfo()
+                    const albumPhotoThumbnailDirectory = this.context.cacheDir + '/albumphotothumbnail/'
+                    if (fileIo.accessSync(albumPhotoThumbnailDirectory)) {
+                      if (!accountInfo.id) {
+                        await fileIo.rmdir(albumPhotoThumbnailDirectory)
+                      }
+                      if (accountInfo.id) {
+                        const accounts = await fileIo.listFile(albumPhotoThumbnailDirectory)
+                        const rmdirpromises = accounts.map(async (item) => {
+                          if (item !== sha256hash(accountInfo.path + '\0' + accountInfo.name)) {
+                            await fileIo.rmdir(albumPhotoThumbnailDirectory + item)
+                          }
+                        })
+                        await Promise.all(rmdirpromises)
+                      }
+                    }
+                  }
+                })
+                await Promise.all(promises)
+                await promptAction.openToast({
+                  message: '清理成功'
+                })
+                await this.getSize()
+              }
+            })
         }
         .alignItems(HorizontalAlign.Start)
       }
       .margin({
         top: $r('sys.float.ohos_id_elements_margin_vertical_l')
-      })
-
-      ListItem() {
-        Button('清理缓存')
-          .enabled(this.cache.length > 0)
-          .role(ButtonRole.ERROR)
-          .width('100%')
-          .onClick(async () => {
-            const promptAction = this.UIContext.getPromptAction()
-            const data = await promptAction.showDialog({
-              title: '提示',
-              message: '清理成功后性能可能略微降低，但不会影响正常使用。确定清理？',
-              buttons: [
-                {
-                  text: '取消',
-                  color: $r('sys.color.font_primary')
-                },
-                {
-                  text: '清理',
-                  color: $r('sys.color.warning')
-                }
-              ]
-            })
-            if (data.index === 1) {
-              const promises = this.cache.map(async (item) => {
-                if (item === 'appCache') {
-                  await bundleManager.cleanBundleCacheFilesForSelf()
-                }
-                if (item === 'webviewCache') {
-                  webview.WebviewController.removeAllCache(true)
-                }
-                if (item === 'apiVersionCache') {
-                  await preferences.deletePreferences(this.context, 'apiVersionCache')
-                  const filePath = this.context.cacheDir + '/apiversion.txt'
-                  if (fileIo.accessSync(filePath)) {
-                    await fileIo.unlink(filePath)
-                  }
-                }
-                if (item === 'albumPhotoThumbnailCache') {
-                  const accountInfo = await getAccountInfo()
-                  if (!accountInfo.id) {
-                    await fileIo.rmdir(this.context.cacheDir + '/albumphotothumbnail')
-                  }
-                  if (accountInfo.id) {
-                    const accounts = await fileIo.listFile(this.context.cacheDir + '/albumphotothumbnail/')
-                    const rmdirpromises = accounts.map(async (item) => {
-                      if (item !== sha256hash(accountInfo.path + '\0' + accountInfo.name)) {
-                        await fileIo.rmdir(this.context.cacheDir + '/albumphotothumbnail/' + item)
-                      }
-                    })
-                    await Promise.all(rmdirpromises)
-                  }
-                }
-              })
-              await Promise.all(promises)
-              await promptAction.openToast({
-                message: '清理成功'
-              })
-              await this.getSize()
-            }
-          })
-      }
-      .margin({
-        top: $r('sys.float.ohos_id_elements_margin_vertical_m')
       })
 
       ListItem() {
@@ -536,58 +622,55 @@ export default struct Cleardata {
           .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
           .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
           .padding($r('sys.float.ohos_id_corner_radius_mark'))
+
+          Button('清理日志')
+            .enabled(this.log.length > 0)
+            .margin({
+              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+            })
+            .role(ButtonRole.ERROR)
+            .width('100%')
+            .onClick(async () => {
+              const promptAction = this.UIContext.getPromptAction()
+              const data = await promptAction.showDialog({
+                title: '提示',
+                message: '日志有助于开发者定位问题。清理成功后无法恢复，确定清理？',
+                buttons: [
+                  {
+                    text: '取消',
+                    color: $r('sys.color.font_primary')
+                  },
+                  {
+                    text: '清理',
+                    color: $r('sys.color.warning')
+                  }
+                ]
+              })
+              if (data.index === 1) {
+                const promises = this.log.map(async (item) => {
+                  if (item === 'errorLog') {
+                    const errorLogDir = this.context.filesDir + '/log/error/'
+                    if (fileIo.accessSync(errorLogDir)) {
+                      const fileNames = await fileIo.listFile(errorLogDir)
+                      const promises = fileNames.map(async (item) => {
+                        await fileIo.unlink(errorLogDir + item)
+                      })
+                      await Promise.all(promises)
+                    }
+                  }
+                })
+                await Promise.all(promises)
+                await promptAction.openToast({
+                  message: '清理成功'
+                })
+                await this.getSize()
+              }
+            })
         }
         .alignItems(HorizontalAlign.Start)
       }
       .margin({
         top: $r('sys.float.ohos_id_elements_margin_vertical_l')
-      })
-
-      ListItem() {
-        Button('清理日志')
-          .enabled(this.log.length > 0)
-          .role(ButtonRole.ERROR)
-          .width('100%')
-          .onClick(async () => {
-            const promptAction = this.UIContext.getPromptAction()
-            const data = await promptAction.showDialog({
-              title: '提示',
-              message: '日志有助于开发者定位问题。清理成功后无法恢复，确定清理？',
-              buttons: [
-                {
-                  text: '取消',
-                  color: $r('sys.color.font_primary')
-                },
-                {
-                  text: '清理',
-                  color: $r('sys.color.warning')
-                }
-              ]
-            })
-            if (data.index === 1) {
-              const promises = this.log.map(async (item) => {
-                if (item === 'errorLog') {
-                  try {
-                    const errorLogDir = this.context.filesDir + '/log/error/'
-                    const fileNames = await fileIo.listFile(errorLogDir)
-                    const promises = fileNames.map(async (item) => {
-                      await fileIo.unlink(errorLogDir + item)
-                    })
-                    await Promise.all(promises)
-                  } catch {
-                  }
-                }
-              })
-              await Promise.all(promises)
-              await promptAction.openToast({
-                message: '清理成功'
-              })
-              await this.getSize()
-            }
-          })
-      }
-      .margin({
-        top: $r('sys.float.ohos_id_elements_margin_vertical_m')
       })
 
       ListItem() {
@@ -677,61 +760,52 @@ export default struct Cleardata {
           .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
           .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
           .padding($r('sys.float.ohos_id_corner_radius_mark'))
+
+          Button('清理无用数据')
+            .enabled(this.nouse.length > 0)
+            .margin({
+              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+            })
+            .role(ButtonRole.ERROR)
+            .width('100%')
+            .onClick(async () => {
+              const promises = this.nouse.map(async (item) => {
+                if (item === 'tempFileNouse') {
+                  const tempDir = this.context.tempDir
+                  const tempFiles = await fileIo.listFile(tempDir)
+                  const promises = tempFiles.map(async (item) => {
+                    const path = tempDir + '/' + item
+                    const isDirectory = fileIo.statSync(path)
+                    if (!isDirectory) {
+                      await fileIo.unlink(path)
+                    }
+                    if (isDirectory) {
+                      await fileIo.rmdir(path)
+                    }
+                  })
+                  await Promise.all(promises)
+                }
+                if (item === 'settingNouse') {
+                  const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+                    name: 'commonSetting'
+                  })
+                  const commonKeys = ['disallowScreenshot', 'cellularDataDownloadRemind']
+                  commonKeys.forEach(item => {
+                    commonSettingDataPreferences.deleteSync(item)
+                  })
+                }
+              })
+              await Promise.all(promises)
+              await promptAction.openToast({
+                message: '清理成功'
+              })
+              await this.getSize()
+            })
         }
         .alignItems(HorizontalAlign.Start)
       }
       .margin({
         top: $r('sys.float.ohos_id_elements_margin_vertical_l')
-      })
-
-      ListItem() {
-        Button('清理无用数据')
-          .enabled(this.nouse.length > 0)
-          .role(ButtonRole.ERROR)
-          .width('100%')
-          .onClick(async () => {
-            const promises = this.nouse.map(async (item) => {
-              if (item === 'tempFileNouse') {
-                const tempDir = this.context.tempDir
-                const tempFiles = await fileIo.listFile(tempDir)
-                const promises = tempFiles.map(async (item) => {
-                  const path = tempDir + '/' + item
-                  const isDirectory = fileIo.statSync(path)
-                  if (!isDirectory) {
-                    await fileIo.unlink(path)
-                  }
-                  if (isDirectory) {
-                    await fileIo.rmdir(path)
-                  }
-                })
-                await Promise.all(promises)
-              }
-              if (item === 'settingNouse') {
-                const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-                  name: 'commonSetting'
-                })
-                const commonKeys = ['disallowScreenshot', 'cellularDataDownloadRemind']
-                commonKeys.forEach(item => {
-                  commonSettingDataPreferences.deleteSync(item)
-                })
-                const debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-                  name: 'debugSetting'
-                })
-                const debugKeys = ['lowBatteryCapacityLevel']
-                debugKeys.forEach(item => {
-                  debugSettingDataPreferences.deleteSync(item)
-                })
-              }
-            })
-            await Promise.all(promises)
-            await promptAction.openToast({
-              message: '清理成功'
-            })
-            await this.getSize()
-          })
-      }
-      .margin({
-        top: $r('sys.float.ohos_id_elements_margin_vertical_m')
       })
     }
     .padding({

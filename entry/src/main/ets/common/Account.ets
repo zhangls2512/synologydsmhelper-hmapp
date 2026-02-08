@@ -2,10 +2,13 @@ import { preferences } from '@kit.ArkData'
 import { url, util } from '@kit.ArkTS'
 import { promptAction } from '@kit.ArkUI'
 import { appAccount } from '@kit.BasicServicesKit'
+import { fileIo } from '@kit.CoreFileKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { getDnsServer } from './Dnsserver'
 import { readUri } from './File'
+import { sha256hash } from './Hash'
 import { dsmRequest } from './Request'
+import { AddressGroupItem } from '../pages/Addressgroup'
 
 export interface AccountInfo {
   id: string,
@@ -13,6 +16,7 @@ export interface AccountInfo {
   name: string,
   password: string,
   sid: string,
+  synotoken: string,
   bz: string,
   isLogin: string
 }
@@ -22,6 +26,7 @@ interface InAccountInfo {
   name: string,
   password: string,
   sid: string,
+  synotoken: string,
   bz: string,
   isLogin: string
 }
@@ -39,6 +44,7 @@ export async function setAccount(context: Context, accountInfo: InAccountInfo) {
   if (accountIndex !== -1) {
     const id = accounts[accountIndex].id
     await appAccountManager.setCredential(id, 'sid', accountInfo.sid)
+    await appAccountManager.setCredential(id, 'synotoken', accountInfo.synotoken)
     await appAccountManager.setCustomData(id, 'bz', accountInfo.bz)
     await appAccountManager.setCustomData(id, 'isLogin', accountInfo.isLogin)
   }
@@ -60,6 +66,7 @@ export async function setAccount(context: Context, accountInfo: InAccountInfo) {
     })
     await appAccountManager.setCredential(id, 'password', accountInfo.password)
     await appAccountManager.setCredential(id, 'sid', accountInfo.sid)
+    await appAccountManager.setCredential(id, 'synotoken', accountInfo.synotoken)
     if (oldAccountIndex !== -1) {
       await removeAccount(accounts[oldAccountIndex].id)
     }
@@ -91,8 +98,32 @@ export async function getAccountInfo(): Promise<AccountInfo> {
     name: '',
     password: '',
     sid: '',
+    synotoken: '',
     bz: '',
     isLogin: 'false'
+  }
+}
+
+export function getAccountHash(accountInfo: AccountInfo, context?: Context, pathStart?: string): string {
+  if (!pathStart) {
+    return sha256hash(accountInfo.path + '\0' + accountInfo.name)
+  } else {
+    const path = pathStart + '/' + sha256hash(accountInfo.path + '\0' + accountInfo.name)
+    const filePath = context?.filesDir + '/addressgroup.txt'
+    if (fileIo.accessSync(filePath)) {
+      const addressGroup = JSON.parse(fileIo.readTextSync(filePath)) as AddressGroupItem[]
+      for (let i = 0; i < addressGroup.length; i++) {
+        if (addressGroup[i].list.includes(accountInfo.path)) {
+          for (let j = 0; j < addressGroup[i].list.length; j++) {
+            const tempPath = pathStart + '/' + sha256hash(addressGroup[i].list[j] + '\0' + accountInfo.name)
+            if (fileIo.accessSync(tempPath)) {
+              return tempPath
+            }
+          }
+        }
+      }
+    }
+    return path
   }
 }
 
@@ -101,11 +132,6 @@ export async function getAccountList(): Promise<AccountInfo[]> {
   const appAccountIds = await appAccountManager.getAccountsByOwner('com.songjy.synologydsmhelper')
   const appAccounts: AccountInfo[] = []
   const promises = appAccountIds.map(async (item) => {
-    let bz = ''
-    try {
-      bz = appAccountManager.getCustomDataSync(item.name, 'bz')
-    } catch {
-    }
     const id = item.name
     try {
       appAccounts.push({
@@ -114,32 +140,12 @@ export async function getAccountList(): Promise<AccountInfo[]> {
         name: appAccountManager.getCustomDataSync(id, 'name'),
         password: await appAccountManager.getCredential(id, 'password'),
         sid: await appAccountManager.getCredential(id, 'sid'),
-        bz: bz,
+        synotoken: await appAccountManager.getCredential(id, 'synotoken'),
+        bz: appAccountManager.getCustomDataSync(item.name, 'bz'),
         isLogin: appAccountManager.getCustomDataSync(item.name, 'isLogin')
       })
     } catch {
-      const accountInfo: AccountInfo = {
-        id: id,
-        path: appAccountManager.getCustomDataSync(id, 'path'),
-        name: appAccountManager.getCustomDataSync(id, 'name'),
-        password: await appAccountManager.getCredential(id, 'password'),
-        sid: appAccountManager.getCustomDataSync(id, 'sid'),
-        bz: bz,
-        isLogin: appAccountManager.getCustomDataSync(item.name, 'isLogin')
-      }
-      appAccounts.push(accountInfo)
-      await removeAccount(id)
-      const newId = util.generateRandomUUID()
-      await appAccountManager.createAccount(newId, {
-        customData: {
-          path: accountInfo.path,
-          name: accountInfo.name,
-          bz: bz,
-          isLogin: accountInfo.isLogin
-        }
-      })
-      await appAccountManager.setCredential(id, 'password', accountInfo.password)
-      await appAccountManager.setCredential(id, 'sid', accountInfo.sid)
+      await removeAccount(id, true)
     }
   })
   await Promise.all(promises)
@@ -160,18 +166,20 @@ export async function exitAccount(context: Context, logout: boolean) {
   }
 }
 
-export async function removeAccount(id: string) {
+export async function removeAccount(id: string, hideToast?: boolean) {
   const accounts = await getAccountList()
   if (accounts.find(item => item.id === id)) {
     const appAccountManager = appAccount.createAppAccountManager()
     await appAccountManager.removeAccount(id)
-    await promptAction.openToast({
-      message: '删除成功'
-    })
+    if (!hideToast) {
+      await promptAction.openToast({
+        message: '删除成功'
+      })
+    }
   }
 }
 
-export async function importAccounts(context: Context, UIContext: UIContext, uri: string) {
+export async function importAccounts(context: Context, uri: string) {
   try {
     const array = await getAccountList()
     if (array.length > 0) {
@@ -189,6 +197,7 @@ export async function importAccounts(context: Context, UIContext: UIContext, uri
         name: item.name,
         password: item.password,
         sid: item.sid,
+        synotoken: item.synotoken,
         bz: bz,
         isLogin: item.isLogin
       })
@@ -206,56 +215,61 @@ export async function importAccounts(context: Context, UIContext: UIContext, uri
 
 export async function loginBestPathAccount(context: Context) {
   const currentAccountInfo = await getAccountInfo()
-  if (currentAccountInfo.bz) {
-    const accountList = await getAccountList()
-    const sameBzAccountList = accountList.filter(item => item.bz === currentAccountInfo.bz)
-    if (sameBzAccountList.length > 1) {
-      let bestPathAccountId = ''
-      const debugSettingDataPreferences = preferences.getPreferencesSync(context, {
-        name: 'debugSetting'
-      })
-      const promises = sameBzAccountList.map(async (item, index) => {
-        const session = rcp.createSession({
-          requestConfiguration: {
-            dns: {
-              dnsRules: getDnsServer(context)
-            },
-            security: {
-              remoteValidation: debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
-                'system') as 'system' | 'skip'
+  if (currentAccountInfo.id) {
+    const filePath = context.filesDir + '/addressgroup.txt'
+    if (fileIo.accessSync(filePath)) {
+      const addressGroup = JSON.parse(fileIo.readTextSync(filePath)) as AddressGroupItem[]
+      for (let i = 0; i < addressGroup.length; i++) {
+        if (addressGroup[i].list.includes(currentAccountInfo.path)) {
+          let bestPath = ''
+          const debugSettingDataPreferences = preferences.getPreferencesSync(context, {
+            name: 'debugSetting'
+          })
+          const promises = addressGroup[i].list.map(async (item, index) => {
+            const session = rcp.createSession({
+              requestConfiguration: {
+                dns: {
+                  dnsRules: getDnsServer(context)
+                },
+                security: {
+                  remoteValidation: debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
+                    'system') as 'system' | 'skip'
+                }
+              }
+            })
+            context.eventHub.on('cancelTry' + index, (cancelTryIndex: number) => {
+              if (cancelTryIndex !== index) {
+                session.cancel()
+              }
+              context.eventHub.off('cancelTry' + index)
+            })
+            try {
+              const response = await session.get(item + '/webapi/entry.cgi')
+              session.close()
+              if (response.statusCode === 200) {
+                bestPath = item
+                for (let j = 0; j < addressGroup[i].list.length; j++) {
+                  context.eventHub.emit('cancelTry' + j, index)
+                }
+              }
+            } catch {
+              session.close()
             }
+          })
+          await Promise.all(promises)
+          if (bestPath && bestPath !== currentAccountInfo.path) {
+            await setAccount(context, {
+              path: bestPath,
+              name: currentAccountInfo.name,
+              password: currentAccountInfo.password,
+              sid: currentAccountInfo.sid,
+              synotoken: currentAccountInfo.synotoken,
+              bz: currentAccountInfo.bz,
+              isLogin: 'true'
+            })
           }
-        })
-        context.eventHub.on('cancelTry' + index, (cancelTryIndex: number) => {
-          if (cancelTryIndex !== index) {
-            session.cancel()
-          }
-          context.eventHub.off('cancelTry' + index)
-        })
-        try {
-          const response = await session.get(item.path + '/webapi/entry.cgi')
-          session.close()
-          if (response.statusCode === 200) {
-            bestPathAccountId = item.id
-            for (let i = 0; i < sameBzAccountList.length; i++) {
-              context.eventHub.emit('cancelTry' + i, index)
-            }
-          }
-        } catch {
-          session.close()
+          return
         }
-      })
-      await Promise.all(promises)
-      const bestPathAccount = sameBzAccountList.find(item => item.id === bestPathAccountId)
-      if (bestPathAccount && bestPathAccountId !== currentAccountInfo.id) {
-        await setAccount(context, {
-          path: bestPathAccount.path,
-          name: bestPathAccount.name,
-          password: bestPathAccount.password,
-          sid: bestPathAccount.sid,
-          bz: bestPathAccount.bz,
-          isLogin: 'true'
-        })
       }
     }
   }

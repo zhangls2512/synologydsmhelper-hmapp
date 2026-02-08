@@ -22,6 +22,7 @@ import { notificationManager } from '@kit.NotificationKit'
 import { hiAppEvent } from '@kit.PerformanceAnalysisKit'
 import { harmonyShare, systemShare } from '@kit.ShareKit'
 import { getAccountList, getLoginStatus, loginBestPathAccount } from '../common/Account'
+import { autoBackup } from '../common/Backup'
 import { write } from '../common/File'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import openLink from '../common/Openlink'
@@ -62,12 +63,17 @@ export default class EntryAbility extends UIAbility {
       const fileUri = uriList[0] as string
       this.context.eventHub.emit('wantUri', fileUri)
     }
-    if (want.uri) {
-      if (want.uri === 'storage:///clearcache') {
+    if (want.parameters?.linkFeature) {
+      const linkFeature = want.parameters.linkFeature
+      if (linkFeature === 'AppStorageMgmt') {
         this.context.eventHub.emit('clearData')
-      } else {
-        this.context.eventHub.emit('wantUri', want.uri)
       }
+      if (linkFeature === 'AppNotificationMgmt') {
+        this.context.eventHub.emit('notice')
+      }
+    }
+    if (want.uri && !want.parameters?.linkFeature) {
+      this.context.eventHub.emit('wantUri', want.uri)
     }
     try {
       const sharedData = await systemShare.getSharedData(want)
@@ -411,6 +417,7 @@ export default class EntryAbility extends UIAbility {
         const fileData = this.context.resourceManager.getRawFileContentSync('icon.png')
         const imageSource = image.createImageSource(fileData.buffer)
         const pixelMap = await imageSource.createPixelMap()
+        await imageSource.release()
         statusBarManager.addToStatusBar(this.context, {
           icons: {
             black: pixelMap,
@@ -425,7 +432,6 @@ export default class EntryAbility extends UIAbility {
           }
         })
         await pixelMap.release()
-        await imageSource.release()
         statusBarManager.updateStatusBarMenu(this.context, [
           [
             {
@@ -494,6 +500,7 @@ export default class EntryAbility extends UIAbility {
     }
     await this.appInit(want)
     await loginBestPathAccount(this.context)
+    await autoBackup(this.context)
   }
 
   async onNewWant(want: Want) {
@@ -532,7 +539,7 @@ export default class EntryAbility extends UIAbility {
   }
 
   async onContinue(wantParam: Record<string, Object>) {
-    if (wantParam.version !== 41) {
+    if (wantParam.version !== 42) {
       await promptAction.openToast({
         message: '接续失败，原因：目标端应用版本号与发起端不匹配'
       })

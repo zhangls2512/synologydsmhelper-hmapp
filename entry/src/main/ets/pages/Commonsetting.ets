@@ -35,6 +35,7 @@ struct Commonsetting {
   @Local showAlbum: boolean = false
   @Local showAccountlistSheetAfterAppLaunch: boolean = false
   @Local cacheApiVersion: boolean = false
+  @Local cacheNoticeJsonString: boolean = false
   @Local cellularDataUseRemindIndex: number = 0
   @Local cellularDataUseRemindValue: string = '始终'
   @Local checkVersionUpdateIndex: number = 1
@@ -551,12 +552,12 @@ struct Commonsetting {
                     const pickerres = await photoPicker.select({
                       MIMEType: photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE,
                       maxSelectNumber: 1,
-                      isPhotoTakingSupported: false,
                       isOriginalSupported: false
                     })
                     const fileSource = fileIo.openSync(pickerres.photoUris[0])
                     const imageSource = image.createImageSource(fileSource.fd)
                     const imagePixelMap = await imageSource.createPixelMap()
+                    await imageSource.release()
                     if (!fileIo.accessSync(this.context.filesDir + '/media')) {
                       await fileIo.mkdir(this.context.filesDir + '/media')
                     }
@@ -569,7 +570,6 @@ struct Commonsetting {
                     })
                     await imagePacker.release()
                     await imagePixelMap.release()
-                    await imageSource.release()
                     fileIo.closeSync(file)
                     this.context.eventHub.emit('refreshIndex')
                   } catch {
@@ -597,12 +597,12 @@ struct Commonsetting {
                       const pickerres = await photoPicker.select({
                         MIMEType: photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE,
                         maxSelectNumber: 1,
-                        isPhotoTakingSupported: false,
                         isOriginalSupported: false
                       })
                       const fileSource = fileIo.openSync(pickerres.photoUris[0])
                       const imageSource = image.createImageSource(fileSource.fd)
                       const imagePixelMap = await imageSource.createPixelMap()
+                      await imageSource.release()
                       const file =
                         fileIo.openSync(backgroundImagePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.WRITE_ONLY)
                       const imagePacker = image.createImagePacker()
@@ -612,7 +612,6 @@ struct Commonsetting {
                       })
                       await imagePacker.release()
                       await imagePixelMap.release()
-                      await imageSource.release()
                       fileIo.closeSync(file)
                       this.context.eventHub.emit('refreshIndex')
                     } catch {
@@ -889,7 +888,7 @@ struct Commonsetting {
                   Text('缓存API版本号')
                     .enableAutoSpacing(true)
                     .fontWeight(FontWeight.Medium)
-                  Text('开启有助于降低请求耗时，但API版本更新后可能会产生兼容性问题')
+                  Text('开启有助于降低请求耗时，但API版本变化后可能会产生兼容性问题')
                     .enableAutoSpacing(true)
                     .fontColor($r('sys.color.font_secondary'))
                     .fontSize($r('sys.float.ohos_id_text_size_body2'))
@@ -959,6 +958,43 @@ struct Commonsetting {
                   name: 'Apiversioncache'
                 })
               })
+
+              Divider()
+                .padding({
+                  left: 12,
+                  right: 12
+                })
+              Row() {
+                Column() {
+                  Text('缓存消息JSON字符串')
+                    .enableAutoSpacing(true)
+                    .fontWeight(FontWeight.Medium)
+                  Text('开启有助于降低消息列表加载耗时，但DSM大版本变化后可能会产生兼容性问题')
+                    .enableAutoSpacing(true)
+                    .fontColor($r('sys.color.font_secondary'))
+                    .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                    .margin({
+                      top: $r('sys.float.ohos_id_text_margin_vertical')
+                    })
+                }
+                .alignItems(HorizontalAlign.Start)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+
+                Toggle({
+                  type: ToggleType.Switch,
+                  isOn: this.cacheNoticeJsonString!!
+                })
+                  .onChange((isOn) => {
+                    this.commonSettingDataPreferences.putSync('cacheNoticeJsonString', isOn)
+                    this.commonSettingDataPreferences.flushSync()
+                  })
+              }
+              .borderRadius(12)
+              .padding(12)
+              .width('100%')
 
               Divider()
                 .padding({
@@ -1118,6 +1154,7 @@ struct Commonsetting {
       this.showAccountlistSheetAfterAppLaunch =
         this.commonSettingDataPreferences.getSync('showAccountlistSheetAfterAppLaunch', false) as boolean
       this.cacheApiVersion = this.commonSettingDataPreferences.getSync('cacheApiVersion', true) as boolean
+      this.cacheNoticeJsonString = this.commonSettingDataPreferences.getSync('cacheNoticeJsonString', true) as boolean
       const cellularDataUseRemind = this.commonSettingDataPreferences.getSync('cellularDataUseRemind', 0)
       this.cellularDataUseRemindIndex = cellularDataUseRemind as number
       if (cellularDataUseRemind === 0) {

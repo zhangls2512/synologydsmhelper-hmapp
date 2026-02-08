@@ -1,9 +1,9 @@
 {
   "routerMap": [
     {
-      "name": "Notice",
-      "pageSourceFile": "src/main/ets/pages/Notice.ets",
-      "buildFunction": "NoticeBuilder"
+      "name": "Addressgroup",
+      "pageSourceFile": "src/main/ets/pages/Addressgroup.ets",
+      "buildFunction": "AddressgroupBuilder"
     },
     {
       "name": "About",
@@ -14,6 +14,26 @@
       "name": "Debugsetting",
       "pageSourceFile": "src/main/ets/pages/Debugsetting.ets",
       "buildFunction": "DebugsettingBuilder"
+    },
+    {
+      "name": "Sandboxfilelist",
+      "pageSourceFile": "src/main/ets/pages/Sandboxfilelist.ets",
+      "buildFunction": "SandboxfilelistBuilder"
+    },
+    {
+      "name": "Synologyproductdownloadcenter",
+      "pageSourceFile": "src/main/ets/pages/Synologyproductdownloadcenter.ets",
+      "buildFunction": "SynologyproductdownloadcenterBuilder"
+    },
+    {
+      "name": "Backupsetting",
+      "pageSourceFile": "src/main/ets/pages/Backupsetting.ets",
+      "buildFunction": "BackupsettingBuilder"
+    },
+    {
+      "name": "Backuptask",
+      "pageSourceFile": "src/main/ets/pages/Backuptask.ets",
+      "buildFunction": "BackuptaskBuilder"
     },
     {
       "name": "Debuginfo",
@@ -84,11 +104,6 @@
       "name": "Errorlog",
       "pageSourceFile": "src/main/ets/pages/Errorlog.ets",
       "buildFunction": "ErrorlogBuilder"
-    },
-    {
-      "name": "Deletefile",
-      "pageSourceFile": "src/main/ets/pages/Deletefile.ets",
-      "buildFunction": "DeletefileBuilder"
     },
     {
       "name": "License",

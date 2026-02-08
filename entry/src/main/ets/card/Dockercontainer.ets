@@ -16,6 +16,7 @@ export default struct Dockercontainer {
   @Local status: string = 'fail'
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
+  intervalId = -1
   dialogControllerProgress = new CustomDialogController({
     builder: LoadingDialog({
       content: '加载中...'
@@ -72,10 +73,10 @@ export default struct Dockercontainer {
                 })
               if (item.status === 'running') {
                 Image($r('app.media.reboot'))
+                  .height(24)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                   })
-                  .width('8%')
                   .onClick(async () => {
                     this.dialogControllerProgress.open()
                     const res = await dsmRequest(this.context, '', 'SYNO.Docker.Container', new url.URLParams({
@@ -91,7 +92,7 @@ export default struct Dockercontainer {
                     }
                   })
                 Image($r('app.media.shutdown'))
-                  .width('8%')
+                  .height(24)
                   .onClick(async () => {
                     const promptAction = this.UIContext.getPromptAction()
                     const data = await promptAction.showActionMenu({
@@ -140,10 +141,10 @@ export default struct Dockercontainer {
               }
               if (item.status === 'stopped') {
                 Image($r('app.media.start'))
+                  .height(24)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                   })
-                  .width('8%')
                   .onClick(async () => {
                     this.dialogControllerProgress.open()
                     const res = await dsmRequest(this.context, '', 'SYNO.Docker.Container', new url.URLParams({
@@ -159,7 +160,7 @@ export default struct Dockercontainer {
                     }
                   })
                 Image($r('app.media.delete'))
-                  .width('8%')
+                  .height(24)
                   .onClick(async () => {
                     const promptAction = this.UIContext.getPromptAction()
                     const data = await promptAction.showDialog({
@@ -181,7 +182,8 @@ export default struct Dockercontainer {
                       const res = await dsmRequest(this.context, '', 'SYNO.Docker.Container', new url.URLParams({
                         method: 'delete',
                         name: item.name,
-                        force: 'false'
+                        force: 'false',
+                        preserve_profile: 'false'
                       }).toString())
                       this.dialogControllerProgress.close()
                       if (res !== 'fail') {
@@ -209,16 +211,20 @@ export default struct Dockercontainer {
     .padding(12)
     .width('100%')
     .onAppear(async () => {
-      this.context.eventHub.on('refreshCard', () => {
+      this.context.eventHub.on('refreshCard', async () => {
         this.status = 'pending'
+        await this.refresh()
       })
       this.status = 'pending'
-      setInterval(async () => {
+      this.intervalId = setInterval(async () => {
         await this.refresh()
       }, 5000)
       await this.refresh()
     })
     .onDisAppear(() => {
+      if (this.intervalId !== -1) {
+        clearInterval(this.intervalId)
+      }
       this.context.eventHub.off('refreshCard')
     })
   }

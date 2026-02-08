@@ -7,7 +7,7 @@ import { rcp } from '@kit.RemoteCommunicationKit'
 import { getAccountInfo, setAccount } from './Account'
 import { getDnsServer } from './Dnsserver'
 import { read, write } from './File'
-import { ResponseData } from '../pages/Login'
+import { LoginResponseData } from '../pages/Login'
 
 export interface ApiVersionItem {
   name: string,
@@ -19,14 +19,14 @@ export interface ApiVersionCacheItem {
   apiVersion: ApiVersionItem[]
 }
 
-interface Error {
-  code: number
-}
-
-interface DsmResponse {
+export interface DsmResponse {
   data: object,
   error: Error,
   success: boolean
+}
+
+interface Error {
+  code: number
 }
 
 interface DeveloperErrorResponse {
@@ -37,47 +37,32 @@ interface DeveloperErrorResponse {
 
 async function getCacheApiVersion(context: Context, path: string, api: string) {
   let apiVersionCacheValue = ''
-  const apiVersionCacheDataPreferences = preferences.getPreferencesSync(context, {
-    name: 'apiVersionCache'
-  })
   const filePath = context.cacheDir + '/apiversion.txt'
-  if (!apiVersionCacheDataPreferences.getSync('apiVersionCache', '')) {
-    apiVersionCacheValue = apiVersionCacheDataPreferences.getSync('apiVersionCache', '') as string
+  if (!fileIo.accessSync(filePath)) {
+    return -1
   } else {
-    if (!fileIo.accessSync(filePath)) {
-      return -1
+    const filestring = await read(filePath)
+    if (filestring !== 'fail') {
+      apiVersionCacheValue = filestring
     } else {
-      const filestring = await read(filePath, true)
-      if (filestring !== 'fail') {
-        apiVersionCacheValue = filestring
-      } else {
-        return -1
-      }
+      return -1
     }
   }
   if (!apiVersionCacheValue) {
     return -1
   } else {
-    try {
-      const apiVersionCache = JSON.parse(apiVersionCacheValue) as ApiVersionCacheItem[]
-      const apiVersionCacheItem = apiVersionCache.find(item => item.path === path)
-      if (!apiVersionCacheItem) {
+    const apiVersionCache = JSON.parse(apiVersionCacheValue) as ApiVersionCacheItem[]
+    const apiVersionCacheItem = apiVersionCache.find(item => item.path === path)
+    if (!apiVersionCacheItem) {
+      return -1
+    } else {
+      const pathApiVersionCache = apiVersionCacheItem.apiVersion
+      const apiVersionItem = pathApiVersionCache.find(item => item.name === api)
+      if (!apiVersionItem) {
         return -1
       } else {
-        const pathApiVersionCache = apiVersionCacheItem.apiVersion
-        const apiVersionItem = pathApiVersionCache.find(item => item.name === api)
-        if (!apiVersionItem) {
-          return -1
-        } else {
-          return apiVersionItem.version
-        }
+        return apiVersionItem.version
       }
-    } catch {
-      await preferences.deletePreferences(context, 'apiVersionCache')
-      if (fileIo.accessSync(filePath)) {
-        await fileIo.unlink(filePath)
-      }
-      return -1
     }
   }
 }
@@ -115,8 +100,8 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
       }
     },
     headers: {
-      'accept-language': 'zh-CN',
-      referer: requestPath
+      referer: requestPath,
+      'x-syno-token': accountInfo.synotoken
     }
   })
   try {
@@ -142,13 +127,10 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
         const version = res.data[api].maxVersion as number
         if (cacheApiVersionSetting) {
           let apiVersionCache: ApiVersionCacheItem[] = []
-          const apiVersionCacheDataPreferences = preferences.getPreferencesSync(context, {
-            name: 'apiVersionCache'
-          })
-          try {
-            apiVersionCache = JSON.parse(apiVersionCacheDataPreferences.getSync('apiVersionCache',
-              '') as string) as ApiVersionCacheItem[]
-          } catch {
+          const filePath = context.cacheDir + '/apiversion.txt'
+          const filestring = await read(filePath, true)
+          if (filestring !== 'fail') {
+            apiVersionCache = JSON.parse(filestring) as ApiVersionCacheItem[]
           }
           const apiVersionCacheItem = apiVersionCache.find(item => item.path === requestPath)
           if (!apiVersionCacheItem) {
@@ -173,10 +155,7 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
               apiVersionItem.version = version
             }
           }
-          const apiVersionCacheValue = JSON.stringify(apiVersionCache)
-          apiVersionCacheDataPreferences.putSync('apiVersionCache', apiVersionCacheValue)
-          const filePath = context.cacheDir + '/apiversion.txt'
-          await write(filePath, apiVersionCacheValue)
+          await write(filePath, JSON.stringify(apiVersionCache))
         }
         return version
       }
@@ -192,8 +171,8 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
             }
           },
           headers: {
-            'accept-language': 'zh-CN',
-            referer: requestPath
+            referer: requestPath,
+            'x-syno-token': accountInfo.synotoken
           }
         })
         try {
@@ -219,13 +198,10 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
               const version = resb.data[api].maxVersion as number
               if (cacheApiVersionSetting) {
                 let apiVersionCache: ApiVersionCacheItem[] = []
-                const apiVersionCacheDataPreferences = preferences.getPreferencesSync(context, {
-                  name: 'apiVersionCache'
-                })
-                try {
-                  apiVersionCache = JSON.parse(apiVersionCacheDataPreferences.getSync('apiVersionCache',
-                    '') as string) as ApiVersionCacheItem[]
-                } catch {
+                const filePath = context.cacheDir + '/apiversion.txt'
+                const filestring = await read(filePath, true)
+                if (filestring !== 'fail') {
+                  apiVersionCache = JSON.parse(filestring) as ApiVersionCacheItem[]
                 }
                 const apiVersionCacheItem = apiVersionCache.find(item => item.path === requestPath)
                 if (!apiVersionCacheItem) {
@@ -250,10 +226,7 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
                     apiVersionItem.version = version
                   }
                 }
-                const apiVersionCacheValue = JSON.stringify(apiVersionCache)
-                apiVersionCacheDataPreferences.putSync('apiVersionCache', apiVersionCacheValue)
-                const filePath = context.cacheDir + '/apiversion.txt'
-                await write(filePath, apiVersionCacheValue)
+                await write(filePath, JSON.stringify(apiVersionCache))
               }
               return version
             }
@@ -326,7 +299,8 @@ export async function dsmRequest(context: Context, path: string, api: string, pa
     },
     headers: {
       'accept-language': 'zh-CN',
-      referer: requestPath
+      referer: requestPath,
+      'x-syno-token': accountInfo.synotoken
     },
     cookies: {
       id: accountInfo.sid
@@ -368,19 +342,22 @@ export async function dsmRequest(context: Context, path: string, api: string, pa
         const loginres = await dsmRequest(context, accountInfo.path, 'SYNO.API.Auth', new url.URLParams({
           method: 'login',
           account: accountInfo.name,
-          passwd: accountInfo.password
+          passwd: accountInfo.password,
+          session: 'webui',
+          enable_syno_token: 'yes'
         }).toString(), undefined, false, true)
         netBoost.setSceneDesc({
           scene: 'login',
           sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
         })
         if (loginres !== 'fail') {
-          const data = loginres as ResponseData
+          const data = loginres as LoginResponseData
           await setAccount(context, {
             path: accountInfo.path,
             name: accountInfo.name,
             password: accountInfo.password,
             sid: data.sid,
+            synotoken: data.synotoken,
             bz: accountInfo.bz,
             isLogin: 'true'
           })
@@ -393,19 +370,22 @@ export async function dsmRequest(context: Context, path: string, api: string, pa
         const loginresb = await dsmRequest(context, accountInfo.path, 'SYNO.API.Auth', new url.URLParams({
           method: 'login',
           account: accountInfo.name,
-          passwd: accountInfo.password
+          passwd: accountInfo.password,
+          session: 'webui',
+          enable_syno_token: 'yes'
         }).toString(), undefined, true, hide102ErrorCode)
         netBoost.setSceneDesc({
           scene: 'login',
           sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
         })
         if (loginresb !== 'fail') {
-          const data = loginresb as ResponseData
+          const data = loginresb as LoginResponseData
           await setAccount(context, {
             path: accountInfo.path,
             name: accountInfo.name,
             password: accountInfo.password,
             sid: data.sid,
+            synotoken: data.synotoken,
             bz: accountInfo.bz,
             isLogin: 'true'
           })

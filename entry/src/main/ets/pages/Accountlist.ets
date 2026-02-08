@@ -4,7 +4,9 @@ import { promptAction } from '@kit.ArkUI'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { hdsEffect } from '@kit.UIDesignKit'
 import { AccountInfo, getAccountList, removeAccount, setAccount, setAccountBz } from '../common/Account'
+import { autoBackup } from '../common/Backup'
 import { getDnsServer } from '../common/Dnsserver'
+import copy from '../common/Pasteboard'
 
 @ComponentV2
 export default struct Accountlist {
@@ -26,6 +28,13 @@ export default struct Accountlist {
   @Builder
   MenuBuilder(item: AccountInfo) {
     Menu() {
+      MenuItem({
+        startIcon: $r('app.media.copytext'),
+        content: '复制地址'
+      })
+        .onClick(async () => {
+          await copy(this.context, this.UIContext, item.path)
+        })
       MenuItem({
         startIcon: $r('app.media.edit'),
         content: '编辑备注'
@@ -140,7 +149,7 @@ export default struct Accountlist {
       if (!this.bzId) {
         if (this.accountArray.length === 0) {
           ListItem() {
-            Text('无账号')
+            Text('无数据')
           }
           .margin({
             top: $r('sys.float.ohos_id_elements_margin_vertical_l')
@@ -244,6 +253,7 @@ export default struct Accountlist {
                   name: item.name,
                   password: item.password,
                   sid: item.sid,
+                  synotoken: item.synotoken,
                   bz: item.bz,
                   isLogin: 'true'
                 })
@@ -257,6 +267,7 @@ export default struct Accountlist {
                 }
                 this.context.eventHub.emit('refreshMe')
                 this.isShowAccountlistSheet = false
+                await autoBackup(this.context)
               })
               .bindContextMenu(this.MenuBuilder(item), ResponseType.LongPress, {
                 hapticFeedbackMode: HapticFeedbackMode.AUTO
@@ -280,43 +291,38 @@ export default struct Accountlist {
       }
       if (this.bzId) {
         ListItem() {
-          TextInput({
-            placeholder: '请输入备注',
-            text: this.bz!!
-          })
-            .enableAutoSpacing(true)
-            .maxLength(20)
-        }
-        .margin({
-          top: $r('sys.float.ohos_id_elements_margin_vertical_l')
-        })
-        .padding({
-          left: $r('sys.float.ohos_id_elements_margin_horizontal_l'),
-          right: $r('sys.float.ohos_id_elements_margin_horizontal_l')
-        })
-
-        ListItem() {
-          Row() {
-            Button('取消')
-              .buttonStyle(ButtonStyleMode.NORMAL)
-              .layoutWeight(1)
-              .onClick(() => {
-                this.bzId = ''
-                this.bz = ''
-              })
-            Blank()
-              .width($r('sys.float.ohos_id_elements_margin_horizontal_m'))
-            Button('保存')
-              .layoutWeight(1)
-              .onClick(async () => {
-                await setAccountBz(this.bzId, this.bz)
-                await promptAction.openToast({
-                  message: '保存成功'
+          Column() {
+            TextInput({
+              placeholder: '请输入备注',
+              text: this.bz!!
+            })
+              .enableAutoSpacing(true)
+              .maxLength(20)
+            Row() {
+              Button('取消')
+                .buttonStyle(ButtonStyleMode.NORMAL)
+                .layoutWeight(1)
+                .onClick(() => {
+                  this.bzId = ''
+                  this.bz = ''
                 })
-                this.bzId = ''
-                this.bz = ''
-                this.accountArray = await getAccountList()
-              })
+              Blank()
+                .width($r('sys.float.ohos_id_elements_margin_horizontal_m'))
+              Button('保存')
+                .layoutWeight(1)
+                .onClick(async () => {
+                  await setAccountBz(this.bzId, this.bz)
+                  await promptAction.openToast({
+                    message: '保存成功'
+                  })
+                  this.bzId = ''
+                  this.bz = ''
+                  this.accountArray = await getAccountList()
+                })
+            }
+            .margin({
+              top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+            })
           }
         }
         .margin({

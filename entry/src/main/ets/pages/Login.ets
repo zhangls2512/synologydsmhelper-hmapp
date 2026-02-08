@@ -1,18 +1,19 @@
 import { common } from '@kit.AbilityKit'
 import { privacyManager } from '@kit.AppGalleryKit'
+import { preferences } from '@kit.ArkData'
 import { url } from '@kit.ArkTS'
 import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { netBoost } from '@kit.NetworkBoostKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { setAccount } from '../common/Account'
+import { autoBackup } from '../common/Backup'
 import { getDnsServer } from '../common/Dnsserver'
 import openLink from '../common/Openlink'
 import { dsmRequest } from '../common/Request'
 
-export interface ResponseData {
-  account: string,
+export interface LoginResponseData {
   sid: string,
-  device_id: string
+  synotoken: string
 }
 
 @ComponentV2
@@ -266,7 +267,9 @@ export default struct Login {
                   method: 'login',
                   account: this.name,
                   passwd: this.password,
-                  otp_code: this.mfa
+                  otp_code: this.mfa,
+                  session: 'webui',
+                  enable_syno_token: 'yes'
                 }).toString(), undefined, false, true)
                 netBoost.setSceneDesc({
                   scene: 'login',
@@ -281,7 +284,9 @@ export default struct Login {
                     method: 'login',
                     account: this.name,
                     passwd: this.password,
-                    otp_code: this.mfa
+                    otp_code: this.mfa,
+                    session: 'webui',
+                    enable_syno_token: 'yes'
                   }).toString(), undefined, true)
                   netBoost.setSceneDesc({
                     scene: 'login',
@@ -323,7 +328,9 @@ export default struct Login {
                         method: 'login',
                         account: this.name,
                         passwd: this.password,
-                        otp_code: this.mfa
+                        otp_code: this.mfa,
+                        session: 'webui',
+                        enable_syno_token: 'yes'
                       }).toString(), undefined, false, true)
                       netBoost.setSceneDesc({
                         scene: 'login',
@@ -338,7 +345,9 @@ export default struct Login {
                           method: 'login',
                           account: this.name,
                           passwd: this.password,
-                          otp_code: this.mfa
+                          otp_code: this.mfa,
+                          session: 'webui',
+                          enable_syno_token: 'yes'
                         }).toString(), undefined, true)
                         netBoost.setSceneDesc({
                           scene: 'login',
@@ -370,19 +379,30 @@ export default struct Login {
               }
               dialogControllerProgress.close()
               if (res !== 'fail') {
-                const data = res as ResponseData
+                const data = res as LoginResponseData
                 await setAccount(this.context, {
                   path: path,
                   name: this.name,
                   password: this.password,
                   sid: data.sid,
+                  synotoken: data.synotoken,
                   bz: this.bz,
                   isLogin: 'true'
                 })
                 await promptAction.openToast({
                   message: '登录成功'
                 })
+                this.context.eventHub.emit('refreshCardlist')
+                this.context.eventHub.emit('refreshFilelist')
+                const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+                  name: 'commonSetting'
+                })
+                if (commonSettingDataPreferences.getSync('showAlbum', true)) {
+                  this.context.eventHub.emit('refreshAlbum')
+                }
+                this.context.eventHub.emit('refreshMe')
                 this.isShowLoginSheet = false
+                await autoBackup(this.context)
               }
             })
           Row() {
