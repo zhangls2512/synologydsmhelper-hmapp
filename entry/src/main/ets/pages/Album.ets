@@ -244,7 +244,10 @@ export default struct Album {
             },
             security: {
               remoteValidation: this.debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
-                'system') as 'system' | 'skip'
+                'system') as 'system' | 'skip',
+              tlsRange: {
+                min: 'TlsV1.2'
+              }
             }
           },
           headers: {
@@ -916,7 +919,10 @@ export default struct Album {
                     },
                     security: {
                       remoteValidation: this.debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
-                        'system') as 'system' | 'skip'
+                        'system') as 'system' | 'skip',
+                      tlsRange: {
+                        min: 'TlsV1.2'
+                      }
                     }
                   },
                   headers: {
@@ -1115,7 +1121,10 @@ export default struct Album {
                         },
                         security: {
                           remoteValidation: this.debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
-                            'system') as 'system' | 'skip'
+                            'system') as 'system' | 'skip',
+                          tlsRange: {
+                            min: 'TlsV1.2'
+                          }
                         }
                       },
                       headers: {

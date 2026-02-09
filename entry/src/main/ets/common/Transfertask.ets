@@ -125,7 +125,10 @@ export async function download(context: Context, id: string) {
           },
           security: {
             remoteValidation: debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
-              'system') as 'system' | 'skip'
+              'system') as 'system' | 'skip',
+            tlsRange: {
+              min: 'TlsV1.2'
+            }
           }
         },
         headers: {
@@ -297,7 +300,10 @@ export async function upload(context: Context, id: string) {
           },
           security: {
             remoteValidation: debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
-              'system') as 'system' | 'skip'
+              'system') as 'system' | 'skip',
+            tlsRange: {
+              min: 'TlsV1.2'
+            }
           }
         },
         headers: {

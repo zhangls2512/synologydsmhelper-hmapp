@@ -96,7 +96,10 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
       },
       security: {
         remoteValidation: debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
-          'system') as 'system' | 'skip'
+          'system') as 'system' | 'skip',
+        tlsRange: {
+          min: 'TlsV1.2'
+        }
       }
     },
     headers: {
@@ -294,7 +297,10 @@ export async function dsmRequest(context: Context, path: string, api: string, pa
       },
       security: {
         remoteValidation: debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
-          'system') as 'system' | 'skip'
+          'system') as 'system' | 'skip',
+        tlsRange: {
+          min: 'TlsV1.2'
+        }
       }
     },
     headers: {
@@ -438,6 +444,11 @@ export async function developerRequest(context: Context, path: string, body: rcp
     requestConfiguration: {
       dns: {
         dnsRules: getDnsServer(context)
+      },
+      security: {
+        tlsRange: {
+          min: 'TlsV1.2'
+        }
       }
     }
   })

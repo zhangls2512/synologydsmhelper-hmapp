@@ -233,7 +233,10 @@ export async function loginBestPathAccount(context: Context) {
                 },
                 security: {
                   remoteValidation: debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
-                    'system') as 'system' | 'skip'
+                    'system') as 'system' | 'skip',
+                  tlsRange: {
+                    min: 'TlsV1.2'
+                  }
                 }
               }
             })

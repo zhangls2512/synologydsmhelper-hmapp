@@ -5,7 +5,6 @@ import { HdsNavDestination } from '@kit.UIDesignKit'
 import { getAccountInfo } from '../common/Account'
 import { BackupTask, deleteBackupTask, getBackupTaskList, startBackupTask } from '../common/Backup'
 
-
 @Builder
 export function BackuptaskBuilder() {
   Backuptask()

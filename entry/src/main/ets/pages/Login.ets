@@ -19,16 +19,17 @@ export interface LoginResponseData {
 @ComponentV2
 export default struct Login {
   @Consumer() isShowLoginSheet: boolean = false
-  @Local scheme: string = 'http'
+  @Local scheme: string = 'https'
   @Local host: string = ''
-  @Local port: string = '5000'
+  @Local port: string = '5001'
   @Local quickConnectId: string = ''
   @Local name: string = ''
   @Local password: string = ''
   @Local mfa: string = ''
   @Local bz: string = ''
   @Local agree: boolean = false
-  context = this.getUIContext().getHostContext() as common.UIAbilityContext
+  UIContext = this.getUIContext()
+  context = this.UIContext.getHostContext() as common.UIAbilityContext
 
   build() {
     List() {
@@ -47,12 +48,23 @@ export default struct Login {
                   group: 'scheme'
                 })
                   .checked(this.scheme === 'http' ? true : false)
-                  .onChange((isChecked) => {
+                  .onChange(async (isChecked) => {
                     if (isChecked) {
                       this.scheme = 'http'
                       if (!this.port || this.port === '5001') {
                         this.port = '5000'
                       }
+                      const promptAction = this.UIContext.getPromptAction()
+                      await promptAction.showDialog({
+                        title: '提示',
+                        message: '因账号、密码在网络传输过程中可被转换成明文，在公网环境下请务必使用 HTTPS 协议，防止账号、密码泄露',
+                        buttons: [
+                          {
+                            text: '确定',
+                            color: $r('sys.color.warning')
+                          }
+                        ]
+                      })
                     }
                   })
                 Text('http')
@@ -299,6 +311,11 @@ export default struct Login {
                   requestConfiguration: {
                     dns: {
                       dnsRules: getDnsServer(this.context)
+                    },
+                    security: {
+                      tlsRange: {
+                        min: 'TlsV1.2'
+                      }
                     }
                   }
                 })
