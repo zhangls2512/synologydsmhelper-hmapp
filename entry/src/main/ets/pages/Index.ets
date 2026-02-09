@@ -5,16 +5,17 @@ import { display } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
 import { image } from '@kit.ImageKit'
 import { HdsTabs, HdsTabsController } from '@kit.UIDesignKit'
-import { importAccounts } from '../common/Account'
+import { AccountInfo, importAccounts } from '../common/Account'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import { getPreferType } from '../common/Prefertype'
-import { download } from '../common/Transfertask'
+import { download, upload } from '../common/Transfertask'
 import Accountlist from './Accountlist'
 import Album from './Album'
 import Cardlist from './Cardlist'
 import Cleardata from './Cleardata'
 import Filelist from './Filelist'
 import Me from './Me'
+import Notice from './Notice'
 import Uploaderrorlog from './Uploaderrorlog'
 
 export interface TransferTaskItem {
@@ -26,8 +27,9 @@ export interface TransferTaskItem {
   status: string,
   errCode: number,
   type: string,
-  accountPath: string,
-  accountSid: string
+  accountInfo: AccountInfo,
+  srcFileUri: string,
+  backupTaskId: string
 }
 
 @Entry
@@ -43,9 +45,11 @@ struct Index {
   @Local title: string = '首页'
   @Local showAlbum: boolean = false
   @Local isShowCleardataSheet: boolean = false
+  @Local isShowNoticeSheet: boolean = false
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   controller = new HdsTabsController()
+  intervalId = -1
   backDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'back'
   })
@@ -138,6 +142,11 @@ struct Index {
   }
 
   @Builder
+  NoticeSheetBuilder() {
+    Notice()
+  }
+
+  @Builder
   AccountlistSheetBuilder() {
     Accountlist()
   }
@@ -179,6 +188,12 @@ struct Index {
           Filelist()
         }
         .tabBar(this.tabBuilder(1, $r('app.media.file'), '文件'))
+        .bindSheet(this.isShowNoticeSheet!!, this.NoticeSheetBuilder(), {
+          preferType: this.preferType,
+          title: {
+            title: '消息通知'
+          }
+        })
 
         if (this.showAlbum) {
           TabContent() {
@@ -244,7 +259,7 @@ struct Index {
       top: this.preferType === 0 ? 12 : 0
     })
     .onAppear(async () => {
-      setInterval(async () => {
+      this.intervalId = setInterval(async () => {
         const transferTaskArray: TransferTaskItem[] = []
         const transferTaskDataPreferences = preferences.getPreferencesSync(this.context, {
           name: 'transferTask'
@@ -271,8 +286,14 @@ struct Index {
             if (exec) {
               item.status = 'processing'
               transferTaskDataPreferences.putSync(item.id, JSON.stringify(item))
-              const task = new taskpool.LongTask(download, this.context, item.id)
-              await taskpool.execute(task)
+              if (item.type === 'download') {
+                const task = new taskpool.LongTask(download, this.context, item.id)
+                await taskpool.execute(task)
+              }
+              if (item.type === 'upload') {
+                const task = new taskpool.LongTask(upload, this.context, item.id)
+                await taskpool.execute(task)
+              }
             }
           }
         }
@@ -280,6 +301,11 @@ struct Index {
       this.context.eventHub.on('clearData', () => {
         if (!this.isShowCleardataSheet) {
           this.isShowCleardataSheet = true
+        }
+      })
+      this.context.eventHub.on('notice', () => {
+        if (!this.isShowNoticeSheet) {
+          this.isShowNoticeSheet = true
         }
       })
       this.context.eventHub.on('accountList', () => {
@@ -312,7 +338,7 @@ struct Index {
         }
       })
       this.context.eventHub.on('wantUri', async (wantUri: string) => {
-        await importAccounts(this.context, this.UIContext, wantUri)
+        await importAccounts(this.context, wantUri)
       })
       const promptAction = this.UIContext.getPromptAction()
       this.context.eventHub.on('dialog', async (title: string, message: string) => {
@@ -344,6 +370,9 @@ struct Index {
       await this.get()
     })
     .onDisAppear(() => {
+      if (this.intervalId !== -1) {
+        clearInterval(this.intervalId)
+      }
       this.context.eventHub.off('refreshIndex')
       this.context.eventHub.off('uploadErrorLog')
       this.context.eventHub.off('dialog')
@@ -353,6 +382,7 @@ struct Index {
       this.context.eventHub.off('file')
       this.context.eventHub.off('card')
       this.context.eventHub.off('accountList')
+      this.context.eventHub.off('notice')
       this.context.eventHub.off('clearData')
       display.off('change')
     })

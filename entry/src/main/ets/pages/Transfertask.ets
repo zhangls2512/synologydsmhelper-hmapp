@@ -9,6 +9,7 @@ export default struct Transfertask {
   @Local selectedIndex: number = 0
   @Local transferTaskArray: TransferTaskItem[] = []
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
+  intervalId = -1
 
   build() {
     Scroll() {
@@ -28,7 +29,7 @@ export default struct Transfertask {
           if (this.selectedIndex === 0) {
             if (this.transferTaskArray.filter(item => item.type === 'download').length === 0) {
               ListItem() {
-                Text('无下载任务')
+                Text('无数据')
               }
               .margin({
                 top: $r('sys.float.ohos_id_elements_margin_vertical_m')
@@ -110,7 +111,7 @@ export default struct Transfertask {
           if (this.selectedIndex === 1) {
             if (this.transferTaskArray.filter(item => item.type === 'upload').length === 0) {
               ListItem() {
-                Text('无上传任务')
+                Text('无数据')
               }
               .margin({
                 top: $r('sys.float.ohos_id_elements_margin_vertical_m')
@@ -128,19 +129,54 @@ export default struct Transfertask {
                           right: 12
                         })
                     }
-                    Row() {
+                    Column() {
                       Text(item.name)
                         .enableAutoSpacing(true)
                         .fontWeight(FontWeight.Medium)
-                        .layoutWeight(1)
-                        .margin({
-                          right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                        })
-                      Image($r('app.media.right'))
-                        .fillColor($r('sys.color.icon_fourth'))
-                        .height(12)
-                        .width(12)
+                        .width('85%')
+                      if (item.status === 'pending') {
+                        Text('等待中')
+                          .fontColor($r('sys.color.font_secondary'))
+                          .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                          .margin({
+                            top: $r('sys.float.ohos_id_text_margin_vertical')
+                          })
+                      }
+                      if (item.status === 'processing') {
+                        Text(Number((item.transferredSize / item.totalSize).toFixed(2)) * 100 + '%(' +
+                        getSizeString(item.transferredSize) + '/' + getSizeString(item.totalSize) + ')')
+                          .fontColor($r('sys.color.font_secondary'))
+                          .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                          .margin({
+                            top: $r('sys.float.ohos_id_text_margin_vertical')
+                          })
+                      }
+                      if (item.status === 'success') {
+                        Text('完成')
+                          .fontColor(Color.Green)
+                          .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                          .margin({
+                            top: $r('sys.float.ohos_id_text_margin_vertical')
+                          })
+                      }
+                      if (item.status === 'fail') {
+                        Text('失败，错误码：' + item.errCode)
+                          .fontColor($r('sys.color.warning'))
+                          .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                          .margin({
+                            top: $r('sys.float.ohos_id_text_margin_vertical')
+                          })
+                      }
+                      if (item.status === 'cancel') {
+                        Text('取消')
+                          .fontColor($r('sys.color.warning'))
+                          .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                          .margin({
+                            top: $r('sys.float.ohos_id_text_margin_vertical')
+                          })
+                      }
                     }
+                    .alignItems(HorizontalAlign.Start)
                     .borderRadius(12)
                     .padding(12)
                     .width('100%')
@@ -164,7 +200,7 @@ export default struct Transfertask {
       right: $r('sys.float.ohos_id_elements_margin_horizontal_l')
     })
     .onAppear(() => {
-      setInterval(() => {
+      this.intervalId = setInterval(() => {
         const transferTaskArray: TransferTaskItem[] = []
         const transferTaskDataPreferences = preferences.getPreferencesSync(this.context, {
           name: 'transferTask'
@@ -178,6 +214,11 @@ export default struct Transfertask {
         })
         this.transferTaskArray = transferTaskArray
       }, 100)
+    })
+    .onDisAppear(() => {
+      if (this.intervalId !== -1) {
+        clearInterval(this.intervalId)
+      }
     })
   }
 }

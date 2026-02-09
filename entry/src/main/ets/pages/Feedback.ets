@@ -90,53 +90,45 @@ struct Feedback {
             .margin({
               top: $r('sys.float.ohos_id_elements_margin_vertical_m')
             })
+
+            Button('提交')
+              .enabled(this.content !== '')
+              .margin({
+                top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+              })
+              .width('100%')
+              .onClick(async () => {
+                const dialogControllerProgress = new CustomDialogController({
+                  builder: LoadingDialog({
+                    content: '提交中...'
+                  })
+                })
+                dialogControllerProgress.open()
+                const res = await developerRequest(this.context, '/product/sendFeedbackEmail', {
+                  product: 'synologydsmhelper',
+                  version: '1.1.4.0',
+                  content: this.content,
+                  contactType: this.contactType,
+                  contactValue: this.contactValue
+                })
+                dialogControllerProgress.close()
+                if (res !== 'fail') {
+                  await promptAction.openToast({
+                    message: '提交成功'
+                  })
+                  this.pageInfos.pop()
+                }
+              })
+            Text('建议填写联系方式，以便开发人员在需要时联系您。')
+              .fontWeight(FontWeight.Medium)
+              .margin({
+                top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+              })
           }
           .alignItems(HorizontalAlign.Start)
         }
         .margin({
           top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-        })
-
-        ListItem() {
-          Button('提交')
-            .enabled(this.content !== '')
-            .width('100%')
-            .onClick(async () => {
-              const dialogControllerProgress = new CustomDialogController({
-                builder: LoadingDialog({
-                  content: '提交中...'
-                })
-              })
-              dialogControllerProgress.open()
-              const res = await developerRequest(this.context, '/product/sendFeedbackEmail', {
-                product: 'synologydsmhelper',
-                version: '1.1.3.4',
-                content: this.content,
-                contactType: this.contactType,
-                contactValue: this.contactValue
-              })
-              dialogControllerProgress.close()
-              if (res !== 'fail') {
-                await promptAction.openToast({
-                  message: '提交成功'
-                })
-                this.pageInfos.pop()
-              }
-            })
-        }
-        .margin({
-          top: $r('sys.float.ohos_id_elements_margin_vertical_l')
-        })
-
-        ListItem() {
-          Column() {
-            Text('建议填写联系方式，以便开发人员在需要时联系您。')
-              .fontWeight(FontWeight.Medium)
-          }
-          .alignItems(HorizontalAlign.Start)
-        }
-        .margin({
-          top: $r('sys.float.ohos_id_elements_margin_vertical_l')
         })
       }
       .padding({

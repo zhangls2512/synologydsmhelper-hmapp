@@ -1,20 +1,22 @@
 import { common, wantAgent } from '@kit.AbilityKit'
-import { preferences } from '@kit.ArkData'
+import { dataSharePredicates, preferences } from '@kit.ArkData'
 import { url, util } from '@kit.ArkTS'
 import { display, LoadingDialog, promptAction, SegmentButtonV2Items, TabSegmentButtonV2, window } from '@kit.ArkUI'
 import { backgroundTaskManager } from '@kit.BackgroundTasksKit'
 import { zlib } from '@kit.BasicServicesKit'
 import { fileIo, fileUri, picker } from '@kit.CoreFileKit'
-import { image } from '@kit.ImageKit'
+import { mapCommon, MapComponent, petalMaps, site } from '@kit.MapKit'
 import { MovingPhotoView, MovingPhotoViewController, photoAccessHelper } from '@kit.MediaLibraryKit'
 import { netBoost } from '@kit.NetworkBoostKit'
 import { notificationManager } from '@kit.NotificationKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { hdsEffect } from '@kit.UIDesignKit'
-import { getAccountInfo, getLoginStatus } from '../common/Account'
+import { AccountInfo, getAccountHash, getAccountInfo, getLoginStatus } from '../common/Account'
 import { getDnsServer } from '../common/Dnsserver'
+import { write } from '../common/File'
 import { sha256hash } from '../common/Hash'
 import { getCurrentNetworkBearerType } from '../common/Network'
+import { checkPermission } from '../common/Permission'
 import { getPreferType } from '../common/Prefertype'
 import { dsmRequest, getDsmApiMaxVersion } from '../common/Request'
 import { getSizeString, getTimeString } from '../common/Stringformat'
@@ -25,8 +27,29 @@ interface Resolution {
   width: number
 }
 
+interface PhotoThumbnail {
+  sm: string,
+  cache_key: string
+}
+
+interface PhotoExif {
+  aperture: string,
+  camera: string,
+  exposure_time: string,
+  focal_length: string,
+  iso: string
+}
+
+interface PhotoGps {
+  latitude: number,
+  longitude: number
+}
+
 interface PhotoAdditional {
-  resolution: Resolution
+  resolution: Resolution,
+  thumbnail: PhotoThumbnail,
+  exif: PhotoExif,
+  gps: PhotoGps
 }
 
 interface PhotoItem {
@@ -37,7 +60,7 @@ interface PhotoItem {
   folder_id: number,
   url: string,
   path: string,
-  resolution: Resolution,
+  additional: PhotoAdditional,
   type: string,
   thumbnailUri: string,
   movingPhoto?: photoAccessHelper.MovingPhoto,
@@ -101,6 +124,7 @@ export default struct Album {
   @Local isShowInfoSheet: boolean = false
   @Local hoverId: number = -1
   @Local photoItemWidth: number = 0
+  @Local photoAddress: string = ''
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   account = ''
@@ -135,14 +159,13 @@ export default struct Album {
     return photoIndex >= minIndex && photoIndex < minIndex + this.timelineArray[dateIndex].count
   }
 
-  async pushPhotoIntoPhotoArray(account: string, photoItem: PhotoItem, album: boolean) {
+  async pushPhotoIntoPhotoArray(accountInfo: AccountInfo, photoItem: PhotoItem, thumbnail: PhotoThumbnail,
+    album: boolean) {
     if (photoItem.type === 'photo') {
       const inPhotoItem = photoItem
-      const dir = this.context.cacheDir + '/albumphotothumbnail/' + sha256hash(account)
-      let thumbnailPath = dir + '/' + sha256hash(inPhotoItem.path) + '.jpeg'
-      if (photoItem.filename.endsWith('.mv.png')) {
-        thumbnailPath = dir + '/' + sha256hash(inPhotoItem.path) + '.mp4'
-      }
+      const account = getAccountHash(accountInfo)
+      const dir = getAccountHash(accountInfo, this.context, this.context.cacheDir + '/albumphotothumbnail')
+      let thumbnailPath = dir + '/' + sha256hash(inPhotoItem.path) + '.jpg'
       const thumbnailPathExist = fileIo.accessSync(thumbnailPath)
       if (!thumbnailPathExist) {
         if (!fileIo.accessSync(dir)) {
@@ -164,64 +187,43 @@ export default struct Album {
                 onDataReceive: async (incomingData) => {
                   await fileStream.write(incomingData)
                 },
-                onDataEnd: async () => {
+                onDataEnd: () => {
                   session.close()
                   netBoost.setSceneDesc({
                     scene: 'download',
                     sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
                   })
                   fileStream.closeSync()
-                  if (!photoItem.filename.endsWith('.mv.png')) {
-                    const imageSource = image.createImageSource(thumbnailPath)
-                    const pixelMap = await imageSource.createPixelMap()
-                    const imageInfo = pixelMap.getImageInfoSync()
-                    let times = 1
-                    if (imageInfo.size.width > 300 || imageInfo.size.height > 300) {
-                      times = 300 / Math.max(imageInfo.size.width, imageInfo.size.height)
-                    }
-                    pixelMap.scaleSync(times, times)
-                    const file = fileIo.openSync(thumbnailPath, fileIo.OpenMode.WRITE_ONLY)
-                    const imagePacker = image.createImagePacker()
-                    await imagePacker.packToFile(pixelMap, file.fd, {
-                      format: 'image/jpeg',
-                      quality: 50
-                    })
-                    await imagePacker.release()
-                    await pixelMap.release()
-                    await imageSource.release()
-                    fileIo.closeSync(file)
-                    inPhotoItem.thumbnailUri = fileUri.getUriFromPath(thumbnailPath)
-                    if (!album) {
-                      this.photoArray.push(inPhotoItem)
-                    }
-                    if (album) {
-                      this.albumPhotoArray.push(inPhotoItem)
-                    }
+                  if (this.account !== account) {
+                    return
                   }
+                  //if (!photoItem.filename.endsWith('.mv.png')) {
+                  inPhotoItem.thumbnailUri = fileUri.getUriFromPath(thumbnailPath)
+                  if (!album) {
+                    this.photoArray.push(inPhotoItem)
+                  }
+                  if (album) {
+                    this.albumPhotoArray.push(inPhotoItem)
+                  }
+                  /*}
                   if (photoItem.filename.endsWith('.mv.png')) {
                     await fileIo.mkdir(dir + '/' + sha256hash(inPhotoItem.path))
-                    await zlib.decompressFile(thumbnailPath,
-                      dir + '/' + sha256hash(inPhotoItem.path))
+                    await zlib.decompressFile(thumbnailPath, dir + '/' + sha256hash(inPhotoItem.path))
                     await fileIo.unlink(thumbnailPath)
-                    const movingPhotoFiles =
-                      await fileIo.listFile(dir + '/' + sha256hash(inPhotoItem.path))
+                    const movingPhotoFiles = await fileIo.listFile(dir + '/' + sha256hash(inPhotoItem.path))
                     const movingPhotoFilePaths =
-                      movingPhotoFiles.map(item => dir + '/' + sha256hash(inPhotoItem.path) + '/' +
-                        item)
+                      movingPhotoFiles.map(item => dir + '/' + sha256hash(inPhotoItem.path) + '/' + item)
                     const promises = movingPhotoFilePaths.map(async (item) => {
                       const houzhui = item.substring(item.lastIndexOf('.'))
-                      await fileIo.rename(item, dir + '/' + sha256hash(inPhotoItem.path) + '/' +
-                      sha256hash(inPhotoItem.path) + houzhui)
+                      await fileIo.rename(item,
+                        dir + '/' + sha256hash(inPhotoItem.path) + '/' + sha256hash(inPhotoItem.path) + houzhui)
                       await fileIo.moveFile(dir + '/' + sha256hash(inPhotoItem.path) + '/' +
-                      sha256hash(inPhotoItem.path) + houzhui,
-                        dir + '/' + sha256hash(inPhotoItem.path) + houzhui)
+                      sha256hash(inPhotoItem.path) + houzhui, dir + '/' + sha256hash(inPhotoItem.path) + houzhui)
                     })
                     await Promise.all(promises)
                     await fileIo.rmdir(dir + '/' + sha256hash(inPhotoItem.path))
-                    const imageUri =
-                      fileUri.getUriFromPath(dir + '/' + sha256hash(inPhotoItem.path) + '.heic')
-                    const videoUri =
-                      fileUri.getUriFromPath(dir + '/' + sha256hash(inPhotoItem.path) + '.mp4')
+                    const imageUri = fileUri.getUriFromPath(dir + '/' + sha256hash(inPhotoItem.path) + '.jpg')
+                    const videoUri = fileUri.getUriFromPath(dir + '/' + sha256hash(inPhotoItem.path) + '.mp4')
                     inPhotoItem.type = 'movingphoto'
                     inPhotoItem.movingPhotoImageUri = imageUri
                     inPhotoItem.movingPhotoVideoUri = videoUri
@@ -233,7 +235,7 @@ export default struct Album {
                     if (album) {
                       this.albumPhotoArray.push(inPhotoItem)
                     }
-                  }
+                  }*/
                 }
               }
             },
@@ -246,11 +248,25 @@ export default struct Album {
             }
           },
           headers: {
-            referer: account.split('\0')[0]
+            referer: accountInfo.path,
+            'x-syno-token': accountInfo.synotoken
+          },
+          cookies: {
+            id: accountInfo.sid
           }
         })
         try {
-          const response = await session.get(inPhotoItem.url)
+          let requestPath = inPhotoItem.url
+          if (thumbnail.sm === 'ready') {
+            requestPath = accountInfo.path + '/synofoto/api/v2/p/Thumbnail/get?' + new url.URLParams({
+              id: String(inPhotoItem.id),
+              cache_key: thumbnail.cache_key,
+              type: 'unit',
+              size: 'sm',
+              SynoToken: accountInfo.synotoken
+            }).toString()
+          }
+          const response = await session.get(requestPath)
           session.close()
           netBoost.setSceneDesc({
             scene: 'download',
@@ -290,7 +306,7 @@ export default struct Album {
           }
         }
         if (photoItem.filename.endsWith('.mv.png')) {
-          const imageUri = fileUri.getUriFromPath(dir + '/' + sha256hash(inPhotoItem.path) + '.heic')
+          const imageUri = fileUri.getUriFromPath(dir + '/' + sha256hash(inPhotoItem.path) + '.jpg')
           const videoUri = fileUri.getUriFromPath(dir + '/' + sha256hash(inPhotoItem.path) + '.mp4')
           inPhotoItem.type = 'movingphoto'
           inPhotoItem.movingPhotoImageUri = imageUri
@@ -328,7 +344,7 @@ export default struct Album {
     }
     if (this.isLogin) {
       const accountInfo = await getAccountInfo()
-      const account = accountInfo.path + '\0' + accountInfo.name
+      const account = getAccountHash(accountInfo)
       if (this.account !== account) {
         this.timelineArray = []
         this.photoArray = []
@@ -419,7 +435,7 @@ export default struct Album {
                 method: 'list',
                 offset: String(offset),
                 limit: '5000',
-                additional: JSON.stringify(['resolution'])
+                additional: JSON.stringify(['exif', 'gps', 'resolution', 'thumbnail'])
               }).toString())
               if (photores !== 'fail') {
                 const photos = photores['list'] as PhotoResItem[]
@@ -429,22 +445,25 @@ export default struct Album {
                 }
                 for (let i = 0; i < photos.length; i++) {
                   const item = photos[i]
-                  if (this.account !== account) {
-                    return
-                  }
                   if (!this.folderMap.has(item.folder_id)) {
+                    if (this.account !== account) {
+                      return
+                    }
                     const folderres = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.Folder', new url.URLParams({
                       method: 'get',
                       id: String(item.folder_id)
                     }).toString())
                     if (folderres !== 'fail') {
+                      const folderPath = folderres['folder']['name'] as string
+                      let path = '/home/Photos' + folderPath
+                      if (folderPath !== '/') {
+                        path += '/'
+                      }
+                      this.folderMap.set(item.folder_id, path)
                       if (this.account !== account) {
                         return
                       }
-                      const folderPath = folderres['folder']['name'] as string
-                      const path = '/home/Photos' + folderPath + '/'
-                      this.folderMap.set(item.folder_id, path)
-                      await this.pushPhotoIntoPhotoArray(account, {
+                      await this.pushPhotoIntoPhotoArray(accountInfo, {
                         id: item.id,
                         filename: item.filename,
                         filesize: item.filesize,
@@ -455,28 +474,30 @@ export default struct Album {
                           '?tid=' + tid + '&mode=open&dlink=' + Array.from(textEncoder.encodeInto(path + item.filename))
                           .map(byte => byte.toString(16).padStart(2, '0')).join(''),
                         path: path + item.filename,
-                        resolution: item.additional.resolution,
+                        additional: item.additional,
                         type: item.type,
                         thumbnailUri: ''
-                      }, false)
+                      }, item.additional.thumbnail, false)
                     }
                   } else {
-                    await this.pushPhotoIntoPhotoArray(account, {
+                    if (this.account !== account) {
+                      return
+                    }
+                    await this.pushPhotoIntoPhotoArray(accountInfo, {
                       id: item.id,
                       filename: item.filename,
                       filesize: item.filesize,
                       time: item.time,
                       folder_id: item.folder_id,
                       url: accountInfo.path + '/fbdownload/' +
-                      item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
-                        '?tid=' + tid + '&mode=open&dlink=' +
+                      item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') + '?tid=' + tid + '&mode=open&dlink=' +
                       Array.from(textEncoder.encodeInto(this.folderMap.get(item.folder_id) + item.filename))
                         .map(byte => byte.toString(16).padStart(2, '0')).join(''),
                       path: this.folderMap.get(item.folder_id) + item.filename,
-                      resolution: item.additional.resolution,
+                      additional: item.additional,
                       type: item.type,
                       thumbnailUri: ''
-                    }, false)
+                    }, item.additional.thumbnail, false)
                   }
                 }
                 offset += 5000
@@ -503,7 +524,7 @@ export default struct Album {
     if (res !== 'fail') {
       const tid = res['tid'] as string
       const accountInfo = await getAccountInfo()
-      const account = accountInfo.path + '\0' + accountInfo.name
+      const account = getAccountHash(accountInfo)
       const textEncoder = new util.TextEncoder()
       if (getCurrentNetworkBearerType() === 0) {
         const promptAction = this.UIContext.getPromptAction()
@@ -527,15 +548,16 @@ export default struct Album {
       }
       let finished = false
       let offset = 0
+      const albumId = this.previewAlbum?.id
       while (!finished) {
-        if (this.account !== account) {
+        if (this.account !== account || this.previewAlbum?.id !== albumId) {
           return
         }
         const photores = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.Item', new url.URLParams({
           method: 'list',
           offset: String(offset),
           limit: '5000',
-          additional: JSON.stringify(['resolution']),
+          additional: JSON.stringify(['exif', 'gps', 'resolution', 'thumbnail']),
           album_id: String(this.previewAlbum?.id)
         }).toString())
         if (photores !== 'fail') {
@@ -546,39 +568,44 @@ export default struct Album {
           }
           for (let i = 0; i < photos.length; i++) {
             const item = photos[i]
-            if (this.account !== account) {
-              return
-            }
             if (!this.folderMap.has(item.folder_id)) {
+              if (this.account !== account || this.previewAlbum?.id !== albumId) {
+                return
+              }
               const folderres = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.Folder', new url.URLParams({
                 method: 'get',
                 id: String(item.folder_id)
               }).toString())
               if (folderres !== 'fail') {
-                if (this.account !== account) {
+                const folderPath = folderres['folder']['name'] as string
+                let path = '/home/Photos' + folderPath
+                if (folderPath !== '/') {
+                  path += '/'
+                }
+                this.folderMap.set(item.folder_id, path)
+                if (this.account !== account || this.previewAlbum?.id !== albumId) {
                   return
                 }
-                const folderPath = folderres['folder']['name'] as string
-                const path = '/home/Photos' + folderPath + '/'
-                this.folderMap.set(item.folder_id, path)
-                await this.pushPhotoIntoPhotoArray(account, {
+                await this.pushPhotoIntoPhotoArray(accountInfo, {
                   id: item.id,
                   filename: item.filename,
                   filesize: item.filesize,
                   time: item.time,
                   folder_id: item.folder_id,
-                  url: accountInfo.path + '/fbdownload/' +
-                  item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
+                  url: accountInfo.path + '/fbdownload/' + item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
                     '?tid=' + tid + '&mode=open&dlink=' + Array.from(textEncoder.encodeInto(path + item.filename))
                     .map(byte => byte.toString(16).padStart(2, '0')).join(''),
                   path: path + item.filename,
-                  resolution: item.additional.resolution,
+                  additional: item.additional,
                   type: item.type,
                   thumbnailUri: ''
-                }, true)
+                }, item.additional.thumbnail, true)
               }
             } else {
-              await this.pushPhotoIntoPhotoArray(account, {
+              if (this.account !== account || this.previewAlbum?.id !== albumId) {
+                return
+              }
+              await this.pushPhotoIntoPhotoArray(accountInfo, {
                 id: item.id,
                 filename: item.filename,
                 filesize: item.filesize,
@@ -590,10 +617,10 @@ export default struct Album {
                 Array.from(textEncoder.encodeInto(this.folderMap.get(item.folder_id) + item.filename))
                   .map(byte => byte.toString(16).padStart(2, '0')).join(''),
                 path: this.folderMap.get(item.folder_id) + item.filename,
-                resolution: item.additional.resolution,
+                additional: item.additional,
                 type: item.type,
                 thumbnailUri: ''
-              }, true)
+              }, item.additional.thumbnail, true)
             }
           }
           offset += 5000
@@ -603,6 +630,23 @@ export default struct Album {
         }
       }
     }
+  }
+
+  getDayNightMode() {
+    const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
+      name: 'commonSetting'
+    })
+    const colorMode = commonSettingDataPreferences.getSync('colorMode', 0)
+    if (colorMode === 0) {
+      return mapCommon.DayNightMode.AUTO
+    }
+    if (colorMode === 1) {
+      return mapCommon.DayNightMode.DAY
+    }
+    if (colorMode === 2) {
+      return mapCommon.DayNightMode.NIGHT
+    }
+    return mapCommon.DayNightMode.AUTO
   }
 
   @Builder
@@ -616,6 +660,7 @@ export default struct Album {
                 .fontWeight(FontWeight.Medium)
               Span(this.previewPhoto.filename)
             }
+            .enableAutoSpacing(true)
 
             Text() {
               Span('时间：')
@@ -639,7 +684,8 @@ export default struct Album {
               Text() {
                 Span('尺寸：')
                   .fontWeight(FontWeight.Medium)
-                Span(this.previewPhoto.resolution.width + 'x' + this.previewPhoto.resolution.height)
+                Span(this.previewPhoto.additional.resolution.width + 'x' +
+                this.previewPhoto.additional.resolution.height)
               }
               .margin({
                 top: $r('sys.float.ohos_id_text_margin_vertical')
@@ -650,9 +696,125 @@ export default struct Album {
                 .fontWeight(FontWeight.Medium)
               Span(this.previewPhoto.path)
             }
+            .enableAutoSpacing(true)
             .margin({
               top: $r('sys.float.ohos_id_text_margin_vertical')
             })
+
+            if (this.previewPhoto.additional.exif.camera) {
+              Text() {
+                Span('相机型号：')
+                  .fontWeight(FontWeight.Medium)
+                Span(this.previewPhoto.additional.exif.camera)
+              }
+              .margin({
+                top: $r('sys.float.ohos_id_text_margin_vertical')
+              })
+            }
+            if (this.previewPhoto.additional.exif.aperture) {
+              Text() {
+                Span('光圈：')
+                  .fontWeight(FontWeight.Medium)
+                Span(this.previewPhoto.additional.exif.aperture)
+              }
+              .margin({
+                top: $r('sys.float.ohos_id_text_margin_vertical')
+              })
+            }
+            if (this.previewPhoto.additional.exif.exposure_time) {
+              Text() {
+                Span('曝光时间：')
+                  .fontWeight(FontWeight.Medium)
+                Span(this.previewPhoto.additional.exif.exposure_time)
+              }
+              .margin({
+                top: $r('sys.float.ohos_id_text_margin_vertical')
+              })
+            }
+            if (this.previewPhoto.additional.exif.focal_length) {
+              Text() {
+                Span('焦距：')
+                  .fontWeight(FontWeight.Medium)
+                Span(this.previewPhoto.additional.exif.focal_length)
+              }
+              .margin({
+                top: $r('sys.float.ohos_id_text_margin_vertical')
+              })
+            }
+            if (this.previewPhoto.additional.exif.iso) {
+              Text() {
+                Span('感光度：')
+                  .fontWeight(FontWeight.Medium)
+                Span(this.previewPhoto.additional.exif.iso)
+              }
+              .margin({
+                top: $r('sys.float.ohos_id_text_margin_vertical')
+              })
+            }
+            if (this.previewPhoto.additional.gps) {
+              Text() {
+                Span('纬度：')
+                  .fontWeight(FontWeight.Medium)
+                Span(String(this.previewPhoto.additional.gps.latitude))
+              }
+              .margin({
+                top: $r('sys.float.ohos_id_text_margin_vertical')
+              })
+
+              Text() {
+                Span('经度：')
+                  .fontWeight(FontWeight.Medium)
+                Span(String(this.previewPhoto.additional.gps.longitude))
+              }
+              .margin({
+                top: $r('sys.float.ohos_id_text_margin_vertical')
+              })
+
+              Text() {
+                Span('地点：')
+                  .fontWeight(FontWeight.Medium)
+                Span(String(this.photoAddress))
+                  .fontColor($r('sys.color.font_emphasize'))
+              }
+              .margin({
+                top: $r('sys.float.ohos_id_text_margin_vertical')
+              })
+              .onClick(async () => {
+                if (this.previewPhoto) {
+                  await petalMaps.openMapPoiDetail(this.context, {
+                    destinationPosition: {
+                      latitude: this.previewPhoto.additional.gps.latitude,
+                      longitude: this.previewPhoto.additional.gps.longitude
+                    }
+                  })
+                }
+              })
+
+              MapComponent({
+                mapOptions: {
+                  position: {
+                    target: {
+                      latitude: this.previewPhoto.additional.gps.latitude,
+                      longitude: this.previewPhoto.additional.gps.longitude
+                    },
+                    zoom: 17
+                  },
+                  rotateGesturesEnabled: false,
+                  scrollGesturesEnabled: false,
+                  zoomGesturesEnabled: false,
+                  tiltGesturesEnabled: false,
+                  zoomControlsEnabled: false,
+                  compassControlsEnabled: false,
+                  dayNightMode: this.getDayNightMode()
+                },
+                mapCallback: () => {
+                }
+              })
+                .height(300)
+                .margin({
+                  top: $r('sys.float.ohos_id_text_margin_vertical')
+                })
+            }
           }
           .alignItems(HorizontalAlign.Start)
           .margin({
@@ -734,6 +896,7 @@ export default struct Album {
                             fileNameExtension: houzhui,
                             photoType: photoAccessHelper.PhotoType.IMAGE
                           }])
+                          await phAccessHelper.release()
                           if (uris.length === 1) {
                             const srcFile = fileIo.openSync(uri)
                             const destFile = fileIo.openSync(uris[0], fileIo.OpenMode.WRITE_ONLY)
@@ -757,8 +920,8 @@ export default struct Album {
                     }
                   },
                   headers: {
-                    'accept-language': 'zh-CN',
-                    referer: accountInfo.path
+                    referer: accountInfo.path,
+                    'x-syno-token': accountInfo.synotoken
                   },
                   cookies: {
                     id: accountInfo.sid
@@ -899,7 +1062,9 @@ export default struct Album {
                           httpEventsHandler: {
                             onDataReceive: async (incomingData) => {
                               await fileStream.write(incomingData)
-                              this.transferredSize = this.transferredSize + incomingData.byteLength
+                            },
+                            onDownloadProgress: async (totalSize, transferredSize) => {
+                              this.transferredSize = transferredSize
                               try {
                                 await notificationManager.publish({
                                   content: {
@@ -907,9 +1072,8 @@ export default struct Album {
                                     systemLiveView: {
                                       typeCode: 8,
                                       title: '正在下载文件：' + item.filename,
-                                      text: '进度：' + Number((this.transferredSize / this.totalSize).toFixed(2)) * 100 +
-                                        '% (' + getSizeString(this.transferredSize) + '/' +
-                                      getSizeString(this.totalSize) + ')'
+                                      text: '进度：' + Number((transferredSize / totalSize).toFixed(2)) * 100 + '% (' +
+                                      getSizeString(transferredSize) + '/' + getSizeString(totalSize) + ')'
                                     }
                                   },
                                   id: continuousTaskNotificationInfo.notificationId,
@@ -918,9 +1082,9 @@ export default struct Album {
                                     name: 'downloadTemplate',
                                     data: {
                                       title: '正在下载文件，进度：' +
-                                        Number((this.transferredSize / this.totalSize).toFixed(2)) * 100 + '%',
+                                        Number((transferredSize / totalSize).toFixed(2)) * 100 + '%',
                                       fileName: item.filename,
-                                      progressValue: Number((this.transferredSize / this.totalSize).toFixed(2)) * 100
+                                      progressValue: Number((transferredSize / totalSize).toFixed(2)) * 100
                                     }
                                   }
                                 })
@@ -934,23 +1098,15 @@ export default struct Album {
                                 sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
                               })
                               fileStream.closeSync()
-                              await backgroundTaskManager.stopBackgroundRunning(this.context)
+                              await backgroundTaskManager.stopBackgroundRunning(this.context,
+                                continuousTaskNotificationInfo.continuousTaskId)
                               this.isShowProgressSheet = false
                               this.context.eventHub.off('cancelDownload')
-                              if (this.transferredSize < item.filesize - 1) {
-                                this.transferredSize = 0
-                                this.totalSize = 0
-                                await promptAction.openToast({
-                                  message: '下载失败'
-                                })
-                              }
-                              if (this.transferredSize >= item.filesize - 1) {
-                                this.transferredSize = 0
-                                this.totalSize = 0
-                                await promptAction.openToast({
-                                  message: '下载成功'
-                                })
-                              }
+                              this.transferredSize = 0
+                              this.totalSize = 0
+                              await promptAction.openToast({
+                                message: '下载完成'
+                              })
                             }
                           }
                         },
@@ -963,8 +1119,8 @@ export default struct Album {
                         }
                       },
                       headers: {
-                        'accept-language': 'zh-CN',
-                        referer: accountInfo.path
+                        referer: accountInfo.path,
+                        'x-syno-token': accountInfo.synotoken
                       },
                       cookies: {
                         id: accountInfo.sid
@@ -990,13 +1146,6 @@ export default struct Album {
                         mode: 'download'
                       }).toString())
                       if (response.statusCode !== 200) {
-                        session.close()
-                        netBoost.setSceneDesc({
-                          scene: 'download',
-                          sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-                        })
-                        fileStream.closeSync()
-                        await backgroundTaskManager.stopBackgroundRunning(this.context)
                         this.isShowProgressSheet = false
                         this.transferredSize = 0
                         this.totalSize = 0
@@ -1006,16 +1155,6 @@ export default struct Album {
                         })
                       }
                     } catch (err) {
-                      session.close()
-                      netBoost.setSceneDesc({
-                        scene: 'download',
-                        sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-                      })
-                      fileStream.closeSync()
-                      try {
-                        await backgroundTaskManager.stopBackgroundRunning(this.context)
-                      } catch {
-                      }
                       this.isShowProgressSheet = false
                       this.transferredSize = 0
                       this.totalSize = 0
@@ -1076,6 +1215,15 @@ export default struct Album {
                     await promptAction.openToast({
                       message: '删除成功'
                     })
+                    setTimeout(async () => {
+                      if (item.type === 'photo') {
+                        await fileIo.unlink(new fileUri.FileUri(item.thumbnailUri).path)
+                      }
+                      if (item.type === 'movingphoto') {
+                        await fileIo.unlink(new fileUri.FileUri(item.movingPhotoImageUri).path)
+                        await fileIo.unlink(new fileUri.FileUri(item.movingPhotoVideoUri).path)
+                      }
+                    }, 5000)
                     this.previewPhoto = undefined
                     this.backDataPreferences.putSync('album', false)
                     await this.get()
@@ -1115,6 +1263,115 @@ export default struct Album {
               .margin({
                 bottom: $r('sys.float.ohos_id_elements_margin_vertical_l')
               })
+            if (this.selectedIndex === 0 && !this.previewPhoto) {
+              Row() {
+                Blank()
+                Column() {
+                  Image($r('app.media.upload'))
+                }
+                .borderRadius(20)
+                .height(40)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+                .padding(11)
+                .stateStyles({
+                  normal: {
+                    .backgroundColor($r('sys.color.interactive_hover'))
+                  },
+                  pressed: {
+                    .backgroundColor($r('sys.color.interactive_pressed'))
+                  }
+                })
+                .visualEffect(new hdsEffect.HdsEffectBuilder()
+                  .pointLight({
+                    sourceType: hdsEffect.PointLightSourceType.SOFT,
+                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                  })
+                  .buildEffect())
+                .width(40)
+                .onClick(async () => {
+                  const transferTaskDataPreferences = preferences.getPreferencesSync(this.context, {
+                    name: 'transferTask'
+                  })
+                  const accountInfo = await getAccountInfo()
+                  await checkPermission(this.context, this.UIContext, 'ohos.permission.MEDIA_LOCATION', true)
+                  const photoPicker = new photoAccessHelper.PhotoViewPicker()
+                  const pickerres = await photoPicker.select({
+                    maxSelectNumber: 500,
+                    isOriginalSupported: false
+                  })
+                  const promises = pickerres.photoUris.map(async (item) => {
+                    const phAccessHelper = photoAccessHelper.getPhotoAccessHelper(this.context)
+                    const predicates = new dataSharePredicates.DataSharePredicates()
+                    predicates.equalTo('uri', item)
+                    const fetchResult = await phAccessHelper.getAssets({
+                      fetchColumns: [],
+                      predicates: predicates
+                    })
+                    await phAccessHelper.release()
+                    const photoAsset = await fetchResult.getFirstObject()
+                    const id = util.generateRandomUUID()
+                    if (!photoAsset.displayName.endsWith('.heic')) {
+                      transferTaskDataPreferences.putSync(id, JSON.stringify({
+                        id: id,
+                        path: '/home/Photos',
+                        name: photoAsset.displayName,
+                        transferredSize: 0,
+                        totalSize: fileIo.statSync(item).size,
+                        status: 'pending',
+                        errCode: 0,
+                        type: 'upload',
+                        accountInfo: accountInfo,
+                        srcFileUri: item
+                      }))
+                    }
+                    if (photoAsset.displayName.endsWith('.heic')) {
+                      const dir = this.context.tempDir + '/upload/movingphoto/'
+                      await photoAccessHelper.MediaAssetManager.requestMovingPhoto(this.context, photoAsset, {
+                        deliveryMode: photoAccessHelper.DeliveryMode.BALANCE_MODE
+                      }, {
+                        async onDataPrepared(movingPhoto) {
+                          const name = photoAsset.displayName.substring(0, photoAsset.displayName.lastIndexOf('.'))
+                          const imageFilePath = dir + name + '.jpg'
+                          const videoFilePath = dir + name + '.mp4'
+                          await write(imageFilePath, '')
+                          await write(videoFilePath, '')
+                          await movingPhoto.requestContent(fileUri.getUriFromPath(imageFilePath),
+                            fileUri.getUriFromPath(videoFilePath))
+                          await zlib.compressFiles([imageFilePath, videoFilePath], dir + name, {})
+                          await fileIo.rename(dir + name + '.zip', dir + name + '.mv.png')
+                          await fileIo.unlink(imageFilePath)
+                          await fileIo.unlink(videoFilePath)
+                          transferTaskDataPreferences.putSync(id, JSON.stringify({
+                            id: id,
+                            path: '/home/Photos',
+                            name: photoAsset.displayName.slice(0, -5) + '.mv.png',
+                            transferredSize: 0,
+                            totalSize: fileIo.statSync(dir + name + '.mv.png').size,
+                            status: 'pending',
+                            errCode: 0,
+                            type: 'upload',
+                            accountInfo: accountInfo,
+                            srcFileUri: fileUri.getUriFromPath(dir + name + '.mv.png')
+                          }))
+                        }
+                      })
+                    }
+                  })
+                  await Promise.all(promises)
+                  if (pickerres.photoUris.length > 0) {
+                    await promptAction.openToast({
+                      message: pickerres.photoUris.length + ' 项传输任务已添加'
+                    })
+                  }
+                })
+              }
+              .margin({
+                bottom: $r('sys.float.ohos_id_elements_margin_vertical_m')
+              })
+              .width('100%')
+            }
             Refresh({
               refreshing: $$this.loading
             }) {
@@ -1145,7 +1402,7 @@ export default struct Album {
                                   ListItem() {
                                     Column() {
                                       if (photoItem.item.type === 'photo') {
-                                        Image(photoItem.item.url)
+                                        Image(photoItem.item.thumbnailUri)
                                           .alt($r('app.media.imageloading'))
                                           .aspectRatio(1)
                                           .autoResize(true)
@@ -1156,7 +1413,24 @@ export default struct Album {
                                               message: '发生错误，错误信息：' + err.message
                                             })
                                           })
-                                          .onClick(() => {
+                                          .onClick(async () => {
+                                            if (photoItem.item.additional.gps) {
+                                              try {
+                                                const res = await site.reverseGeocode({
+                                                  location: {
+                                                    latitude: photoItem.item.additional.gps.latitude,
+                                                    longitude: photoItem.item.additional.gps.longitude
+                                                  },
+                                                  language: 'zh-CN'
+                                                })
+                                                this.photoAddress = res.addressDescription
+                                              } catch (err) {
+                                                await promptAction.openToast({
+                                                  message: '发生错误，错误码：' + err.code
+                                                })
+                                                this.photoAddress = '地址获取失败，可尝试点此跳转系统地图查看'
+                                              }
+                                            }
                                             this.previewPhoto = photoItem.item
                                             this.backDataPreferences.putSync('album', true)
                                           })
@@ -1178,7 +1452,24 @@ export default struct Album {
                                               message: '加载动态照片时发生错误'
                                             })
                                           })
-                                          .onClick(() => {
+                                          .onClick(async () => {
+                                            if (photoItem.item.additional.gps) {
+                                              try {
+                                                const res = await site.reverseGeocode({
+                                                  location: {
+                                                    latitude: photoItem.item.additional.gps.latitude,
+                                                    longitude: photoItem.item.additional.gps.longitude
+                                                  },
+                                                  language: 'zh-CN'
+                                                })
+                                                this.photoAddress = res.addressDescription
+                                              } catch (err) {
+                                                await promptAction.openToast({
+                                                  message: '发生错误，错误码：' + err.code
+                                                })
+                                                this.photoAddress = '地址获取失败，可尝试点此跳转系统地图查看'
+                                              }
+                                            }
                                             this.previewPhoto = photoItem.item
                                             this.backDataPreferences.putSync('album', true)
                                           })
@@ -1200,7 +1491,24 @@ export default struct Album {
                                           })
                                       }
                                     }
-                                    .onClick(() => {
+                                    .onClick(async () => {
+                                      if (photoItem.item.additional.gps) {
+                                        try {
+                                          const res = await site.reverseGeocode({
+                                            location: {
+                                              latitude: photoItem.item.additional.gps.latitude,
+                                              longitude: photoItem.item.additional.gps.longitude
+                                            },
+                                            language: 'zh-CN'
+                                          })
+                                          this.photoAddress = res.addressDescription
+                                        } catch (err) {
+                                          await promptAction.openToast({
+                                            message: '发生错误，错误码：' + err.code
+                                          })
+                                          this.photoAddress = '地址获取失败，可尝试点此跳转系统地图查看'
+                                        }
+                                      }
                                       this.previewPhoto = photoItem.item
                                       this.backDataPreferences.putSync('album', true)
                                     })
@@ -1390,6 +1698,23 @@ export default struct Album {
                         const maxIndex = photoArray.length - 1
                         if (gestureEvent.offsetX > 0) {
                           if (index !== 0) {
+                            if (photoArray[index - 1].additional.gps) {
+                              try {
+                                const res = await site.reverseGeocode({
+                                  location: {
+                                    latitude: photoArray[index - 1].additional.gps.latitude,
+                                    longitude: photoArray[index - 1].additional.gps.longitude
+                                  },
+                                  language: 'zh-CN'
+                                })
+                                this.photoAddress = res.addressDescription
+                              } catch (err) {
+                                await promptAction.openToast({
+                                  message: '发生错误，错误码：' + err.code
+                                })
+                                this.photoAddress = '地址获取失败，可尝试点此跳转系统地图查看'
+                              }
+                            }
                             this.previewPhoto = photoArray[index - 1]
                             this.backDataPreferences.putSync('album', true)
                           }
@@ -1401,6 +1726,23 @@ export default struct Album {
                         }
                         if (gestureEvent.offsetX < 0) {
                           if (index !== maxIndex) {
+                            if (photoArray[index + 1].additional.gps) {
+                              try {
+                                const res = await site.reverseGeocode({
+                                  location: {
+                                    latitude: photoArray[index + 1].additional.gps.latitude,
+                                    longitude: photoArray[index + 1].additional.gps.longitude
+                                  },
+                                  language: 'zh-CN'
+                                })
+                                this.photoAddress = res.addressDescription
+                              } catch (err) {
+                                await promptAction.openToast({
+                                  message: '发生错误，错误码：' + err.code
+                                })
+                                this.photoAddress = '地址获取失败，可尝试点此跳转系统地图查看'
+                              }
+                            }
                             this.previewPhoto = photoArray[index + 1]
                             this.backDataPreferences.putSync('album', true)
                           }
@@ -1452,6 +1794,23 @@ export default struct Album {
                         const maxIndex = photoArray.length - 1
                         if (gestureEvent.offsetX > 0) {
                           if (index !== 0) {
+                            if (photoArray[index - 1].additional.gps) {
+                              try {
+                                const res = await site.reverseGeocode({
+                                  location: {
+                                    latitude: photoArray[index - 1].additional.gps.latitude,
+                                    longitude: photoArray[index - 1].additional.gps.longitude
+                                  },
+                                  language: 'zh-CN'
+                                })
+                                this.photoAddress = res.addressDescription
+                              } catch (err) {
+                                await promptAction.openToast({
+                                  message: '发生错误，错误码：' + err.code
+                                })
+                                this.photoAddress = '地址获取失败，可尝试点此跳转系统地图查看'
+                              }
+                            }
                             this.previewPhoto = photoArray[index - 1]
                             this.backDataPreferences.putSync('album', true)
                           }
@@ -1463,6 +1822,23 @@ export default struct Album {
                         }
                         if (gestureEvent.offsetX < 0) {
                           if (index !== maxIndex) {
+                            if (photoArray[index + 1].additional.gps) {
+                              try {
+                                const res = await site.reverseGeocode({
+                                  location: {
+                                    latitude: photoArray[index + 1].additional.gps.latitude,
+                                    longitude: photoArray[index + 1].additional.gps.longitude
+                                  },
+                                  language: 'zh-CN'
+                                })
+                                this.photoAddress = res.addressDescription
+                              } catch (err) {
+                                await promptAction.openToast({
+                                  message: '发生错误，错误码：' + err.code
+                                })
+                                this.photoAddress = '地址获取失败，可尝试点此跳转系统地图查看'
+                              }
+                            }
                             this.previewPhoto = photoArray[index + 1]
                             this.backDataPreferences.putSync('album', true)
                           }
@@ -1484,7 +1860,7 @@ export default struct Album {
                         const phAccessHelper = photoAccessHelper.getPhotoAccessHelper(this.context)
                         const assetChangeRequest =
                           photoAccessHelper.MediaAssetChangeRequest.createAssetRequest(this.context,
-                            photoAccessHelper.PhotoType.IMAGE, 'heif', {
+                            photoAccessHelper.PhotoType.IMAGE, 'heic', {
                               subtype: photoAccessHelper.PhotoSubtype.MOVING_PHOTO
                             })
                         assetChangeRequest.addResource(photoAccessHelper.ResourceType.IMAGE_RESOURCE,
@@ -1492,6 +1868,7 @@ export default struct Album {
                         assetChangeRequest.addResource(photoAccessHelper.ResourceType.VIDEO_RESOURCE,
                           this.previewPhoto?.movingPhotoVideoUri)
                         await phAccessHelper.applyChanges(assetChangeRequest)
+                        await phAccessHelper.release()
                         await promptAction.openToast({
                           message: '保存成功'
                         })
@@ -1608,7 +1985,7 @@ export default struct Album {
                       ListItem() {
                         Column() {
                           if (photoItem.item.type === 'photo') {
-                            Image(photoItem.item.url)
+                            Image(photoItem.item.thumbnailUri)
                               .alt($r('app.media.imageloading'))
                               .aspectRatio(1)
                               .autoResize(true)
@@ -1619,7 +1996,24 @@ export default struct Album {
                                   message: '发生错误，错误信息：' + err.message
                                 })
                               })
-                              .onClick(() => {
+                              .onClick(async () => {
+                                if (photoItem.item.additional.gps) {
+                                  try {
+                                    const res = await site.reverseGeocode({
+                                      location: {
+                                        latitude: photoItem.item.additional.gps.latitude,
+                                        longitude: photoItem.item.additional.gps.longitude
+                                      },
+                                      language: 'zh-CN'
+                                    })
+                                    this.photoAddress = res.addressDescription
+                                  } catch (err) {
+                                    await promptAction.openToast({
+                                      message: '发生错误，错误码：' + err.code
+                                    })
+                                    this.photoAddress = '地址获取失败，可尝试点此跳转系统地图查看'
+                                  }
+                                }
                                 this.previewPhoto = photoItem.item
                                 this.backDataPreferences.putSync('album', true)
                               })
@@ -1641,7 +2035,24 @@ export default struct Album {
                                   message: '加载动态照片时发生错误'
                                 })
                               })
-                              .onClick(() => {
+                              .onClick(async () => {
+                                if (photoItem.item.additional.gps) {
+                                  try {
+                                    const res = await site.reverseGeocode({
+                                      location: {
+                                        latitude: photoItem.item.additional.gps.latitude,
+                                        longitude: photoItem.item.additional.gps.longitude
+                                      },
+                                      language: 'zh-CN'
+                                    })
+                                    this.photoAddress = res.addressDescription
+                                  } catch (err) {
+                                    await promptAction.openToast({
+                                      message: '发生错误，错误码：' + err.code
+                                    })
+                                    this.photoAddress = '地址获取失败，可尝试点此跳转系统地图查看'
+                                  }
+                                }
                                 this.previewPhoto = photoItem.item
                                 this.backDataPreferences.putSync('album', true)
                               })
@@ -1663,7 +2074,24 @@ export default struct Album {
                               })
                           }
                         }
-                        .onClick(() => {
+                        .onClick(async () => {
+                          if (photoItem.item.additional.gps) {
+                            try {
+                              const res = await site.reverseGeocode({
+                                location: {
+                                  latitude: photoItem.item.additional.gps.latitude,
+                                  longitude: photoItem.item.additional.gps.longitude
+                                },
+                                language: 'zh-CN'
+                              })
+                              this.photoAddress = res.addressDescription
+                            } catch (err) {
+                              await promptAction.openToast({
+                                message: '发生错误，错误码：' + err.code
+                              })
+                              this.photoAddress = '地址获取失败，可尝试点此跳转系统地图查看'
+                            }
+                          }
                           this.previewPhoto = photoItem.item
                           this.backDataPreferences.putSync('album', true)
                         })

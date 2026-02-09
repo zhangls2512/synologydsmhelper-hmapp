@@ -103,16 +103,14 @@ struct Autouploaderrorlogtype {
                   isOn: this.autoUploadErrorLogType.includes(item.value)
                 })
                   .onChange((isOn) => {
-                    let autoUploadErrorLogType: string[] = []
                     if (!isOn) {
-                      autoUploadErrorLogType = this.autoUploadErrorLogType.filter(inItem => inItem !== item.value)
+                      this.autoUploadErrorLogType = this.autoUploadErrorLogType.filter(inItem => inItem !== item.value)
                     }
                     if (isOn) {
-                      autoUploadErrorLogType = [...this.autoUploadErrorLogType, item.value]
+                      this.autoUploadErrorLogType = Array.from(new Set([...this.autoUploadErrorLogType, item.value]))
                     }
-                    this.debugSettingDataPreferences.putSync('autoUploadErrorLogType', autoUploadErrorLogType)
+                    this.debugSettingDataPreferences.putSync('autoUploadErrorLogType', this.autoUploadErrorLogType)
                     this.debugSettingDataPreferences.flushSync()
-                    this.getSetting()
                   })
               }
               .borderRadius(12)

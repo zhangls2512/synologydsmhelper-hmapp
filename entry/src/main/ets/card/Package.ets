@@ -12,7 +12,7 @@ interface InstallPackageItem {
 }
 
 interface ServerPackageItem {
-  package: string,
+  dname: string,
   version: string
 }
 
@@ -21,6 +21,7 @@ export default struct Package {
   @Local installPackageArray: InstallPackageItem[] | undefined = undefined
   @Local status: string = 'fail'
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
+  intervalId = -1
   dialogControllerProgress = new CustomDialogController({
     builder: LoadingDialog({
       content: '加载中...'
@@ -34,31 +35,39 @@ export default struct Package {
     const isLogin = await getLoginStatus()
     if ((cardSettingDataPreferences.getSync('cards', []) as string[]).includes('package') && this.status !== 'fail' &&
       isLogin) {
-      const serverres = await dsmRequest(this.context, '', 'SYNO.Core.Package.Server', new url.URLParams({
+      let serverPackageArray: ServerPackageItem[] = []
+      const serverofficalres = await dsmRequest(this.context, '', 'SYNO.Core.Package.Server', new url.URLParams({
+        method: 'list',
+        blloadothers: 'false'
+      }).toString())
+      if (serverofficalres !== 'fail') {
+        serverPackageArray = serverPackageArray.concat(serverofficalres['packages'] as ServerPackageItem[])
+      }
+      const serverotherres = await dsmRequest(this.context, '', 'SYNO.Core.Package.Server', new url.URLParams({
         method: 'list',
         blloadothers: 'true'
       }).toString())
-      if (serverres !== 'fail') {
-        const serverPackageArray = serverres['packages'] as ServerPackageItem[]
-        const installres = await dsmRequest(this.context, '', 'SYNO.Core.Package', new url.URLParams({
-          method: 'list'
-        }).toString())
-        if (installres !== 'fail') {
-          const installPackageArray = installres['packages'] as InstallPackageItem[]
-          this.installPackageArray = installPackageArray.map((item): InstallPackageItem => {
-            const serverPackage = serverPackageArray.find(serverPackageItem => serverPackageItem.package === item.name)
-            return {
-              name: item.name,
-              version: item.version,
-              latestVersion: serverPackage ? serverPackage.version : '-1'
-            }
-          })
-          this.status = 'success'
-        }
-        if (installres === 'fail') {
-          this.installPackageArray = undefined
-          this.status = 'fail'
-        }
+      if (serverotherres !== 'fail') {
+        serverPackageArray = serverPackageArray.concat(serverotherres['packages'] as ServerPackageItem[])
+      }
+      const installres = await dsmRequest(this.context, '', 'SYNO.Core.Package', new url.URLParams({
+        method: 'list'
+      }).toString())
+      if (installres !== 'fail') {
+        const installPackageArray = installres['packages'] as InstallPackageItem[]
+        this.installPackageArray = installPackageArray.map((item): InstallPackageItem => {
+          const serverPackage = serverPackageArray.find(serverPackageItem => serverPackageItem.dname === item.name)
+          return {
+            name: item.name,
+            version: item.version,
+            latestVersion: serverPackage ? serverPackage.version : '-1'
+          }
+        })
+        this.status = 'success'
+      }
+      if (installres === 'fail') {
+        this.installPackageArray = undefined
+        this.status = 'fail'
       }
     }
   }
@@ -77,39 +86,69 @@ export default struct Package {
             .enableAutoSpacing(true)
             .fontWeight(FontWeight.Bold)
           ForEach(this.installPackageArray, (item: InstallPackageItem) => {
-            Row() {
-              Text(item.name)
-                .enableAutoSpacing(true)
-                .fontWeight(FontWeight.Medium)
-                .layoutWeight(1)
-                .margin({
-                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                })
-              if (item.version !== item.latestVersion && item.latestVersion !== '-1') {
+            if (item.version !== item.latestVersion && item.latestVersion !== '-1') {
+              Row() {
+                Text(item.name)
+                  .enableAutoSpacing(true)
+                  .fontWeight(FontWeight.Medium)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Text('有新版本：' + item.latestVersion)
                   .fontColor(Color.Red)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                   })
               }
-              if (item.version === item.latestVersion) {
+              .margin({
+                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+              })
+              .width('100%')
+            }
+          })
+          ForEach(this.installPackageArray, (item: InstallPackageItem) => {
+            if (item.version === item.latestVersion) {
+              Row() {
+                Text(item.name)
+                  .enableAutoSpacing(true)
+                  .fontWeight(FontWeight.Medium)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Text(item.version + ' (最新)')
                   .fontColor(Color.Green)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                   })
               }
-              if (item.latestVersion === '-1') {
+              .margin({
+                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+              })
+              .width('100%')
+            }
+          })
+          ForEach(this.installPackageArray, (item: InstallPackageItem) => {
+            if (item.latestVersion === '-1') {
+              Row() {
+                Text(item.name)
+                  .enableAutoSpacing(true)
+                  .fontWeight(FontWeight.Medium)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
                 Text(item.version)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                   })
               }
+              .margin({
+                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+              })
+              .width('100%')
             }
-            .margin({
-              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-            })
-            .width('100%')
           })
         }
         .alignItems(HorizontalAlign.Start)
@@ -121,16 +160,20 @@ export default struct Package {
     .padding(12)
     .width('100%')
     .onAppear(async () => {
-      this.context.eventHub.on('refreshCard', () => {
+      this.context.eventHub.on('refreshCard', async () => {
         this.status = 'pending'
+        await this.refresh()
       })
       this.status = 'pending'
-      setInterval(async () => {
+      this.intervalId = setInterval(async () => {
         await this.refresh()
       }, 10000)
       await this.refresh()
     })
     .onDisAppear(() => {
+      if (this.intervalId !== -1) {
+        clearInterval(this.intervalId)
+      }
       this.context.eventHub.off('refreshCard')
     })
   }

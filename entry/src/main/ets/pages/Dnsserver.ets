@@ -22,81 +22,79 @@ struct Dnsserver {
     HdsNavDestination() {
       List() {
         ListItem() {
-          Row() {
-            Text('IP地址')
-              .enableAutoSpacing(true)
-              .fontWeight(FontWeight.Medium)
-              .margin({
-                right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+          Column() {
+            Row() {
+              Text('IP地址')
+                .enableAutoSpacing(true)
+                .fontWeight(FontWeight.Medium)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+              TextInput({
+                placeholder: '请输入IP地址',
+                text: this.ip!!
               })
-            TextInput({
-              placeholder: '请输入IP地址',
-              text: this.ip!!
+                .defaultFocus(this.focus)
+                .enableAutoSpacing(true)
+                .layoutWeight(1)
+                .maxLength(39)
+            }
+
+            Row() {
+              Text('端口')
+                .fontWeight(FontWeight.Medium)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+              TextInput({
+                placeholder: '请输入端口',
+                text: this.port!!
+              })
+                .type(InputType.Number)
+                .layoutWeight(1)
+                .maxLength(5)
+            }
+            .margin({
+              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
             })
-              .defaultFocus(this.focus)
-              .enableAutoSpacing(true)
-              .layoutWeight(1)
-              .maxLength(39)
+
+            Button('保存')
+              .margin({
+                top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+              })
+              .width('100%')
+              .onClick(async () => {
+                if (!this.ip) {
+                  this.debugSettingDataPreferences.deleteSync('dnsserverip')
+                  this.debugSettingDataPreferences.deleteSync('dnsserverport')
+                }
+                if (this.ip) {
+                  if (!this.port) {
+                    await promptAction.openToast({
+                      message: '请输入端口'
+                    })
+                    return
+                  }
+                  const port = Number(this.port)
+                  if (!Number.isInteger(port) || port <= 0 || port > 65535) {
+                    await promptAction.openToast({
+                      message: '请输入有效的端口'
+                    })
+                    return
+                  }
+                  this.debugSettingDataPreferences.putSync('dnsserverip', this.ip)
+                  this.debugSettingDataPreferences.putSync('dnsserverport', port)
+                }
+                this.debugSettingDataPreferences.flushSync()
+                await promptAction.openToast({
+                  message: '保存成功'
+                })
+                this.pageInfos.pop()
+              })
           }
         }
         .margin({
           top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-        })
-
-        ListItem() {
-          Row() {
-            Text('端口')
-              .fontWeight(FontWeight.Medium)
-              .margin({
-                right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-              })
-            TextInput({
-              placeholder: '请输入端口',
-              text: this.port!!
-            })
-              .type(InputType.Number)
-              .layoutWeight(1)
-              .maxLength(5)
-          }
-        }
-        .margin({
-          top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-        })
-
-        ListItem() {
-          Button('保存')
-            .width('100%')
-            .onClick(async () => {
-              if (!this.ip) {
-                this.debugSettingDataPreferences.deleteSync('dnsserverip')
-                this.debugSettingDataPreferences.deleteSync('dnsserverport')
-              }
-              if (this.ip) {
-                if (!this.port) {
-                  await promptAction.openToast({
-                    message: '请输入端口'
-                  })
-                  return
-                }
-                const port = Number(this.port)
-                if (!Number.isInteger(port) || port <= 0 || port > 65535) {
-                  await promptAction.openToast({
-                    message: '请输入有效的端口'
-                  })
-                  return
-                }
-                this.debugSettingDataPreferences.putSync('dnsserverip', this.ip)
-                this.debugSettingDataPreferences.putSync('dnsserverport', port)
-              }
-              this.debugSettingDataPreferences.flushSync()
-              await promptAction.openToast({
-                message: '保存成功'
-              })
-              this.pageInfos.pop()
-            })
-        }
-        .margin({
-          top: $r('sys.float.ohos_id_elements_margin_vertical_l')
         })
       }
       .padding({

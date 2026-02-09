@@ -4,15 +4,16 @@ import { fastbuffer, url, util } from '@kit.ArkTS'
 import { display, LoadingDialog, promptAction } from '@kit.ArkUI'
 import { backgroundTaskManager } from '@kit.BackgroundTasksKit'
 import { fileIo, fileUri, picker } from '@kit.CoreFileKit'
-import { fileManagerService } from '@kit.FileManagerServiceKit'
 import { netBoost } from '@kit.NetworkBoostKit'
 import { notificationManager } from '@kit.NotificationKit'
 import { filePreview } from '@kit.PreviewKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { systemShare } from '@kit.ShareKit'
 import { hdsEffect } from '@kit.UIDesignKit'
-import { getAccountInfo, getLoginStatus } from '../common/Account'
+import { getAccountHash, getAccountInfo, getLoginStatus } from '../common/Account'
 import { getDnsServer } from '../common/Dnsserver'
+import { getFileTypeIcon } from '../common/File'
+import { sha256hash } from '../common/Hash'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import { getPreferType } from '../common/Prefertype'
 import { dsmRequest, getDsmApiMaxVersion } from '../common/Request'
@@ -20,6 +21,7 @@ import { getSizeString, getTimeString } from '../common/Stringformat'
 import Newfolder from './Newfolder'
 import Player from './Player'
 import Progress from './Progress'
+import Reader from './Reader'
 import Renamefile from './Renamefile'
 
 interface Time {
@@ -50,6 +52,7 @@ interface ShareLinkItem {
 export default struct Filelist {
   @Provider() isShowNewfolderSheet: boolean = false
   @Provider() isShowPlayerSheet: boolean = false
+  @Provider() isShowReaderSheet: boolean = false
   @Provider() isShowProgressSheet: boolean = false
   @Provider() isShowRenamefileSheet: boolean = false
   @Provider() transferredSize: number = 0
@@ -101,24 +104,10 @@ export default struct Filelist {
     })
   })
 
-  getFileTypeIcon(name: string) {
-    let houzhui = ''
-    const lastDotIndex = name.lastIndexOf('.')
-    if (lastDotIndex !== -1) {
-      houzhui = '.' + name.slice(lastDotIndex + 1)
-    }
-    try {
-      const fileType = uniformTypeDescriptor.getUniformDataTypeByFilenameExtension(houzhui)
-      return fileManagerService.getFileIconSync(fileType)
-    } catch {
-      return fileManagerService.getFileIconSync('.aaa')
-    }
-  }
-
   getPath() {
     let path = ''
     this.dirnames.forEach(item => {
-      path = path + '/' + item
+      path += '/' + item
     })
     return path
   }
@@ -131,7 +120,7 @@ export default struct Filelist {
     }
     if (this.isLogin) {
       const accountInfo = await getAccountInfo()
-      const account = accountInfo.path + '\0' + accountInfo.name
+      const account = getAccountHash(accountInfo)
       if (this.account !== account) {
         this.dirnames = []
       }
@@ -271,6 +260,13 @@ export default struct Filelist {
   }
 
   @Builder
+  ReaderSheetBuilder() {
+    Reader({
+      src: this.src
+    })
+  }
+
+  @Builder
   ProgressSheetBuilder() {
     Progress()
   }
@@ -401,7 +397,9 @@ export default struct Filelist {
                           httpEventsHandler: {
                             onDataReceive: async (incomingData) => {
                               await fileStream.write(incomingData)
-                              this.transferredSize = this.transferredSize + incomingData.byteLength
+                            },
+                            onDownloadProgress: async (totalSize, transferredSize) => {
+                              this.transferredSize = transferredSize
                               try {
                                 await notificationManager.publish({
                                   content: {
@@ -409,9 +407,8 @@ export default struct Filelist {
                                     systemLiveView: {
                                       typeCode: 8,
                                       title: '正在下载文件：' + item.name,
-                                      text: '进度：' + Number((this.transferredSize / this.totalSize).toFixed(2)) * 100 +
-                                        '% (' + getSizeString(this.transferredSize) + '/' +
-                                      getSizeString(this.totalSize) + ')'
+                                      text: '进度：' + Number((transferredSize / totalSize).toFixed(2)) * 100 + '% (' +
+                                      getSizeString(transferredSize) + '/' + getSizeString(totalSize) + ')'
                                     }
                                   },
                                   id: continuousTaskNotificationInfo.notificationId,
@@ -420,9 +417,9 @@ export default struct Filelist {
                                     name: 'downloadTemplate',
                                     data: {
                                       title: '正在下载文件，进度：' +
-                                        Number((this.transferredSize / this.totalSize).toFixed(2)) * 100 + '%',
+                                        Number((transferredSize / totalSize).toFixed(2)) * 100 + '%',
                                       fileName: item.name,
-                                      progressValue: Number((this.transferredSize / this.totalSize).toFixed(2)) * 100
+                                      progressValue: Number((transferredSize / totalSize).toFixed(2)) * 100
                                     }
                                   }
                                 })
@@ -436,23 +433,15 @@ export default struct Filelist {
                                 sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
                               })
                               fileStream.closeSync()
-                              await backgroundTaskManager.stopBackgroundRunning(this.context)
+                              await backgroundTaskManager.stopBackgroundRunning(this.context,
+                                continuousTaskNotificationInfo.continuousTaskId)
                               this.isShowProgressSheet = false
                               this.context.eventHub.off('cancelDownload')
-                              if (this.transferredSize < item.additional.size - 1) {
-                                this.transferredSize = 0
-                                this.totalSize = 0
-                                await promptAction.openToast({
-                                  message: '下载失败'
-                                })
-                              }
-                              if (this.transferredSize >= item.additional.size - 1) {
-                                this.transferredSize = 0
-                                this.totalSize = 0
-                                await promptAction.openToast({
-                                  message: '下载成功'
-                                })
-                              }
+                              this.transferredSize = 0
+                              this.totalSize = 0
+                              await promptAction.openToast({
+                                message: '下载完成'
+                              })
                             }
                           }
                         },
@@ -465,8 +454,8 @@ export default struct Filelist {
                         }
                       },
                       headers: {
-                        'accept-language': 'zh-CN',
-                        referer: accountInfo.path
+                        referer: accountInfo.path,
+                        'x-syno-token': accountInfo.synotoken
                       },
                       cookies: {
                         id: accountInfo.sid
@@ -492,13 +481,6 @@ export default struct Filelist {
                         mode: 'download'
                       }).toString())
                       if (response.statusCode !== 200) {
-                        session.close()
-                        netBoost.setSceneDesc({
-                          scene: 'download',
-                          sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-                        })
-                        fileStream.closeSync()
-                        await backgroundTaskManager.stopBackgroundRunning(this.context)
                         this.isShowProgressSheet = false
                         this.transferredSize = 0
                         this.totalSize = 0
@@ -508,16 +490,6 @@ export default struct Filelist {
                         })
                       }
                     } catch (err) {
-                      session.close()
-                      netBoost.setSceneDesc({
-                        scene: 'download',
-                        sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-                      })
-                      fileStream.closeSync()
-                      try {
-                        await backgroundTaskManager.stopBackgroundRunning(this.context)
-                      } catch {
-                      }
                       this.isShowProgressSheet = false
                       this.transferredSize = 0
                       this.totalSize = 0
@@ -788,8 +760,7 @@ export default struct Filelist {
                     status: 'pending',
                     errCode: 0,
                     type: 'download',
-                    accountPath: accountInfo.path,
-                    accountSid: accountInfo.sid
+                    accountInfo: accountInfo
                   }))
                 })
                 await promptAction.openToast({
@@ -901,7 +872,8 @@ export default struct Filelist {
                       }
                       if (statusres['finished']) {
                         finished = true
-                        await backgroundTaskManager.stopBackgroundRunning(this.context)
+                        await backgroundTaskManager.stopBackgroundRunning(this.context,
+                          continuousTaskNotificationInfo.continuousTaskId)
                         await promptAction.openToast({
                           message: '复制成功'
                         })
@@ -1129,6 +1101,16 @@ export default struct Filelist {
           }
           .justifyContent(FlexAlign.SpaceBetween)
           .width('100%')
+          .bindSheet(this.isShowReaderSheet!!, this.ReaderSheetBuilder(), {
+            preferType: this.preferType,
+            title: {
+              title: this.srcName
+            },
+            onDisappear: () => {
+              this.src = ''
+              this.srcName = ''
+            }
+          })
 
           Text() {
             ForEach(this.dirnames, (item: string, index) => {
@@ -1217,6 +1199,61 @@ export default struct Filelist {
                 }
               })
 
+              if (!this.copyMovePath && !this.multipleSelect) {
+                Blank()
+                Column() {
+                  Image($r('app.media.upload'))
+                }
+                .borderRadius(20)
+                .height(40)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+                .padding(11)
+                .stateStyles({
+                  normal: {
+                    .backgroundColor($r('sys.color.interactive_hover'))
+                  },
+                  pressed: {
+                    .backgroundColor($r('sys.color.interactive_pressed'))
+                  }
+                })
+                .visualEffect(new hdsEffect.HdsEffectBuilder()
+                  .pointLight({
+                    sourceType: hdsEffect.PointLightSourceType.SOFT,
+                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                  })
+                  .buildEffect())
+                .width(40)
+                .onClick(async () => {
+                  const documentViewPicker = new picker.DocumentViewPicker(this.context)
+                  const uris = await documentViewPicker.select()
+                  if (uris.length > 0) {
+                    const transferTaskDataPreferences = preferences.getPreferencesSync(this.context, {
+                      name: 'transferTask'
+                    })
+                    const accountInfo = await getAccountInfo()
+                    uris.forEach(item => {
+                      const id = util.generateRandomUUID()
+                      transferTaskDataPreferences.putSync(id, JSON.stringify({
+                        id: id,
+                        path: this.getPath(),
+                        name: new fileUri.FileUri(item).name,
+                        transferredSize: 0,
+                        totalSize: fileIo.statSync(item).size,
+                        status: 'pending',
+                        errCode: 0,
+                        type: 'upload',
+                        accountInfo: accountInfo,
+                        srcFileUri: item
+                      }))
+                    })
+                    await promptAction.openToast({
+                      message: uris.length + ' 项传输任务已添加'
+                    })
+                  }
+                })
+              }
               if (this.copyMovePath) {
                 Blank()
                 Column() {
@@ -1349,7 +1386,8 @@ export default struct Filelist {
                         }
                         if (statusres['finished']) {
                           finished = true
-                          await backgroundTaskManager.stopBackgroundRunning(this.context)
+                          await backgroundTaskManager.stopBackgroundRunning(this.context,
+                            continuousTaskNotificationInfo.continuousTaskId)
                           await promptAction.openToast({
                             message: text + '成功'
                           })
@@ -1506,6 +1544,12 @@ export default struct Filelist {
             refreshing: $$this.loading
           }) {
             List() {
+              if (this.fileArray.length === 0) {
+                ListItem() {
+                  Text('无数据')
+                }
+                .width('100%')
+              }
               ForEach(this.fileArray, (item: FileItem, index) => {
                 ListItem() {
                   Column() {
@@ -1537,7 +1581,7 @@ export default struct Filelist {
                           })
                       }
                       if (!item.isdir) {
-                        Image(this.getFileTypeIcon(item.name))
+                        Image(getFileTypeIcon(item.name))
                           .fillColor($r('sys.color.icon_secondary'))
                           .height(24)
                           .margin({
@@ -1633,10 +1677,9 @@ export default struct Filelist {
                             const accountInfo = await getAccountInfo()
                             const bytes = new util.TextEncoder().encodeInto(item.path)
                             const dlink = Array.from(bytes).map(byte => byte.toString(16).padStart(2, '0')).join('')
-                            this.src =
-                              accountInfo.path + '/fbdownload/' +
-                              item.name.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
-                                '?tid=' + tid + '&mode=open&dlink=' + dlink
+                            this.src = accountInfo.path + '/fbdownload/' +
+                            item.name.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') + '?tid=' + tid +
+                              '&mode=open&dlink=' + dlink
                             this.srcName = item.name
                             this.isShowPlayerSheet = true
                           }
@@ -1675,9 +1718,10 @@ export default struct Filelist {
                           }
                         }
                         try {
-                          const previewDir = this.context.tempDir + '/preview'
+                          const previewDir =
+                            this.context.tempDir + '/preview/' + this.account + '/' + sha256hash(item.path)
                           if (!fileIo.accessSync(previewDir)) {
-                            await fileIo.mkdir(previewDir)
+                            await fileIo.mkdir(previewDir, true)
                           }
                           const filePath = previewDir + '/' + item.name
                           this.prepareDownloadDialogControllerProgress.open()
@@ -1716,7 +1760,9 @@ export default struct Filelist {
                                   httpEventsHandler: {
                                     onDataReceive: async (incomingData) => {
                                       await fileStream.write(incomingData)
-                                      this.transferredSize = this.transferredSize + incomingData.byteLength
+                                    },
+                                    onDownloadProgress: async (totalSize, transferredSize) => {
+                                      this.transferredSize = transferredSize
                                       try {
                                         await notificationManager.publish({
                                           content: {
@@ -1724,10 +1770,9 @@ export default struct Filelist {
                                             systemLiveView: {
                                               typeCode: 8,
                                               title: '正在下载文件：' + item.name,
-                                              text: '进度：' +
-                                                Number((this.transferredSize / this.totalSize).toFixed(2)) * 100 +
-                                                '% (' + getSizeString(this.transferredSize) + '/' +
-                                              getSizeString(this.totalSize) + ')'
+                                              text: '进度：' + Number((transferredSize / totalSize).toFixed(2)) * 100 +
+                                                '% (' + getSizeString(transferredSize) + '/' +
+                                              getSizeString(totalSize) + ')'
                                             }
                                           },
                                           id: continuousTaskNotificationInfo.notificationId,
@@ -1736,11 +1781,9 @@ export default struct Filelist {
                                             name: 'downloadTemplate',
                                             data: {
                                               title: '正在下载文件，进度：' +
-                                                Number((this.transferredSize / this.totalSize).toFixed(2)) * 100 + '%',
+                                                Number((transferredSize / totalSize).toFixed(2)) * 100 + '%',
                                               fileName: item.name,
-                                              progressValue: Number((this.transferredSize /
-                                              this.totalSize).toFixed(2)) *
-                                                100
+                                              progressValue: Number((transferredSize / totalSize).toFixed(2)) * 100
                                             }
                                           }
                                         })
@@ -1754,24 +1797,18 @@ export default struct Filelist {
                                         sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
                                       })
                                       fileStream.closeSync()
-                                      await backgroundTaskManager.stopBackgroundRunning(this.context)
+                                      await backgroundTaskManager.stopBackgroundRunning(this.context,
+                                        continuousTaskNotificationInfo.continuousTaskId)
                                       this.isShowProgressSheet = false
                                       this.context.eventHub.off('cancelDownload')
-                                      if (this.transferredSize < item.additional.size - 1) {
-                                        this.transferredSize = 0
-                                        this.totalSize = 0
-                                        await promptAction.openToast({
-                                          message: '下载失败'
-                                        })
-                                        await fileIo.unlink(filePath)
-                                      }
-                                      if (this.transferredSize >= item.additional.size - 1) {
-                                        this.transferredSize = 0
-                                        this.totalSize = 0
-                                        const uri = fileUri.getUriFromPath(filePath)
-                                        const filePreviewType =
-                                          this.commonSettingDataPreferences.getSync('filePreviewType', 0)
-                                        if (filePreviewType === 0) {
+                                      this.transferredSize = 0
+                                      this.totalSize = 0
+                                      const uri = fileUri.getUriFromPath(filePath)
+                                      const filePreviewType =
+                                        this.commonSettingDataPreferences.getSync('filePreviewType', 0)
+                                      if (filePreviewType === 0) {
+                                        const supportedReaderFormats = ['.epub', '.mobi', '.azw', '.azw3']
+                                        if (!supportedReaderFormats.some(formatItem => item.name.endsWith(formatItem))) {
                                           const canPreview = await filePreview.canPreview(this.context, uri)
                                           if (!canPreview) {
                                             await promptAction.openToast({
@@ -1786,16 +1823,28 @@ export default struct Filelist {
                                             })
                                           }
                                         }
-                                        if (filePreviewType === 1) {
-                                          await this.context.startAbility({
-                                            action: 'ohos.want.action.viewData',
-                                            uri: uri,
-                                            parameters: {
-                                              'ohos.ability.params.showDefaultPicker': true
-                                            },
-                                            flags: wantConstant.Flags.FLAG_AUTH_READ_URI_PERMISSION
-                                          })
+                                        if (supportedReaderFormats.some(formatItem => item.name.endsWith(formatItem))) {
+                                          const dir = this.context.tempDir + '/preview/reader/' + this.account + '/' +
+                                          sha256hash(item.name)
+                                          if (!fileIo.accessSync(dir)) {
+                                            await fileIo.mkdir(dir, true)
+                                          }
+                                          const newFilePath = dir + '/' + item.name
+                                          await fileIo.moveFile(filePath, newFilePath)
+                                          this.src = newFilePath
+                                          this.srcName = item.name
+                                          this.isShowReaderSheet = true
                                         }
+                                      }
+                                      if (filePreviewType === 1) {
+                                        await this.context.startAbility({
+                                          action: 'ohos.want.action.viewData',
+                                          uri: uri,
+                                          parameters: {
+                                            'ohos.ability.params.showDefaultPicker': true
+                                          },
+                                          flags: wantConstant.Flags.FLAG_AUTH_READ_URI_PERMISSION
+                                        })
                                       }
                                     }
                                   }
@@ -1809,8 +1858,8 @@ export default struct Filelist {
                                 }
                               },
                               headers: {
-                                'accept-language': 'zh-CN',
-                                referer: accountInfo.path
+                                referer: accountInfo.path,
+                                'x-syno-token': accountInfo.synotoken
                               },
                               cookies: {
                                 id: accountInfo.sid
@@ -1837,14 +1886,7 @@ export default struct Filelist {
                                   mode: 'download'
                                 }).toString())
                               if (response.statusCode !== 200) {
-                                session.close()
-                                netBoost.setSceneDesc({
-                                  scene: 'download',
-                                  sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-                                })
-                                fileStream.closeSync()
                                 await fileIo.unlink(filePath)
-                                await backgroundTaskManager.stopBackgroundRunning(this.context)
                                 this.isShowProgressSheet = false
                                 this.transferredSize = 0
                                 this.totalSize = 0
@@ -1854,17 +1896,7 @@ export default struct Filelist {
                                 })
                               }
                             } catch (err) {
-                              session.close()
-                              netBoost.setSceneDesc({
-                                scene: 'download',
-                                sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-                              })
-                              fileStream.closeSync()
                               await fileIo.unlink(filePath)
-                              try {
-                                await backgroundTaskManager.stopBackgroundRunning(this.context)
-                              } catch {
-                              }
                               this.isShowProgressSheet = false
                               this.transferredSize = 0
                               this.totalSize = 0
