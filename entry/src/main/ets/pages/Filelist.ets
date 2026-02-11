@@ -65,7 +65,7 @@ export default struct Filelist {
   @Local sortByIndex: number = 2
   @Local sortByValue: string = '类型'
   @Local sortDirectionIndex: number = 0
-  @Local sortDirectionValue: string = '正序'
+  @Local sortDirectionValue: string = '升序'
   @Local searchKeyword: string = ''
   @Local multipleSelect: boolean = false
   @Local multipleSelectArray: FileItem[] = []
@@ -136,14 +136,14 @@ export default struct Filelist {
       if (this.sortByValue === '类型') {
         sortBy = 'type'
       }
-      if (this.sortByValue === '修改日期') {
+      if (this.sortByValue === '修改时间') {
         sortBy = 'mtime'
       }
       let sortDirection = ''
-      if (this.sortDirectionValue === '正序') {
+      if (this.sortDirectionValue === '升序') {
         sortDirection = 'ASC'
       }
-      if (this.sortDirectionValue === '倒序') {
+      if (this.sortDirectionValue === '降序') {
         sortDirection = 'DESC'
       }
       if (!path) {
@@ -200,14 +200,14 @@ export default struct Filelist {
     if (this.sortByValue === '类型') {
       sortBy = 'type'
     }
-    if (this.sortByValue === '修改日期') {
+    if (this.sortByValue === '修改时间') {
       sortBy = 'mt'
     }
     let sortDirection = ''
-    if (this.sortDirectionValue === '正序') {
+    if (this.sortDirectionValue === '升序') {
       sortDirection = 'ASC'
     }
-    if (this.sortDirectionValue === '倒序') {
+    if (this.sortDirectionValue === '降序') {
       sortDirection = 'DESC'
     }
     const res = await dsmRequest(this.context, '', 'SYNO.FileStation.Search', new url.URLParams({
@@ -461,10 +461,10 @@ export default struct Filelist {
                         message: '下载失败'
                       })
                     })
+                    this.totalSize = item.additional.size
                     this.context.eventHub.on('cancelDownload', () => {
                       session.cancel()
                     })
-                    this.totalSize = item.additional.size
                     this.isShowProgressSheet = true
                     try {
                       const response = await session.get(accountInfo.path + '/webapi/entry.cgi?' + new url.URLParams({
@@ -475,19 +475,11 @@ export default struct Filelist {
                         mode: 'download'
                       }).toString())
                       if (response.statusCode !== 200) {
-                        this.isShowProgressSheet = false
-                        this.transferredSize = 0
-                        this.totalSize = 0
-                        this.context.eventHub.off('cancelDownload')
                         await promptAction.openToast({
                           message: 'HTTP 请求失败，状态码：' + response.statusCode
                         })
                       }
                     } catch (err) {
-                      this.isShowProgressSheet = false
-                      this.transferredSize = 0
-                      this.totalSize = 0
-                      this.context.eventHub.off('cancelDownload')
                       if (err.code !== 1007900992) {
                         await promptAction.openToast({
                           message: '下载失败，错误码：' + err.code
@@ -1068,7 +1060,7 @@ export default struct Filelist {
                 { value: '名称' },
                 { value: '大小' },
                 { value: '类型' },
-                { value: '修改日期' }
+                { value: '修改时间' }
               ])
                 .margin({
                   right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -1079,8 +1071,8 @@ export default struct Filelist {
                   this.loading = true
                 })
               Select([
-                { value: '正序' },
-                { value: '倒序' }
+                { value: '升序' },
+                { value: '降序' }
               ])
                 .selected(this.sortDirectionIndex!!)
                 .value(this.sortDirectionValue!!)
@@ -1591,7 +1583,7 @@ export default struct Filelist {
                           .width('85%')
                         Text() {
                           Span(getTimeString(item.additional.time.mtime))
-                          if (item.additional.size && !item.isdir) {
+                          if (item.additional.size >= 0) {
                             Span(' - ' + getSizeString(item.additional.size))
                           }
                         }
@@ -1861,10 +1853,10 @@ export default struct Filelist {
                                 message: '下载失败'
                               })
                             })
+                            this.totalSize = item.additional.size
                             this.context.eventHub.on('cancelDownload', () => {
                               session.cancel()
                             })
-                            this.totalSize = item.additional.size
                             this.isShowProgressSheet = true
                             try {
                               const response =
@@ -1877,20 +1869,12 @@ export default struct Filelist {
                                 }).toString())
                               if (response.statusCode !== 200) {
                                 await fileIo.unlink(filePath)
-                                this.isShowProgressSheet = false
-                                this.transferredSize = 0
-                                this.totalSize = 0
-                                this.context.eventHub.off('cancelDownload')
                                 await promptAction.openToast({
                                   message: 'HTTP 请求失败，状态码：' + response.statusCode
                                 })
                               }
                             } catch (err) {
                               await fileIo.unlink(filePath)
-                              this.isShowProgressSheet = false
-                              this.transferredSize = 0
-                              this.totalSize = 0
-                              this.context.eventHub.off('cancelDownload')
                               if (err.code !== 1007900992) {
                                 await promptAction.openToast({
                                   message: '下载失败，错误码：' + err.code
