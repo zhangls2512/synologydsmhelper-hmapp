@@ -348,7 +348,10 @@ export default struct Accountlist {
             },
             security: {
               remoteValidation: this.debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
-                'system') as 'system' | 'skip'
+                'system') as 'system' | 'skip',
+              tlsRange: {
+                min: 'TlsV1.2'
+              }
             }
           }
         })
