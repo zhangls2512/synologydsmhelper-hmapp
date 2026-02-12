@@ -65,7 +65,7 @@ export default struct Filelist {
   @Local sortByIndex: number = 2
   @Local sortByValue: string = '类型'
   @Local sortDirectionIndex: number = 0
-  @Local sortDirectionValue: string = '正序'
+  @Local sortDirectionValue: string = '升序'
   @Local searchKeyword: string = ''
   @Local multipleSelect: boolean = false
   @Local multipleSelectArray: FileItem[] = []
@@ -136,22 +136,16 @@ export default struct Filelist {
       if (this.sortByValue === '类型') {
         sortBy = 'type'
       }
-      if (this.sortByValue === '修改日期') {
+      if (this.sortByValue === '修改时间') {
         sortBy = 'mtime'
       }
       let sortDirection = ''
-      if (this.sortDirectionValue === '正序') {
+      if (this.sortDirectionValue === '升序') {
         sortDirection = 'ASC'
       }
-      if (this.sortDirectionValue === '倒序') {
+      if (this.sortDirectionValue === '降序') {
         sortDirection = 'DESC'
       }
-      const dialogControllerProgress = new CustomDialogController({
-        builder: LoadingDialog({
-          content: '加载中...'
-        })
-      })
-      dialogControllerProgress.open()
       if (!path) {
         const res = await dsmRequest(this.context, '', 'SYNO.FileStation.List', new url.URLParams({
           method: 'list_share',
@@ -176,7 +170,6 @@ export default struct Filelist {
           this.fileArray = res['files']
         }
       }
-      dialogControllerProgress.close()
     }
   }
 
@@ -207,14 +200,14 @@ export default struct Filelist {
     if (this.sortByValue === '类型') {
       sortBy = 'type'
     }
-    if (this.sortByValue === '修改日期') {
+    if (this.sortByValue === '修改时间') {
       sortBy = 'mt'
     }
     let sortDirection = ''
-    if (this.sortDirectionValue === '正序') {
+    if (this.sortDirectionValue === '升序') {
       sortDirection = 'ASC'
     }
-    if (this.sortDirectionValue === '倒序') {
+    if (this.sortDirectionValue === '降序') {
       sortDirection = 'DESC'
     }
     const res = await dsmRequest(this.context, '', 'SYNO.FileStation.Search', new url.URLParams({
@@ -293,16 +286,14 @@ export default struct Filelist {
           })
       }
       if (!this.multipleSelect) {
-        if (this.dirnames.length > 0) {
-          MenuItem({
-            startIcon: $r('app.media.multipleselect'),
-            content: '多选'
+        MenuItem({
+          startIcon: $r('app.media.multipleselect'),
+          content: '多选'
+        })
+          .onClick(() => {
+            this.multipleSelect = true
+            this.multipleSelectArray.push(item)
           })
-            .onClick(() => {
-              this.multipleSelect = true
-              this.multipleSelectArray.push(item)
-            })
-        }
         if (!item.isdir) {
           MenuItem({
             startIcon: $r('app.media.download'),
@@ -450,7 +441,10 @@ export default struct Filelist {
                         },
                         security: {
                           remoteValidation: this.debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
-                            'system') as 'system' | 'skip'
+                            'system') as 'system' | 'skip',
+                          tlsRange: {
+                            min: 'TlsV1.2'
+                          }
                         }
                       },
                       headers: {
@@ -467,10 +461,10 @@ export default struct Filelist {
                         message: '下载失败'
                       })
                     })
+                    this.totalSize = item.additional.size
                     this.context.eventHub.on('cancelDownload', () => {
                       session.cancel()
                     })
-                    this.totalSize = item.additional.size
                     this.isShowProgressSheet = true
                     try {
                       const response = await session.get(accountInfo.path + '/webapi/entry.cgi?' + new url.URLParams({
@@ -481,19 +475,11 @@ export default struct Filelist {
                         mode: 'download'
                       }).toString())
                       if (response.statusCode !== 200) {
-                        this.isShowProgressSheet = false
-                        this.transferredSize = 0
-                        this.totalSize = 0
-                        this.context.eventHub.off('cancelDownload')
                         await promptAction.openToast({
                           message: 'HTTP 请求失败，状态码：' + response.statusCode
                         })
                       }
                     } catch (err) {
-                      this.isShowProgressSheet = false
-                      this.transferredSize = 0
-                      this.totalSize = 0
-                      this.context.eventHub.off('cancelDownload')
                       if (err.code !== 1007900992) {
                         await promptAction.openToast({
                           message: '下载失败，错误码：' + err.code
@@ -582,35 +568,31 @@ export default struct Filelist {
               await shareController.show(this.context, {})
             }
           })
-        if (this.dirnames.length > 0) {
-          MenuItem({
-            startIcon: $r('app.media.copy'),
-            content: '复制'
+        MenuItem({
+          startIcon: $r('app.media.copy'),
+          content: '复制'
+        })
+          .onClick(() => {
+            this.copyMovePath = item.path
+            this.remove = false
           })
-            .onClick(() => {
-              this.copyMovePath = item.path
-              this.remove = false
-            })
-          MenuItem({
-            startIcon: $r('app.media.move'),
-            content: '移动'
+        MenuItem({
+          startIcon: $r('app.media.move'),
+          content: '移动'
+        })
+          .onClick(() => {
+            this.copyMovePath = item.path
+            this.remove = true
           })
-            .onClick(() => {
-              this.copyMovePath = item.path
-              this.remove = true
-            })
-        }
-        if (this.dirnames.length > 0) {
-          MenuItem({
-            startIcon: $r('app.media.rename'),
-            content: '重命名'
+        MenuItem({
+          startIcon: $r('app.media.rename'),
+          content: '重命名'
+        })
+          .onClick(() => {
+            this.editPath = item.path
+            this.editName = item.name
+            this.isShowRenamefileSheet = true
           })
-            .onClick(() => {
-              this.editPath = item.path
-              this.editName = item.name
-              this.isShowRenamefileSheet = true
-            })
-        }
         MenuItem({
           startIcon: $r('app.media.delete'),
           content: '删除'
@@ -1078,7 +1060,7 @@ export default struct Filelist {
                 { value: '名称' },
                 { value: '大小' },
                 { value: '类型' },
-                { value: '修改日期' }
+                { value: '修改时间' }
               ])
                 .margin({
                   right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -1089,8 +1071,8 @@ export default struct Filelist {
                   this.loading = true
                 })
               Select([
-                { value: '正序' },
-                { value: '倒序' }
+                { value: '升序' },
+                { value: '降序' }
               ])
                 .selected(this.sortDirectionIndex!!)
                 .value(this.sortDirectionValue!!)
@@ -1151,20 +1133,139 @@ export default struct Filelist {
             }
           })
 
-          if (this.dirnames.length > 0) {
-            Search({
-              placeholder: '请输入搜索关键词',
-              value: this.searchKeyword!!
+          Search({
+            placeholder: '请输入搜索关键词',
+            value: this.searchKeyword!!
+          })
+            .searchButton('搜索')
+            .onSubmit(async () => {
+              await this.search()
             })
-              .searchButton('搜索')
-              .onSubmit(async () => {
-                await this.search()
+          Row() {
+            Column() {
+              Image($r('app.media.newfolder'))
+            }
+            .borderRadius(20)
+            .height(40)
+            .padding(11)
+            .stateStyles({
+              normal: {
+                .backgroundColor($r('sys.color.interactive_hover'))
+              },
+              pressed: {
+                .backgroundColor($r('sys.color.interactive_pressed'))
+              }
+            })
+            .visualEffect(new hdsEffect.HdsEffectBuilder()
+              .pointLight({
+                sourceType: hdsEffect.PointLightSourceType.SOFT,
+                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
               })
-          }
-          if (this.dirnames.length > 0) {
-            Row() {
+              .buildEffect())
+            .width(40)
+            .onClick(() => {
+              this.editPath = this.getPath()
+              this.isShowNewfolderSheet = true
+            })
+            .bindSheet(this.isShowNewfolderSheet!!, this.NewfolderSheetBuilder(), {
+              height: SheetSize.FIT_CONTENT,
+              preferType: this.preferType,
+              title: {
+                title: '新建文件夹'
+              },
+              onDisappear: () => {
+                this.editPath = ''
+              }
+            })
+
+            if (!this.copyMovePath && !this.multipleSelect) {
+              Blank()
               Column() {
-                Image($r('app.media.newfolder'))
+                Image($r('app.media.upload'))
+              }
+              .borderRadius(20)
+              .height(40)
+              .margin({
+                right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+              })
+              .padding(11)
+              .stateStyles({
+                normal: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
+                },
+                pressed: {
+                  .backgroundColor($r('sys.color.interactive_pressed'))
+                }
+              })
+              .visualEffect(new hdsEffect.HdsEffectBuilder()
+                .pointLight({
+                  sourceType: hdsEffect.PointLightSourceType.SOFT,
+                  illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                })
+                .buildEffect())
+              .width(40)
+              .onClick(async () => {
+                const documentViewPicker = new picker.DocumentViewPicker(this.context)
+                const uris = await documentViewPicker.select()
+                if (uris.length > 0) {
+                  const transferTaskDataPreferences = preferences.getPreferencesSync(this.context, {
+                    name: 'transferTask'
+                  })
+                  const accountInfo = await getAccountInfo()
+                  uris.forEach(item => {
+                    const id = util.generateRandomUUID()
+                    transferTaskDataPreferences.putSync(id, JSON.stringify({
+                      id: id,
+                      path: this.getPath(),
+                      name: new fileUri.FileUri(item).name,
+                      transferredSize: 0,
+                      totalSize: fileIo.statSync(item).size,
+                      status: 'pending',
+                      errCode: 0,
+                      type: 'upload',
+                      accountInfo: accountInfo,
+                      srcFileUri: item
+                    }))
+                  })
+                  await promptAction.openToast({
+                    message: uris.length + ' 项传输任务已添加'
+                  })
+                }
+              })
+            }
+            if (this.copyMovePath) {
+              Blank()
+              Column() {
+                Image($r('app.media.close'))
+              }
+              .borderRadius(20)
+              .height(40)
+              .margin({
+                right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+              })
+              .padding(11)
+              .stateStyles({
+                normal: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
+                },
+                pressed: {
+                  .backgroundColor($r('sys.color.interactive_pressed'))
+                }
+              })
+              .visualEffect(new hdsEffect.HdsEffectBuilder()
+                .pointLight({
+                  sourceType: hdsEffect.PointLightSourceType.SOFT,
+                  illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                })
+                .buildEffect())
+              .width(40)
+              .onClick(() => {
+                this.copyMovePath = ''
+                this.remove = false
+              })
+
+              Column() {
+                Image($r('app.media.confirm'))
               }
               .borderRadius(20)
               .height(40)
@@ -1184,86 +1285,177 @@ export default struct Filelist {
                 })
                 .buildEffect())
               .width(40)
-              .onClick(() => {
-                this.editPath = this.getPath()
-                this.isShowNewfolderSheet = true
-              })
-              .bindSheet(this.isShowNewfolderSheet!!, this.NewfolderSheetBuilder(), {
-                height: SheetSize.FIT_CONTENT,
-                preferType: this.preferType,
-                title: {
-                  title: '新建文件夹'
-                },
-                onDisappear: () => {
-                  this.editPath = ''
+              .onClick(async () => {
+                let text = ''
+                if (!this.remove) {
+                  text = '复制'
                 }
+                if (this.remove) {
+                  text = '移动'
+                }
+                const prepareDialogControllerProgress = new CustomDialogController({
+                  builder: LoadingDialog({
+                    content: text + '准备中...'
+                  })
+                })
+                prepareDialogControllerProgress.open()
+                const startres = await dsmRequest(this.context, '', 'SYNO.FileStation.CopyMove', new url.URLParams({
+                  method: 'start',
+                  path: JSON.stringify([this.copyMovePath]),
+                  dest_folder_path: this.getPath(),
+                  remove_src: String(this.remove)
+                }).toString())
+                prepareDialogControllerProgress.close()
+                const lastIndex = this.copyMovePath.lastIndexOf('/')
+                const fileName = this.copyMovePath.slice(lastIndex + 1)
+                this.copyMovePath = ''
+                this.remove = false
+                if (startres !== 'fail') {
+                  const taskId = startres['taskid'] as string
+                  await promptAction.openToast({
+                    message: '正在' + text + '文件，可在系统通知栏查看进度'
+                  })
+                  let finished = false
+                  const wandAgent = await wantAgent.getWantAgent({
+                    wants: [
+                      {
+                        bundleName: 'com.songjy.synologydsmhelper',
+                        abilityName: 'EntryAbility'
+                      }
+                    ],
+                    actionType: wantAgent.OperationType.START_ABILITY,
+                    requestCode: 0,
+                    wantAgentFlags: [wantAgent.WantAgentFlags.UPDATE_PRESENT_FLAG]
+                  })
+                  const continuousTaskNotificationInfo =
+                    await backgroundTaskManager.startBackgroundRunning(this.context, ['dataTransfer'], wandAgent)
+                  while (!finished) {
+                    const statusres =
+                      await dsmRequest(this.context, '', 'SYNO.FileStation.CopyMove', new url.URLParams({
+                        method: 'status',
+                        taskid: taskId
+                      }).toString())
+                    if (statusres !== 'fail') {
+                      const transferredSize = statusres['processed_size'] as number
+                      const totalSize = statusres['total'] as number
+                      try {
+                        await notificationManager.publish({
+                          content: {
+                            notificationContentType: notificationManager.ContentType.NOTIFICATION_CONTENT_SYSTEM_LIVE_VIEW,
+                            systemLiveView: {
+                              typeCode: 8,
+                              title: '正在' + text + '文件',
+                              text: '进度：' + Number((transferredSize / totalSize).toFixed(2)) * 100 + '% (' +
+                              getSizeString(transferredSize) + '/' + getSizeString(totalSize) + ')'
+                            }
+                          },
+                          id: continuousTaskNotificationInfo.notificationId,
+                          notificationSlotType: notificationManager.SlotType.LIVE_VIEW,
+                          template: {
+                            name: 'downloadTemplate',
+                            data: {
+                              title: '正在' + text + '文件，进度：' +
+                                Number((transferredSize / totalSize).toFixed(2)) * 100 + '%',
+                              fileName: fileName,
+                              progressValue: Number((transferredSize / totalSize).toFixed(2)) * 100
+                            }
+                          }
+                        })
+                      } catch {
+                      }
+                      if (statusres['finished']) {
+                        finished = true
+                        await backgroundTaskManager.stopBackgroundRunning(this.context,
+                          continuousTaskNotificationInfo.continuousTaskId)
+                        await promptAction.openToast({
+                          message: text + '成功'
+                        })
+                        this.loading = true
+                      }
+                    }
+                    if (statusres === 'fail') {
+                      finished = true
+                    }
+                  }
+                }
+              })
+            }
+            if (this.multipleSelect) {
+              Blank()
+              Column() {
+                Image($r('app.media.compress'))
+              }
+              .borderRadius(20)
+              .height(40)
+              .margin({
+                right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+              })
+              .padding(11)
+              .stateStyles({
+                normal: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
+                },
+                pressed: {
+                  .backgroundColor($r('sys.color.interactive_pressed'))
+                }
+              })
+              .visualEffect(new hdsEffect.HdsEffectBuilder()
+                .pointLight({
+                  sourceType: hdsEffect.PointLightSourceType.SOFT,
+                  illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                })
+                .buildEffect())
+              .width(40)
+              .onClick(async () => {
+                await promptAction.openToast({
+                  message: '敬请期待'
+                })
+                /*const compressDialogControllerProgress = new CustomDialogController({
+                  builder: LoadingDialog({
+                    content: '压缩中...'
+                  })
+                })
+                compressDialogControllerProgress.open()
+                const startres = await dsmRequest(this.context, '', 'SYNO.FileStation.Compress', new url.URLParams({
+                  method: 'start',
+                  path: JSON.stringify(this.multipleSelectArray.map(item => item.path)),
+                  dest_file_path: this.getPath() + '/' + this.dirnames[this.dirnames.length - 1] + '.zip'
+                }).toString())
+                this.multipleSelect = false
+                this.multipleSelectArray = []
+                if (startres !== 'fail') {
+                  const taskId = startres['taskid'] as string
+                  let finished = false
+                  while (!finished) {
+                    const statusres =
+                      await dsmRequest(this.context, '', 'SYNO.FileStation.status', new url.URLParams({
+                        method: 'status',
+                        taskid: taskId
+                      }).toString())
+                    if (statusres !== 'fail') {
+                      if (statusres['finished']) {
+                        finished = true
+                        await promptAction.openToast({
+                          message: '压缩成功'
+                        })
+                        this.loading = true
+                      }
+                    }
+                    if (statusres === 'fail') {
+                      finished = true
+                    }
+                  }
+                }
+                compressDialogControllerProgress.close()*/
               })
 
-              if (!this.copyMovePath && !this.multipleSelect) {
-                Blank()
+              if (!this.fileArray.every(item => this.multipleSelectArray.find(selectItem => selectItem.path ===
+              item.path))) {
                 Column() {
-                  Image($r('app.media.upload'))
+                  Image($r('app.media.selectall'))
                 }
                 .borderRadius(20)
                 .height(40)
-                .margin({
-                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                })
-                .padding(11)
-                .stateStyles({
-                  normal: {
-                    .backgroundColor($r('sys.color.interactive_hover'))
-                  },
-                  pressed: {
-                    .backgroundColor($r('sys.color.interactive_pressed'))
-                  }
-                })
-                .visualEffect(new hdsEffect.HdsEffectBuilder()
-                  .pointLight({
-                    sourceType: hdsEffect.PointLightSourceType.SOFT,
-                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-                  })
-                  .buildEffect())
-                .width(40)
-                .onClick(async () => {
-                  const documentViewPicker = new picker.DocumentViewPicker(this.context)
-                  const uris = await documentViewPicker.select()
-                  if (uris.length > 0) {
-                    const transferTaskDataPreferences = preferences.getPreferencesSync(this.context, {
-                      name: 'transferTask'
-                    })
-                    const accountInfo = await getAccountInfo()
-                    uris.forEach(item => {
-                      const id = util.generateRandomUUID()
-                      transferTaskDataPreferences.putSync(id, JSON.stringify({
-                        id: id,
-                        path: this.getPath(),
-                        name: new fileUri.FileUri(item).name,
-                        transferredSize: 0,
-                        totalSize: fileIo.statSync(item).size,
-                        status: 'pending',
-                        errCode: 0,
-                        type: 'upload',
-                        accountInfo: accountInfo,
-                        srcFileUri: item
-                      }))
-                    })
-                    await promptAction.openToast({
-                      message: uris.length + ' 项传输任务已添加'
-                    })
-                  }
-                })
-              }
-              if (this.copyMovePath) {
-                Blank()
-                Column() {
-                  Image($r('app.media.close'))
-                }
-                .borderRadius(20)
-                .height(40)
-                .margin({
-                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                })
                 .padding(11)
                 .stateStyles({
                   normal: {
@@ -1281,136 +1473,20 @@ export default struct Filelist {
                   .buildEffect())
                 .width(40)
                 .onClick(() => {
-                  this.copyMovePath = ''
-                  this.remove = false
-                })
-
-                Column() {
-                  Image($r('app.media.confirm'))
-                }
-                .borderRadius(20)
-                .height(40)
-                .padding(11)
-                .stateStyles({
-                  normal: {
-                    .backgroundColor($r('sys.color.interactive_hover'))
-                  },
-                  pressed: {
-                    .backgroundColor($r('sys.color.interactive_pressed'))
-                  }
-                })
-                .visualEffect(new hdsEffect.HdsEffectBuilder()
-                  .pointLight({
-                    sourceType: hdsEffect.PointLightSourceType.SOFT,
-                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-                  })
-                  .buildEffect())
-                .width(40)
-                .onClick(async () => {
-                  let text = ''
-                  if (!this.remove) {
-                    text = '复制'
-                  }
-                  if (this.remove) {
-                    text = '移动'
-                  }
-                  const prepareDialogControllerProgress = new CustomDialogController({
-                    builder: LoadingDialog({
-                      content: text + '准备中...'
-                    })
-                  })
-                  prepareDialogControllerProgress.open()
-                  const startres = await dsmRequest(this.context, '', 'SYNO.FileStation.CopyMove', new url.URLParams({
-                    method: 'start',
-                    path: JSON.stringify([this.copyMovePath]),
-                    dest_folder_path: this.getPath(),
-                    remove_src: String(this.remove)
-                  }).toString())
-                  prepareDialogControllerProgress.close()
-                  const lastIndex = this.copyMovePath.lastIndexOf('/')
-                  const fileName = this.copyMovePath.slice(lastIndex + 1)
-                  this.copyMovePath = ''
-                  this.remove = false
-                  if (startres !== 'fail') {
-                    const taskId = startres['taskid'] as string
-                    await promptAction.openToast({
-                      message: '正在' + text + '文件，可在系统通知栏查看进度'
-                    })
-                    let finished = false
-                    const wandAgent = await wantAgent.getWantAgent({
-                      wants: [
-                        {
-                          bundleName: 'com.songjy.synologydsmhelper',
-                          abilityName: 'EntryAbility'
-                        }
-                      ],
-                      actionType: wantAgent.OperationType.START_ABILITY,
-                      requestCode: 0,
-                      wantAgentFlags: [wantAgent.WantAgentFlags.UPDATE_PRESENT_FLAG]
-                    })
-                    const continuousTaskNotificationInfo =
-                      await backgroundTaskManager.startBackgroundRunning(this.context, ['dataTransfer'], wandAgent)
-                    while (!finished) {
-                      const statusres =
-                        await dsmRequest(this.context, '', 'SYNO.FileStation.CopyMove', new url.URLParams({
-                          method: 'status',
-                          taskid: taskId
-                        }).toString())
-                      if (statusres !== 'fail') {
-                        const transferredSize = statusres['processed_size'] as number
-                        const totalSize = statusres['total'] as number
-                        try {
-                          await notificationManager.publish({
-                            content: {
-                              notificationContentType: notificationManager.ContentType.NOTIFICATION_CONTENT_SYSTEM_LIVE_VIEW,
-                              systemLiveView: {
-                                typeCode: 8,
-                                title: '正在' + text + '文件',
-                                text: '进度：' + Number((transferredSize / totalSize).toFixed(2)) * 100 + '% (' +
-                                getSizeString(transferredSize) + '/' + getSizeString(totalSize) + ')'
-                              }
-                            },
-                            id: continuousTaskNotificationInfo.notificationId,
-                            notificationSlotType: notificationManager.SlotType.LIVE_VIEW,
-                            template: {
-                              name: 'downloadTemplate',
-                              data: {
-                                title: '正在' + text + '文件，进度：' +
-                                  Number((transferredSize / totalSize).toFixed(2)) * 100 + '%',
-                                fileName: fileName,
-                                progressValue: Number((transferredSize / totalSize).toFixed(2)) * 100
-                              }
-                            }
-                          })
-                        } catch {
-                        }
-                        if (statusres['finished']) {
-                          finished = true
-                          await backgroundTaskManager.stopBackgroundRunning(this.context,
-                            continuousTaskNotificationInfo.continuousTaskId)
-                          await promptAction.openToast({
-                            message: text + '成功'
-                          })
-                          this.loading = true
-                        }
-                      }
-                      if (statusres === 'fail') {
-                        finished = true
-                      }
+                  this.fileArray.forEach(item => {
+                    if (!this.multipleSelectArray.find(selectItem => selectItem.path === item.path)) {
+                      this.multipleSelectArray.push(item)
                     }
-                  }
+                  })
                 })
               }
-              if (this.multipleSelect) {
-                Blank()
+              if (this.fileArray.every(item => this.multipleSelectArray.find(selectItem => selectItem.path ===
+              item.path))) {
                 Column() {
-                  Image($r('app.media.compress'))
+                  Image($r('app.media.cancelselectall'))
                 }
                 .borderRadius(20)
                 .height(40)
-                .margin({
-                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                })
                 .padding(11)
                 .stateStyles({
                   normal: {
@@ -1427,119 +1503,22 @@ export default struct Filelist {
                   })
                   .buildEffect())
                 .width(40)
-                .onClick(async () => {
-                  await promptAction.openToast({
-                    message: '敬请期待'
-                  })
-                  /*const compressDialogControllerProgress = new CustomDialogController({
-                    builder: LoadingDialog({
-                      content: '压缩中...'
-                    })
-                  })
-                  compressDialogControllerProgress.open()
-                  const startres = await dsmRequest(this.context, '', 'SYNO.FileStation.Compress', new url.URLParams({
-                    method: 'start',
-                    path: JSON.stringify(this.multipleSelectArray.map(item => item.path)),
-                    dest_file_path: this.getPath() + '/' + this.dirnames[this.dirnames.length - 1] + '.zip'
-                  }).toString())
-                  this.multipleSelect = false
-                  this.multipleSelectArray = []
-                  if (startres !== 'fail') {
-                    const taskId = startres['taskid'] as string
-                    let finished = false
-                    while (!finished) {
-                      const statusres =
-                        await dsmRequest(this.context, '', 'SYNO.FileStation.status', new url.URLParams({
-                          method: 'status',
-                          taskid: taskId
-                        }).toString())
-                      if (statusres !== 'fail') {
-                        if (statusres['finished']) {
-                          finished = true
-                          await promptAction.openToast({
-                            message: '压缩成功'
-                          })
-                          this.loading = true
-                        }
-                      }
-                      if (statusres === 'fail') {
-                        finished = true
-                      }
+                .onClick(() => {
+                  this.fileArray.forEach(item => {
+                    const index = this.multipleSelectArray.findIndex(selectItem => selectItem.path === item.path)
+                    if (index !== -1) {
+                      this.multipleSelectArray.splice(index, 1)
                     }
-                  }
-                  compressDialogControllerProgress.close()*/
+                  })
                 })
-
-                if (!this.fileArray.every(item => this.multipleSelectArray.find(selectItem => selectItem.path ===
-                item.path))) {
-                  Column() {
-                    Image($r('app.media.selectall'))
-                  }
-                  .borderRadius(20)
-                  .height(40)
-                  .padding(11)
-                  .stateStyles({
-                    normal: {
-                      .backgroundColor($r('sys.color.interactive_hover'))
-                    },
-                    pressed: {
-                      .backgroundColor($r('sys.color.interactive_pressed'))
-                    }
-                  })
-                  .visualEffect(new hdsEffect.HdsEffectBuilder()
-                    .pointLight({
-                      sourceType: hdsEffect.PointLightSourceType.SOFT,
-                      illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-                    })
-                    .buildEffect())
-                  .width(40)
-                  .onClick(() => {
-                    this.fileArray.forEach(item => {
-                      if (!this.multipleSelectArray.find(selectItem => selectItem.path === item.path)) {
-                        this.multipleSelectArray.push(item)
-                      }
-                    })
-                  })
-                }
-                if (this.fileArray.every(item => this.multipleSelectArray.find(selectItem => selectItem.path ===
-                item.path))) {
-                  Column() {
-                    Image($r('app.media.cancelselectall'))
-                  }
-                  .borderRadius(20)
-                  .height(40)
-                  .padding(11)
-                  .stateStyles({
-                    normal: {
-                      .backgroundColor($r('sys.color.interactive_hover'))
-                    },
-                    pressed: {
-                      .backgroundColor($r('sys.color.interactive_pressed'))
-                    }
-                  })
-                  .visualEffect(new hdsEffect.HdsEffectBuilder()
-                    .pointLight({
-                      sourceType: hdsEffect.PointLightSourceType.SOFT,
-                      illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-                    })
-                    .buildEffect())
-                  .width(40)
-                  .onClick(() => {
-                    this.fileArray.forEach(item => {
-                      const index = this.multipleSelectArray.findIndex(selectItem => selectItem.path === item.path)
-                      if (index !== -1) {
-                        this.multipleSelectArray.splice(index, 1)
-                      }
-                    })
-                  })
-                }
               }
             }
-            .margin({
-              bottom: $r('sys.float.ohos_id_elements_margin_vertical_m')
-            })
-            .width('100%')
           }
+          .margin({
+            bottom: $r('sys.float.ohos_id_elements_margin_vertical_m')
+          })
+          .width('100%')
+
           Refresh({
             refreshing: $$this.loading
           }) {
@@ -1561,7 +1540,7 @@ export default struct Filelist {
                         })
                     }
                     Row() {
-                      if (this.multipleSelect && this.dirnames.length > 0) {
+                      if (this.multipleSelect) {
                         Toggle({
                           type: ToggleType.Checkbox,
                           isOn: this.multipleSelectArray.some(selectItem => selectItem.path === item.path)
@@ -1604,7 +1583,7 @@ export default struct Filelist {
                           .width('85%')
                         Text() {
                           Span(getTimeString(item.additional.time.mtime))
-                          if (item.additional.size && !item.isdir) {
+                          if (item.additional.size >= 0) {
                             Span(' - ' + getSizeString(item.additional.size))
                           }
                         }
@@ -1854,7 +1833,10 @@ export default struct Filelist {
                                 },
                                 security: {
                                   remoteValidation: this.debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
-                                    'system') as 'system' | 'skip'
+                                    'system') as 'system' | 'skip',
+                                  tlsRange: {
+                                    min: 'TlsV1.2'
+                                  }
                                 }
                               },
                               headers: {
@@ -1871,10 +1853,10 @@ export default struct Filelist {
                                 message: '下载失败'
                               })
                             })
+                            this.totalSize = item.additional.size
                             this.context.eventHub.on('cancelDownload', () => {
                               session.cancel()
                             })
-                            this.totalSize = item.additional.size
                             this.isShowProgressSheet = true
                             try {
                               const response =
@@ -1887,20 +1869,12 @@ export default struct Filelist {
                                 }).toString())
                               if (response.statusCode !== 200) {
                                 await fileIo.unlink(filePath)
-                                this.isShowProgressSheet = false
-                                this.transferredSize = 0
-                                this.totalSize = 0
-                                this.context.eventHub.off('cancelDownload')
                                 await promptAction.openToast({
                                   message: 'HTTP 请求失败，状态码：' + response.statusCode
                                 })
                               }
                             } catch (err) {
                               await fileIo.unlink(filePath)
-                              this.isShowProgressSheet = false
-                              this.transferredSize = 0
-                              this.totalSize = 0
-                              this.context.eventHub.off('cancelDownload')
                               if (err.code !== 1007900992) {
                                 await promptAction.openToast({
                                   message: '下载失败，错误码：' + err.code

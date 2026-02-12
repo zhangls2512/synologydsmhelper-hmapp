@@ -100,7 +100,7 @@ export default struct Uploaderrorlog {
               dialogControllerProgress.open()
               const res = await developerRequest(this.context, '/product/newErrorLog', {
                 product: 'synologydsmhelper',
-                version: '1.1.4.0',
+                version: '1.1.4.1',
                 errorObject: JSON.parse(this.errorObject),
                 contactType: this.contactType,
                 contactValue: this.contactValue

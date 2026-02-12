@@ -84,6 +84,7 @@ struct Backupsetting {
                           let res = true
                           if (item === '相册') {
                             res = await checkPermission(this.context, this.UIContext, 'ohos.permission.READ_IMAGEVIDEO')
+                            await checkPermission(this.context, this.UIContext, 'ohos.permission.MEDIA_LOCATION')
                           }
                           if (item === '文档') {
                             res = await checkPermission(this.context, this.UIContext,
@@ -177,6 +178,7 @@ struct Backupsetting {
                     let res = false
                     if (item === '相册') {
                       res = await checkPermission(this.context, this.UIContext, 'ohos.permission.READ_IMAGEVIDEO')
+                      await checkPermission(this.context, this.UIContext, 'ohos.permission.MEDIA_LOCATION')
                     }
                     if (item === '文档') {
                       res = await checkPermission(this.context, this.UIContext,

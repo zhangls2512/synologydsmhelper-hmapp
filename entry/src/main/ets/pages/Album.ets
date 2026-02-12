@@ -1,6 +1,6 @@
 import { common, wantAgent } from '@kit.AbilityKit'
 import { dataSharePredicates, preferences } from '@kit.ArkData'
-import { url, util } from '@kit.ArkTS'
+import { taskpool, url, util } from '@kit.ArkTS'
 import { display, LoadingDialog, promptAction, SegmentButtonV2Items, TabSegmentButtonV2, window } from '@kit.ArkUI'
 import { backgroundTaskManager } from '@kit.BackgroundTasksKit'
 import { zlib } from '@kit.BasicServicesKit'
@@ -11,13 +11,13 @@ import { netBoost } from '@kit.NetworkBoostKit'
 import { notificationManager } from '@kit.NotificationKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { hdsEffect } from '@kit.UIDesignKit'
-import { AccountInfo, getAccountHash, getAccountInfo, getLoginStatus } from '../common/Account'
+import { getAccountHash, getAccountInfo, getLoginStatus } from '../common/Account'
 import { getDnsServer } from '../common/Dnsserver'
 import { write } from '../common/File'
-import { sha256hash } from '../common/Hash'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import { checkPermission } from '../common/Permission'
 import { getPreferType } from '../common/Prefertype'
+import { pushPhotoIntoPhotoArray } from '../common/Pushphoto'
 import { dsmRequest, getDsmApiMaxVersion } from '../common/Request'
 import { getSizeString, getTimeString } from '../common/Stringformat'
 import Progress from './Progress'
@@ -27,7 +27,7 @@ interface Resolution {
   width: number
 }
 
-interface PhotoThumbnail {
+export interface PhotoThumbnail {
   sm: string,
   cache_key: string
 }
@@ -52,7 +52,7 @@ interface PhotoAdditional {
   gps: PhotoGps
 }
 
-interface PhotoItem {
+export interface PhotoItem {
   id: number,
   filename: string,
   filesize: number,
@@ -140,14 +140,14 @@ export default struct Album {
   debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'debugSetting'
   })
-  loadingDialogControllerProgress = new CustomDialogController({
-    builder: LoadingDialog({
-      content: '加载中...'
-    })
-  })
   deleteDialogControllerProgress = new CustomDialogController({
     builder: LoadingDialog({
       content: '删除中...'
+    })
+  })
+  loadingDialogControllerProgress = new CustomDialogController({
+    builder: LoadingDialog({
+      content: '加载中...'
     })
   })
 
@@ -157,179 +157,6 @@ export default struct Album {
       minIndex += this.timelineArray[i].count
     }
     return photoIndex >= minIndex && photoIndex < minIndex + this.timelineArray[dateIndex].count
-  }
-
-  async pushPhotoIntoPhotoArray(accountInfo: AccountInfo, photoItem: PhotoItem, thumbnail: PhotoThumbnail,
-    album: boolean) {
-    if (photoItem.type === 'photo') {
-      const inPhotoItem = photoItem
-      const account = getAccountHash(accountInfo)
-      const dir = getAccountHash(accountInfo, this.context, this.context.cacheDir + '/albumphotothumbnail')
-      let thumbnailPath = dir + '/' + sha256hash(inPhotoItem.path) + '.jpg'
-      const thumbnailPathExist = fileIo.accessSync(thumbnailPath)
-      if (!thumbnailPathExist) {
-        if (!fileIo.accessSync(dir)) {
-          await fileIo.mkdir(dir, true)
-        }
-        if (photoItem.filename.endsWith('.mv.png')) {
-          thumbnailPath = dir + '/' + sha256hash(inPhotoItem.path) + '.zip'
-        }
-        const file = fileIo.openSync(thumbnailPath, fileIo.OpenMode.CREATE | fileIo.OpenMode.WRITE_ONLY)
-        const fileStream = fileIo.fdopenStreamSync(file.fd, 'w+')
-        netBoost.setSceneDesc({
-          scene: 'download',
-          sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
-        })
-        const session = rcp.createSession({
-          requestConfiguration: {
-            tracing: {
-              httpEventsHandler: {
-                onDataReceive: async (incomingData) => {
-                  await fileStream.write(incomingData)
-                },
-                onDataEnd: () => {
-                  session.close()
-                  netBoost.setSceneDesc({
-                    scene: 'download',
-                    sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-                  })
-                  fileStream.closeSync()
-                  if (this.account !== account) {
-                    return
-                  }
-                  //if (!photoItem.filename.endsWith('.mv.png')) {
-                  inPhotoItem.thumbnailUri = fileUri.getUriFromPath(thumbnailPath)
-                  if (!album) {
-                    this.photoArray.push(inPhotoItem)
-                  }
-                  if (album) {
-                    this.albumPhotoArray.push(inPhotoItem)
-                  }
-                  /*}
-                  if (photoItem.filename.endsWith('.mv.png')) {
-                    await fileIo.mkdir(dir + '/' + sha256hash(inPhotoItem.path))
-                    await zlib.decompressFile(thumbnailPath, dir + '/' + sha256hash(inPhotoItem.path))
-                    await fileIo.unlink(thumbnailPath)
-                    const movingPhotoFiles = await fileIo.listFile(dir + '/' + sha256hash(inPhotoItem.path))
-                    const movingPhotoFilePaths =
-                      movingPhotoFiles.map(item => dir + '/' + sha256hash(inPhotoItem.path) + '/' + item)
-                    const promises = movingPhotoFilePaths.map(async (item) => {
-                      const houzhui = item.substring(item.lastIndexOf('.'))
-                      await fileIo.rename(item,
-                        dir + '/' + sha256hash(inPhotoItem.path) + '/' + sha256hash(inPhotoItem.path) + houzhui)
-                      await fileIo.moveFile(dir + '/' + sha256hash(inPhotoItem.path) + '/' +
-                      sha256hash(inPhotoItem.path) + houzhui, dir + '/' + sha256hash(inPhotoItem.path) + houzhui)
-                    })
-                    await Promise.all(promises)
-                    await fileIo.rmdir(dir + '/' + sha256hash(inPhotoItem.path))
-                    const imageUri = fileUri.getUriFromPath(dir + '/' + sha256hash(inPhotoItem.path) + '.jpg')
-                    const videoUri = fileUri.getUriFromPath(dir + '/' + sha256hash(inPhotoItem.path) + '.mp4')
-                    inPhotoItem.type = 'movingphoto'
-                    inPhotoItem.movingPhotoImageUri = imageUri
-                    inPhotoItem.movingPhotoVideoUri = videoUri
-                    inPhotoItem.movingPhoto =
-                      await photoAccessHelper.MediaAssetManager.loadMovingPhoto(this.context, imageUri, videoUri)
-                    if (!album) {
-                      this.photoArray.push(inPhotoItem)
-                    }
-                    if (album) {
-                      this.albumPhotoArray.push(inPhotoItem)
-                    }
-                  }*/
-                }
-              }
-            },
-            dns: {
-              dnsRules: getDnsServer(this.context)
-            },
-            security: {
-              remoteValidation: this.debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
-                'system') as 'system' | 'skip'
-            }
-          },
-          headers: {
-            referer: accountInfo.path,
-            'x-syno-token': accountInfo.synotoken
-          },
-          cookies: {
-            id: accountInfo.sid
-          }
-        })
-        try {
-          let requestPath = inPhotoItem.url
-          if (thumbnail.sm === 'ready') {
-            requestPath = accountInfo.path + '/synofoto/api/v2/p/Thumbnail/get?' + new url.URLParams({
-              id: String(inPhotoItem.id),
-              cache_key: thumbnail.cache_key,
-              type: 'unit',
-              size: 'sm',
-              SynoToken: accountInfo.synotoken
-            }).toString()
-          }
-          const response = await session.get(requestPath)
-          session.close()
-          netBoost.setSceneDesc({
-            scene: 'download',
-            sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-          })
-          if (response.statusCode !== 200) {
-            session.close()
-            netBoost.setSceneDesc({
-              scene: 'download',
-              sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-            })
-            fileStream.closeSync()
-            await promptAction.openToast({
-              message: 'HTTP 请求失败，状态码：' + response.statusCode
-            })
-          }
-        } catch (err) {
-          session.close()
-          netBoost.setSceneDesc({
-            scene: 'download',
-            sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-          })
-          fileStream.closeSync()
-          await promptAction.openToast({
-            message: '下载失败，错误码：' + err.code
-          })
-        }
-      }
-      if (thumbnailPathExist) {
-        if (!photoItem.filename.endsWith('.mv.png')) {
-          inPhotoItem.thumbnailUri = fileUri.getUriFromPath(thumbnailPath)
-          if (!album) {
-            this.photoArray.push(inPhotoItem)
-          }
-          if (album) {
-            this.albumPhotoArray.push(inPhotoItem)
-          }
-        }
-        if (photoItem.filename.endsWith('.mv.png')) {
-          const imageUri = fileUri.getUriFromPath(dir + '/' + sha256hash(inPhotoItem.path) + '.jpg')
-          const videoUri = fileUri.getUriFromPath(dir + '/' + sha256hash(inPhotoItem.path) + '.mp4')
-          inPhotoItem.type = 'movingphoto'
-          inPhotoItem.movingPhotoImageUri = imageUri
-          inPhotoItem.movingPhotoVideoUri = videoUri
-          inPhotoItem.movingPhoto =
-            await photoAccessHelper.MediaAssetManager.loadMovingPhoto(this.context, imageUri, videoUri)
-          if (!album) {
-            this.photoArray.push(inPhotoItem)
-          }
-          if (album) {
-            this.albumPhotoArray.push(inPhotoItem)
-          }
-        }
-      }
-    }
-    if (photoItem.type === 'video') {
-      if (!album) {
-        this.photoArray.push(photoItem)
-      }
-      if (album) {
-        this.albumPhotoArray.push(photoItem)
-      }
-    }
   }
 
   async get(refresh: number = 2, notRefreshWhenAccountSame = false) {
@@ -463,7 +290,7 @@ export default struct Album {
                       if (this.account !== account) {
                         return
                       }
-                      await this.pushPhotoIntoPhotoArray(accountInfo, {
+                      const task = new taskpool.Task(pushPhotoIntoPhotoArray, this.context, accountInfo, {
                         id: item.id,
                         filename: item.filename,
                         filesize: item.filesize,
@@ -477,13 +304,18 @@ export default struct Album {
                         additional: item.additional,
                         type: item.type,
                         thumbnailUri: ''
-                      }, item.additional.thumbnail, false)
+                      } as PhotoItem, item.additional.thumbnail)
+                      const res = await taskpool.execute(task)
+                      if (this.account !== account) {
+                        return
+                      }
+                      this.photoArray.push(res as PhotoItem)
                     }
                   } else {
                     if (this.account !== account) {
                       return
                     }
-                    await this.pushPhotoIntoPhotoArray(accountInfo, {
+                    const task = new taskpool.Task(pushPhotoIntoPhotoArray, this.context, accountInfo, {
                       id: item.id,
                       filename: item.filename,
                       filesize: item.filesize,
@@ -497,7 +329,12 @@ export default struct Album {
                       additional: item.additional,
                       type: item.type,
                       thumbnailUri: ''
-                    }, item.additional.thumbnail, false)
+                    } as PhotoItem, item.additional.thumbnail)
+                    const res = await taskpool.execute(task)
+                    if (this.account !== account) {
+                      return
+                    }
+                    this.photoArray.push(res as PhotoItem)
                   }
                 }
                 offset += 5000
@@ -586,41 +423,51 @@ export default struct Album {
                 if (this.account !== account || this.previewAlbum?.id !== albumId) {
                   return
                 }
-                await this.pushPhotoIntoPhotoArray(accountInfo, {
+                const task = new taskpool.Task(pushPhotoIntoPhotoArray, this.context, accountInfo, {
                   id: item.id,
                   filename: item.filename,
                   filesize: item.filesize,
                   time: item.time,
                   folder_id: item.folder_id,
-                  url: accountInfo.path + '/fbdownload/' + item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
+                  url: accountInfo.path + '/fbdownload/' +
+                  item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
                     '?tid=' + tid + '&mode=open&dlink=' + Array.from(textEncoder.encodeInto(path + item.filename))
                     .map(byte => byte.toString(16).padStart(2, '0')).join(''),
                   path: path + item.filename,
                   additional: item.additional,
                   type: item.type,
                   thumbnailUri: ''
-                }, item.additional.thumbnail, true)
+                } as PhotoItem, item.additional.thumbnail)
+                const res = await taskpool.execute(task)
+                if (this.account !== account) {
+                  return
+                }
+                this.albumPhotoArray.push(res as PhotoItem)
               }
             } else {
               if (this.account !== account || this.previewAlbum?.id !== albumId) {
                 return
               }
-              await this.pushPhotoIntoPhotoArray(accountInfo, {
+              const task = new taskpool.Task(pushPhotoIntoPhotoArray, this.context, accountInfo, {
                 id: item.id,
                 filename: item.filename,
                 filesize: item.filesize,
                 time: item.time,
                 folder_id: item.folder_id,
                 url: accountInfo.path + '/fbdownload/' +
-                item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
-                  '?tid=' + tid + '&mode=open&dlink=' +
+                item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') + '?tid=' + tid + '&mode=open&dlink=' +
                 Array.from(textEncoder.encodeInto(this.folderMap.get(item.folder_id) + item.filename))
                   .map(byte => byte.toString(16).padStart(2, '0')).join(''),
                 path: this.folderMap.get(item.folder_id) + item.filename,
                 additional: item.additional,
                 type: item.type,
                 thumbnailUri: ''
-              }, item.additional.thumbnail, true)
+              } as PhotoItem, item.additional.thumbnail)
+              const res = await taskpool.execute(task)
+              if (this.account !== account) {
+                return
+              }
+              this.albumPhotoArray.push(res as PhotoItem)
             }
           }
           offset += 5000
@@ -879,6 +726,7 @@ export default struct Album {
                           await fileStream.write(incomingData)
                         },
                         onDataEnd: async () => {
+                          dialogControllerProgress.close()
                           session.close()
                           netBoost.setSceneDesc({
                             scene: 'download',
@@ -916,7 +764,10 @@ export default struct Album {
                     },
                     security: {
                       remoteValidation: this.debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
-                        'system') as 'system' | 'skip'
+                        'system') as 'system' | 'skip',
+                      tlsRange: {
+                        min: 'TlsV1.2'
+                      }
                     }
                   },
                   headers: {
@@ -935,31 +786,12 @@ export default struct Album {
                     path: item.path,
                     mode: 'download'
                   }).toString())
-                  dialogControllerProgress.close()
-                  session.close()
-                  netBoost.setSceneDesc({
-                    scene: 'download',
-                    sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-                  })
                   if (response.statusCode !== 200) {
-                    session.close()
-                    netBoost.setSceneDesc({
-                      scene: 'download',
-                      sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-                    })
-                    fileStream.closeSync()
                     await promptAction.openToast({
                       message: 'HTTP 请求失败，状态码：' + response.statusCode
                     })
                   }
                 } catch (err) {
-                  dialogControllerProgress.close()
-                  session.close()
-                  netBoost.setSceneDesc({
-                    scene: 'download',
-                    sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-                  })
-                  fileStream.closeSync()
                   await promptAction.openToast({
                     message: '下载失败，错误码：' + err.code
                   })
@@ -1115,7 +947,10 @@ export default struct Album {
                         },
                         security: {
                           remoteValidation: this.debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
-                            'system') as 'system' | 'skip'
+                            'system') as 'system' | 'skip',
+                          tlsRange: {
+                            min: 'TlsV1.2'
+                          }
                         }
                       },
                       headers: {
@@ -1132,10 +967,10 @@ export default struct Album {
                         message: '下载失败'
                       })
                     })
+                    this.totalSize = item.filesize
                     this.context.eventHub.on('cancelDownload', () => {
                       session.cancel()
                     })
-                    this.totalSize = item.filesize
                     this.isShowProgressSheet = true
                     try {
                       const response = await session.get(accountInfo.path + '/webapi/entry.cgi?' + new url.URLParams({
@@ -1146,19 +981,11 @@ export default struct Album {
                         mode: 'download'
                       }).toString())
                       if (response.statusCode !== 200) {
-                        this.isShowProgressSheet = false
-                        this.transferredSize = 0
-                        this.totalSize = 0
-                        this.context.eventHub.off('cancelDownload')
                         await promptAction.openToast({
                           message: 'HTTP 请求失败，状态码：' + response.statusCode
                         })
                       }
                     } catch (err) {
-                      this.isShowProgressSheet = false
-                      this.transferredSize = 0
-                      this.totalSize = 0
-                      this.context.eventHub.off('cancelDownload')
                       if (err.code !== 1007900992) {
                         await promptAction.openToast({
                           message: '下载失败，错误码：' + err.code

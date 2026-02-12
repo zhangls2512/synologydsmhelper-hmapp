@@ -100,6 +100,11 @@ struct Synologyproductdownloadcenter {
                 requestConfiguration: {
                   dns: {
                     dnsRules: getDnsServer(this.context)
+                  },
+                  security: {
+                    tlsRange: {
+                      min: 'TlsV1.2'
+                    }
                   }
                 }
               })

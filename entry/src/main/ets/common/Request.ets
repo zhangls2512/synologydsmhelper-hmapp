@@ -67,7 +67,7 @@ async function getCacheApiVersion(context: Context, path: string, api: string) {
   }
 }
 
-export async function getDsmApiMaxVersion(context: Context, path: string, api: string) {
+export async function getDsmApiMaxVersion(context: Context, path: string, api: string): Promise<number | 'fail'> {
   const accountInfo = await getAccountInfo()
   let requestPath = path
   if (!requestPath) {
@@ -96,7 +96,10 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
       },
       security: {
         remoteValidation: debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
-          'system') as 'system' | 'skip'
+          'system') as 'system' | 'skip',
+        tlsRange: {
+          min: 'TlsV1.2'
+        }
       }
     },
     headers: {
@@ -247,6 +250,9 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
           return 'fail'
         }
       }
+      if (res.error.code === 103) {
+        return await getDsmApiMaxVersion(context, path, api)
+      }
       await promptAction.openToast({
         message: 'DSM 接口调用失败，错误码：' + res.error.code
       })
@@ -294,7 +300,10 @@ export async function dsmRequest(context: Context, path: string, api: string, pa
       },
       security: {
         remoteValidation: debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
-          'system') as 'system' | 'skip'
+          'system') as 'system' | 'skip',
+        tlsRange: {
+          min: 'TlsV1.2'
+        }
       }
     },
     headers: {
@@ -438,6 +447,11 @@ export async function developerRequest(context: Context, path: string, body: rcp
     requestConfiguration: {
       dns: {
         dnsRules: getDnsServer(context)
+      },
+      security: {
+        tlsRange: {
+          min: 'TlsV1.2'
+        }
       }
     }
   })

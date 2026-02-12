@@ -42,7 +42,7 @@ struct Index {
   @Local backgroundImagePixelMap: PixelMap | undefined = undefined
   @Local preferType: number = 1
   @Local index: number = 0
-  @Local title: string = '首页'
+  @Local title: string = '卡片'
   @Local showAlbum: boolean = false
   @Local isShowCleardataSheet: boolean = false
   @Local isShowNoticeSheet: boolean = false

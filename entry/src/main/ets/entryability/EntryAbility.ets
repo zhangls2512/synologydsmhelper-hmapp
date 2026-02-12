@@ -27,7 +27,7 @@ import { write } from '../common/File'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import openLink from '../common/Openlink'
 
-interface JsErrorObject {
+export interface JsErrorObject {
   name: string,
   info: Error
 }
@@ -539,7 +539,7 @@ export default class EntryAbility extends UIAbility {
   }
 
   async onContinue(wantParam: Record<string, Object>) {
-    if (wantParam.version !== 42) {
+    if (wantParam.version !== 43) {
       await promptAction.openToast({
         message: '接续失败，原因：目标端应用版本号与发起端不匹配'
       })

@@ -54,7 +54,7 @@
     },
     {
       "name": "entrancecard_description",
-      "value": "卡片、文件、相册、我的"
+      "value": "卡片、文件、相册、我的快捷入口"
     },
     {
       "name": "filealbumentrancecard_displayname",
@@ -62,7 +62,7 @@
     },
     {
       "name": "filealbumentrancecard_description",
-      "value": "文件、相册"
+      "value": "文件、相册快捷入口"
     }
   ]
 }
