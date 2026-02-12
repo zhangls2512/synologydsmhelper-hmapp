@@ -67,7 +67,7 @@ async function getCacheApiVersion(context: Context, path: string, api: string) {
   }
 }
 
-export async function getDsmApiMaxVersion(context: Context, path: string, api: string) {
+export async function getDsmApiMaxVersion(context: Context, path: string, api: string): Promise<number | 'fail'> {
   const accountInfo = await getAccountInfo()
   let requestPath = path
   if (!requestPath) {
@@ -249,6 +249,9 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
           })
           return 'fail'
         }
+      }
+      if (res.error.code === 103) {
+        return await getDsmApiMaxVersion(context, path, api)
       }
       await promptAction.openToast({
         message: 'DSM 接口调用失败，错误码：' + res.error.code
