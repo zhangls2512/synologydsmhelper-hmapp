@@ -7,6 +7,7 @@ import { getAccountInfo } from '../common/Account'
 import { read, write } from '../common/File'
 import { dsmRequest } from '../common/Request'
 import { sha256hash } from '../common/Hash'
+import { getTimeStringFromSecond } from '../common/Stringformat'
 
 interface NoticeJsonString {
   jsonString: string,
@@ -294,7 +295,7 @@ export default struct Noticelist {
                     .margin({
                       right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                     })
-                  Text(String(new Date(item.time * 1000)))
+                  Text(getTimeStringFromSecond(item.time))
                     .fontColor($r('sys.color.font_secondary'))
                     .fontSize($r('sys.float.ohos_id_text_size_body2'))
                     .layoutWeight(1)

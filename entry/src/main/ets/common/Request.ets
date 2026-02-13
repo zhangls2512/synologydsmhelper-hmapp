@@ -115,11 +115,7 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
     }).toString())
     session.close()
     if (response.statusCode === 200) {
-      let body = ''
-      if (response.toString()) {
-        body = response.toString() as string
-      }
-      const res = JSON.parse(body) as DsmResponse
+      const res = JSON.parse(String(response)) as DsmResponse
       if (res.success) {
         if (!res.data[api]) {
           await promptAction.openToast({
@@ -330,15 +326,11 @@ export async function dsmRequest(context: Context, path: string, api: string, pa
     const response = await session.get(path)
     session.close()
     if (response.statusCode === 200) {
-      let body = ''
-      if (response.toString()) {
-        body = response.toString() as string
-      }
       let res: string | DsmResponse = ''
       try {
-        res = JSON.parse(body) as DsmResponse
+        res = JSON.parse(String(response)) as DsmResponse
       } catch {
-        return body
+        return String(response)
       }
       if (res.success) {
         return res.data
@@ -459,15 +451,10 @@ export async function developerRequest(context: Context, path: string, body: rcp
     const response = await session.post('https://api.zhangls2512.cn' + path, body)
     session.close()
     if (response.statusCode === 200) {
-      let body = ''
-      if (response.toString()) {
-        body = response.toString() as string
+      const res = JSON.parse(String(response)) as DeveloperErrorResponse
+      if (res.errCode === 0) {
+        return String(response)
       }
-      const errCode = JSON.parse(body).errCode as number
-      if (errCode === 0) {
-        return body
-      }
-      const res = JSON.parse(body) as DeveloperErrorResponse
       context.eventHub.emit('dialog', '接口调用失败',
         '错误码：' + res.errCode + '\n错误信息：' + res.errMsg + '\n修复方法：' + res.errFix)
       return 'fail'

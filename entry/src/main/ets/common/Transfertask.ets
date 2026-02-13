@@ -332,11 +332,7 @@ export async function upload(context: Context, id: string) {
           }
         }
         if (response.statusCode === 200) {
-          let body = ''
-          if (response.toString()) {
-            body = response.toString() as string
-          }
-          const res = JSON.parse(body) as DsmResponse
+          const res = JSON.parse(String(response)) as DsmResponse
           if (!res.success) {
             transferTask.status = 'fail'
             transferTask.errCode = res.error.code

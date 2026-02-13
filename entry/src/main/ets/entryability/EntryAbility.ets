@@ -23,6 +23,7 @@ import { hiAppEvent } from '@kit.PerformanceAnalysisKit'
 import { harmonyShare, systemShare } from '@kit.ShareKit'
 import { getAccountList, getLoginStatus, loginBestPathAccount } from '../common/Account'
 import { autoBackup } from '../common/Backup'
+import { clearNouseData } from '../common/Clearnousedata'
 import { write } from '../common/File'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import openLink from '../common/Openlink'
@@ -156,14 +157,8 @@ export default class EntryAbility extends UIAbility {
         }
         if (debugSettingDataPreferences.getSync('autoUploadErrorLog', true) &&
         commonSettingDataPreferences.getSync('allService', true)) {
-          if ((debugSettingDataPreferences.getSync('autoUploadErrorLogType', [
-            'JS_ERROR',
-            'APP_CRASH',
-            'APP_FREEZE',
-            'APP_KILLED',
-            'RESOURCE_OVERLIMIT',
-            'ADDRESS_SANITIZER'
-          ]) as string[]).includes('JS_ERROR')) {
+          if ((debugSettingDataPreferences.getSync('autoUploadErrorLogType',
+            ['JS_ERROR', 'APP_CRASH']) as string[]).includes('JS_ERROR')) {
             context.eventHub.emit('uploadErrorLog', object.name, JSON.stringify(object))
           }
         }
@@ -192,14 +187,8 @@ export default class EntryAbility extends UIAbility {
         }
         if (debugSettingDataPreferences.getSync('autoUploadErrorLog', true) &&
         commonSettingDataPreferences.getSync('allService', true)) {
-          if ((debugSettingDataPreferences.getSync('autoUploadErrorLogType', [
-            'JS_ERROR',
-            'APP_CRASH',
-            'APP_FREEZE',
-            'APP_KILLED',
-            'RESOURCE_OVERLIMIT',
-            'ADDRESS_SANITIZER'
-          ]) as string[]).includes('JS_ERROR')) {
+          if ((debugSettingDataPreferences.getSync('autoUploadErrorLogType',
+            ['JS_ERROR', 'APP_CRASH']) as string[]).includes('JS_ERROR')) {
             this.context.eventHub.emit('uploadErrorLog', object.name, JSON.stringify(object))
           }
         }
@@ -223,14 +212,8 @@ export default class EntryAbility extends UIAbility {
         if (debugSettingDataPreferences.getSync('autoUploadErrorLog', true) &&
         commonSettingDataPreferences.getSync('allService', true)) {
           appEventGroups.forEach(item => {
-            if ((debugSettingDataPreferences.getSync('autoUploadErrorLogType', [
-              'JS_ERROR',
-              'APP_CRASH',
-              'APP_FREEZE',
-              'APP_KILLED',
-              'RESOURCE_OVERLIMIT',
-              'ADDRESS_SANITIZER'
-            ]) as string[]).includes(item.name)) {
+            if ((debugSettingDataPreferences.getSync('autoUploadErrorLogType',
+              ['JS_ERROR', 'APP_CRASH']) as string[]).includes(item.name)) {
               this.context.eventHub.emit('uploadErrorLog', item.name, JSON.stringify(item))
             }
           })
@@ -499,6 +482,7 @@ export default class EntryAbility extends UIAbility {
       applicationContext.setSupportedProcessCache(processCache)
     }
     await this.appInit(want)
+    await clearNouseData(this.context)
     await loginBestPathAccount(this.context)
     await autoBackup(this.context)
   }
@@ -539,7 +523,7 @@ export default class EntryAbility extends UIAbility {
   }
 
   async onContinue(wantParam: Record<string, Object>) {
-    if (wantParam.version !== 43) {
+    if (wantParam.version !== 44) {
       await promptAction.openToast({
         message: '接续失败，原因：目标端应用版本号与发起端不匹配'
       })

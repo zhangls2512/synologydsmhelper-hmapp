@@ -329,11 +329,7 @@ export default struct Login {
                   ]))
                   session.close()
                   if (response.statusCode === 200) {
-                    let body = ''
-                    if (response.toString()) {
-                      body = response.toString() as string
-                    }
-                    const bodyObject = JSON.parse(body) as object
+                    const bodyObject = JSON.parse(String(response)) as object
                     if (bodyObject[0]['errno'] === 0) {
                       path = 'https://' + this.quickConnectId + '.' + bodyObject[0]['env']['relay_region'] +
                         '.quickconnect.cn'
