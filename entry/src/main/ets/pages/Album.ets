@@ -19,7 +19,7 @@ import { checkPermission } from '../common/Permission'
 import { getPreferType } from '../common/Prefertype'
 import { pushPhotoIntoPhotoArray } from '../common/Pushphoto'
 import { dsmRequest, getDsmApiMaxVersion } from '../common/Request'
-import { getSizeString, getTimeString } from '../common/Stringformat'
+import { getSizeString, getTimeStringFromSecond } from '../common/Stringformat'
 import Progress from './Progress'
 
 interface Resolution {
@@ -218,7 +218,7 @@ export default struct Album {
           })
           timelineList.forEach(item => {
             this.timelineArray.push({
-              date: item.year + '-' + String(item.month).padStart(2, '0') + '-' + String(item.day).padStart(2, '0'),
+              date: item.year + '年' + item.month + '月' + item.day + '日',
               count: item.item_count
             })
           })
@@ -512,7 +512,7 @@ export default struct Album {
             Text() {
               Span('时间：')
                 .fontWeight(FontWeight.Medium)
-              Span(getTimeString(this.previewPhoto.time))
+              Span(getTimeStringFromSecond(this.previewPhoto.time))
             }
             .margin({
               top: $r('sys.float.ohos_id_text_margin_vertical')
@@ -1098,9 +1098,6 @@ export default struct Album {
                 }
                 .borderRadius(20)
                 .height(40)
-                .margin({
-                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                })
                 .padding(11)
                 .stateStyles({
                   normal: {
@@ -1194,9 +1191,6 @@ export default struct Album {
                   }
                 })
               }
-              .margin({
-                bottom: $r('sys.float.ohos_id_elements_margin_vertical_m')
-              })
               .width('100%')
             }
             Refresh({
@@ -1212,6 +1206,9 @@ export default struct Album {
                         .fontColor($r('sys.color.font_secondary'))
                         .fontSize($r('sys.float.ohos_id_text_size_body2'))
                     }
+                    .margin({
+                      top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                    })
                     .width('100%')
 
                     Repeat<TimelineItem>(this.timelineArray)
@@ -1219,6 +1216,9 @@ export default struct Album {
                         ListItemGroup() {
                           ListItem() {
                             Text(timelineItem.item.date)
+                              .enableAutoSpacing(true)
+                              .fontSize($r('sys.float.ohos_id_text_size_headline9'))
+                              .fontWeight(FontWeight.Bold)
                           }
 
                           ListItem() {
@@ -1353,7 +1353,7 @@ export default struct Album {
                           }
                         }
                         .margin({
-                          top: timelineItem.index !== 0 ? $r('sys.float.ohos_id_elements_margin_vertical_m') : 0
+                          top: $r('sys.float.ohos_id_elements_margin_vertical_l')
                         })
                       })
                       .virtualScroll()
