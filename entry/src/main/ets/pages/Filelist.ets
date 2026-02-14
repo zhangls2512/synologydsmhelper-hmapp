@@ -17,7 +17,7 @@ import { sha256hash } from '../common/Hash'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import { getPreferType } from '../common/Prefertype'
 import { dsmRequest, getDsmApiMaxVersion } from '../common/Request'
-import { getSizeString, getTimeString } from '../common/Stringformat'
+import { getSizeString, getTimeStringFromSecond } from '../common/Stringformat'
 import Newfolder from './Newfolder'
 import Player from './Player'
 import Progress from './Progress'
@@ -51,12 +51,12 @@ interface ShareLinkItem {
 @ComponentV2
 export default struct Filelist {
   @Provider() isShowNewfolderSheet: boolean = false
-  @Provider() isShowPlayerSheet: boolean = false
-  @Provider() isShowReaderSheet: boolean = false
   @Provider() isShowProgressSheet: boolean = false
   @Provider() isShowRenamefileSheet: boolean = false
   @Provider() transferredSize: number = 0
   @Provider() totalSize: number = 0
+  @Local isShowPlayerSheet: boolean = false
+  @Local isShowReaderSheet: boolean = false
   @Local preferType: number = 1
   @Local loading: boolean = false
   @Local fileArray: FileItem[] = []
@@ -218,24 +218,17 @@ export default struct Filelist {
       sort_direction: sortDirection
     }).toString())
     if (res !== 'fail') {
-      const finished = res['finished'] as boolean
-      if (!finished) {
-        await this.searchByTaskId(taskId)
+      const files = res['files'] as FileItem[]
+      if (!files) {
+        await promptAction.openToast({
+          message: '系统繁忙，请稍后再试'
+        })
       }
-      if (finished) {
-        this.searchDialogControllerProgress.close()
-        const files = res['files'] as FileItem[]
-        if (!files) {
-          this.fileArray = []
-        }
-        if (files) {
-          this.fileArray = files
-        }
+      if (files) {
+        this.fileArray = files
       }
     }
-    if (res === 'fail') {
-      this.searchDialogControllerProgress.close()
-    }
+    this.searchDialogControllerProgress.close()
   }
 
   @Builder
@@ -1095,19 +1088,16 @@ export default struct Filelist {
           })
 
           Text() {
+            Span(' / ')
+              .fontColor($r('sys.color.font_emphasize'))
+              .onClick(() => {
+                this.dirnames = []
+                this.backDataPreferences.putSync('filelist', false)
+                this.loading = true
+              })
             ForEach(this.dirnames, (item: string, index) => {
               if (index !== 0) {
                 Span('/ ')
-              }
-              if (index === 0) {
-                Span('根目录')
-                  .fontColor($r('sys.color.font_emphasize'))
-                  .onClick(() => {
-                    this.dirnames = []
-                    this.backDataPreferences.putSync('filelist', false)
-                    this.loading = true
-                  })
-                Span(' / ')
               }
               Span(item + ' ')
                 .fontColor($r('sys.color.font_emphasize'))
@@ -1185,9 +1175,6 @@ export default struct Filelist {
               }
               .borderRadius(20)
               .height(40)
-              .margin({
-                right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-              })
               .padding(11)
               .stateStyles({
                 normal: {
@@ -1582,7 +1569,7 @@ export default struct Filelist {
                           .fontWeight(FontWeight.Medium)
                           .width('85%')
                         Text() {
-                          Span(getTimeString(item.additional.time.mtime))
+                          Span(getTimeStringFromSecond(item.additional.time.mtime))
                           if (item.additional.size >= 0) {
                             Span(' - ' + getSizeString(item.additional.size))
                           }

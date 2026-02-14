@@ -17,7 +17,6 @@ import { getSizeString } from '../common/Stringformat'
 export default struct Setting {
   @Local allService: boolean = false
   @Local agreedPrivacyAgreement: number | undefined = undefined
-  @Local accountDataSync: boolean = false
   @Local accountDataSyncEnabled: boolean = false
   @Local isLogin: boolean = false
   @Local accountCount: number = -1
@@ -25,6 +24,7 @@ export default struct Setting {
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   pageInfos = new NavPathStack()
+  accountDataSync = false
 
   async getSetting() {
     const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {

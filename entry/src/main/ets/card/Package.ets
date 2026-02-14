@@ -90,19 +90,15 @@ export default struct Package {
               Row() {
                 Text(item.name)
                   .enableAutoSpacing(true)
-                  .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                   })
                 Text('有新版本：' + item.latestVersion)
                   .fontColor(Color.Red)
-                  .margin({
-                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                  })
               }
               .margin({
-                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                top: $r('sys.float.ohos_id_text_margin_vertical')
               })
               .width('100%')
             }
@@ -112,19 +108,15 @@ export default struct Package {
               Row() {
                 Text(item.name)
                   .enableAutoSpacing(true)
-                  .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                   })
                 Text(item.version + ' (最新)')
                   .fontColor(Color.Green)
-                  .margin({
-                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                  })
               }
               .margin({
-                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                top: $r('sys.float.ohos_id_text_margin_vertical')
               })
               .width('100%')
             }
@@ -134,18 +126,14 @@ export default struct Package {
               Row() {
                 Text(item.name)
                   .enableAutoSpacing(true)
-                  .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                   })
                 Text(item.version)
-                  .margin({
-                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                  })
               }
               .margin({
-                top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+                top: $r('sys.float.ohos_id_text_margin_vertical')
               })
               .width('100%')
             }

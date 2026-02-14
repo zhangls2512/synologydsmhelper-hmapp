@@ -197,7 +197,7 @@ export default struct Dockercontainer {
               }
             }
             .margin({
-              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+              top: $r('sys.float.ohos_id_text_margin_vertical')
             })
             .width('100%')
           })
