@@ -2,7 +2,7 @@ import { preferences } from '@kit.ArkData'
 import { LengthMetrics } from '@kit.ArkUI'
 import { HdsNavDestination } from '@kit.UIDesignKit'
 
-interface Type {
+export interface Type {
   name: string,
   value: string
 }

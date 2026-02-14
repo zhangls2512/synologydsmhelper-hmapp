@@ -530,28 +530,22 @@ export default struct Cleardata {
               })
               if (data.index === 1) {
                 const promises = this.cache.map(async (item) => {
-                  if (item === 'appCache') {
-                    await bundleManager.cleanBundleCacheFilesForSelf()
-                  }
-                  if (item === 'webviewCache') {
-                    webview.WebviewController.removeAllCache(true)
-                  }
-                  if (item === 'apiVersionCache') {
-                    const filePath = this.context.cacheDir + '/apiversion.txt'
-                    if (fileIo.accessSync(filePath)) {
-                      await fileIo.unlink(filePath)
+                  try {
+                    if (item === 'appCache') {
+                      await bundleManager.cleanBundleCacheFilesForSelf()
                     }
-                  }
-                  if (item === 'noticeJsonStringCache') {
-                    const directory = this.context.cacheDir + '/noticejsonstring'
-                    if (fileIo.accessSync(directory)) {
-                      await fileIo.rmdir(directory)
+                    if (item === 'webviewCache') {
+                      webview.WebviewController.removeAllCache(true)
                     }
-                  }
-                  if (item === 'albumPhotoThumbnailCache') {
-                    const accountInfo = await getAccountInfo()
-                    const albumPhotoThumbnailDirectory = this.context.cacheDir + '/albumphotothumbnail/'
-                    if (fileIo.accessSync(albumPhotoThumbnailDirectory)) {
+                    if (item === 'apiVersionCache') {
+                      await fileIo.unlink(this.context.cacheDir + '/apiversion.txt')
+                    }
+                    if (item === 'noticeJsonStringCache') {
+                      await fileIo.rmdir(this.context.cacheDir + '/noticejsonstring')
+                    }
+                    if (item === 'albumPhotoThumbnailCache') {
+                      const accountInfo = await getAccountInfo()
+                      const albumPhotoThumbnailDirectory = this.context.cacheDir + '/albumphotothumbnail/'
                       if (!accountInfo.id) {
                         await fileIo.rmdir(albumPhotoThumbnailDirectory)
                       }
@@ -565,6 +559,7 @@ export default struct Cleardata {
                         await Promise.all(rmdirpromises)
                       }
                     }
+                  } catch {
                   }
                 })
                 await Promise.all(promises)

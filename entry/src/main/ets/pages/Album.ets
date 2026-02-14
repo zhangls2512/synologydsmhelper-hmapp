@@ -218,7 +218,7 @@ export default struct Album {
           })
           timelineList.forEach(item => {
             this.timelineArray.push({
-              date: item.year + '-' + String(item.month).padStart(2, '0') + '-' + String(item.day).padStart(2, '0'),
+              date: item.year + '年' + item.month + '月' + item.day + '日',
               count: item.item_count
             })
           })
@@ -1207,7 +1207,6 @@ export default struct Album {
                         .fontSize($r('sys.float.ohos_id_text_size_body2'))
                     }
                     .margin({
-                      bottom: $r('sys.float.ohos_id_elements_margin_vertical_m'),
                       top: $r('sys.float.ohos_id_elements_margin_vertical_m')
                     })
                     .width('100%')
@@ -1217,6 +1216,9 @@ export default struct Album {
                         ListItemGroup() {
                           ListItem() {
                             Text(timelineItem.item.date)
+                              .enableAutoSpacing(true)
+                              .fontSize($r('sys.float.ohos_id_text_size_headline9'))
+                              .fontWeight(FontWeight.Bold)
                           }
 
                           ListItem() {
@@ -1351,7 +1353,7 @@ export default struct Album {
                           }
                         }
                         .margin({
-                          top: timelineItem.index !== 0 ? $r('sys.float.ohos_id_elements_margin_vertical_m') : 0
+                          top: $r('sys.float.ohos_id_elements_margin_vertical_l')
                         })
                       })
                       .virtualScroll()
