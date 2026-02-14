@@ -168,6 +168,10 @@ struct Errorlog {
               value: item.name
             }
           }))
+            .margin({
+              bottom: $r('sys.float.ohos_id_elements_margin_vertical_m'),
+              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+            })
             .selected(0)
             .value('全部')
             .onSelect(async (index) => {
@@ -177,10 +181,6 @@ struct Errorlog {
               if (index === 0) {
                 await this.get()
               }
-            })
-            .margin({
-              bottom: $r('sys.float.ohos_id_elements_margin_vertical_m'),
-              top: $r('sys.float.ohos_id_elements_margin_vertical_m')
             })
           List() {
             if (this.errorLogArray.length === 0) {
