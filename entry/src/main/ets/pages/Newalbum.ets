@@ -4,9 +4,8 @@ import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { dsmRequest } from '../common/Request'
 
 @ComponentV2
-export default struct Newfolder {
-  @Consumer() isShowNewfolderSheet: boolean = false
-  @Param editPath: string = ''
+export default struct Newalbum {
+  @Consumer() isShowNewalbumSheet: boolean = false
   @Local name: string = ''
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
@@ -38,18 +37,20 @@ export default struct Newfolder {
                 })
               })
               dialogControllerProgress.open()
-              const res = await dsmRequest(this.context, '', 'SYNO.FileStation.CreateFolder', new url.URLParams({
+              const res = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.ConditionAlbum', new url.URLParams({
                 method: 'create',
-                folder_path: this.editPath,
-                name: JSON.stringify(this.name)
+                name: JSON.stringify(this.name),
+                condition: JSON.stringify({
+                  user_id: 1
+                })
               }).toString())
               dialogControllerProgress.close()
               if (res !== 'fail') {
                 await promptAction.openToast({
                   message: '新建成功'
                 })
-                this.context.eventHub.emit('refreshFilelist')
-                this.isShowNewfolderSheet = false
+                this.context.eventHub.emit('refreshAlbum')
+                this.isShowNewalbumSheet = false
               }
             })
         }

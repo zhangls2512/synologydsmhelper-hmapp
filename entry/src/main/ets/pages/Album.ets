@@ -20,7 +20,9 @@ import { getPreferType } from '../common/Prefertype'
 import { pushPhotoIntoPhotoArray } from '../common/Pushphoto'
 import { dsmRequest, getDsmApiMaxVersion } from '../common/Request'
 import { getSizeString, getTimeStringFromSecond } from '../common/Stringformat'
+import Newalbum from './Newalbum'
 import Progress from './Progress'
+import Renamealbum from './Renamealbum'
 
 interface Resolution {
   height: number,
@@ -108,6 +110,8 @@ interface AlbumItem {
 
 @ComponentV2
 export default struct Album {
+  @Provider() isShowNewalbumSheet: boolean = false
+  @Provider() isShowRenamealbumSheet: boolean = false
   @Provider() isShowProgressSheet: boolean = false
   @Provider() transferredSize: number = 0
   @Provider() totalSize: number = 0
@@ -122,7 +126,10 @@ export default struct Album {
   @Local previewPhoto: PhotoItem | undefined = undefined
   @Local previewAlbum: AlbumItem | undefined = undefined
   @Local isShowInfoSheet: boolean = false
+  @Local editId: number = -1
+  @Local editName: string = ''
   @Local hoverId: number = -1
+  @Local buttonHoverId: number = -1
   @Local photoItemWidth: number = 0
   @Local photoAddress: string = ''
   UIContext = this.getUIContext()
@@ -170,19 +177,6 @@ export default struct Album {
       this.photoFinished = true
     }
     if (this.isLogin) {
-      const accountInfo = await getAccountInfo()
-      const account = getAccountHash(accountInfo)
-      if (this.account !== account) {
-        this.timelineArray = []
-        this.photoArray = []
-        this.albumPhotoArray = []
-        this.folderMap.clear()
-        this.photoFinished = true
-      }
-      if (this.account === account && notRefreshWhenAccountSame) {
-        return
-      }
-      this.account = account
       if (refresh !== 0) {
         this.albumArray = []
         this.loadingDialogControllerProgress.open()
@@ -196,6 +190,19 @@ export default struct Album {
           this.albumArray = albumres['list']
         }
       }
+      const accountInfo = await getAccountInfo()
+      const account = getAccountHash(accountInfo)
+      if (this.account !== account) {
+        this.timelineArray = []
+        this.photoArray = []
+        this.albumPhotoArray = []
+        this.folderMap.clear()
+        this.photoFinished = true
+      }
+      if (this.account === account && notRefreshWhenAccountSame) {
+        return
+      }
+      this.account = account
       if (refresh !== 1) {
         if (!this.photoFinished) {
           return
@@ -494,6 +501,19 @@ export default struct Album {
       return mapCommon.DayNightMode.NIGHT
     }
     return mapCommon.DayNightMode.AUTO
+  }
+
+  @Builder
+  NewalbumSheetBuilder() {
+    Newalbum()
+  }
+
+  @Builder
+  RenamealbumSheetBuilder() {
+    Renamealbum({
+      editId: this.editId,
+      editName: this.editName
+    })
   }
 
   @Builder
@@ -1070,6 +1090,56 @@ export default struct Album {
     }
   }
 
+  @Builder
+  AlbumMenuBuilder(item: AlbumItem) {
+    Menu() {
+      MenuItem({
+        startIcon: $r('app.media.rename'),
+        content: '重命名'
+      })
+        .onClick(() => {
+          this.editId = item.id
+          this.editName = item.name
+          this.isShowRenamealbumSheet = true
+        })
+      MenuItem({
+        startIcon: $r('app.media.delete'),
+        content: '删除'
+      })
+        .onClick(async () => {
+          const promptAction = this.UIContext.getPromptAction()
+          const data = await promptAction.showDialog({
+            title: '提示',
+            message: '删除成功后无法恢复，确定删除？',
+            buttons: [
+              {
+                text: '取消',
+                color: $r('sys.color.font_primary')
+              },
+              {
+                text: '删除',
+                color: $r('sys.color.warning')
+              }
+            ]
+          })
+          if (data.index === 1) {
+            this.deleteDialogControllerProgress.open()
+            const res = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.Album', new url.URLParams({
+              method: 'delete',
+              id: JSON.stringify([item.id])
+            }).toString())
+            this.deleteDialogControllerProgress.close()
+            if (res !== 'fail') {
+              await promptAction.openToast({
+                message: '删除成功'
+              })
+              this.loading = true
+            }
+          }
+        })
+    }
+  }
+
   build() {
     Scroll() {
       Column() {
@@ -1361,6 +1431,46 @@ export default struct Album {
                   .height('100%')
                 }
                 if (this.selectedIndex === 1) {
+                  Row() {
+                    Column() {
+                      Image($r('app.media.new_white'))
+                    }
+                    .borderRadius(20)
+                    .height(40)
+                    .margin({
+                      bottom: $r('sys.float.ohos_id_elements_margin_vertical_l')
+                    })
+                    .padding(11)
+                    .stateStyles({
+                      normal: {
+                        .backgroundColor(this.buttonHoverId === 0 ? '#0754EB' : $r('sys.color.background_emphasize'))
+                      },
+                      pressed: {
+                        .backgroundColor('#0A50DE')
+                      }
+                    })
+                    .width(40)
+                    .onHover((isHover) => {
+                      if (!isHover) {
+                        this.buttonHoverId = -1
+                      }
+                      if (isHover) {
+                        this.buttonHoverId = 0
+                      }
+                    })
+                    .onClick(() => {
+                      this.isShowNewalbumSheet = true
+                    })
+                    .bindSheet(this.isShowNewalbumSheet!!, this.NewalbumSheetBuilder(), {
+                      height: SheetSize.FIT_CONTENT,
+                      preferType: this.preferType,
+                      title: {
+                        title: '新建'
+                      }
+                    })
+                  }
+                  .width('100%')
+
                   if (this.albumArray.length === 0) {
                     Text('无数据')
                   }
@@ -1375,6 +1485,7 @@ export default struct Album {
                       }
                       Row() {
                         Text(albumItem.name)
+                          .enableAutoSpacing(true)
                           .fontWeight(FontWeight.Medium)
                           .layoutWeight(1)
                           .margin({
@@ -1415,6 +1526,19 @@ export default struct Album {
                         this.previewAlbum = albumItem
                         this.backDataPreferences.putSync('album', true)
                         await this.getAlbumPhoto()
+                      })
+                      .bindContextMenu(this.AlbumMenuBuilder(albumItem), ResponseType.LongPress, {
+                        hapticFeedbackMode: HapticFeedbackMode.AUTO
+                      })
+                      .bindContextMenu(this.AlbumMenuBuilder(albumItem), ResponseType.RightClick, {
+                        hapticFeedbackMode: HapticFeedbackMode.AUTO
+                      })
+                      .bindSheet(this.isShowRenamealbumSheet!!, this.RenamealbumSheetBuilder(), {
+                        height: SheetSize.FIT_CONTENT,
+                        preferType: this.preferType,
+                        title: {
+                          title: '重命名'
+                        }
                       })
                     })
                   }
@@ -1752,9 +1876,9 @@ export default struct Album {
               }
             })
           }
-          if (this.previewAlbum) {
-            List() {
-              ListItem() {
+          if (this.previewAlbum && !this.previewPhoto) {
+            Scroll() {
+              Column() {
                 Row() {
                   Column() {
                     Image($r('app.media.back'))
@@ -1786,6 +1910,7 @@ export default struct Album {
                   })
 
                   Text(this.previewAlbum.name)
+                    .enableAutoSpacing(true)
                     .fontSize($r('sys.float.ohos_id_text_size_dialog_tittle'))
                     .fontWeight(FontWeight.Bold)
                     .layoutWeight(1)
@@ -1794,18 +1919,13 @@ export default struct Album {
                       overflow: TextOverflow.Ellipsis
                     })
                 }
-              }
-              .margin({
-                bottom: $r('sys.float.ohos_id_elements_margin_vertical_l')
-              })
+                .margin({
+                  bottom: $r('sys.float.ohos_id_elements_margin_vertical_l')
+                })
 
-              if (this.albumPhotoArray.length === 0) {
-                ListItem() {
+                if (this.albumPhotoArray.length === 0) {
                   Text('无数据')
                 }
-                .width('100%')
-              }
-              ListItem() {
                 List() {
                   Repeat<PhotoItem>(this.albumPhotoArray)
                     .each((photoItem: RepeatItem<PhotoItem>) => {
@@ -1926,12 +2046,10 @@ export default struct Album {
                     })
                     .virtualScroll()
                 }
-                .height('100%')
                 .lanes(4)
+                .layoutWeight(1)
               }
-              .layoutWeight(1)
             }
-            .edgeEffect(EdgeEffect.None)
           }
         }
       }

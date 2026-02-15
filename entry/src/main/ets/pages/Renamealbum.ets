@@ -4,9 +4,10 @@ import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { dsmRequest } from '../common/Request'
 
 @ComponentV2
-export default struct Newfolder {
-  @Consumer() isShowNewfolderSheet: boolean = false
-  @Param editPath: string = ''
+export default struct Renamealbum {
+  @Consumer() isShowRenamealbumSheet: boolean = false
+  @Param editId: number = -1
+  @Param editName: string = ''
   @Local name: string = ''
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
@@ -20,7 +21,7 @@ export default struct Newfolder {
           })
             .defaultFocus(true)
             .enableAutoSpacing(true)
-          Button('新建')
+          Button('重命名')
             .margin({
               top: $r('sys.float.ohos_id_elements_margin_vertical_l')
             })
@@ -34,22 +35,22 @@ export default struct Newfolder {
               }
               const dialogControllerProgress = new CustomDialogController({
                 builder: LoadingDialog({
-                  content: '新建中...'
+                  content: '重命名中...'
                 })
               })
               dialogControllerProgress.open()
-              const res = await dsmRequest(this.context, '', 'SYNO.FileStation.CreateFolder', new url.URLParams({
-                method: 'create',
-                folder_path: this.editPath,
+              const res = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.Album', new url.URLParams({
+                method: 'set_name',
+                id: String(this.editId),
                 name: JSON.stringify(this.name)
               }).toString())
               dialogControllerProgress.close()
               if (res !== 'fail') {
                 await promptAction.openToast({
-                  message: '新建成功'
+                  message: '重命名成功'
                 })
-                this.context.eventHub.emit('refreshFilelist')
-                this.isShowNewfolderSheet = false
+                this.context.eventHub.emit('refreshAlbum')
+                this.isShowRenamealbumSheet = false
               }
             })
         }
@@ -59,6 +60,9 @@ export default struct Newfolder {
       bottom: $r('sys.float.ohos_id_default_padding_bottom_fixed'),
       left: $r('sys.float.ohos_id_elements_margin_horizontal_l'),
       right: $r('sys.float.ohos_id_elements_margin_horizontal_l')
+    })
+    .onAppear(() => {
+      this.name = this.editName
     })
   }
 }

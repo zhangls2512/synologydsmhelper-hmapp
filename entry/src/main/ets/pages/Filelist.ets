@@ -182,50 +182,43 @@ export default struct Filelist {
     }).toString())
     if (res !== 'fail') {
       const taskId = res['taskid'] as string
-      await this.searchByTaskId(taskId)
-    }
-    if (res === 'fail') {
-      this.searchDialogControllerProgress.close()
-    }
-  }
-
-  async searchByTaskId(taskId: string) {
-    let sortBy = ''
-    if (this.sortByValue === '名称') {
-      sortBy = 'name'
-    }
-    if (this.sortByValue === '大小') {
-      sortBy = 'size'
-    }
-    if (this.sortByValue === '类型') {
-      sortBy = 'type'
-    }
-    if (this.sortByValue === '修改时间') {
-      sortBy = 'mt'
-    }
-    let sortDirection = ''
-    if (this.sortDirectionValue === '升序') {
-      sortDirection = 'ASC'
-    }
-    if (this.sortDirectionValue === '降序') {
-      sortDirection = 'DESC'
-    }
-    const res = await dsmRequest(this.context, '', 'SYNO.FileStation.Search', new url.URLParams({
-      method: 'list',
-      additional: JSON.stringify(['size', 'time']),
-      taskid: taskId,
-      sort_by: sortBy,
-      sort_direction: sortDirection
-    }).toString())
-    if (res !== 'fail') {
-      const files = res['files'] as FileItem[]
-      if (!files) {
-        await promptAction.openToast({
-          message: '系统繁忙，请稍后再试'
-        })
+      let sortBy = ''
+      if (this.sortByValue === '名称') {
+        sortBy = 'name'
       }
-      if (files) {
-        this.fileArray = files
+      if (this.sortByValue === '大小') {
+        sortBy = 'size'
+      }
+      if (this.sortByValue === '类型') {
+        sortBy = 'type'
+      }
+      if (this.sortByValue === '修改时间') {
+        sortBy = 'mt'
+      }
+      let sortDirection = ''
+      if (this.sortDirectionValue === '升序') {
+        sortDirection = 'ASC'
+      }
+      if (this.sortDirectionValue === '降序') {
+        sortDirection = 'DESC'
+      }
+      const resb = await dsmRequest(this.context, '', 'SYNO.FileStation.Search', new url.URLParams({
+        method: 'list',
+        additional: JSON.stringify(['size', 'time']),
+        taskid: taskId,
+        sort_by: sortBy,
+        sort_direction: sortDirection
+      }).toString())
+      if (resb !== 'fail') {
+        const files = resb['files'] as FileItem[]
+        if (!files) {
+          await promptAction.openToast({
+            message: '系统繁忙，请稍后再试'
+          })
+        }
+        if (files) {
+          this.fileArray = files
+        }
       }
     }
     this.searchDialogControllerProgress.close()
