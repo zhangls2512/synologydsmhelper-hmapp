@@ -69,16 +69,16 @@ export default struct Filelist {
   @Local searchKeyword: string = ''
   @Local multipleSelect: boolean = false
   @Local multipleSelectArray: FileItem[] = []
-  @Local src: string = ''
   @Local copyMovePath: string = ''
-  @Local editPath: string = ''
-  @Local editName: string = ''
   @Local hoverId: number = -1
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   account = ''
   remove = false
+  src = ''
   srcName = ''
+  editPath = ''
+  editName = ''
   backDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'back'
   })

@@ -6,6 +6,7 @@ import { dsmRequest } from '../common/Request'
 @ComponentV2
 export default struct Newalbum {
   @Consumer() isShowNewalbumSheet: boolean = false
+  @Param addId: number = -1
   @Local name: string = ''
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
@@ -33,21 +34,19 @@ export default struct Newalbum {
               }
               const dialogControllerProgress = new CustomDialogController({
                 builder: LoadingDialog({
-                  content: '新建中...'
+                  content: '加载中...'
                 })
               })
               dialogControllerProgress.open()
-              const res = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.ConditionAlbum', new url.URLParams({
+              const res = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.NormalAlbum', new url.URLParams({
                 method: 'create',
                 name: JSON.stringify(this.name),
-                condition: JSON.stringify({
-                  user_id: 1
-                })
+                item: JSON.stringify([this.addId])
               }).toString())
               dialogControllerProgress.close()
               if (res !== 'fail') {
                 await promptAction.openToast({
-                  message: '新建成功'
+                  message: '新建并加入成功'
                 })
                 this.context.eventHub.emit('refreshAlbum')
                 this.isShowNewalbumSheet = false

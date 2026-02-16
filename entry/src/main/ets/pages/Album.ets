@@ -20,7 +20,7 @@ import { getPreferType } from '../common/Prefertype'
 import { pushPhotoIntoPhotoArray } from '../common/Pushphoto'
 import { dsmRequest, getDsmApiMaxVersion } from '../common/Request'
 import { getSizeString, getTimeStringFromSecond } from '../common/Stringformat'
-import Newalbum from './Newalbum'
+import Addphotointoalbum from './Addphotointoalbum'
 import Progress from './Progress'
 import Renamealbum from './Renamealbum'
 
@@ -102,7 +102,7 @@ interface TimelineListItem {
   item_count: number
 }
 
-interface AlbumItem {
+export interface AlbumItem {
   id: number,
   item_count: number,
   name: string
@@ -110,7 +110,7 @@ interface AlbumItem {
 
 @ComponentV2
 export default struct Album {
-  @Provider() isShowNewalbumSheet: boolean = false
+  @Provider() isShowAddphotointoalbumSheet: boolean = false
   @Provider() isShowRenamealbumSheet: boolean = false
   @Provider() isShowProgressSheet: boolean = false
   @Provider() transferredSize: number = 0
@@ -126,18 +126,18 @@ export default struct Album {
   @Local previewPhoto: PhotoItem | undefined = undefined
   @Local previewAlbum: AlbumItem | undefined = undefined
   @Local isShowInfoSheet: boolean = false
-  @Local editId: number = -1
-  @Local editName: string = ''
   @Local hoverId: number = -1
   @Local buttonHoverId: number = -1
   @Local photoItemWidth: number = 0
   @Local photoAddress: string = ''
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
-  account = ''
-  folderMap = new Map<number, string>()
-  photoFinished = true
   controller: MovingPhotoViewController = new MovingPhotoViewController()
+  folderMap = new Map<number, string>()
+  account = ''
+  photoFinished = true
+  editId = -1
+  editName = ''
   backDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'back'
   })
@@ -504,8 +504,10 @@ export default struct Album {
   }
 
   @Builder
-  NewalbumSheetBuilder() {
-    Newalbum()
+  AddphotointoalbumSheetBuilder() {
+    Addphotointoalbum({
+      addId: this.editId
+    })
   }
 
   @Builder
@@ -1023,6 +1025,13 @@ export default struct Album {
           })
       }
       MenuItem({
+        content: '加入相册'
+      })
+        .onClick(() => {
+          this.editId = item.id
+          this.isShowAddphotointoalbumSheet = true
+        })
+      MenuItem({
         content: '删除'
       })
         .contentFontColor($r('sys.color.warning'))
@@ -1087,6 +1096,29 @@ export default struct Album {
             this.deleteDialogControllerProgress.close()
           }
         })
+      if (this.previewAlbum) {
+        MenuItem({
+          content: '从相册中删除'
+        })
+          .contentFontColor($r('sys.color.warning'))
+          .onClick(async () => {
+            this.deleteDialogControllerProgress.open()
+            const res = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.NormalAlbum', new url.URLParams({
+              method: 'delete_item',
+              item: JSON.stringify([item.id]),
+              id: String(this.previewAlbum?.id)
+            }).toString())
+            this.deleteDialogControllerProgress.close()
+            if (res !== 'fail') {
+              await promptAction.openToast({
+                message: '删除成功'
+              })
+              this.previewPhoto = undefined
+              await this.getAlbumPhoto()
+              await this.get(1)
+            }
+          })
+      }
     }
   }
 
@@ -1431,46 +1463,6 @@ export default struct Album {
                   .height('100%')
                 }
                 if (this.selectedIndex === 1) {
-                  Row() {
-                    Column() {
-                      Image($r('app.media.new_white'))
-                    }
-                    .borderRadius(20)
-                    .height(40)
-                    .margin({
-                      bottom: $r('sys.float.ohos_id_elements_margin_vertical_l')
-                    })
-                    .padding(11)
-                    .stateStyles({
-                      normal: {
-                        .backgroundColor(this.buttonHoverId === 0 ? '#0754EB' : $r('sys.color.background_emphasize'))
-                      },
-                      pressed: {
-                        .backgroundColor('#0A50DE')
-                      }
-                    })
-                    .width(40)
-                    .onHover((isHover) => {
-                      if (!isHover) {
-                        this.buttonHoverId = -1
-                      }
-                      if (isHover) {
-                        this.buttonHoverId = 0
-                      }
-                    })
-                    .onClick(() => {
-                      this.isShowNewalbumSheet = true
-                    })
-                    .bindSheet(this.isShowNewalbumSheet!!, this.NewalbumSheetBuilder(), {
-                      height: SheetSize.FIT_CONTENT,
-                      preferType: this.preferType,
-                      title: {
-                        title: '新建'
-                      }
-                    })
-                  }
-                  .width('100%')
-
                   if (this.albumArray.length === 0) {
                     Text('无数据')
                   }
@@ -1621,6 +1613,12 @@ export default struct Album {
                 .width(40)
                 .bindMenu(this.MenuBuilder(this.previewPhoto))
               }
+              .bindSheet(this.isShowAddphotointoalbumSheet!!, this.AddphotointoalbumSheetBuilder(), {
+                preferType: this.preferType,
+                title: {
+                  title: '加入相册'
+                }
+              })
 
               if (this.previewPhoto.type === 'photo') {
                 Image(this.previewPhoto.url)
@@ -2086,10 +2084,12 @@ export default struct Album {
           this.backDataPreferences.putSync('album', false)
         }
       })
-      this.context.eventHub.on('refreshAlbum', async () => {
-        this.previewPhoto = undefined
-        this.previewAlbum = undefined
-        this.backDataPreferences.putSync('album', false)
+      this.context.eventHub.on('refreshAlbum', async (clear = true) => {
+        if (clear) {
+          this.previewPhoto = undefined
+          this.previewAlbum = undefined
+          this.backDataPreferences.putSync('album', false)
+        }
         await this.get(2, true)
       })
       await this.get()
