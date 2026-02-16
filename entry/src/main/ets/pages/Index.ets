@@ -175,7 +175,6 @@ struct Index {
       }) {
         TabContent() {
           Cardlist()
-            .height('100%')
         }
         .tabBar(this.tabBuilder(0, $r('app.media.card'), '卡片'))
         .bindSheet(this.isShowAccountlistSheet!!, this.AccountlistSheetBuilder(), {

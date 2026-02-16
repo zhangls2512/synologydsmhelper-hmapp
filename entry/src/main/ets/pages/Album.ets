@@ -1177,6 +1177,7 @@ export default struct Album {
       Column() {
         if (!this.isLogin) {
           Text('未登录账号')
+            .height('100%')
             .textAlign(TextAlign.Center)
             .width('100%')
         }
