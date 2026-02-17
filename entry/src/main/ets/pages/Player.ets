@@ -35,6 +35,9 @@ export default struct Player {
           })
       }
       .height('30%')
+      .margin({
+        top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+      })
 
       ListItem() {
         Column() {

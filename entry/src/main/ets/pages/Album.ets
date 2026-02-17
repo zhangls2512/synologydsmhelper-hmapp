@@ -20,7 +20,9 @@ import { getPreferType } from '../common/Prefertype'
 import { pushPhotoIntoPhotoArray } from '../common/Pushphoto'
 import { dsmRequest, getDsmApiMaxVersion } from '../common/Request'
 import { getSizeString, getTimeStringFromSecond } from '../common/Stringformat'
+import Addphotointoalbum from './Addphotointoalbum'
 import Progress from './Progress'
+import Renamealbum from './Renamealbum'
 
 interface Resolution {
   height: number,
@@ -100,7 +102,7 @@ interface TimelineListItem {
   item_count: number
 }
 
-interface AlbumItem {
+export interface AlbumItem {
   id: number,
   item_count: number,
   name: string
@@ -108,6 +110,8 @@ interface AlbumItem {
 
 @ComponentV2
 export default struct Album {
+  @Provider() isShowAddphotointoalbumSheet: boolean = false
+  @Provider() isShowRenamealbumSheet: boolean = false
   @Provider() isShowProgressSheet: boolean = false
   @Provider() transferredSize: number = 0
   @Provider() totalSize: number = 0
@@ -123,14 +127,17 @@ export default struct Album {
   @Local previewAlbum: AlbumItem | undefined = undefined
   @Local isShowInfoSheet: boolean = false
   @Local hoverId: number = -1
+  @Local buttonHoverId: number = -1
   @Local photoItemWidth: number = 0
   @Local photoAddress: string = ''
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
-  account = ''
-  folderMap = new Map<number, string>()
-  photoFinished = true
   controller: MovingPhotoViewController = new MovingPhotoViewController()
+  folderMap = new Map<number, string>()
+  account = ''
+  photoFinished = true
+  editId = -1
+  editName = ''
   backDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'back'
   })
@@ -170,19 +177,6 @@ export default struct Album {
       this.photoFinished = true
     }
     if (this.isLogin) {
-      const accountInfo = await getAccountInfo()
-      const account = getAccountHash(accountInfo)
-      if (this.account !== account) {
-        this.timelineArray = []
-        this.photoArray = []
-        this.albumPhotoArray = []
-        this.folderMap.clear()
-        this.photoFinished = true
-      }
-      if (this.account === account && notRefreshWhenAccountSame) {
-        return
-      }
-      this.account = account
       if (refresh !== 0) {
         this.albumArray = []
         this.loadingDialogControllerProgress.open()
@@ -196,6 +190,19 @@ export default struct Album {
           this.albumArray = albumres['list']
         }
       }
+      const accountInfo = await getAccountInfo()
+      const account = getAccountHash(accountInfo)
+      if (this.account !== account) {
+        this.timelineArray = []
+        this.photoArray = []
+        this.albumPhotoArray = []
+        this.folderMap.clear()
+        this.photoFinished = true
+      }
+      if (this.account === account && notRefreshWhenAccountSame) {
+        return
+      }
+      this.account = account
       if (refresh !== 1) {
         if (!this.photoFinished) {
           return
@@ -494,6 +501,21 @@ export default struct Album {
       return mapCommon.DayNightMode.NIGHT
     }
     return mapCommon.DayNightMode.AUTO
+  }
+
+  @Builder
+  AddphotointoalbumSheetBuilder() {
+    Addphotointoalbum({
+      addId: this.editId
+    })
+  }
+
+  @Builder
+  RenamealbumSheetBuilder() {
+    Renamealbum({
+      editId: this.editId,
+      editName: this.editName
+    })
   }
 
   @Builder
@@ -1003,6 +1025,13 @@ export default struct Album {
           })
       }
       MenuItem({
+        content: '加入相册'
+      })
+        .onClick(() => {
+          this.editId = item.id
+          this.isShowAddphotointoalbumSheet = true
+        })
+      MenuItem({
         content: '删除'
       })
         .contentFontColor($r('sys.color.warning'))
@@ -1067,6 +1096,79 @@ export default struct Album {
             this.deleteDialogControllerProgress.close()
           }
         })
+      if (this.previewAlbum) {
+        MenuItem({
+          content: '从相册中删除'
+        })
+          .contentFontColor($r('sys.color.warning'))
+          .onClick(async () => {
+            this.deleteDialogControllerProgress.open()
+            const res = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.NormalAlbum', new url.URLParams({
+              method: 'delete_item',
+              item: JSON.stringify([item.id]),
+              id: String(this.previewAlbum?.id)
+            }).toString())
+            this.deleteDialogControllerProgress.close()
+            if (res !== 'fail') {
+              await promptAction.openToast({
+                message: '删除成功'
+              })
+              this.previewPhoto = undefined
+              await this.getAlbumPhoto()
+              await this.get(1)
+            }
+          })
+      }
+    }
+  }
+
+  @Builder
+  AlbumMenuBuilder(item: AlbumItem) {
+    Menu() {
+      MenuItem({
+        startIcon: $r('app.media.rename'),
+        content: '重命名'
+      })
+        .onClick(() => {
+          this.editId = item.id
+          this.editName = item.name
+          this.isShowRenamealbumSheet = true
+        })
+      MenuItem({
+        startIcon: $r('app.media.delete'),
+        content: '删除'
+      })
+        .onClick(async () => {
+          const promptAction = this.UIContext.getPromptAction()
+          const data = await promptAction.showDialog({
+            title: '提示',
+            message: '删除成功后无法恢复，确定删除？',
+            buttons: [
+              {
+                text: '取消',
+                color: $r('sys.color.font_primary')
+              },
+              {
+                text: '删除',
+                color: $r('sys.color.warning')
+              }
+            ]
+          })
+          if (data.index === 1) {
+            this.deleteDialogControllerProgress.open()
+            const res = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.Album', new url.URLParams({
+              method: 'delete',
+              id: JSON.stringify([item.id])
+            }).toString())
+            this.deleteDialogControllerProgress.close()
+            if (res !== 'fail') {
+              await promptAction.openToast({
+                message: '删除成功'
+              })
+              this.loading = true
+            }
+          }
+        })
     }
   }
 
@@ -1075,6 +1177,7 @@ export default struct Album {
       Column() {
         if (!this.isLogin) {
           Text('未登录账号')
+            .height('100%')
             .textAlign(TextAlign.Center)
             .width('100%')
         }
@@ -1375,6 +1478,7 @@ export default struct Album {
                       }
                       Row() {
                         Text(albumItem.name)
+                          .enableAutoSpacing(true)
                           .fontWeight(FontWeight.Medium)
                           .layoutWeight(1)
                           .margin({
@@ -1415,6 +1519,19 @@ export default struct Album {
                         this.previewAlbum = albumItem
                         this.backDataPreferences.putSync('album', true)
                         await this.getAlbumPhoto()
+                      })
+                      .bindContextMenu(this.AlbumMenuBuilder(albumItem), ResponseType.LongPress, {
+                        hapticFeedbackMode: HapticFeedbackMode.AUTO
+                      })
+                      .bindContextMenu(this.AlbumMenuBuilder(albumItem), ResponseType.RightClick, {
+                        hapticFeedbackMode: HapticFeedbackMode.AUTO
+                      })
+                      .bindSheet(this.isShowRenamealbumSheet!!, this.RenamealbumSheetBuilder(), {
+                        height: SheetSize.FIT_CONTENT,
+                        preferType: this.preferType,
+                        title: {
+                          title: '重命名'
+                        }
                       })
                     })
                   }
@@ -1497,6 +1614,12 @@ export default struct Album {
                 .width(40)
                 .bindMenu(this.MenuBuilder(this.previewPhoto))
               }
+              .bindSheet(this.isShowAddphotointoalbumSheet!!, this.AddphotointoalbumSheetBuilder(), {
+                preferType: this.preferType,
+                title: {
+                  title: '加入相册'
+                }
+              })
 
               if (this.previewPhoto.type === 'photo') {
                 Image(this.previewPhoto.url)
@@ -1752,9 +1875,9 @@ export default struct Album {
               }
             })
           }
-          if (this.previewAlbum) {
-            List() {
-              ListItem() {
+          if (this.previewAlbum && !this.previewPhoto) {
+            Scroll() {
+              Column() {
                 Row() {
                   Column() {
                     Image($r('app.media.back'))
@@ -1786,6 +1909,7 @@ export default struct Album {
                   })
 
                   Text(this.previewAlbum.name)
+                    .enableAutoSpacing(true)
                     .fontSize($r('sys.float.ohos_id_text_size_dialog_tittle'))
                     .fontWeight(FontWeight.Bold)
                     .layoutWeight(1)
@@ -1794,18 +1918,13 @@ export default struct Album {
                       overflow: TextOverflow.Ellipsis
                     })
                 }
-              }
-              .margin({
-                bottom: $r('sys.float.ohos_id_elements_margin_vertical_l')
-              })
+                .margin({
+                  bottom: $r('sys.float.ohos_id_elements_margin_vertical_l')
+                })
 
-              if (this.albumPhotoArray.length === 0) {
-                ListItem() {
+                if (this.albumPhotoArray.length === 0) {
                   Text('无数据')
                 }
-                .width('100%')
-              }
-              ListItem() {
                 List() {
                   Repeat<PhotoItem>(this.albumPhotoArray)
                     .each((photoItem: RepeatItem<PhotoItem>) => {
@@ -1926,12 +2045,10 @@ export default struct Album {
                     })
                     .virtualScroll()
                 }
-                .height('100%')
                 .lanes(4)
+                .layoutWeight(1)
               }
-              .layoutWeight(1)
             }
-            .edgeEffect(EdgeEffect.None)
           }
         }
       }
@@ -1968,10 +2085,12 @@ export default struct Album {
           this.backDataPreferences.putSync('album', false)
         }
       })
-      this.context.eventHub.on('refreshAlbum', async () => {
-        this.previewPhoto = undefined
-        this.previewAlbum = undefined
-        this.backDataPreferences.putSync('album', false)
+      this.context.eventHub.on('refreshAlbum', async (clear = true) => {
+        if (clear) {
+          this.previewPhoto = undefined
+          this.previewAlbum = undefined
+          this.backDataPreferences.putSync('album', false)
+        }
         await this.get(2, true)
       })
       await this.get()

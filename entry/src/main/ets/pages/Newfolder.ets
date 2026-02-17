@@ -34,7 +34,7 @@ export default struct Newfolder {
               }
               const dialogControllerProgress = new CustomDialogController({
                 builder: LoadingDialog({
-                  content: '新建文件夹中...'
+                  content: '新建中...'
                 })
               })
               dialogControllerProgress.open()
@@ -46,7 +46,7 @@ export default struct Newfolder {
               dialogControllerProgress.close()
               if (res !== 'fail') {
                 await promptAction.openToast({
-                  message: '新建文件夹成功'
+                  message: '新建成功'
                 })
                 this.context.eventHub.emit('refreshFilelist')
                 this.isShowNewfolderSheet = false
@@ -54,6 +54,9 @@ export default struct Newfolder {
             })
         }
       }
+      .margin({
+        top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+      })
     }
     .padding({
       bottom: $r('sys.float.ohos_id_default_padding_bottom_fixed'),
