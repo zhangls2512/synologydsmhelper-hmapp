@@ -58,7 +58,7 @@ export default struct Addphotointoalbum {
           height: SheetSize.FIT_CONTENT,
           preferType: this.preferType,
           title: {
-            title: '新建'
+            title: '新建相册'
           }
         })
       }
