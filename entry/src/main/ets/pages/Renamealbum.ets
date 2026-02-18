@@ -4,9 +4,9 @@ import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { dsmRequest } from '../common/Request'
 
 @ComponentV2
-export default struct Renamefile {
-  @Consumer() isShowRenamefileSheet: boolean = false
-  @Param editPath: string = ''
+export default struct Renamealbum {
+  @Consumer() isShowRenamealbumSheet: boolean = false
+  @Param editId: number = -1
   @Param editName: string = ''
   @Local name: string = ''
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
@@ -39,9 +39,9 @@ export default struct Renamefile {
                 })
               })
               dialogControllerProgress.open()
-              const res = await dsmRequest(this.context, '', 'SYNO.FileStation.Rename', new url.URLParams({
-                method: 'rename',
-                path: JSON.stringify([this.editPath]),
+              const res = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.Album', new url.URLParams({
+                method: 'set_name',
+                id: String(this.editId),
                 name: JSON.stringify(this.name)
               }).toString())
               dialogControllerProgress.close()
@@ -49,8 +49,8 @@ export default struct Renamefile {
                 await promptAction.openToast({
                   message: '重命名成功'
                 })
-                this.context.eventHub.emit('refreshFilelist')
-                this.isShowRenamefileSheet = false
+                this.context.eventHub.emit('refreshAlbum')
+                this.isShowRenamealbumSheet = false
               }
             })
         }
