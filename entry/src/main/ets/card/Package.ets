@@ -24,7 +24,7 @@ export default struct Package {
   intervalId = -1
   dialogControllerProgress = new CustomDialogController({
     builder: LoadingDialog({
-      content: '加载中...'
+      content: '请求中...'
     })
   })
 

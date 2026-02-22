@@ -100,13 +100,13 @@ struct Feedback {
               .onClick(async () => {
                 const dialogControllerProgress = new CustomDialogController({
                   builder: LoadingDialog({
-                    content: '提交中...'
+                    content: '请求中...'
                   })
                 })
                 dialogControllerProgress.open()
                 const res = await developerRequest(this.context, '/product/sendFeedbackEmail', {
                   product: 'synologydsmhelper',
-                  version: '1.1.4.3',
+                  version: '1.1.4.4',
                   content: this.content,
                   contactType: this.contactType,
                   contactValue: this.contactValue

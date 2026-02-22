@@ -192,7 +192,7 @@ export default struct Noticelist {
             .onClick(async () => {
               const dialogControllerProgress = new CustomDialogController({
                 builder: LoadingDialog({
-                  content: '清除中...'
+                  content: '请求中...'
                 })
               })
               dialogControllerProgress.open()

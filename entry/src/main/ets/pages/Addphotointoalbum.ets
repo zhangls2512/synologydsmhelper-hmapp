@@ -17,6 +17,11 @@ export default struct Addphotointoalbum {
   @Local buttonHoverId: number = -1
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
+  dialogControllerProgress = new CustomDialogController({
+    builder: LoadingDialog({
+      content: '请求中...'
+    })
+  })
 
   @Builder
   NewalbumSheetBuilder() {
@@ -119,18 +124,13 @@ export default struct Addphotointoalbum {
               }
             })
             .onClick(async () => {
-              const dialogControllerProgress = new CustomDialogController({
-                builder: LoadingDialog({
-                  content: '加载中...'
-                })
-              })
-              dialogControllerProgress.open()
+              this.dialogControllerProgress.open()
               const res = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.NormalAlbum', new url.URLParams({
                 method: 'add_item',
                 id: String(item.id),
                 item: JSON.stringify([this.addId])
               }).toString())
-              dialogControllerProgress.close()
+              this.dialogControllerProgress.close()
               if (res !== 'fail') {
                 await promptAction.openToast({
                   message: '加入成功'
@@ -164,18 +164,13 @@ export default struct Addphotointoalbum {
       this.context.eventHub.on('refreshAlbum', () => {
         this.isShowAddphotointoalbumSheet = false
       })
-      const loadingDialogControllerProgress = new CustomDialogController({
-        builder: LoadingDialog({
-          content: '加载中...'
-        })
-      })
-      loadingDialogControllerProgress.open()
+      this.dialogControllerProgress.open()
       const res = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.NormalAlbum', new url.URLParams({
         method: 'list',
         offset: '0',
         limit: '5000'
       }).toString(), 2)
-      loadingDialogControllerProgress.close()
+      this.dialogControllerProgress.close()
       if (res !== 'fail') {
         this.albumArray = res['list']
       }

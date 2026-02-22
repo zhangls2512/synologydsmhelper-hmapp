@@ -22,7 +22,7 @@ export default struct Me {
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   dialogControllerProgress = new CustomDialogController({
     builder: LoadingDialog({
-      content: '加载中...'
+      content: '请求中...'
     })
   })
 
@@ -472,14 +472,9 @@ export default struct Me {
                 ]
               })
               if (data.index === 0) {
-                const dialogControllerProgress = new CustomDialogController({
-                  builder: LoadingDialog({
-                    content: '注销会话中...'
-                  })
-                })
-                dialogControllerProgress.open()
+                this.dialogControllerProgress.open()
                 await exitAccount(this.context, true)
-                dialogControllerProgress.close()
+                this.dialogControllerProgress.close()
               }
               if (data.index === 1) {
                 await exitAccount(this.context, false)

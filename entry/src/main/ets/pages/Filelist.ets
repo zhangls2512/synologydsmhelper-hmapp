@@ -88,19 +88,9 @@ export default struct Filelist {
   debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'debugSetting'
   })
-  deleteDialogControllerProgress = new CustomDialogController({
+  dialogControllerProgress = new CustomDialogController({
     builder: LoadingDialog({
-      content: '删除中...'
-    })
-  })
-  prepareDownloadDialogControllerProgress = new CustomDialogController({
-    builder: LoadingDialog({
-      content: '下载准备中...'
-    })
-  })
-  searchDialogControllerProgress = new CustomDialogController({
-    builder: LoadingDialog({
-      content: '搜索中...'
+      content: '请求中...'
     })
   })
 
@@ -174,7 +164,7 @@ export default struct Filelist {
   }
 
   async search() {
-    this.searchDialogControllerProgress.open()
+    this.dialogControllerProgress.open()
     const res = await dsmRequest(this.context, '', 'SYNO.FileStation.Search', new url.URLParams({
       method: 'start',
       folder_path: JSON.stringify([this.getPath()]),
@@ -221,7 +211,7 @@ export default struct Filelist {
         }
       }
     }
-    this.searchDialogControllerProgress.close()
+    this.dialogControllerProgress.close()
   }
 
   @Builder
@@ -339,9 +329,9 @@ export default struct Filelist {
                   if (selectFileDownloadPath) {
                     filePath = uris[0]
                   }
-                  this.prepareDownloadDialogControllerProgress.open()
+                  this.dialogControllerProgress.open()
                   const version = await getDsmApiMaxVersion(this.context, '', 'SYNO.FileStation.Download')
-                  this.prepareDownloadDialogControllerProgress.close()
+                  this.dialogControllerProgress.close()
                   if (version !== 'fail') {
                     const wandAgent = await wantAgent.getWantAgent({
                       wants: [
@@ -486,12 +476,7 @@ export default struct Filelist {
               content: '解压缩'
             })
               .onClick(async () => {
-                const extractDialogControllerProgress = new CustomDialogController({
-                  builder: LoadingDialog({
-                    content: '解压缩中...'
-                  })
-                })
-                extractDialogControllerProgress.open()
+                this.dialogControllerProgress.open()
                 const startres = await dsmRequest(this.context, '', 'SYNO.FileStation.Extract', new url.URLParams({
                   method: 'start',
                   file_path: item.path,
@@ -520,7 +505,7 @@ export default struct Filelist {
                     }
                   }
                 }
-                extractDialogControllerProgress.close()
+                this.dialogControllerProgress.close()
               })
           }
         }
@@ -529,17 +514,12 @@ export default struct Filelist {
           content: '分享'
         })
           .onClick(async () => {
-            const dialogControllerProgress = new CustomDialogController({
-              builder: LoadingDialog({
-                content: '获取分享链接...'
-              })
-            })
-            dialogControllerProgress.open()
+            this.dialogControllerProgress.open()
             const res = await dsmRequest(this.context, '', 'SYNO.FileStation.Sharing', new url.URLParams({
               method: 'create',
               path: JSON.stringify([item.path])
             }).toString())
-            dialogControllerProgress.close()
+            this.dialogControllerProgress.close()
             if (res !== 'fail') {
               const links = res['links'] as ShareLinkItem[]
               const qrcodebase64 = links[0].qrcode.slice(22)
@@ -600,7 +580,7 @@ export default struct Filelist {
               ]
             })
             if (data.index === 1) {
-              this.deleteDialogControllerProgress.open()
+              this.dialogControllerProgress.open()
               const startres = await dsmRequest(this.context, '', 'SYNO.FileStation.Delete', new url.URLParams({
                 method: 'start',
                 path: item.path
@@ -627,7 +607,7 @@ export default struct Filelist {
                   }
                 }
               }
-              this.deleteDialogControllerProgress.close()
+              this.dialogControllerProgress.close()
             }
           })
       }
@@ -770,19 +750,14 @@ export default struct Filelist {
                   })
                   return
                 }
-                const prepareDialogControllerProgress = new CustomDialogController({
-                  builder: LoadingDialog({
-                    content: '复制准备中...'
-                  })
-                })
-                prepareDialogControllerProgress.open()
+                this.dialogControllerProgress.open()
                 const startres = await dsmRequest(this.context, '', 'SYNO.FileStation.CopyMove', new url.URLParams({
                   method: 'start',
                   path: JSON.stringify(this.multipleSelectArray.map(item => item.path)),
                   dest_folder_path: this.getPath(),
                   remove_src: 'false'
                 }).toString())
-                prepareDialogControllerProgress.close()
+                this.dialogControllerProgress.close()
                 const length = this.multipleSelectArray.length
                 this.multipleSelect = false
                 this.multipleSelectArray = []
@@ -887,12 +862,7 @@ export default struct Filelist {
                   })
                   return
                 }
-                const dialogControllerProgress = new CustomDialogController({
-                  builder: LoadingDialog({
-                    content: '移动中...'
-                  })
-                })
-                dialogControllerProgress.open()
+                this.dialogControllerProgress.open()
                 const startres = await dsmRequest(this.context, '', 'SYNO.FileStation.CopyMove', new url.URLParams({
                   method: 'start',
                   path: JSON.stringify(this.multipleSelectArray.map(item => item.path)),
@@ -924,7 +894,7 @@ export default struct Filelist {
                     }
                   }
                 }
-                dialogControllerProgress.close()
+                this.dialogControllerProgress.close()
               })
 
               Column() {
@@ -971,7 +941,7 @@ export default struct Filelist {
                   ]
                 })
                 if (data.index === 1) {
-                  this.deleteDialogControllerProgress.open()
+                  this.dialogControllerProgress.open()
                   const startres = await dsmRequest(this.context, '', 'SYNO.FileStation.Delete', new url.URLParams({
                     method: 'start',
                     path: JSON.stringify(this.multipleSelectArray.map(item => item.path))
@@ -1001,7 +971,7 @@ export default struct Filelist {
                       }
                     }
                   }
-                  this.deleteDialogControllerProgress.close()
+                  this.dialogControllerProgress.close()
                 }
               })
             }
@@ -1274,19 +1244,14 @@ export default struct Filelist {
                 if (this.remove) {
                   text = '移动'
                 }
-                const prepareDialogControllerProgress = new CustomDialogController({
-                  builder: LoadingDialog({
-                    content: text + '准备中...'
-                  })
-                })
-                prepareDialogControllerProgress.open()
+                this.dialogControllerProgress.open()
                 const startres = await dsmRequest(this.context, '', 'SYNO.FileStation.CopyMove', new url.URLParams({
                   method: 'start',
                   path: JSON.stringify([this.copyMovePath]),
                   dest_folder_path: this.getPath(),
                   remove_src: String(this.remove)
                 }).toString())
-                prepareDialogControllerProgress.close()
+                this.dialogControllerProgress.close()
                 const lastIndex = this.copyMovePath.lastIndexOf('/')
                 const fileName = this.copyMovePath.slice(lastIndex + 1)
                 this.copyMovePath = ''
@@ -1391,12 +1356,8 @@ export default struct Filelist {
                 await promptAction.openToast({
                   message: '敬请期待'
                 })
-                /*const compressDialogControllerProgress = new CustomDialogController({
-                  builder: LoadingDialog({
-                    content: '压缩中...'
-                  })
-                })
-                compressDialogControllerProgress.open()
+                /*
+                this.dialogControllerProgress.open()
                 const startres = await dsmRequest(this.context, '', 'SYNO.FileStation.Compress', new url.URLParams({
                   method: 'start',
                   path: JSON.stringify(this.multipleSelectArray.map(item => item.path)),
@@ -1427,7 +1388,7 @@ export default struct Filelist {
                     }
                   }
                 }
-                compressDialogControllerProgress.close()*/
+                this.dialogControllerProgress.close()*/
               })
 
               if (!this.fileArray.every(item => this.multipleSelectArray.find(selectItem => selectItem.path ===
@@ -1620,18 +1581,13 @@ export default struct Filelist {
                         const supportedformats = ['mp4', 'mkv', 'm4a', 'aac', 'mp3', 'ogg', 'wav', 'flac', 'amr', 'ape']
                         if (supportedformats.includes(houzhui) &&
                         this.commonSettingDataPreferences.getSync('onlinePreviewMedia', true)) {
-                          const dialogControllerProgress = new CustomDialogController({
-                            builder: LoadingDialog({
-                              content: '播放准备中...'
-                            })
-                          })
-                          dialogControllerProgress.open()
+                          this.dialogControllerProgress.open()
                           const res = await dsmRequest(this.context, '', 'SYNO.API.Auth.Key', new url.URLParams({
                             method: 'grant',
                             allow_api: 'SYNO.FileStation.Download',
                             allow_methods: JSON.stringify(['download'])
                           }).toString())
-                          dialogControllerProgress.close()
+                          this.dialogControllerProgress.close()
                           if (res !== 'fail') {
                             const tid = res['tid'] as string
                             const accountInfo = await getAccountInfo()
@@ -1684,9 +1640,9 @@ export default struct Filelist {
                             await fileIo.mkdir(previewDir, true)
                           }
                           const filePath = previewDir + '/' + item.name
-                          this.prepareDownloadDialogControllerProgress.open()
+                          this.dialogControllerProgress.open()
                           const version = await getDsmApiMaxVersion(this.context, '', 'SYNO.FileStation.Download')
-                          this.prepareDownloadDialogControllerProgress.close()
+                          this.dialogControllerProgress.close()
                           if (version !== 'fail') {
                             const wandAgent = await wantAgent.getWantAgent({
                               wants: [

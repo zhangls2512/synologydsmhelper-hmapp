@@ -34,7 +34,7 @@ export default struct Newalbum {
               }
               const dialogControllerProgress = new CustomDialogController({
                 builder: LoadingDialog({
-                  content: '加载中...'
+                  content: '请求中...'
                 })
               })
               dialogControllerProgress.open()

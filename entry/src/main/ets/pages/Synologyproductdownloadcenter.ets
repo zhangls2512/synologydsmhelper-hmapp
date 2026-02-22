@@ -92,7 +92,7 @@ struct Synologyproductdownloadcenter {
               this.files = []
               const dialogControllerProgress = new CustomDialogController({
                 builder: LoadingDialog({
-                  content: '查询中...'
+                  content: '请求中...'
                 })
               })
               dialogControllerProgress.open()

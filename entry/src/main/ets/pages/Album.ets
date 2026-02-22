@@ -147,14 +147,9 @@ export default struct Album {
   debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
     name: 'debugSetting'
   })
-  deleteDialogControllerProgress = new CustomDialogController({
+  dialogControllerProgress = new CustomDialogController({
     builder: LoadingDialog({
-      content: '删除中...'
-    })
-  })
-  loadingDialogControllerProgress = new CustomDialogController({
-    builder: LoadingDialog({
-      content: '加载中...'
+      content: '请求中...'
     })
   })
 
@@ -179,13 +174,13 @@ export default struct Album {
     if (this.isLogin) {
       if (refresh !== 0) {
         this.albumArray = []
-        this.loadingDialogControllerProgress.open()
+        this.dialogControllerProgress.open()
         const albumres = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.Album', new url.URLParams({
           method: 'list',
           offset: '0',
           limit: '5000'
         }).toString())
-        this.loadingDialogControllerProgress.close()
+        this.dialogControllerProgress.close()
         if (albumres !== 'fail') {
           this.albumArray = albumres['list']
         }
@@ -209,11 +204,11 @@ export default struct Album {
         }
         this.timelineArray = []
         this.photoArray = []
-        this.loadingDialogControllerProgress.open()
+        this.dialogControllerProgress.open()
         const timelineres = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.Timeline', new url.URLParams({
           method: 'get'
         }).toString())
-        this.loadingDialogControllerProgress.close()
+        this.dialogControllerProgress.close()
         if (timelineres !== 'fail') {
           const timelineSection = timelineres as TimelineResponse
           let timelineList: TimelineListItem[] = []
@@ -229,13 +224,13 @@ export default struct Album {
               count: item.item_count
             })
           })
-          this.loadingDialogControllerProgress.open()
+          this.dialogControllerProgress.open()
           const keyres = await dsmRequest(this.context, '', 'SYNO.API.Auth.Key', new url.URLParams({
             method: 'grant',
             allow_api: 'SYNO.FileStation.Download',
             allow_methods: JSON.stringify(['download'])
           }).toString())
-          this.loadingDialogControllerProgress.close()
+          this.dialogControllerProgress.close()
           if (keyres !== 'fail') {
             const tid = keyres['tid'] as string
             const textEncoder = new util.TextEncoder()
@@ -358,13 +353,13 @@ export default struct Album {
 
   async getAlbumPhoto() {
     this.albumPhotoArray = []
-    this.loadingDialogControllerProgress.open()
+    this.dialogControllerProgress.open()
     const res = await dsmRequest(this.context, '', 'SYNO.API.Auth.Key', new url.URLParams({
       method: 'grant',
       allow_api: 'SYNO.FileStation.Download',
       allow_methods: JSON.stringify(['download'])
     }).toString())
-    this.loadingDialogControllerProgress.close()
+    this.dialogControllerProgress.close()
     if (res !== 'fail') {
       const tid = res['tid'] as string
       const accountInfo = await getAccountInfo()
@@ -720,12 +715,7 @@ export default struct Album {
         })
           .onClick(async () => {
             if (item.type === 'photo') {
-              const dialogControllerProgress = new CustomDialogController({
-                builder: LoadingDialog({
-                  content: '下载中...'
-                })
-              })
-              dialogControllerProgress.open()
+              this.dialogControllerProgress.open()
               const version = await getDsmApiMaxVersion(this.context, '', 'SYNO.FileStation.Download')
               if (version !== 'fail') {
                 const dir = this.context.tempDir + '/downloadphoto'
@@ -748,8 +738,8 @@ export default struct Album {
                           await fileStream.write(incomingData)
                         },
                         onDataEnd: async () => {
-                          dialogControllerProgress.close()
                           session.close()
+                          this.dialogControllerProgress.close()
                           netBoost.setSceneDesc({
                             scene: 'download',
                             sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
@@ -820,7 +810,7 @@ export default struct Album {
                 }
                 return
               }
-              dialogControllerProgress.close()
+              this.dialogControllerProgress.close()
             }
             if (item.type === 'video') {
               if (getCurrentNetworkBearerType() === 0) {
@@ -876,14 +866,9 @@ export default struct Album {
                   if (selectFileDownloadPath) {
                     filePath = uris[0]
                   }
-                  const prepareDownloadDialogControllerProgress = new CustomDialogController({
-                    builder: LoadingDialog({
-                      content: '下载准备中...'
-                    })
-                  })
-                  prepareDownloadDialogControllerProgress.open()
+                  this.dialogControllerProgress.open()
                   const version = await getDsmApiMaxVersion(this.context, '', 'SYNO.FileStation.Download')
-                  prepareDownloadDialogControllerProgress.close()
+                  this.dialogControllerProgress.close()
                   if (version !== 'fail') {
                     const wandAgent = await wantAgent.getWantAgent({
                       wants: [
@@ -1052,7 +1037,7 @@ export default struct Album {
             ]
           })
           if (data.index === 1) {
-            this.deleteDialogControllerProgress.open()
+            this.dialogControllerProgress.open()
             const startres = await dsmRequest(this.context, '', 'SYNO.FileStation.Delete', new url.URLParams({
               method: 'start',
               path: item.path
@@ -1093,7 +1078,7 @@ export default struct Album {
                 }
               }
             }
-            this.deleteDialogControllerProgress.close()
+            this.dialogControllerProgress.close()
           }
         })
       if (this.previewAlbum) {
@@ -1102,13 +1087,13 @@ export default struct Album {
         })
           .contentFontColor($r('sys.color.warning'))
           .onClick(async () => {
-            this.deleteDialogControllerProgress.open()
+            this.dialogControllerProgress.open()
             const res = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.NormalAlbum', new url.URLParams({
               method: 'delete_item',
               item: JSON.stringify([item.id]),
               id: String(this.previewAlbum?.id)
             }).toString())
-            this.deleteDialogControllerProgress.close()
+            this.dialogControllerProgress.close()
             if (res !== 'fail') {
               await promptAction.openToast({
                 message: '删除成功'
@@ -1155,12 +1140,12 @@ export default struct Album {
             ]
           })
           if (data.index === 1) {
-            this.deleteDialogControllerProgress.open()
+            this.dialogControllerProgress.open()
             const res = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.Album', new url.URLParams({
               method: 'delete',
               id: JSON.stringify([item.id])
             }).toString())
-            this.deleteDialogControllerProgress.close()
+            this.dialogControllerProgress.close()
             if (res !== 'fail') {
               await promptAction.openToast({
                 message: '删除成功'

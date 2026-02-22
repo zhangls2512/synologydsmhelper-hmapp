@@ -34,7 +34,7 @@ export default struct Newfolder {
               }
               const dialogControllerProgress = new CustomDialogController({
                 builder: LoadingDialog({
-                  content: '新建中...'
+                  content: '请求中...'
                 })
               })
               dialogControllerProgress.open()
