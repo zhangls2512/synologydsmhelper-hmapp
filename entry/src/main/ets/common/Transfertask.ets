@@ -115,7 +115,6 @@ export async function download(context: Context, id: string) {
                 fileStream.closeSync()
                 await backgroundTaskManager.stopBackgroundRunning(context,
                   continuousTaskNotificationInfo.continuousTaskId)
-                transferTask.status = 'success'
               }
             }
           },

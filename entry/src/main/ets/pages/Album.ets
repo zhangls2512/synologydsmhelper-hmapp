@@ -745,29 +745,6 @@ export default struct Album {
                             sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
                           })
                           fileStream.closeSync()
-                          const uri = fileUri.getUriFromPath(path)
-                          let houzhui = ''
-                          const lastDotIndex = item.filename.lastIndexOf('.')
-                          if (lastDotIndex !== -1) {
-                            houzhui = item.filename.slice(lastDotIndex + 1)
-                          }
-                          const phAccessHelper = photoAccessHelper.getPhotoAccessHelper(this.context)
-                          const uris = await phAccessHelper.showAssetsCreationDialog([uri], [{
-                            fileNameExtension: houzhui,
-                            photoType: photoAccessHelper.PhotoType.IMAGE
-                          }])
-                          await phAccessHelper.release()
-                          if (uris.length === 1) {
-                            const srcFile = fileIo.openSync(uri)
-                            const destFile = fileIo.openSync(uris[0], fileIo.OpenMode.WRITE_ONLY)
-                            await fileIo.copyFile(srcFile.fd, destFile.fd)
-                            fileIo.closeSync(srcFile)
-                            fileIo.closeSync(destFile)
-                            await fileIo.unlink(path)
-                            await promptAction.openToast({
-                              message: '保存成功'
-                            })
-                          }
                         }
                       }
                     },
@@ -803,11 +780,36 @@ export default struct Album {
                       message: 'HTTP 请求失败，状态码：' + response.statusCode
                     })
                   }
+                  if (response.statusCode === 200) {
+                    const uri = fileUri.getUriFromPath(path)
+                    let houzhui = ''
+                    const lastDotIndex = item.filename.lastIndexOf('.')
+                    if (lastDotIndex !== -1) {
+                      houzhui = item.filename.slice(lastDotIndex + 1)
+                    }
+                    const phAccessHelper = photoAccessHelper.getPhotoAccessHelper(this.context)
+                    const uris = await phAccessHelper.showAssetsCreationDialog([uri], [{
+                      fileNameExtension: houzhui,
+                      photoType: photoAccessHelper.PhotoType.IMAGE
+                    }])
+                    await phAccessHelper.release()
+                    if (uris.length === 1) {
+                      const srcFile = fileIo.openSync(uri)
+                      const destFile = fileIo.openSync(uris[0], fileIo.OpenMode.WRITE_ONLY)
+                      await fileIo.copyFile(srcFile.fd, destFile.fd)
+                      fileIo.closeSync(srcFile)
+                      fileIo.closeSync(destFile)
+                      await promptAction.openToast({
+                        message: '保存成功'
+                      })
+                    }
+                  }
                 } catch (err) {
                   await promptAction.openToast({
                     message: '下载失败，错误码：' + err.code
                   })
                 }
+                await fileIo.unlink(path)
                 return
               }
               this.dialogControllerProgress.close()
@@ -838,6 +840,9 @@ export default struct Album {
                   }
                 }
               }
+              const transferTaskDataPreferences = preferences.getPreferencesSync(this.context, {
+                name: 'transferTask'
+              })
               try {
                 const documentSaveOptions = new picker.DocumentSaveOptions()
                 const selectFileDownloadPath =
@@ -943,9 +948,6 @@ export default struct Album {
                               this.context.eventHub.off('cancelDownload')
                               this.transferredSize = 0
                               this.totalSize = 0
-                              await promptAction.openToast({
-                                message: '下载完成'
-                              })
                             }
                           }
                         },
@@ -973,6 +975,11 @@ export default struct Album {
                       await promptAction.openToast({
                         message: '下载失败'
                       })
+                      transferTaskDataPreferences.putSync(util.generateRandomUUID(), JSON.stringify({
+                        name: item.filename,
+                        status: 'cancel',
+                        type: 'download'
+                      }))
                     })
                     this.totalSize = item.filesize
                     this.context.eventHub.on('cancelDownload', () => {
@@ -991,12 +998,34 @@ export default struct Album {
                         await promptAction.openToast({
                           message: 'HTTP 请求失败，状态码：' + response.statusCode
                         })
+                        transferTaskDataPreferences.putSync(util.generateRandomUUID(), JSON.stringify({
+                          name: item.filename,
+                          status: 'fail',
+                          errCode: response.statusCode,
+                          type: 'download'
+                        }))
+                      }
+                      if (response.statusCode === 200) {
+                        await promptAction.openToast({
+                          message: '下载完成'
+                        })
+                        transferTaskDataPreferences.putSync(util.generateRandomUUID(), JSON.stringify({
+                          name: item.filename,
+                          status: 'success',
+                          type: 'download'
+                        }))
                       }
                     } catch (err) {
                       if (err.code !== 1007900992) {
                         await promptAction.openToast({
                           message: '下载失败，错误码：' + err.code
                         })
+                        transferTaskDataPreferences.putSync(util.generateRandomUUID(), JSON.stringify({
+                          name: item.filename,
+                          status: 'fail',
+                          errCode: err.code,
+                          type: 'download'
+                        }))
                       }
                     }
                   }
@@ -1005,6 +1034,12 @@ export default struct Album {
                 await promptAction.openToast({
                   message: '发生错误，错误码：' + err.code
                 })
+                transferTaskDataPreferences.putSync(util.generateRandomUUID(), JSON.stringify({
+                  name: item.filename,
+                  status: 'fail',
+                  errCode: err.code,
+                  type: 'download'
+                }))
               }
             }
           })
