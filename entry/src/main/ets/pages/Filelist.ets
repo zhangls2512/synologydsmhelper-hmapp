@@ -104,7 +104,6 @@ export default struct Filelist {
 
   async get() {
     this.searchKeyword = ''
-    this.isLogin = await getLoginStatus()
     if (!this.isLogin) {
       this.account = ''
     }
@@ -1915,9 +1914,11 @@ export default struct Filelist {
         this.loading = true
       })
       this.context.eventHub.on('refreshFilelist', async () => {
-        await this.get()
+        this.isLogin = await getLoginStatus()
+        this.loading = true
       })
-      await this.get()
+      this.isLogin = await getLoginStatus()
+      this.loading = true
     })
     .onDisAppear(() => {
       this.context.eventHub.off('refreshFilelist')
