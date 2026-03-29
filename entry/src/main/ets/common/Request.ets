@@ -51,18 +51,23 @@ async function getCacheApiVersion(context: Context, path: string, api: string) {
   if (!apiVersionCacheValue) {
     return -1
   } else {
-    const apiVersionCache = JSON.parse(apiVersionCacheValue) as ApiVersionCacheItem[]
-    const apiVersionCacheItem = apiVersionCache.find(item => item.path === path)
-    if (!apiVersionCacheItem) {
-      return -1
-    } else {
-      const pathApiVersionCache = apiVersionCacheItem.apiVersion
-      const apiVersionItem = pathApiVersionCache.find(item => item.name === api)
-      if (!apiVersionItem) {
+    try {
+      const apiVersionCache = JSON.parse(apiVersionCacheValue) as ApiVersionCacheItem[]
+      const apiVersionCacheItem = apiVersionCache.find(item => item.path === path)
+      if (!apiVersionCacheItem) {
         return -1
       } else {
-        return apiVersionItem.version
+        const pathApiVersionCache = apiVersionCacheItem.apiVersion
+        const apiVersionItem = pathApiVersionCache.find(item => item.name === api)
+        if (!apiVersionItem) {
+          return -1
+        } else {
+          return apiVersionItem.version
+        }
       }
+    } catch {
+      await fileIo.unlink(filePath)
+      return -1
     }
   }
 }

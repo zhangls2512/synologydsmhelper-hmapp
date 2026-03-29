@@ -299,7 +299,7 @@ export default struct Album {
                         time: item.time,
                         folder_id: item.folder_id,
                         url: accountInfo.path + '/fbdownload/' +
-                        item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
+                          item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
                           '?tid=' + tid + '&mode=open&dlink=' + Array.from(textEncoder.encodeInto(path + item.filename))
                           .map(byte => byte.toString(16).padStart(2, '0')).join(''),
                         path: path + item.filename,
@@ -324,9 +324,10 @@ export default struct Album {
                       time: item.time,
                       folder_id: item.folder_id,
                       url: accountInfo.path + '/fbdownload/' +
-                      item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') + '?tid=' + tid + '&mode=open&dlink=' +
-                      Array.from(textEncoder.encodeInto(this.folderMap.get(item.folder_id) + item.filename))
-                        .map(byte => byte.toString(16).padStart(2, '0')).join(''),
+                        item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') + '?tid=' + tid +
+                        '&mode=open&dlink=' +
+                        Array.from(textEncoder.encodeInto(this.folderMap.get(item.folder_id) + item.filename))
+                          .map(byte => byte.toString(16).padStart(2, '0')).join(''),
                       path: this.folderMap.get(item.folder_id) + item.filename,
                       additional: item.additional,
                       type: item.type,
@@ -432,7 +433,7 @@ export default struct Album {
                   time: item.time,
                   folder_id: item.folder_id,
                   url: accountInfo.path + '/fbdownload/' +
-                  item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
+                    item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
                     '?tid=' + tid + '&mode=open&dlink=' + Array.from(textEncoder.encodeInto(path + item.filename))
                     .map(byte => byte.toString(16).padStart(2, '0')).join(''),
                   path: path + item.filename,
@@ -457,9 +458,9 @@ export default struct Album {
                 time: item.time,
                 folder_id: item.folder_id,
                 url: accountInfo.path + '/fbdownload/' +
-                item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') + '?tid=' + tid + '&mode=open&dlink=' +
-                Array.from(textEncoder.encodeInto(this.folderMap.get(item.folder_id) + item.filename))
-                  .map(byte => byte.toString(16).padStart(2, '0')).join(''),
+                  item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') + '?tid=' + tid + '&mode=open&dlink=' +
+                  Array.from(textEncoder.encodeInto(this.folderMap.get(item.folder_id) + item.filename))
+                    .map(byte => byte.toString(16).padStart(2, '0')).join(''),
                 path: this.folderMap.get(item.folder_id) + item.filename,
                 additional: item.additional,
                 type: item.type,
@@ -549,7 +550,7 @@ export default struct Album {
                 Span('尺寸：')
                   .fontWeight(FontWeight.Medium)
                 Span(this.previewPhoto.additional.resolution.width + 'x' +
-                this.previewPhoto.additional.resolution.height)
+                  this.previewPhoto.additional.resolution.height)
               }
               .margin({
                 top: $r('sys.float.ohos_id_text_margin_vertical')
@@ -737,7 +738,7 @@ export default struct Album {
                         onDataReceive: async (incomingData) => {
                           await fileStream.write(incomingData)
                         },
-                        onDataEnd: async () => {
+                        onDataEnd: () => {
                           session.close()
                           this.dialogControllerProgress.close()
                           netBoost.setSceneDesc({
@@ -917,7 +918,7 @@ export default struct Album {
                                       typeCode: 8,
                                       title: '正在下载文件：' + item.filename,
                                       text: '进度：' + Number((transferredSize / totalSize).toFixed(2)) * 100 + '% (' +
-                                      getSizeString(transferredSize) + '/' + getSizeString(totalSize) + ')'
+                                        getSizeString(transferredSize) + '/' + getSizeString(totalSize) + ')'
                                     }
                                   },
                                   id: continuousTaskNotificationInfo.notificationId,
@@ -1324,7 +1325,7 @@ export default struct Album {
                   List() {
                     ListItem() {
                       Text(this.photoArray.filter(item => item.type === 'photo').length + '张照片和' +
-                      this.photoArray.filter(item => item.type === 'video').length + '个视频')
+                        this.photoArray.filter(item => item.type === 'video').length + '个视频')
                         .enableAutoSpacing(true)
                         .fontColor($r('sys.color.font_secondary'))
                         .fontSize($r('sys.float.ohos_id_text_size_body2'))
