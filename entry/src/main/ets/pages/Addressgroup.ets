@@ -118,7 +118,6 @@ struct Addressgroup {
               Column() {
                 Row() {
                   Text(listItem)
-                    .enableAutoSpacing(true)
                     .layoutWeight(1)
                     .margin({
                       right: $r('sys.float.ohos_id_elements_margin_horizontal_m')

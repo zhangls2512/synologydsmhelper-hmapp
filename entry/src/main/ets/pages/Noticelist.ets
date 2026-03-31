@@ -269,7 +269,6 @@ export default struct Noticelist {
                   })
                 Row() {
                   Text('主题')
-                    .enableAutoSpacing(true)
                     .fontWeight(FontWeight.Medium)
                     .margin({
                       right: $r('sys.float.ohos_id_elements_margin_horizontal_m')

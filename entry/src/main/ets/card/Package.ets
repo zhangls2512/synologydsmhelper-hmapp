@@ -83,7 +83,6 @@ export default struct Package {
       if (this.installPackageArray) {
         Column() {
           Text('套件')
-            .enableAutoSpacing(true)
             .fontWeight(FontWeight.Bold)
           ForEach(this.installPackageArray, (item: InstallPackageItem) => {
             if (item.version !== item.latestVersion && item.latestVersion !== '-1') {

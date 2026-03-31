@@ -75,7 +75,6 @@ struct Apiversioncache {
                         }
                         Row() {
                           Text(apiVersionItem.name)
-                            .enableAutoSpacing(true)
                             .fontWeight(FontWeight.Medium)
                             .layoutWeight(1)
                             .margin({
