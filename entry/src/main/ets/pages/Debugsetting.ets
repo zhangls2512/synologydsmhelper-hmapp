@@ -1229,7 +1229,6 @@ struct Debugsetting {
 
         ListItem() {
           Button('恢复默认设置')
-            .align(Alignment.Center)
             .width('100%')
             .onClick(async () => {
               const promptAction = this.UIContext.getPromptAction()
