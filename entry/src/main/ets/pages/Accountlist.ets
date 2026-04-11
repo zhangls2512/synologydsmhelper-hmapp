@@ -358,7 +358,7 @@ export default struct Accountlist {
         try {
           const response = await session.get(item.path + '/webapi/entry.cgi')
           session.close()
-          if (response.statusCode === 200) {
+          if (response.statusCode >= 200 && response.statusCode < 300) {
             this.pathConnectionStatusArray[index] = 'connected'
           } else {
             this.pathConnectionStatusArray[index] = 'disconnected'

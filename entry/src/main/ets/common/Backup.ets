@@ -1,4 +1,4 @@
-import { dataSharePredicates, preferences } from '@kit.ArkData'
+import { dataSharePredicates, sendablePreferences } from '@kit.ArkData'
 import { taskpool, util } from '@kit.ArkTS'
 import { deviceInfo, zlib } from '@kit.BasicServicesKit'
 import { Environment, fileIo, fileUri } from '@kit.CoreFileKit'
@@ -32,7 +32,7 @@ export async function startBackupTask(context: Context, id: string) {
     const filestring = await read(filePath, true)
     if (filestring !== 'fail') {
       const backupTask = JSON.parse(filestring) as BackupTask
-      const transferTaskDataPreferences = preferences.getPreferencesSync(context, {
+      const transferTaskDataPreferences = sendablePreferences.getPreferencesSync(context, {
         name: 'transferTask'
       })
       const transferTaskId = util.generateRandomUUID()

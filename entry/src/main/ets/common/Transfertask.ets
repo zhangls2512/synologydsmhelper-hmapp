@@ -1,5 +1,5 @@
 import { wantAgent } from '@kit.AbilityKit'
-import { preferences } from '@kit.ArkData'
+import { preferences, sendablePreferences } from '@kit.ArkData'
 import { url } from '@kit.ArkTS'
 import { backgroundTaskManager } from '@kit.BackgroundTasksKit'
 import { deviceInfo } from '@kit.BasicServicesKit'
@@ -17,10 +17,10 @@ import { TransferTaskItem } from '../pages/Index'
 
 @Concurrent
 export async function download(context: Context, id: string) {
-  const transferTaskDataPreferences = preferences.getPreferencesSync(context, {
+  const transferTaskDataPreferences = sendablePreferences.getPreferencesSync(context, {
     name: 'transferTask'
   })
-  const debugSettingDataPreferences = preferences.getPreferencesSync(context, {
+  const debugSettingDataPreferences = sendablePreferences.getPreferencesSync(context, {
     name: 'debugSetting'
   })
   const transferTaskString = transferTaskDataPreferences.getSync(id, '{}') as string
@@ -89,7 +89,7 @@ export async function download(context: Context, id: string) {
                         typeCode: 8,
                         title: '正在下载文件：' + transferTask.name,
                         text: '进度：' + Number((transferredSize / totalSize).toFixed(2)) * 100 + '% (' +
-                        getSizeString(transferredSize) + '/' + getSizeString(totalSize) + ')'
+                          getSizeString(transferredSize) + '/' + getSizeString(totalSize) + ')'
                       }
                     },
                     id: continuousTaskNotificationInfo.notificationId,
@@ -148,12 +148,11 @@ export async function download(context: Context, id: string) {
           path: transferTask.path,
           mode: 'download'
         }).toString())
-        if (response.statusCode !== 200) {
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          transferTask.status = 'success'
+        } else {
           transferTask.status = 'fail'
           transferTask.errCode = response.statusCode
-        }
-        if (response.statusCode === 200) {
-          transferTask.status = 'success'
         }
       } catch (err) {
         if (err.code !== 1007900992) {
@@ -199,7 +198,7 @@ export async function upload(context: Context, id: string) {
         '\r\n'
       header += '--' + transferTask.id + '\r\ncontent-disposition: form-data; name="create_parents"\r\n\r\ntrue\r\n'
       header += '--' + transferTask.id + '\r\ncontent-disposition: form-data; name="file"; filename="' +
-      transferTask.name + '"\r\n\r\n'
+        transferTask.name + '"\r\n\r\n'
       await write(filePath, header)
       const srcFile = fileIo.openSync(transferTask.srcFileUri)
       const inStream = fileIo.fdopenStreamSync(srcFile.fd, 'r')
@@ -264,7 +263,7 @@ export async function upload(context: Context, id: string) {
                         typeCode: 8,
                         title: '正在上传文件：' + transferTask.name,
                         text: '进度：' + Number((transferredSize / totalSize).toFixed(2)) * 100 + '% (' +
-                        getSizeString(transferredSize) + '/' + getSizeString(totalSize) + ')'
+                          getSizeString(transferredSize) + '/' + getSizeString(totalSize) + ')'
                       }
                     },
                     id: continuousTaskNotificationInfo.notificationId,
@@ -322,16 +321,9 @@ export async function upload(context: Context, id: string) {
       try {
         const response = await session.uploadFromFile(transferTask.accountInfo.path +
           '/webapi/entry.cgi?api=SYNO.FileStation.Upload&version=' + version + '&method=upload&SynoToken=' +
-        transferTask.accountInfo.synotoken, new rcp.UploadFromFile(filePath))
-        if (response.statusCode !== 200) {
-          transferTask.status = 'fail'
-          transferTask.errCode = response.statusCode
-          if (transferTask.backupTaskId) {
-            await updateBackupTaskStatus(context, transferTask.accountInfo, transferTask.backupTaskId, false)
-          }
-        }
-        if (response.statusCode === 200) {
-          const res = JSON.parse(String(response)) as DsmResponse
+          transferTask.accountInfo.synotoken, new rcp.UploadFromFile(filePath))
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          const res = response.toJSON() as DsmResponse
           if (!res.success) {
             transferTask.status = 'fail'
             transferTask.errCode = res.error.code
@@ -351,6 +343,12 @@ export async function upload(context: Context, id: string) {
                 await deleteBackupTask(context, transferTask.accountInfo, transferTask.backupTaskId)
               }
             }
+          }
+        } else {
+          transferTask.status = 'fail'
+          transferTask.errCode = response.statusCode
+          if (transferTask.backupTaskId) {
+            await updateBackupTaskStatus(context, transferTask.accountInfo, transferTask.backupTaskId, false)
           }
         }
       } catch (err) {

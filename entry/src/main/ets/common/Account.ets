@@ -249,7 +249,7 @@ export async function loginBestPathAccount(context: Context) {
             try {
               const response = await session.get(item + '/webapi/entry.cgi')
               session.close()
-              if (response.statusCode === 200) {
+              if (response.statusCode >= 200 && response.statusCode < 300) {
                 bestPath = item
                 for (let j = 0; j < addressGroup[i].list.length; j++) {
                   context.eventHub.emit('cancelTry' + j, index)

@@ -1,6 +1,7 @@
-import { preferences } from '@kit.ArkData'
+import { common } from '@kit.AbilityKit'
 import { LengthMetrics } from '@kit.ArkUI'
-import { HdsNavDestination } from '@kit.UIDesignKit'
+import { hdsMaterial, HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType } from '@kit.UIDesignKit'
+import { getFlushPreference, setFlushPreference } from '../common/Preference'
 
 export interface Type {
   name: string,
@@ -14,11 +15,8 @@ export function AutouploaderrorlogtypeBuilder() {
 
 @ComponentV2
 struct Autouploaderrorlogtype {
-  context = this.getUIContext().getHostContext()
+  context = this.getUIContext().getHostContext() as common.UIAbilityContext
   autoUploadErrorLogType: string[] = []
-  debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-    name: 'debugSetting'
-  })
   typeArray: Type[] = [
     {
       name: 'js运行异常',
@@ -53,6 +51,10 @@ struct Autouploaderrorlogtype {
       value: 'APP_KILLED'
     },
     {
+      name: 'ArkWeb抛滑丢帧',
+      value: 'SCROLL_ARKWEB_FLING_JANK'
+    },
+    {
       name: '启动耗时',
       value: 'APP_LAUNCH'
     },
@@ -74,14 +76,13 @@ struct Autouploaderrorlogtype {
     }
   ]
 
-  getSetting() {
-    this.autoUploadErrorLogType =
-      this.debugSettingDataPreferences.getSync('autoUploadErrorLogType', ['JS_ERROR', 'APP_CRASH']) as string[]
-  }
-
   build() {
     HdsNavDestination() {
       List() {
+        ListItem()
+          .margin({
+            top: 64
+          })
         ListItem() {
           Column() {
             ForEach(this.typeArray, (item: Type, index) => {
@@ -111,8 +112,8 @@ struct Autouploaderrorlogtype {
                     if (isOn) {
                       this.autoUploadErrorLogType = Array.from(new Set([...this.autoUploadErrorLogType, item.value]))
                     }
-                    this.debugSettingDataPreferences.putSync('autoUploadErrorLogType', this.autoUploadErrorLogType)
-                    this.debugSettingDataPreferences.flushSync()
+                    setFlushPreference(this.context, 'debugSetting', 'autoUploadErrorLogType',
+                      this.autoUploadErrorLogType)
                   })
               }
               .borderRadius(12)
@@ -127,27 +128,62 @@ struct Autouploaderrorlogtype {
         .margin({
           top: $r('sys.float.ohos_id_elements_margin_vertical_m')
         })
+
+        ListItem()
+          .margin({
+            bottom: 28
+          })
       }
       .padding({
-        bottom: $r('sys.float.ohos_id_default_padding_bottom_fixed'),
         left: $r('sys.float.ohos_id_elements_margin_horizontal_l'),
         right: $r('sys.float.ohos_id_elements_margin_horizontal_l')
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
+    .recoverable(true)
     .titleBar({
       padding: {
         end: LengthMetrics.vp(60)
+      },
+      style: {
+        scrollEffectOpts: {
+          scrollEffectType: ScrollEffectType.IMMERSIVE_GRADIENT_BLUR
+        },
+        originalStyle: {
+          contentStyle: {
+            titleStyle: {
+              mainTitleColor: $r('sys.color.font_primary')
+            },
+            backIconStyle: {
+              backgroundColor: $r('sys.color.comp_background_color_floating_smooth'),
+              iconColor: $r('sys.color.icon_primary')
+            }
+          }
+        },
+        scrollEffectStyle: {
+          contentStyle: {
+            backIconStyle: {
+              backgroundColor: $r('sys.color.comp_background_color_floating_smooth'),
+              iconColor: $r('sys.color.icon_primary')
+            }
+          }
+        },
+        thermoCtrl: true,
+        systemMaterialEffect: {
+          materialType: hdsMaterial.MaterialType.ADAPTIVE,
+          materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE
+        }
       },
       content: {
         title: {
           mainTitle: '自动上传故障日志类型'
         }
-      },
-      enableComponentSafeArea: true
+      }
     })
+    .titleMode(HdsNavDestinationTitleMode.MODAL)
     .onAppear(() => {
-      this.getSetting()
+      this.autoUploadErrorLogType = getFlushPreference(this.context, 'debugSetting', 'autoUploadErrorLogType',
+        ['JS_ERROR', 'APP_CRASH']) as string[]
     })
   }
 }

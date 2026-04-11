@@ -119,8 +119,8 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
       method: 'query'
     }).toString())
     session.close()
-    if (response.statusCode === 200) {
-      const res = JSON.parse(String(response)) as DsmResponse
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      const res = response.toJSON() as DsmResponse
       if (res.success) {
         if (!res.data[api]) {
           await promptAction.openToast({
@@ -186,12 +186,8 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
             method: 'query'
           }).toString())
           sessionb.close()
-          if (responseb.statusCode === 200) {
-            let bodyb = ''
-            if (responseb.toString()) {
-              bodyb = responseb.toString() as string
-            }
-            const resb = JSON.parse(bodyb) as DsmResponse
+          if (responseb.statusCode >= 200 && responseb.statusCode < 300) {
+            const resb = responseb.toJSON() as DsmResponse
             if (resb.success) {
               if (!resb.data[api]) {
                 await promptAction.openToast({
@@ -238,11 +234,12 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
               message: 'DSM 接口调用失败，错误码：' + resb.error.code
             })
             return 'fail'
+          } else {
+            await promptAction.openToast({
+              message: 'HTTP 请求失败，状态码：' + responseb.statusCode
+            })
+            return 'fail'
           }
-          await promptAction.openToast({
-            message: 'HTTP 请求失败，状态码：' + responseb.statusCode
-          })
-          return 'fail'
         } catch (err) {
           sessionb.close()
           await promptAction.openToast({
@@ -258,11 +255,12 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
         message: 'DSM 接口调用失败，错误码：' + res.error.code
       })
       return 'fail'
+    } else {
+      await promptAction.openToast({
+        message: 'HTTP 请求失败，状态码：' + response.statusCode
+      })
+      return 'fail'
     }
-    await promptAction.openToast({
-      message: 'HTTP 请求失败，状态码：' + response.statusCode
-    })
-    return 'fail'
   } catch (err) {
     session.close()
     await promptAction.openToast({
@@ -330,11 +328,9 @@ export async function dsmRequest(context: Context, path: string, api: string, pa
     }
     const response = await session.get(path)
     session.close()
-    if (response.statusCode === 200) {
-      let res: string | DsmResponse = ''
-      try {
-        res = JSON.parse(String(response)) as DsmResponse
-      } catch {
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      const res = response.toJSON() as DsmResponse
+      if (!res) {
         return String(response)
       }
       if (res.success) {
@@ -409,11 +405,12 @@ export async function dsmRequest(context: Context, path: string, api: string, pa
         message: 'DSM 接口调用失败，错误码：' + res.error.code
       })
       return 'fail'
+    } else {
+      await promptAction.openToast({
+        message: 'HTTP 请求失败，状态码：' + response.statusCode
+      })
+      return 'fail'
     }
-    await promptAction.openToast({
-      message: 'HTTP 请求失败，状态码：' + response.statusCode
-    })
-    return 'fail'
   } catch (err) {
     session.close()
     if (err.code !== 102) {
@@ -455,19 +452,20 @@ export async function developerRequest(context: Context, path: string, body: rcp
   try {
     const response = await session.post('https://api.zhangls2512.cn' + path, body)
     session.close()
-    if (response.statusCode === 200) {
-      const res = JSON.parse(String(response)) as DeveloperErrorResponse
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      const res = response.toJSON() as DeveloperErrorResponse
       if (res.errCode === 0) {
         return String(response)
       }
       context.eventHub.emit('dialog', '接口调用失败',
         '错误码：' + res.errCode + '\n错误信息：' + res.errMsg + '\n修复方法：' + res.errFix)
       return 'fail'
+    } else {
+      await promptAction.openToast({
+        message: 'HTTP 请求失败，状态码：' + response.statusCode
+      })
+      return 'fail'
     }
-    await promptAction.openToast({
-      message: 'HTTP 请求失败，状态码：' + response.statusCode
-    })
-    return 'fail'
   } catch (err) {
     session.close()
     await promptAction.openToast({

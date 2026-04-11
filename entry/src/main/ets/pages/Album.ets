@@ -1,5 +1,5 @@
 import { common, wantAgent } from '@kit.AbilityKit'
-import { dataSharePredicates, preferences } from '@kit.ArkData'
+import { dataSharePredicates, preferences, sendablePreferences } from '@kit.ArkData'
 import { taskpool, url, util } from '@kit.ArkTS'
 import { display, LoadingDialog, promptAction, SegmentButtonV2Items, TabSegmentButtonV2, window } from '@kit.ArkUI'
 import { backgroundTaskManager } from '@kit.BackgroundTasksKit'
@@ -670,7 +670,8 @@ export default struct Album {
                   tiltGesturesEnabled: false,
                   zoomControlsEnabled: false,
                   compassControlsEnabled: false,
-                  dayNightMode: this.getDayNightMode()
+                  dayNightMode: this.getDayNightMode(),
+                  approveNumberEnabled: true
                 },
                 mapCallback: () => {
                 }
@@ -776,12 +777,7 @@ export default struct Album {
                     path: item.path,
                     mode: 'download'
                   }).toString())
-                  if (response.statusCode !== 200) {
-                    await promptAction.openToast({
-                      message: 'HTTP 请求失败，状态码：' + response.statusCode
-                    })
-                  }
-                  if (response.statusCode === 200) {
+                  if (response.statusCode >= 200 && response.statusCode < 300) {
                     const uri = fileUri.getUriFromPath(path)
                     let houzhui = ''
                     const lastDotIndex = item.filename.lastIndexOf('.')
@@ -804,6 +800,10 @@ export default struct Album {
                         message: '保存成功'
                       })
                     }
+                  } else {
+                    await promptAction.openToast({
+                      message: 'HTTP 请求失败，状态码：' + response.statusCode
+                    })
                   }
                 } catch (err) {
                   await promptAction.openToast({
@@ -841,7 +841,7 @@ export default struct Album {
                   }
                 }
               }
-              const transferTaskDataPreferences = preferences.getPreferencesSync(this.context, {
+              const transferTaskDataPreferences = sendablePreferences.getPreferencesSync(this.context, {
                 name: 'transferTask'
               })
               try {
@@ -995,7 +995,16 @@ export default struct Album {
                         path: item.path,
                         mode: 'download'
                       }).toString())
-                      if (response.statusCode !== 200) {
+                      if (response.statusCode >= 200 && response.statusCode < 300) {
+                        await promptAction.openToast({
+                          message: '下载完成'
+                        })
+                        transferTaskDataPreferences.putSync(util.generateRandomUUID(), JSON.stringify({
+                          name: item.filename,
+                          status: 'success',
+                          type: 'download'
+                        }))
+                      } else {
                         await promptAction.openToast({
                           message: 'HTTP 请求失败，状态码：' + response.statusCode
                         })
@@ -1003,16 +1012,6 @@ export default struct Album {
                           name: item.filename,
                           status: 'fail',
                           errCode: response.statusCode,
-                          type: 'download'
-                        }))
-                      }
-                      if (response.statusCode === 200) {
-                        await promptAction.openToast({
-                          message: '下载完成'
-                        })
-                        transferTaskDataPreferences.putSync(util.generateRandomUUID(), JSON.stringify({
-                          name: item.filename,
-                          status: 'success',
                           type: 'download'
                         }))
                       }
@@ -1239,7 +1238,7 @@ export default struct Album {
                   .buildEffect())
                 .width(40)
                 .onClick(async () => {
-                  const transferTaskDataPreferences = preferences.getPreferencesSync(this.context, {
+                  const transferTaskDataPreferences = sendablePreferences.getPreferencesSync(this.context, {
                     name: 'transferTask'
                   })
                   const accountInfo = await getAccountInfo()

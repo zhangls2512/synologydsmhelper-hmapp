@@ -156,7 +156,7 @@ export default class EntryAbility extends UIAbility {
           context.eventHub.emit('dialog', 'js 运行异常', '名称：' + err.name + '\n信息：' + err.message)
         }
         if (debugSettingDataPreferences.getSync('autoUploadErrorLog', true) &&
-        commonSettingDataPreferences.getSync('allService', true)) {
+          commonSettingDataPreferences.getSync('allService', true)) {
           if ((debugSettingDataPreferences.getSync('autoUploadErrorLogType',
             ['JS_ERROR', 'APP_CRASH']) as string[]).includes('JS_ERROR')) {
             context.eventHub.emit('uploadErrorLog', object.name, JSON.stringify(object))
@@ -186,7 +186,7 @@ export default class EntryAbility extends UIAbility {
           this.context.eventHub.emit('dialog', 'js 运行异常', '名称：' + err.name + '\n信息：' + err.message)
         }
         if (debugSettingDataPreferences.getSync('autoUploadErrorLog', true) &&
-        commonSettingDataPreferences.getSync('allService', true)) {
+          commonSettingDataPreferences.getSync('allService', true)) {
           if ((debugSettingDataPreferences.getSync('autoUploadErrorLogType',
             ['JS_ERROR', 'APP_CRASH']) as string[]).includes('JS_ERROR')) {
             this.context.eventHub.emit('uploadErrorLog', object.name, JSON.stringify(object))
@@ -210,7 +210,7 @@ export default class EntryAbility extends UIAbility {
           await Promise.all(promises)
         }
         if (debugSettingDataPreferences.getSync('autoUploadErrorLog', true) &&
-        commonSettingDataPreferences.getSync('allService', true)) {
+          commonSettingDataPreferences.getSync('allService', true)) {
           appEventGroups.forEach(item => {
             if ((debugSettingDataPreferences.getSync('autoUploadErrorLogType',
               ['JS_ERROR', 'APP_CRASH']) as string[]).includes(item.name)) {
@@ -274,7 +274,7 @@ export default class EntryAbility extends UIAbility {
             '数据路径：' + pathType + '\n上行带宽：' + data.linkUpBandwidth + ' bps\n下行带宽：' + data.linkDownBandwidth +
               ' bps\n上行速率：' + data.linkUpRate + ' bps\n下行速率：' + data.linkDownRate + '\nRTT 时延：' + data.rttMs +
               ' ms\n上行发送空口缓冲时延：' + data.linkUpBufferDelayMs + ' ms\n上行发送空口缓冲时延占总缓冲时间的比例：' +
-            data.linkUpBufferCongestionPercent + '%')
+              data.linkUpBufferCongestionPercent + '%')
         }
         if (debugSettingDataPreferences.getSync('autoReportHighLatency', true) &&
           data.rttMs >= debugSettingDataPreferences.getSync('highLatencyThreshold', 200)) {
@@ -523,7 +523,7 @@ export default class EntryAbility extends UIAbility {
   }
 
   async onContinue(wantParam: Record<string, Object>) {
-    if (wantParam.version !== 46) {
+    if (wantParam.version !== 47) {
       await promptAction.openToast({
         message: '接续失败，原因：目标端应用版本号与发起端不匹配'
       })

@@ -1,5 +1,5 @@
 import { common } from '@kit.AbilityKit'
-import { preferences } from '@kit.ArkData'
+import { sendablePreferences } from '@kit.ArkData'
 import { SegmentButtonV2Items, TabSegmentButtonV2 } from '@kit.ArkUI'
 import { getSizeString } from '../common/Stringformat'
 import { TransferTaskItem } from './Index'
@@ -62,7 +62,7 @@ export default struct Transfertask {
                       }
                       if (item.status === 'processing') {
                         Text(Number((item.transferredSize / item.totalSize).toFixed(2)) * 100 + '%(' +
-                        getSizeString(item.transferredSize) + '/' + getSizeString(item.totalSize) + ')')
+                          getSizeString(item.transferredSize) + '/' + getSizeString(item.totalSize) + ')')
                           .fontColor($r('sys.color.font_secondary'))
                           .fontSize($r('sys.float.ohos_id_text_size_body2'))
                           .margin({
@@ -144,7 +144,7 @@ export default struct Transfertask {
                       }
                       if (item.status === 'processing') {
                         Text(Number((item.transferredSize / item.totalSize).toFixed(2)) * 100 + '%(' +
-                        getSizeString(item.transferredSize) + '/' + getSizeString(item.totalSize) + ')')
+                          getSizeString(item.transferredSize) + '/' + getSizeString(item.totalSize) + ')')
                           .fontColor($r('sys.color.font_secondary'))
                           .fontSize($r('sys.float.ohos_id_text_size_body2'))
                           .margin({
@@ -202,7 +202,7 @@ export default struct Transfertask {
     .onAppear(() => {
       this.intervalId = setInterval(() => {
         const transferTaskArray: TransferTaskItem[] = []
-        const transferTaskDataPreferences = preferences.getPreferencesSync(this.context, {
+        const transferTaskDataPreferences = sendablePreferences.getPreferencesSync(this.context, {
           name: 'transferTask'
         })
         const transferTaskObject = transferTaskDataPreferences.getAllSync() as object

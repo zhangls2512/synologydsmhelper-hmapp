@@ -116,8 +116,8 @@ struct Synologyproductdownloadcenter {
                   }).toString())
                 session.close()
                 dialogControllerProgress.close()
-                if (response.statusCode === 200) {
-                  const res = JSON.parse(String(response)) as Response
+                if (response.statusCode >= 200 && response.statusCode < 300) {
+                  const res = response.toJSON() as Response
                   if (!res.success) {
                     await promptAction.openToast({
                       message: '暂不支持查询此产品型号'

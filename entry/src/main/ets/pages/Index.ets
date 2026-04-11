@@ -1,5 +1,5 @@
 import { common } from '@kit.AbilityKit'
-import { preferences } from '@kit.ArkData'
+import { preferences, sendablePreferences } from '@kit.ArkData'
 import { taskpool } from '@kit.ArkTS'
 import { display } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
@@ -260,7 +260,7 @@ struct Index {
     .onAppear(async () => {
       this.intervalId = setInterval(async () => {
         const transferTaskArray: TransferTaskItem[] = []
-        const transferTaskDataPreferences = preferences.getPreferencesSync(this.context, {
+        const transferTaskDataPreferences = sendablePreferences.getPreferencesSync(this.context, {
           name: 'transferTask'
         })
         const transferTaskObject = transferTaskDataPreferences.getAllSync() as object
