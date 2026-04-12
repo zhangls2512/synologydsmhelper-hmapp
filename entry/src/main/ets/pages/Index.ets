@@ -386,10 +386,7 @@ struct Index {
       display.off('change')
     })
     .bindSheet(this.isShowCleardataSheet!!, this.CleardataSheetBuilder(), {
-      preferType: this.preferType,
-      title: {
-        title: '清理数据'
-      }
+      preferType: this.preferType
     })
   }
 }

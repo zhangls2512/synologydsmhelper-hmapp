@@ -355,6 +355,7 @@ export default struct Filelist {
                       sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
                     })
                     const accountInfo = await getAccountInfo()
+                    let lastUpdateTime = 0
                     const session = rcp.createSession({
                       requestConfiguration: {
                         transfer: {
@@ -368,32 +369,36 @@ export default struct Filelist {
                               await fileStream.write(incomingData)
                             },
                             onDownloadProgress: async (totalSize, transferredSize) => {
-                              this.transferredSize = transferredSize
-                              try {
-                                await notificationManager.publish({
-                                  content: {
-                                    notificationContentType: notificationManager.ContentType.NOTIFICATION_CONTENT_SYSTEM_LIVE_VIEW,
-                                    systemLiveView: {
-                                      typeCode: 8,
-                                      title: '正在下载文件：' + item.name,
-                                      text: '进度：' + Number((transferredSize / totalSize).toFixed(2)) * 100 + '% (' +
-                                        getSizeString(transferredSize) + '/' + getSizeString(totalSize) + ')'
+                              const currentTime = Date.now()
+                              if (currentTime - lastUpdateTime >= 50) {
+                                this.transferredSize = transferredSize
+                                try {
+                                  await notificationManager.publish({
+                                    content: {
+                                      notificationContentType: notificationManager.ContentType.NOTIFICATION_CONTENT_SYSTEM_LIVE_VIEW,
+                                      systemLiveView: {
+                                        typeCode: 8,
+                                        title: '正在下载文件：' + item.name,
+                                        text: '进度：' + Number((transferredSize / totalSize).toFixed(2)) * 100 + '% (' +
+                                          getSizeString(transferredSize) + '/' + getSizeString(totalSize) + ')'
+                                      }
+                                    },
+                                    id: continuousTaskNotificationInfo.notificationId,
+                                    notificationSlotType: notificationManager.SlotType.LIVE_VIEW,
+                                    template: {
+                                      name: 'downloadTemplate',
+                                      data: {
+                                        title: '正在下载文件，进度：' +
+                                          Number((transferredSize / totalSize).toFixed(2)) * 100 + '%',
+                                        fileName: item.name,
+                                        progressValue: Number((transferredSize / totalSize).toFixed(2)) * 100
+                                      }
                                     }
-                                  },
-                                  id: continuousTaskNotificationInfo.notificationId,
-                                  notificationSlotType: notificationManager.SlotType.LIVE_VIEW,
-                                  template: {
-                                    name: 'downloadTemplate',
-                                    data: {
-                                      title: '正在下载文件，进度：' +
-                                        Number((transferredSize / totalSize).toFixed(2)) * 100 + '%',
-                                      fileName: item.name,
-                                      progressValue: Number((transferredSize / totalSize).toFixed(2)) * 100
-                                    }
-                                  }
-                                })
-                              } catch {
+                                  })
+                                } catch {
+                                }
                               }
+                              lastUpdateTime = currentTime
                             },
                             onDataEnd: async () => {
                               session.close()
@@ -1695,6 +1700,7 @@ export default struct Filelist {
                               sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
                             })
                             const accountInfo = await getAccountInfo()
+                            let lastUpdateTime = 0
                             const session = rcp.createSession({
                               requestConfiguration: {
                                 transfer: {
@@ -1708,33 +1714,37 @@ export default struct Filelist {
                                       await fileStream.write(incomingData)
                                     },
                                     onDownloadProgress: async (totalSize, transferredSize) => {
-                                      this.transferredSize = transferredSize
-                                      try {
-                                        await notificationManager.publish({
-                                          content: {
-                                            notificationContentType: notificationManager.ContentType.NOTIFICATION_CONTENT_SYSTEM_LIVE_VIEW,
-                                            systemLiveView: {
-                                              typeCode: 8,
-                                              title: '正在下载文件：' + item.name,
-                                              text: '进度：' + Number((transferredSize / totalSize).toFixed(2)) * 100 +
-                                                '% (' + getSizeString(transferredSize) + '/' +
-                                                getSizeString(totalSize) + ')'
+                                      const currentTime = Date.now()
+                                      if (currentTime - lastUpdateTime >= 50) {
+                                        this.transferredSize = transferredSize
+                                        try {
+                                          await notificationManager.publish({
+                                            content: {
+                                              notificationContentType: notificationManager.ContentType.NOTIFICATION_CONTENT_SYSTEM_LIVE_VIEW,
+                                              systemLiveView: {
+                                                typeCode: 8,
+                                                title: '正在下载文件：' + item.name,
+                                                text: '进度：' + Number((transferredSize / totalSize).toFixed(2)) * 100 +
+                                                  '% (' + getSizeString(transferredSize) + '/' +
+                                                  getSizeString(totalSize) + ')'
+                                              }
+                                            },
+                                            id: continuousTaskNotificationInfo.notificationId,
+                                            notificationSlotType: notificationManager.SlotType.LIVE_VIEW,
+                                            template: {
+                                              name: 'downloadTemplate',
+                                              data: {
+                                                title: '正在下载文件，进度：' +
+                                                  Number((transferredSize / totalSize).toFixed(2)) * 100 + '%',
+                                                fileName: item.name,
+                                                progressValue: Number((transferredSize / totalSize).toFixed(2)) * 100
+                                              }
                                             }
-                                          },
-                                          id: continuousTaskNotificationInfo.notificationId,
-                                          notificationSlotType: notificationManager.SlotType.LIVE_VIEW,
-                                          template: {
-                                            name: 'downloadTemplate',
-                                            data: {
-                                              title: '正在下载文件，进度：' +
-                                                Number((transferredSize / totalSize).toFixed(2)) * 100 + '%',
-                                              fileName: item.name,
-                                              progressValue: Number((transferredSize / totalSize).toFixed(2)) * 100
-                                            }
-                                          }
-                                        })
-                                      } catch {
+                                          })
+                                        } catch {
+                                        }
                                       }
+                                      lastUpdateTime = currentTime
                                     },
                                     onDataEnd: async () => {
                                       session.close()
