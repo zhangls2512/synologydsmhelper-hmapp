@@ -1,5 +1,4 @@
 import { common } from '@kit.AbilityKit'
-import { preferences } from '@kit.ArkData'
 import { promptAction } from '@kit.ArkUI'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { hdsEffect } from '@kit.UIDesignKit'
@@ -7,6 +6,7 @@ import { AccountInfo, getAccountList, removeAccount, setAccount, setAccountBz } 
 import { autoBackup } from '../common/Backup'
 import { getDnsServer } from '../common/Dnsserver'
 import copy from '../common/Pasteboard'
+import { getFlushPreference } from '../common/Preference'
 
 @ComponentV2
 export default struct Accountlist {
@@ -18,12 +18,6 @@ export default struct Accountlist {
   @Local hoverId: number = -1
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
-  commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-    name: 'commonSetting'
-  })
-  debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-    name: 'debugSetting'
-  })
 
   @Builder
   MenuBuilder(item: AccountInfo) {
@@ -262,7 +256,7 @@ export default struct Accountlist {
                 })
                 this.context.eventHub.emit('refreshCardlist')
                 this.context.eventHub.emit('refreshFilelist')
-                if (this.commonSettingDataPreferences.getSync('showAlbum', true)) {
+                if (getFlushPreference(this.context, 'commonSetting', 'showAlbum', true)) {
                   this.context.eventHub.emit('refreshAlbum')
                 }
                 this.context.eventHub.emit('refreshMe')
@@ -347,7 +341,7 @@ export default struct Accountlist {
               dnsRules: getDnsServer(this.context)
             },
             security: {
-              remoteValidation: this.debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
+              remoteValidation: getFlushPreference(this.context, 'debugSetting', 'closeRemoteValidationWhenLinkDsm',
                 'system') as 'system' | 'skip',
               tlsRange: {
                 min: 'TlsV1.2'

@@ -1,5 +1,5 @@
 import { wantAgent } from '@kit.AbilityKit'
-import { preferences, sendablePreferences } from '@kit.ArkData'
+import { sendablePreferences } from '@kit.ArkData'
 import { url } from '@kit.ArkTS'
 import { backgroundTaskManager } from '@kit.BackgroundTasksKit'
 import { deviceInfo } from '@kit.BasicServicesKit'
@@ -11,6 +11,7 @@ import { deleteBackupTask, updateBackupTaskStatus } from './Backup'
 import { getDnsServer } from './Dnsserver'
 import { write } from './File'
 import { getPermission } from './Permission'
+import { getFlushPreference } from './Preference'
 import { DsmResponse, getDsmApiMaxVersion } from './Request'
 import { getSizeString } from './Stringformat'
 import { TransferTaskItem } from '../pages/Index'
@@ -20,19 +21,13 @@ export async function download(context: Context, id: string) {
   const transferTaskDataPreferences = sendablePreferences.getPreferencesSync(context, {
     name: 'transferTask'
   })
-  const debugSettingDataPreferences = sendablePreferences.getPreferencesSync(context, {
-    name: 'debugSetting'
-  })
   const transferTaskString = transferTaskDataPreferences.getSync(id, '{}') as string
   const transferTask = JSON.parse(transferTaskString) as TransferTaskItem
   transferTask.status = 'processing'
   transferTaskDataPreferences.putSync(id, JSON.stringify(transferTask))
   try {
     let filePath = ''
-    const commonSettingDataPreferences = preferences.getPreferencesSync(context, {
-      name: 'commonSetting'
-    })
-    const downloadDirectory = commonSettingDataPreferences.getSync('downloadDirectory', 0)
+    const downloadDirectory = getFlushPreference(context, 'commonSetting', 'downloadDirectory', 0)
     if (downloadDirectory === 1 && getPermission('ohos.permission.READ_WRITE_DOWNLOAD_DIRECTORY') &&
       deviceInfo.deviceType !== 'phone') {
       filePath = Environment.getUserDownloadDir() + '/' + transferTask.name
@@ -127,7 +122,7 @@ export async function download(context: Context, id: string) {
             dnsRules: getDnsServer(context)
           },
           security: {
-            remoteValidation: debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
+            remoteValidation: getFlushPreference(context, 'debugSetting', 'closeRemoteValidationWhenLinkDsm',
               'system') as 'system' | 'skip',
             tlsRange: {
               min: 'TlsV1.2'
@@ -181,11 +176,8 @@ export async function download(context: Context, id: string) {
 
 @Concurrent
 export async function upload(context: Context, id: string) {
-  const transferTaskDataPreferences = preferences.getPreferencesSync(context, {
+  const transferTaskDataPreferences = sendablePreferences.getPreferencesSync(context, {
     name: 'transferTask'
-  })
-  const debugSettingDataPreferences = preferences.getPreferencesSync(context, {
-    name: 'debugSetting'
   })
   const transferTaskString = transferTaskDataPreferences.getSync(id, '{}') as string
   const transferTask = JSON.parse(transferTaskString) as TransferTaskItem
@@ -309,7 +301,7 @@ export async function upload(context: Context, id: string) {
             dnsRules: getDnsServer(context)
           },
           security: {
-            remoteValidation: debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
+            remoteValidation: getFlushPreference(context, 'debugSetting', 'closeRemoteValidationWhenLinkDsm',
               'system') as 'system' | 'skip',
             tlsRange: {
               min: 'TlsV1.2'
@@ -345,10 +337,7 @@ export async function upload(context: Context, id: string) {
             transferTask.status = 'success'
             if (transferTask.backupTaskId) {
               await updateBackupTaskStatus(context, transferTask.accountInfo, transferTask.backupTaskId, true)
-              const backupSettingDataPreferences = preferences.getPreferencesSync(context, {
-                name: 'backupSetting'
-              })
-              const deleteAfterSuccess = backupSettingDataPreferences.getSync('deleteAfterSuccess', true)
+              const deleteAfterSuccess = getFlushPreference(context, 'backupSetting', 'deleteAfterSuccess', true)
               if (deleteAfterSuccess) {
                 await deleteBackupTask(context, transferTask.accountInfo, transferTask.backupTaskId)
               }

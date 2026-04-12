@@ -1,5 +1,4 @@
 import { common } from '@kit.AbilityKit'
-import { preferences } from '@kit.ArkData'
 import { url } from '@kit.ArkTS'
 import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
@@ -7,6 +6,7 @@ import { getAccountInfo } from '../common/Account'
 import { read, write } from '../common/File'
 import { dsmRequest } from '../common/Request'
 import { sha256hash } from '../common/Hash'
+import { getFlushPreference } from '../common/Preference'
 import { getTimeStringFromSecond } from '../common/Stringformat'
 
 interface NoticeJsonString {
@@ -53,10 +53,7 @@ export default struct Noticelist {
     const filePath7 = this.context.cacheDir + '/noticejsonstring/' + sha256hash(accountInfo.path) + '.7.txt'
     let exist6 = fileIo.accessSync(filePath6)
     let exist7 = fileIo.accessSync(filePath7)
-    const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-      name: 'commonSetting'
-    })
-    const cacheNoticeJsonString = commonSettingDataPreferences.getSync('cacheNoticeJsonString', true)
+    const cacheNoticeJsonString = getFlushPreference(this.context, 'commonSetting', 'cacheNoticeJsonString', true)
     if (!cacheNoticeJsonString) {
       exist6 = false
       exist7 = false

@@ -1,5 +1,4 @@
 import { common, ConfigurationConstant } from '@kit.AbilityKit'
-import { preferences } from '@kit.ArkData'
 import { LengthMetrics, window } from '@kit.ArkUI'
 import { deviceInfo } from '@kit.BasicServicesKit'
 import { fileIo } from '@kit.CoreFileKit'
@@ -7,6 +6,7 @@ import { image } from '@kit.ImageKit'
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { HdsNavDestination } from '@kit.UIDesignKit'
 import { checkPermission, getPermission } from '../common/Permission'
+import { getFlushPreference, setFlushPreference } from '../common/Preference'
 
 @Builder
 export function CommonsettingBuilder() {
@@ -46,9 +46,6 @@ struct Commonsetting {
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   pageInfos = new NavPathStack()
-  commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-    name: 'commonSetting'
-  })
 
   build() {
     HdsNavDestination() {
@@ -77,8 +74,7 @@ struct Commonsetting {
                   isOn: this.allowContinue!!
                 })
                   .onChange(async (isOn) => {
-                    this.commonSettingDataPreferences.putSync('allowContinue', isOn)
-                    this.commonSettingDataPreferences.flushSync()
+                    setFlushPreference(this.context, 'commonSetting', 'allowContinue', isOn)
                     const promptAction = this.UIContext.getPromptAction()
                     const data = await promptAction.showDialog({
                       title: '提示',
@@ -124,8 +120,7 @@ struct Commonsetting {
                   isOn: this.exitAfterContinue!!
                 })
                   .onChange((isOn) => {
-                    this.commonSettingDataPreferences.putSync('exitAfterContinue', isOn)
-                    this.commonSettingDataPreferences.flushSync()
+                    setFlushPreference(this.context, 'commonSetting', 'exitAfterContinue', isOn)
                   })
               }
               .borderRadius(12)
@@ -149,8 +144,7 @@ struct Commonsetting {
                   isOn: this.allowRestore!!
                 })
                   .onChange(async (isOn) => {
-                    this.commonSettingDataPreferences.putSync('allowRestore', isOn)
-                    this.commonSettingDataPreferences.flushSync()
+                    setFlushPreference(this.context, 'commonSetting', 'allowRestore', isOn)
                     const promptAction = this.UIContext.getPromptAction()
                     const data = await promptAction.showDialog({
                       title: '提示',
@@ -196,8 +190,7 @@ struct Commonsetting {
                   isOn: this.acceptCollaborate!!
                 })
                   .onChange((isOn) => {
-                    this.commonSettingDataPreferences.putSync('acceptCollaborate', isOn)
-                    this.commonSettingDataPreferences.flushSync()
+                    setFlushPreference(this.context, 'commonSetting', 'acceptCollaborate', isOn)
                   })
               }
               .borderRadius(12)
@@ -221,8 +214,7 @@ struct Commonsetting {
                   isOn: this.destroyWhenBackPressed!!
                 })
                   .onChange((isOn) => {
-                    this.commonSettingDataPreferences.putSync('destroyWhenBackPressed', isOn)
-                    this.commonSettingDataPreferences.flushSync()
+                    setFlushPreference(this.context, 'commonSetting', 'destroyWhenBackPressed', isOn)
                   })
               }
               .borderRadius(12)
@@ -247,8 +239,7 @@ struct Commonsetting {
                     isOn: this.statusBar!!
                   })
                     .onChange(async (isOn) => {
-                      this.commonSettingDataPreferences.putSync('statusBar', isOn)
-                      this.commonSettingDataPreferences.flushSync()
+                      setFlushPreference(this.context, 'commonSetting', 'statusBar', isOn)
                       const promptAction = this.UIContext.getPromptAction()
                       const data = await promptAction.showDialog({
                         title: '提示',
@@ -388,8 +379,7 @@ struct Commonsetting {
                     if (index === 2) {
                       applicationContext.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_DARK)
                     }
-                    this.commonSettingDataPreferences.putSync('colorMode', index)
-                    this.commonSettingDataPreferences.flushSync()
+                    setFlushPreference(this.context, 'commonSetting', 'colorMode', index)
                   })
               }
               .borderRadius(12)
@@ -414,8 +404,7 @@ struct Commonsetting {
                     isOn: this.windowRectAutoSave!!
                   })
                     .onChange(async (isOn) => {
-                      this.commonSettingDataPreferences.putSync('windowRectAutoSave', isOn)
-                      this.commonSettingDataPreferences.flushSync()
+                      setFlushPreference(this.context, 'commonSetting', 'windowRectAutoSave', isOn)
                       const promptAction = this.UIContext.getPromptAction()
                       const data = await promptAction.showDialog({
                         title: '提示',
@@ -463,8 +452,7 @@ struct Commonsetting {
                     .onChange(async (isOn) => {
                       const lastWindow = await window.getLastWindow(this.context)
                       await lastWindow.setWindowTopmost(isOn)
-                      this.commonSettingDataPreferences.putSync('windowTopmost', isOn)
-                      this.commonSettingDataPreferences.flushSync()
+                      setFlushPreference(this.context, 'commonSetting', 'windowTopmost', isOn)
                     })
                 }
                 .borderRadius(12)
@@ -680,8 +668,7 @@ struct Commonsetting {
                           return
                         }
                       }
-                      this.commonSettingDataPreferences.putSync('downloadDirectory', index)
-                      this.commonSettingDataPreferences.flushSync()
+                      setFlushPreference(this.context, 'commonSetting', 'downloadDirectory', index)
                     })
                 }
                 .borderRadius(12)
@@ -724,8 +711,7 @@ struct Commonsetting {
                   .selected(this.filePreviewTypeIndex!!)
                   .value(this.filePreviewTypeValue!!)
                   .onSelect((index) => {
-                    this.commonSettingDataPreferences.putSync('filePreviewType', index)
-                    this.commonSettingDataPreferences.flushSync()
+                    setFlushPreference(this.context, 'commonSetting', 'filePreviewType', index)
                   })
               }
               .borderRadius(12)
@@ -760,8 +746,7 @@ struct Commonsetting {
                   isOn: this.onlinePreviewMedia!!
                 })
                   .onChange((isOn) => {
-                    this.commonSettingDataPreferences.putSync('onlinePreviewMedia', isOn)
-                    this.commonSettingDataPreferences.flushSync()
+                    setFlushPreference(this.context, 'commonSetting', 'onlinePreviewMedia', isOn)
                   })
               }
               .borderRadius(12)
@@ -785,8 +770,7 @@ struct Commonsetting {
                   isOn: this.selectFileDownloadPath!!
                 })
                   .onChange((isOn) => {
-                    this.commonSettingDataPreferences.putSync('selectFileDownloadPath', isOn)
-                    this.commonSettingDataPreferences.flushSync()
+                    setFlushPreference(this.context, 'commonSetting', 'selectFileDownloadPath', isOn)
                   })
               }
               .borderRadius(12)
@@ -827,8 +811,7 @@ struct Commonsetting {
                   isOn: this.showAlbum!!
                 })
                   .onChange((isOn) => {
-                    this.commonSettingDataPreferences.putSync('showAlbum', isOn)
-                    this.commonSettingDataPreferences.flushSync()
+                    setFlushPreference(this.context, 'commonSetting', 'showAlbum', isOn)
                     this.context.eventHub.emit('refreshIndex')
                   })
               }
@@ -870,8 +853,7 @@ struct Commonsetting {
                   isOn: this.showAccountlistSheetAfterAppLaunch!!
                 })
                   .onChange((isOn) => {
-                    this.commonSettingDataPreferences.putSync('showAccountlistSheetAfterAppLaunch', isOn)
-                    this.commonSettingDataPreferences.flushSync()
+                    setFlushPreference(this.context, 'commonSetting', 'showAccountlistSheetAfterAppLaunch', isOn)
                   })
               }
               .borderRadius(12)
@@ -907,8 +889,7 @@ struct Commonsetting {
                   isOn: this.cacheApiVersion!!
                 })
                   .onChange((isOn) => {
-                    this.commonSettingDataPreferences.putSync('cacheApiVersion', isOn)
-                    this.commonSettingDataPreferences.flushSync()
+                    setFlushPreference(this.context, 'commonSetting', 'cacheApiVersion', isOn)
                   })
               }
               .borderRadius(12)
@@ -988,8 +969,7 @@ struct Commonsetting {
                   isOn: this.cacheNoticeJsonString!!
                 })
                   .onChange((isOn) => {
-                    this.commonSettingDataPreferences.putSync('cacheNoticeJsonString', isOn)
-                    this.commonSettingDataPreferences.flushSync()
+                    setFlushPreference(this.context, 'commonSetting', 'cacheNoticeJsonString', isOn)
                   })
               }
               .borderRadius(12)
@@ -1016,8 +996,7 @@ struct Commonsetting {
                   .selected(this.cellularDataUseRemindIndex!!)
                   .value(this.cellularDataUseRemindValue!!)
                   .onSelect((index) => {
-                    this.commonSettingDataPreferences.putSync('cellularDataUseRemind', index)
-                    this.commonSettingDataPreferences.flushSync()
+                    setFlushPreference(this.context, 'commonSetting', 'cellularDataUseRemind', index)
                   })
               }
               .borderRadius(12)
@@ -1044,8 +1023,7 @@ struct Commonsetting {
                   .selected(this.checkVersionUpdateIndex!!)
                   .value(this.checkVersionUpdateValue!!)
                   .onSelect((index) => {
-                    this.commonSettingDataPreferences.putSync('checkVersionUpdate', index)
-                    this.commonSettingDataPreferences.flushSync()
+                    setFlushPreference(this.context, 'commonSetting', 'checkVersionUpdate', index)
                   })
               }
               .borderRadius(12)
@@ -1071,8 +1049,7 @@ struct Commonsetting {
                   .selected(this.openLinkTypeIndex!!)
                   .value(this.openLinkTypeValue!!)
                   .onSelect((index) => {
-                    this.commonSettingDataPreferences.putSync('openLinkType', index)
-                    this.commonSettingDataPreferences.flushSync()
+                    setFlushPreference(this.context, 'commonSetting', 'openLinkType', index)
                   })
               }
               .borderRadius(12)
@@ -1109,14 +1086,14 @@ struct Commonsetting {
     })
     .onReady(async (context) => {
       this.pageInfos = context.pathStack
-      this.allowContinue = this.commonSettingDataPreferences.getSync('allowContinue', true) as boolean
-      this.exitAfterContinue = this.commonSettingDataPreferences.getSync('exitAfterContinue', true) as boolean
-      this.allowRestore = this.commonSettingDataPreferences.getSync('allowRestore', true) as boolean
-      this.acceptCollaborate = this.commonSettingDataPreferences.getSync('acceptCollaborate', true) as boolean
+      this.allowContinue = getFlushPreference(this.context, 'commonSetting', 'allowContinue', true) as boolean
+      this.exitAfterContinue = getFlushPreference(this.context, 'commonSetting', 'exitAfterContinue', true) as boolean
+      this.allowRestore = getFlushPreference(this.context, 'commonSetting', 'allowRestore', true) as boolean
+      this.acceptCollaborate = getFlushPreference(this.context, 'commonSetting', 'acceptCollaborate', true) as boolean
       this.destroyWhenBackPressed =
-        this.commonSettingDataPreferences.getSync('destroyWhenBackPressed', false) as boolean
-      this.statusBar = this.commonSettingDataPreferences.getSync('statusBar', false) as boolean
-      const colorMode = this.commonSettingDataPreferences.getSync('colorMode', 0)
+        getFlushPreference(this.context, 'commonSetting', 'destroyWhenBackPressed', false) as boolean
+      this.statusBar = getFlushPreference(this.context, 'commonSetting', 'statusBar', false) as boolean
+      const colorMode = getFlushPreference(this.context, 'commonSetting', 'colorMode', 0)
       this.colorModeIndex = colorMode as number
       if (colorMode === 0) {
         this.colorModeValue = '跟随系统'
@@ -1127,11 +1104,12 @@ struct Commonsetting {
       if (colorMode === 2) {
         this.colorModeValue = '深色模式'
       }
-      this.windowRectAutoSave = this.commonSettingDataPreferences.getSync('windowRectAutoSave', false) as boolean
-      this.windowTopmost = this.commonSettingDataPreferences.getSync('windowTopmost', false) as boolean
+      this.windowRectAutoSave =
+        getFlushPreference(this.context, 'commonSetting', 'windowRectAutoSave', false) as boolean
+      this.windowTopmost = getFlushPreference(this.context, 'commonSetting', 'windowTopmost', false) as boolean
       const lastWindow = await window.getLastWindow(this.context)
       this.keepScreenOn = lastWindow.getWindowProperties().isKeepScreenOn
-      const downloadDirectory = this.commonSettingDataPreferences.getSync('downloadDirectory', 0)
+      const downloadDirectory = getFlushPreference(this.context, 'commonSetting', 'downloadDirectory', 0)
       this.downloadDirectoryIndex = downloadDirectory as number
       if (downloadDirectory === 0) {
         this.downloadDirectoryValue = '应用'
@@ -1139,7 +1117,7 @@ struct Commonsetting {
       if (downloadDirectory === 1 && getPermission('ohos.permission.READ_WRITE_DOWNLOAD_DIRECTORY')) {
         this.downloadDirectoryValue = '系统'
       }
-      const filePreviewType = this.commonSettingDataPreferences.getSync('filePreviewType', 0)
+      const filePreviewType = getFlushPreference(this.context, 'commonSetting', 'filePreviewType', 0)
       this.filePreviewTypeIndex = filePreviewType as number
       if (filePreviewType === 0) {
         this.filePreviewTypeValue = '系统预览'
@@ -1147,15 +1125,16 @@ struct Commonsetting {
       if (filePreviewType === 1) {
         this.filePreviewTypeValue = '自行选择'
       }
-      this.onlinePreviewMedia = this.commonSettingDataPreferences.getSync('onlinePreviewMedia', true) as boolean
+      this.onlinePreviewMedia = getFlushPreference(this.context, 'commonSetting', 'onlinePreviewMedia', true) as boolean
       this.selectFileDownloadPath =
-        this.commonSettingDataPreferences.getSync('selectFileDownloadPath', false) as boolean
-      this.showAlbum = this.commonSettingDataPreferences.getSync('showAlbum', true) as boolean
+        getFlushPreference(this.context, 'commonSetting', 'selectFileDownloadPath', false) as boolean
+      this.showAlbum = getFlushPreference(this.context, 'commonSetting', 'showAlbum', true) as boolean
       this.showAccountlistSheetAfterAppLaunch =
-        this.commonSettingDataPreferences.getSync('showAccountlistSheetAfterAppLaunch', false) as boolean
-      this.cacheApiVersion = this.commonSettingDataPreferences.getSync('cacheApiVersion', true) as boolean
-      this.cacheNoticeJsonString = this.commonSettingDataPreferences.getSync('cacheNoticeJsonString', true) as boolean
-      const cellularDataUseRemind = this.commonSettingDataPreferences.getSync('cellularDataUseRemind', 0)
+        getFlushPreference(this.context, 'commonSetting', 'showAccountlistSheetAfterAppLaunch', false) as boolean
+      this.cacheApiVersion = getFlushPreference(this.context, 'commonSetting', 'cacheApiVersion', true) as boolean
+      this.cacheNoticeJsonString =
+        getFlushPreference(this.context, 'commonSetting', 'cacheNoticeJsonString', true) as boolean
+      const cellularDataUseRemind = getFlushPreference(this.context, 'commonSetting', 'cellularDataUseRemind', 0)
       this.cellularDataUseRemindIndex = cellularDataUseRemind as number
       if (cellularDataUseRemind === 0) {
         this.cellularDataUseRemindValue = '始终'
@@ -1166,7 +1145,7 @@ struct Commonsetting {
       if (cellularDataUseRemind === 2) {
         this.cellularDataUseRemindValue = '从不'
       }
-      const checkVersionUpdate = this.commonSettingDataPreferences.getSync('checkVersionUpdate', 1)
+      const checkVersionUpdate = getFlushPreference(this.context, 'commonSetting', 'checkVersionUpdate', 1)
       this.checkVersionUpdateIndex = checkVersionUpdate as number
       if (checkVersionUpdate === 0) {
         this.checkVersionUpdateValue = '从不'
@@ -1177,7 +1156,7 @@ struct Commonsetting {
       if (checkVersionUpdate === 2) {
         this.checkVersionUpdateValue = '始终'
       }
-      const openLinkType = this.commonSettingDataPreferences.getSync('openLinkType', 0)
+      const openLinkType = getFlushPreference(this.context, 'commonSetting', 'openLinkType', 0)
       this.openLinkTypeIndex = openLinkType as number
       if (openLinkType === 0) {
         this.openLinkTypeValue = '系统默认'

@@ -1,5 +1,5 @@
 import { common, wantAgent } from '@kit.AbilityKit'
-import { dataSharePredicates, preferences, sendablePreferences } from '@kit.ArkData'
+import { dataSharePredicates, sendablePreferences } from '@kit.ArkData'
 import { taskpool, url, util } from '@kit.ArkTS'
 import { display, LoadingDialog, promptAction, SegmentButtonV2Items, TabSegmentButtonV2, window } from '@kit.ArkUI'
 import { backgroundTaskManager } from '@kit.BackgroundTasksKit'
@@ -16,6 +16,7 @@ import { getDnsServer } from '../common/Dnsserver'
 import { write } from '../common/File'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import { checkPermission } from '../common/Permission'
+import { getFlushPreference, setTempPreference } from '../common/Preference'
 import { getPreferType } from '../common/Prefertype'
 import { pushPhotoIntoPhotoArray } from '../common/Pushphoto'
 import { dsmRequest, getDsmApiMaxVersion } from '../common/Request'
@@ -138,15 +139,6 @@ export default struct Album {
   photoFinished = true
   editId = -1
   editName = ''
-  backDataPreferences = preferences.getPreferencesSync(this.context, {
-    name: 'back'
-  })
-  commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-    name: 'commonSetting'
-  })
-  debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-    name: 'debugSetting'
-  })
   dialogControllerProgress = new CustomDialogController({
     builder: LoadingDialog({
       content: '请求中...'
@@ -483,10 +475,7 @@ export default struct Album {
   }
 
   getDayNightMode() {
-    const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-      name: 'commonSetting'
-    })
-    const colorMode = commonSettingDataPreferences.getSync('colorMode', 0)
+    const colorMode = getFlushPreference(this.context, 'commonSetting', 'colorMode', 0)
     if (colorMode === 0) {
       return mapCommon.DayNightMode.AUTO
     }
@@ -754,7 +743,8 @@ export default struct Album {
                       dnsRules: getDnsServer(this.context)
                     },
                     security: {
-                      remoteValidation: this.debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
+                      remoteValidation: getFlushPreference(this.context, 'debugSetting',
+                        'closeRemoteValidationWhenLinkDsm',
                         'system') as 'system' | 'skip',
                       tlsRange: {
                         min: 'TlsV1.2'
@@ -817,7 +807,8 @@ export default struct Album {
             }
             if (item.type === 'video') {
               if (getCurrentNetworkBearerType() === 0) {
-                const cellularDataUseRemind = this.commonSettingDataPreferences.getSync('cellularDataUseRemind', 0)
+                const cellularDataUseRemind =
+                  getFlushPreference(this.context, 'commonSetting', 'cellularDataUseRemind', 0)
                 if (cellularDataUseRemind === 0 ||
                   (cellularDataUseRemind === 1 && item.filesize > 200 * Math.pow(1024, 2))) {
                   const promptAction = this.UIContext.getPromptAction()
@@ -847,7 +838,7 @@ export default struct Album {
               try {
                 const documentSaveOptions = new picker.DocumentSaveOptions()
                 const selectFileDownloadPath =
-                  this.commonSettingDataPreferences.getSync('selectFileDownloadPath', false)
+                  getFlushPreference(this.context, 'commonSetting', 'selectFileDownloadPath', false)
                 if (!selectFileDownloadPath) {
                   documentSaveOptions.pickerMode = picker.DocumentPickerMode.DOWNLOAD
                 }
@@ -961,7 +952,8 @@ export default struct Album {
                           dnsRules: getDnsServer(this.context)
                         },
                         security: {
-                          remoteValidation: this.debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
+                          remoteValidation: getFlushPreference(this.context, 'debugSetting',
+                            'closeRemoteValidationWhenLinkDsm',
                             'system') as 'system' | 'skip',
                           tlsRange: {
                             min: 'TlsV1.2'
@@ -1106,7 +1098,7 @@ export default struct Album {
                       }
                     }, 5000)
                     this.previewPhoto = undefined
-                    this.backDataPreferences.putSync('album', false)
+                    setTempPreference(this.context, 'back', 'album', false)
                     await this.get()
                     if (this.previewAlbum) {
                       await this.getAlbumPhoto()
@@ -1387,7 +1379,7 @@ export default struct Album {
                                               }
                                             }
                                             this.previewPhoto = photoItem.item
-                                            this.backDataPreferences.putSync('album', true)
+                                            setTempPreference(this.context, 'back', 'album', true)
                                           })
                                       }
                                       if (photoItem.item.type === 'movingphoto') {
@@ -1426,7 +1418,7 @@ export default struct Album {
                                               }
                                             }
                                             this.previewPhoto = photoItem.item
-                                            this.backDataPreferences.putSync('album', true)
+                                            setTempPreference(this.context, 'back', 'album', true)
                                           })
                                       }
                                       if (photoItem.item.type === 'video') {
@@ -1465,7 +1457,7 @@ export default struct Album {
                                         }
                                       }
                                       this.previewPhoto = photoItem.item
-                                      this.backDataPreferences.putSync('album', true)
+                                      setTempPreference(this.context, 'back', 'album', true)
                                     })
                                   }
                                 })
@@ -1542,7 +1534,7 @@ export default struct Album {
                       })
                       .onClick(async () => {
                         this.previewAlbum = albumItem
-                        this.backDataPreferences.putSync('album', true)
+                        setTempPreference(this.context, 'back', 'album', true)
                         await this.getAlbumPhoto()
                       })
                       .bindContextMenu(this.AlbumMenuBuilder(albumItem), ResponseType.LongPress, {
@@ -1602,7 +1594,7 @@ export default struct Album {
                 .width(40)
                 .onClick(() => {
                   this.previewPhoto = undefined
-                  this.backDataPreferences.putSync('album', false)
+                  setTempPreference(this.context, 'back', 'album', false)
                 })
 
                 Text(this.previewPhoto.filename)
@@ -1691,7 +1683,7 @@ export default struct Album {
                               }
                             }
                             this.previewPhoto = photoArray[index - 1]
-                            this.backDataPreferences.putSync('album', true)
+                            setTempPreference(this.context, 'back', 'album', true)
                           }
                           if (index === 0) {
                             await promptAction.openToast({
@@ -1719,7 +1711,7 @@ export default struct Album {
                               }
                             }
                             this.previewPhoto = photoArray[index + 1]
-                            this.backDataPreferences.putSync('album', true)
+                            setTempPreference(this.context, 'back', 'album', true)
                           }
                           if (index === maxIndex) {
                             await promptAction.openToast({
@@ -1787,7 +1779,7 @@ export default struct Album {
                               }
                             }
                             this.previewPhoto = photoArray[index - 1]
-                            this.backDataPreferences.putSync('album', true)
+                            setTempPreference(this.context, 'back', 'album', true)
                           }
                           if (index === 0) {
                             await promptAction.openToast({
@@ -1815,7 +1807,7 @@ export default struct Album {
                               }
                             }
                             this.previewPhoto = photoArray[index + 1]
-                            this.backDataPreferences.putSync('album', true)
+                            setTempPreference(this.context, 'back', 'album', true)
                           }
                           if (index === maxIndex) {
                             await promptAction.openToast({
@@ -1930,7 +1922,7 @@ export default struct Album {
                   .width(40)
                   .onClick(() => {
                     this.previewAlbum = undefined
-                    this.backDataPreferences.putSync('album', false)
+                    setTempPreference(this.context, 'back', 'album', false)
                   })
 
                   Text(this.previewAlbum.name)
@@ -1986,7 +1978,7 @@ export default struct Album {
                                   }
                                 }
                                 this.previewPhoto = photoItem.item
-                                this.backDataPreferences.putSync('album', true)
+                                setTempPreference(this.context, 'back', 'album', true)
                               })
                           }
                           if (photoItem.item.type === 'movingphoto') {
@@ -2025,7 +2017,7 @@ export default struct Album {
                                   }
                                 }
                                 this.previewPhoto = photoItem.item
-                                this.backDataPreferences.putSync('album', true)
+                                setTempPreference(this.context, 'back', 'album', true)
                               })
                           }
                           if (photoItem.item.type === 'video') {
@@ -2064,7 +2056,7 @@ export default struct Album {
                             }
                           }
                           this.previewPhoto = photoItem.item
-                          this.backDataPreferences.putSync('album', true)
+                          setTempPreference(this.context, 'back', 'album', true)
                         })
                       }
                     })
@@ -2099,7 +2091,7 @@ export default struct Album {
       this.context.eventHub.on('backAlbum', () => {
         if (this.previewPhoto && !this.previewAlbum) {
           this.previewPhoto = undefined
-          this.backDataPreferences.putSync('album', false)
+          setTempPreference(this.context, 'back', 'album', false)
         }
         if (this.previewPhoto && this.previewAlbum) {
           this.previewPhoto = undefined
@@ -2107,14 +2099,14 @@ export default struct Album {
         }
         if (this.previewAlbum) {
           this.previewAlbum = undefined
-          this.backDataPreferences.putSync('album', false)
+          setTempPreference(this.context, 'back', 'album', false)
         }
       })
       this.context.eventHub.on('refreshAlbum', async (clear = true) => {
         if (clear) {
           this.previewPhoto = undefined
           this.previewAlbum = undefined
-          this.backDataPreferences.putSync('album', false)
+          setTempPreference(this.context, 'back', 'album', false)
         }
         await this.get(2, true)
       })

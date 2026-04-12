@@ -1,7 +1,7 @@
 import { common } from '@kit.AbilityKit'
-import { preferences } from '@kit.ArkData'
 import { url } from '@kit.ArkTS'
 import { getLoginStatus } from '../common/Account'
+import { getFlushPreference } from '../common/Preference'
 import { dsmRequest } from '../common/Request'
 
 interface SystemInfo {
@@ -33,11 +33,8 @@ export default struct Systeminfo {
   intervalId = -1
 
   async refresh() {
-    const cardSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-      name: 'cardSetting'
-    })
     const isLogin = await getLoginStatus()
-    if ((cardSettingDataPreferences.getSync('cards', []) as string[]).includes('systeminfo') &&
+    if ((getFlushPreference(this.context, 'cardSetting', 'cards', []) as string[]).includes('systeminfo') &&
       this.status !== 'fail' && isLogin) {
       const res = await dsmRequest(this.context, '', 'SYNO.Core.System', new url.URLParams({
         method: 'info'
@@ -84,7 +81,7 @@ export default struct Systeminfo {
               top: $r('sys.float.ohos_id_text_margin_vertical')
             })
           Text('CPU：' + this.systeminfo.cpu_vendor + ' ' + this.systeminfo.cpu_series + ' ' +
-          this.systeminfo.cpu_family)
+            this.systeminfo.cpu_family)
             .margin({
               top: $r('sys.float.ohos_id_text_margin_vertical')
             })

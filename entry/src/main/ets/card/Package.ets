@@ -1,8 +1,8 @@
 import { common } from '@kit.AbilityKit'
-import { preferences } from '@kit.ArkData'
 import { url } from '@kit.ArkTS'
 import { LoadingDialog } from '@kit.ArkUI'
 import { getLoginStatus } from '../common/Account'
+import { getFlushPreference } from '../common/Preference'
 import { dsmRequest } from '../common/Request'
 
 interface InstallPackageItem {
@@ -29,11 +29,9 @@ export default struct Package {
   })
 
   async refresh() {
-    const cardSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-      name: 'cardSetting'
-    })
     const isLogin = await getLoginStatus()
-    if ((cardSettingDataPreferences.getSync('cards', []) as string[]).includes('package') && this.status !== 'fail' &&
+    if ((getFlushPreference(this.context, 'cardSetting', 'cards', []) as string[]).includes('package') &&
+      this.status !== 'fail' &&
       isLogin) {
       let serverPackageArray: ServerPackageItem[] = []
       const serverofficalres = await dsmRequest(this.context, '', 'SYNO.Core.Package.Server', new url.URLParams({

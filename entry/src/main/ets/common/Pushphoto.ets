@@ -1,4 +1,3 @@
-import { preferences } from '@kit.ArkData'
 import { url } from '@kit.ArkTS'
 import { fileIo, fileUri } from '@kit.CoreFileKit'
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
@@ -7,6 +6,7 @@ import { rcp } from '@kit.RemoteCommunicationKit'
 import { AccountInfo, getAccountHash } from './Account'
 import { getDnsServer } from './Dnsserver'
 import { sha256hash } from './Hash'
+import { getFlushPreference } from './Preference'
 import { PhotoItem, PhotoThumbnail } from '../pages/Album'
 
 @Concurrent
@@ -31,9 +31,6 @@ export async function pushPhotoIntoPhotoArray(context: Context, accountInfo: Acc
         scene: 'download',
         sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
       })
-      const debugSettingDataPreferences = preferences.getPreferencesSync(context, {
-        name: 'debugSetting'
-      })
       const session = rcp.createSession({
         requestConfiguration: {
           tracing: {
@@ -55,7 +52,7 @@ export async function pushPhotoIntoPhotoArray(context: Context, accountInfo: Acc
             dnsRules: getDnsServer(context)
           },
           security: {
-            remoteValidation: debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
+            remoteValidation: getFlushPreference(context, 'debugSetting', 'closeRemoteValidationWhenLinkDsm',
               'system') as 'system' | 'skip',
             tlsRange: {
               min: 'TlsV1.2'

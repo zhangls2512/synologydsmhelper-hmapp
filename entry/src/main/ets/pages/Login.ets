@@ -1,6 +1,5 @@
 import { common } from '@kit.AbilityKit'
 import { privacyManager } from '@kit.AppGalleryKit'
-import { preferences } from '@kit.ArkData'
 import { url } from '@kit.ArkTS'
 import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { netBoost } from '@kit.NetworkBoostKit'
@@ -9,6 +8,7 @@ import { setAccount } from '../common/Account'
 import { autoBackup } from '../common/Backup'
 import { getDnsServer } from '../common/Dnsserver'
 import openLink from '../common/Openlink'
+import { getFlushPreference } from '../common/Preference'
 import { dsmRequest } from '../common/Request'
 
 export interface LoginResponseData {
@@ -407,10 +407,7 @@ export default struct Login {
                 })
                 this.context.eventHub.emit('refreshCardlist')
                 this.context.eventHub.emit('refreshFilelist')
-                const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-                  name: 'commonSetting'
-                })
-                if (commonSettingDataPreferences.getSync('showAlbum', true)) {
+                if (getFlushPreference(this.context, 'commonSetting', 'showAlbum', true)) {
                   this.context.eventHub.emit('refreshAlbum')
                 }
                 this.context.eventHub.emit('refreshMe')

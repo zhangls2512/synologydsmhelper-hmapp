@@ -1,4 +1,3 @@
-import { preferences } from '@kit.ArkData'
 import { url } from '@kit.ArkTS'
 import { promptAction } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
@@ -7,6 +6,7 @@ import { rcp } from '@kit.RemoteCommunicationKit'
 import { getAccountInfo, setAccount } from './Account'
 import { getDnsServer } from './Dnsserver'
 import { read, write } from './File'
+import { getFlushPreference } from './Preference'
 import { LoginResponseData } from '../pages/Login'
 
 export interface ApiVersionItem {
@@ -81,26 +81,20 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
     }
     requestPath = accountInfo.path
   }
-  const commonSettingDataPreferences = preferences.getPreferencesSync(context, {
-    name: 'commonSetting'
-  })
-  const cacheApiVersionSetting = commonSettingDataPreferences.getSync('cacheApiVersion', true)
+  const cacheApiVersionSetting = getFlushPreference(context, 'commonSetting', 'cacheApiVersion', true)
   if (cacheApiVersionSetting) {
     const cacheApiVersion = await getCacheApiVersion(context, requestPath, api)
     if (cacheApiVersion !== -1) {
       return cacheApiVersion
     }
   }
-  const debugSettingDataPreferences = preferences.getPreferencesSync(context, {
-    name: 'debugSetting'
-  })
   const session = rcp.createSession({
     requestConfiguration: {
       dns: {
         dnsRules: getDnsServer(context)
       },
       security: {
-        remoteValidation: debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
+        remoteValidation: getFlushPreference(context, 'debugSetting', 'closeRemoteValidationWhenLinkDsm',
           'system') as 'system' | 'skip',
         tlsRange: {
           min: 'TlsV1.2'
@@ -170,7 +164,7 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
               dnsRules: getDnsServer(context)
             },
             security: {
-              remoteValidation: debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
+              remoteValidation: getFlushPreference(context, 'debugSetting', 'closeRemoteValidationWhenLinkDsm',
                 'system') as 'system' | 'skip'
             }
           },
@@ -289,16 +283,13 @@ export async function dsmRequest(context: Context, path: string, api: string, pa
       return 'fail'
     }
   }
-  const debugSettingDataPreferences = preferences.getPreferencesSync(context, {
-    name: 'debugSetting'
-  })
   const session = rcp.createSession({
     requestConfiguration: {
       dns: {
         dnsRules: getDnsServer(context)
       },
       security: {
-        remoteValidation: debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
+        remoteValidation: getFlushPreference(context, 'debugSetting', 'closeRemoteValidationWhenLinkDsm',
           'system') as 'system' | 'skip',
         tlsRange: {
           min: 'TlsV1.2'
@@ -428,10 +419,7 @@ export async function dsmRequest(context: Context, path: string, api: string, pa
 }
 
 export async function developerRequest(context: Context, path: string, body: rcp.RequestContent) {
-  const commonSettingDataPreferences = preferences.getPreferencesSync(context, {
-    name: 'commonSetting'
-  })
-  const allService = commonSettingDataPreferences.getSync('allService', true)
+  const allService = getFlushPreference(context, 'commonSetting', 'allService', true)
   if (!allService) {
     context.eventHub.emit('dialog', '全量模式未开启',
       '全量模式未开启，无法使用在线功能。如需使用在线功能，请前往“我的”>“设置”>“更多”>“应用服务模式”，开启全量模式。')

@@ -1,5 +1,5 @@
 import { common } from '@kit.AbilityKit'
-import { preferences, sendablePreferences } from '@kit.ArkData'
+import { sendablePreferences } from '@kit.ArkData'
 import { taskpool } from '@kit.ArkTS'
 import { display } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
@@ -7,6 +7,7 @@ import { image } from '@kit.ImageKit'
 import { HdsTabs, HdsTabsController } from '@kit.UIDesignKit'
 import { AccountInfo, importAccounts } from '../common/Account'
 import { getCurrentNetworkBearerType } from '../common/Network'
+import { getFlushPreference, getTempPreference } from '../common/Preference'
 import { getPreferType } from '../common/Prefertype'
 import { download, upload } from '../common/Transfertask'
 import Accountlist from './Accountlist'
@@ -50,16 +51,10 @@ struct Index {
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   controller = new HdsTabsController()
   intervalId = -1
-  backDataPreferences = preferences.getPreferencesSync(this.context, {
-    name: 'back'
-  })
-  commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-    name: 'commonSetting'
-  })
 
   onBackPress() {
     if (this.index === 1) {
-      const filelist = this.backDataPreferences.getSync('filelist', false)
+      const filelist = getTempPreference(this.context, 'back', 'filelist', false)
       if (!filelist) {
         return false
       } else {
@@ -68,7 +63,7 @@ struct Index {
       }
     } else {
       if (this.index === 2 && this.showAlbum) {
-        const album = this.backDataPreferences.getSync('album', false)
+        const album = getTempPreference(this.context, 'back', 'album', false)
         if (!album) {
           return false
         } else {
@@ -83,7 +78,7 @@ struct Index {
   async get() {
     this.backgroundImagePixelMap = await this.getBackgroundImage()
     const oldShowAlbum = this.showAlbum
-    this.showAlbum = this.commonSettingDataPreferences.getSync('showAlbum', true) as boolean
+    this.showAlbum = getFlushPreference(this.context, 'commonSetting', 'showAlbum', true) as boolean
     if (oldShowAlbum !== this.showAlbum) {
       if (!oldShowAlbum) {
         if (this.index === 2) {
@@ -276,7 +271,8 @@ struct Index {
             const item = pendingTransferTaskArray[i]
             let exec = true
             if (getCurrentNetworkBearerType() === 0) {
-              const cellularDataUseRemind = this.commonSettingDataPreferences.getSync('cellularDataUseRemind', 0)
+              const cellularDataUseRemind =
+                getFlushPreference(this.context, 'commonSetting', 'cellularDataUseRemind', 0)
               if (cellularDataUseRemind === 0 ||
                 (cellularDataUseRemind === 1 && item.totalSize > 200 * Math.pow(1024, 2))) {
                 exec = false

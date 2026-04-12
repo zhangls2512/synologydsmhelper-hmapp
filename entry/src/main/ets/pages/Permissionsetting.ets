@@ -1,10 +1,10 @@
 import { common } from '@kit.AbilityKit'
-import { preferences } from '@kit.ArkData'
 import { LengthMetrics } from '@kit.ArkUI'
 import { deviceInfo } from '@kit.BasicServicesKit'
 import { policy } from '@kit.NetworkKit'
 import { HdsNavDestination } from '@kit.UIDesignKit'
 import { getPermission } from '../common/Permission'
+import { getFlushPreference, setFlushPreference } from '../common/Preference'
 
 @Builder
 export function PermissionsettingBuilder() {
@@ -22,9 +22,6 @@ struct Permissionsetting {
   readWriteDesktopDirectory = getPermission('ohos.permission.READ_WRITE_DESKTOP_DIRECTORY')
   readWriteDocumentDirectory = getPermission('ohos.permission.READ_WRITE_DOCUMENTS_DIRECTORY')
   readWriteDownloadDirectory = getPermission('ohos.permission.READ_WRITE_DOWNLOAD_DIRECTORY')
-  permissionSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-    name: 'permissionSetting'
-  })
 
   build() {
     HdsNavDestination() {
@@ -483,8 +480,7 @@ struct Permissionsetting {
                   isOn: this.writePasteBoard!!
                 })
                   .onChange((isOn) => {
-                    this.permissionSettingDataPreferences.putSync('writePasteBoard', isOn)
-                    this.permissionSettingDataPreferences.flushSync()
+                    setFlushPreference(this.context, 'permissionSetting', 'writePasteBoard', isOn)
                   })
               }
               .borderRadius(12)
@@ -529,7 +525,7 @@ struct Permissionsetting {
       enableComponentSafeArea: true
     })
     .onAppear(() => {
-      this.writePasteBoard = this.permissionSettingDataPreferences.getSync('writePasteBoard', false) as boolean
+      this.writePasteBoard = getFlushPreference(this.context, 'permissionSetting', 'writePasteBoard', false) as boolean
     })
   }
 }

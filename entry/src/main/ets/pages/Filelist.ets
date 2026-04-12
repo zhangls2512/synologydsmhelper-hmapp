@@ -1,5 +1,5 @@
 import { common, wantAgent, wantConstant } from '@kit.AbilityKit'
-import { preferences, sendablePreferences, uniformTypeDescriptor } from '@kit.ArkData'
+import { sendablePreferences, uniformTypeDescriptor } from '@kit.ArkData'
 import { fastbuffer, url, util } from '@kit.ArkTS'
 import { display, LoadingDialog, promptAction } from '@kit.ArkUI'
 import { backgroundTaskManager } from '@kit.BackgroundTasksKit'
@@ -15,6 +15,7 @@ import { getDnsServer } from '../common/Dnsserver'
 import { getFileTypeIcon } from '../common/File'
 import { sha256hash } from '../common/Hash'
 import { getCurrentNetworkBearerType } from '../common/Network'
+import { getFlushPreference, setTempPreference } from '../common/Preference'
 import { getPreferType } from '../common/Prefertype'
 import { dsmRequest, getDsmApiMaxVersion } from '../common/Request'
 import { getSizeString, getTimeStringFromSecond } from '../common/Stringformat'
@@ -79,15 +80,6 @@ export default struct Filelist {
   srcName = ''
   editPath = ''
   editName = ''
-  backDataPreferences = preferences.getPreferencesSync(this.context, {
-    name: 'back'
-  })
-  commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-    name: 'commonSetting'
-  })
-  debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-    name: 'debugSetting'
-  })
   dialogControllerProgress = new CustomDialogController({
     builder: LoadingDialog({
       content: '请求中...'
@@ -276,7 +268,8 @@ export default struct Filelist {
           })
             .onClick(async () => {
               if (getCurrentNetworkBearerType() === 0) {
-                const cellularDataUseRemind = this.commonSettingDataPreferences.getSync('cellularDataUseRemind', 0)
+                const cellularDataUseRemind =
+                  getFlushPreference(this.context, 'commonSetting', 'cellularDataUseRemind', 0)
                 if (cellularDataUseRemind === 0 ||
                   (cellularDataUseRemind === 1 && item.additional.size > 200 * Math.pow(1024, 2))) {
                   const promptAction = this.UIContext.getPromptAction()
@@ -306,7 +299,7 @@ export default struct Filelist {
               try {
                 const documentSaveOptions = new picker.DocumentSaveOptions()
                 const selectFileDownloadPath =
-                  this.commonSettingDataPreferences.getSync('selectFileDownloadPath', false)
+                  getFlushPreference(this.context, 'commonSetting', 'selectFileDownloadPath', false)
                 if (!selectFileDownloadPath) {
                   documentSaveOptions.pickerMode = picker.DocumentPickerMode.DOWNLOAD
                 }
@@ -420,7 +413,8 @@ export default struct Filelist {
                           dnsRules: getDnsServer(this.context)
                         },
                         security: {
-                          remoteValidation: this.debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
+                          remoteValidation: getFlushPreference(this.context, 'debugSetting',
+                            'closeRemoteValidationWhenLinkDsm',
                             'system') as 'system' | 'skip',
                           tlsRange: {
                             min: 'TlsV1.2'
@@ -1044,7 +1038,7 @@ export default struct Filelist {
               .width(40)
               .onClick(() => {
                 this.dirnames.pop()
-                this.backDataPreferences.putSync('filelist', this.dirnames.length === 0 ? false : true)
+                setTempPreference(this.context, 'back', 'filelist', this.dirnames.length === 0 ? false : true)
                 this.loading = true
               })
             }
@@ -1092,7 +1086,7 @@ export default struct Filelist {
               .fontColor($r('sys.color.font_emphasize'))
               .onClick(() => {
                 this.dirnames = []
-                this.backDataPreferences.putSync('filelist', false)
+                setTempPreference(this.context, 'back', 'filelist', false)
                 this.loading = true
               })
             ForEach(this.dirnames, (item: string, index) => {
@@ -1103,7 +1097,7 @@ export default struct Filelist {
                 .fontColor($r('sys.color.font_emphasize'))
                 .onClick(() => {
                   this.dirnames = this.dirnames.slice(0, index + 1)
-                  this.backDataPreferences.putSync('filelist', this.dirnames.length === 0 ? false : true)
+                  setTempPreference(this.context, 'back', 'filelist', this.dirnames.length === 0 ? false : true)
                   this.loading = true
                 })
             })
@@ -1615,7 +1609,7 @@ export default struct Filelist {
                         }
                         const supportedformats = ['mp4', 'mkv', 'm4a', 'aac', 'mp3', 'ogg', 'wav', 'flac', 'amr', 'ape']
                         if (supportedformats.includes(houzhui) &&
-                          this.commonSettingDataPreferences.getSync('onlinePreviewMedia', true)) {
+                          getFlushPreference(this.context, 'commonSetting', 'onlinePreviewMedia', true)) {
                           this.dialogControllerProgress.open()
                           const res = await dsmRequest(this.context, '', 'SYNO.API.Auth.Key', new url.URLParams({
                             method: 'grant',
@@ -1644,7 +1638,7 @@ export default struct Filelist {
                         }
                         if (getCurrentNetworkBearerType() === 0) {
                           const cellularDataUseRemind =
-                            this.commonSettingDataPreferences.getSync('cellularDataUseRemind', 0)
+                            getFlushPreference(this.context, 'commonSetting', 'cellularDataUseRemind', 0)
                           if (cellularDataUseRemind === 0 ||
                             (cellularDataUseRemind === 1 && item.additional.size > 200 * Math.pow(1024, 2))) {
                             const promptAction = this.UIContext.getPromptAction()
@@ -1766,7 +1760,8 @@ export default struct Filelist {
                                   dnsRules: getDnsServer(this.context)
                                 },
                                 security: {
-                                  remoteValidation: this.debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
+                                  remoteValidation: getFlushPreference(this.context, 'debugSetting',
+                                    'closeRemoteValidationWhenLinkDsm',
                                     'system') as 'system' | 'skip',
                                   tlsRange: {
                                     min: 'TlsV1.2'
@@ -1804,7 +1799,7 @@ export default struct Filelist {
                               if (response.statusCode >= 200 && response.statusCode < 300) {
                                 const uri = fileUri.getUriFromPath(filePath)
                                 const filePreviewType =
-                                  this.commonSettingDataPreferences.getSync('filePreviewType', 0)
+                                  getFlushPreference(this.context, 'commonSetting', 'filePreviewType', 0)
                                 if (filePreviewType === 0) {
                                   const supportedReaderFormats = ['.epub', '.mobi', '.azw', '.azw3']
                                   if (!supportedReaderFormats.some(formatItem => item.name.endsWith(formatItem))) {
@@ -1868,7 +1863,7 @@ export default struct Filelist {
                       }
                       if (item.isdir) {
                         this.dirnames.push(item.name)
-                        this.backDataPreferences.putSync('filelist', true)
+                        setTempPreference(this.context, 'back', 'filelist', true)
                         this.loading = true
                       }
                     })
@@ -1917,7 +1912,7 @@ export default struct Filelist {
       })
       this.context.eventHub.on('backFilelist', () => {
         this.dirnames.pop()
-        this.backDataPreferences.putSync('filelist', this.dirnames.length === 0 ? false : true)
+        setTempPreference(this.context, 'back', 'filelist', this.dirnames.length === 0 ? false : true)
         this.loading = true
       })
       this.context.eventHub.on('refreshFilelist', async () => {

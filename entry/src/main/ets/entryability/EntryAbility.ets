@@ -10,7 +10,7 @@ import {
   wantConstant
 } from '@kit.AbilityKit'
 import { updateManager } from '@kit.AppGalleryKit'
-import { preferences, uniformTypeDescriptor } from '@kit.ArkData'
+import { uniformTypeDescriptor } from '@kit.ArkData'
 import { promptAction, window } from '@kit.ArkUI'
 import { commonEventManager, deviceInfo } from '@kit.BasicServicesKit'
 import { fileIo, fileUri } from '@kit.CoreFileKit'
@@ -27,6 +27,7 @@ import { clearNouseData } from '../common/Clearnousedata'
 import { write } from '../common/File'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import openLink from '../common/Openlink'
+import { getFlushPreference, getTempPreference, setTempPreference } from '../common/Preference'
 
 export interface JsErrorObject {
   name: string,
@@ -106,30 +107,25 @@ export default class EntryAbility extends UIAbility {
   }
 
   async windowInit(windowStage: window.WindowStage) {
+    await windowStage.getMainWindowSync().setWindowLayoutFullScreen(true)
     await windowStage.loadContent('pages/Index')
     const context = this.context
-    const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-      name: 'commonSetting'
-    })
     if (deviceInfo.deviceType === '2in1') {
-      const windowRectAutoSave = commonSettingDataPreferences.getSync('windowRectAutoSave', false) as boolean
+      const windowRectAutoSave = getFlushPreference(context, 'commonSetting', 'windowRectAutoSave', false) as boolean
       await windowStage.setWindowRectAutoSave(windowRectAutoSave)
     }
     if (deviceInfo.deviceType === '2in1') {
       const lastWindow = await window.getLastWindow(this.context)
-      const windowTopmost = commonSettingDataPreferences.getSync('windowTopmost', false) as boolean
+      const windowTopmost = getFlushPreference(context, 'commonSetting', 'windowTopmost', false) as boolean
       await lastWindow.setWindowTopmost(windowTopmost)
     }
     if (!notificationManager.isNotificationEnabledSync()) {
       await notificationManager.requestEnableNotification(this.context)
     }
-    const debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-      name: 'debugSetting'
-    })
     const errorLogDir = this.context.filesDir + '/log/error/'
     errorManager.on('error', {
       async onUnhandledException(errMsg) {
-        if (debugSettingDataPreferences.getSync('globalErrorShowType', 0) === 0) {
+        if (getFlushPreference(context, 'debugSetting', 'globalErrorShowType', 0) === 0) {
           await promptAction.openToast({
             message: 'js 运行异常：' + errMsg
           })
@@ -144,20 +140,20 @@ export default class EntryAbility extends UIAbility {
             stack: err.stack
           }
         }
-        if (debugSettingDataPreferences.getSync('saveErrorLog', true)) {
+        if (getFlushPreference(context, 'debugSetting', 'saveErrorLog', true)) {
           await write(errorLogDir + Date.now() + '.txt', JSON.stringify(object))
         }
-        if (debugSettingDataPreferences.getSync('globalErrorShowType', 0) === 0) {
+        if (getFlushPreference(context, 'debugSetting', 'globalErrorShowType', 0) === 0) {
           await promptAction.openToast({
             message: 'js 运行异常，错误名称：' + err.name + '，错误信息：' + err.message
           })
         }
-        if (debugSettingDataPreferences.getSync('globalErrorShowType', 0) === 1) {
+        if (getFlushPreference(context, 'debugSetting', 'globalErrorShowType', 0) === 1) {
           context.eventHub.emit('dialog', 'js 运行异常', '名称：' + err.name + '\n信息：' + err.message)
         }
-        if (debugSettingDataPreferences.getSync('autoUploadErrorLog', true) &&
-          commonSettingDataPreferences.getSync('allService', true)) {
-          if ((debugSettingDataPreferences.getSync('autoUploadErrorLogType',
+        if (getFlushPreference(context, 'debugSetting', 'autoUploadErrorLog', true) &&
+          getFlushPreference(context, 'commonSetting', 'allService', true)) {
+          if ((getFlushPreference(context, 'debugSetting', 'autoUploadErrorLogType',
             ['JS_ERROR', 'APP_CRASH']) as string[]).includes('JS_ERROR')) {
             context.eventHub.emit('uploadErrorLog', object.name, JSON.stringify(object))
           }
@@ -174,20 +170,20 @@ export default class EntryAbility extends UIAbility {
             stack: err.stack
           }
         }
-        if (debugSettingDataPreferences.getSync('saveErrorLog', true)) {
+        if (getFlushPreference(context, 'debugSetting', 'saveErrorLog', true)) {
           await write(errorLogDir + Date.now() + '.txt', JSON.stringify(object))
         }
-        if (debugSettingDataPreferences.getSync('globalErrorShowType', 0) === 0) {
+        if (getFlushPreference(context, 'debugSetting', 'globalErrorShowType', 0) === 0) {
           await promptAction.openToast({
             message: 'js 运行异常，错误名称：' + err.name + '，错误信息：' + err.message
           })
         }
-        if (debugSettingDataPreferences.getSync('globalErrorShowType', 0) === 1) {
+        if (getFlushPreference(context, 'debugSetting', 'globalErrorShowType', 0) === 1) {
           this.context.eventHub.emit('dialog', 'js 运行异常', '名称：' + err.name + '\n信息：' + err.message)
         }
-        if (debugSettingDataPreferences.getSync('autoUploadErrorLog', true) &&
-          commonSettingDataPreferences.getSync('allService', true)) {
-          if ((debugSettingDataPreferences.getSync('autoUploadErrorLogType',
+        if (getFlushPreference(context, 'debugSetting', 'autoUploadErrorLog', true) &&
+          getFlushPreference(context, 'commonSetting', 'allService', true)) {
+          if ((getFlushPreference(context, 'debugSetting', 'autoUploadErrorLogType',
             ['JS_ERROR', 'APP_CRASH']) as string[]).includes('JS_ERROR')) {
             this.context.eventHub.emit('uploadErrorLog', object.name, JSON.stringify(object))
           }
@@ -203,16 +199,16 @@ export default class EntryAbility extends UIAbility {
         }
       ],
       onReceive: async (domain, appEventGroups) => {
-        if (debugSettingDataPreferences.getSync('saveErrorLog', true)) {
+        if (getFlushPreference(context, 'debugSetting', 'saveErrorLog', true)) {
           const promises = appEventGroups.map(async (item) => {
             await write(errorLogDir + Date.now() + '.txt', JSON.stringify(item))
           })
           await Promise.all(promises)
         }
-        if (debugSettingDataPreferences.getSync('autoUploadErrorLog', true) &&
-          commonSettingDataPreferences.getSync('allService', true)) {
+        if (getFlushPreference(context, 'debugSetting', 'autoUploadErrorLog', true) &&
+          getFlushPreference(context, 'commonSetting', 'allService', true)) {
           appEventGroups.forEach(item => {
-            if ((debugSettingDataPreferences.getSync('autoUploadErrorLogType',
+            if ((getFlushPreference(context, 'debugSetting', 'autoUploadErrorLogType',
               ['JS_ERROR', 'APP_CRASH']) as string[]).includes(item.name)) {
               this.context.eventHub.emit('uploadErrorLog', item.name, JSON.stringify(item))
             }
@@ -224,34 +220,34 @@ export default class EntryAbility extends UIAbility {
     netConnection.register(() => {
     })
     netConnection.on('netAvailable', async (data) => {
-      if (debugSettingDataPreferences.getSync('showNetAvailableStatusChange', false)) {
+      if (getFlushPreference(context, 'debugSetting', 'showNetAvailableStatusChange', false)) {
         await promptAction.openToast({
           message: '网络可用，数据网络句柄：' + data.netId
         })
       }
     })
     netConnection.on('netUnavailable', async () => {
-      if (debugSettingDataPreferences.getSync('showNetAvailableStatusChange', false)) {
+      if (getFlushPreference(context, 'debugSetting', 'showNetAvailableStatusChange', false)) {
         await promptAction.openToast({
           message: '网络不可用'
         })
       }
     })
     netConnection.on('netBlockStatusChange', (data) => {
-      if (debugSettingDataPreferences.getSync('showNetBlockStatusChange', false)) {
+      if (getFlushPreference(context, 'debugSetting', 'showNetBlockStatusChange', false)) {
         this.context.eventHub.emit('dialog', '网络阻塞状态变化',
           '数据网络句柄：' + data.netHandle.netId + '\n是否堵塞：' + data.blocked ? '是' : '否')
       }
     })
     netConnection.on('netLost', async (data) => {
-      if (debugSettingDataPreferences.getSync('showNetLost', false)) {
+      if (getFlushPreference(context, 'debugSetting', 'showNetLost', false)) {
         await promptAction.openToast({
           message: '网络丢失，数据网络句柄：' + data.netId
         })
       }
     })
     netConnection.on('netCapabilitiesChange', (data) => {
-      if (debugSettingDataPreferences.getSync('showNetCapabilitiesChange', false)) {
+      if (getFlushPreference(context, 'debugSetting', 'showNetCapabilitiesChange', false)) {
         const netBearType = data.netCap.bearerTypes.includes(connection.NetBearType.BEARER_CELLULAR) ? '蜂窝' :
           data.netCap.bearerTypes.includes(connection.NetBearType.BEARER_WIFI) ? 'Wi-Fi' :
             data.netCap.bearerTypes.includes(connection.NetBearType.BEARER_BLUETOOTH) ? '蓝牙' :
@@ -265,7 +261,7 @@ export default class EntryAbility extends UIAbility {
     netQuality.on('netQosChange', async (list) => {
       if (list.length > 0) {
         const data = list[0]
-        if (debugSettingDataPreferences.getSync('showNetQosChange', false)) {
+        if (getFlushPreference(context, 'debugSetting', 'showNetQosChange', false)) {
           const pathType = data.pathType === netQuality.PathType.CELLULAR_PRIMARY ? '蜂窝主卡' :
             data.pathType === netQuality.PathType.CELLULAR_SECONDARY ? '蜂窝副卡' :
               data.pathType === netQuality.PathType.WIFI_PRIMARY ? '主 Wi-Fi' :
@@ -276,8 +272,8 @@ export default class EntryAbility extends UIAbility {
               ' ms\n上行发送空口缓冲时延：' + data.linkUpBufferDelayMs + ' ms\n上行发送空口缓冲时延占总缓冲时间的比例：' +
               data.linkUpBufferCongestionPercent + '%')
         }
-        if (debugSettingDataPreferences.getSync('autoReportHighLatency', true) &&
-          data.rttMs >= debugSettingDataPreferences.getSync('highLatencyThreshold', 200)) {
+        if (getFlushPreference(context, 'debugSetting', 'autoReportHighLatency', true) &&
+          data.rttMs >= getFlushPreference(context, 'debugSetting', 'highLatencyThreshold', 200)) {
           netQuality.reportQoe({
             serviceType: 'default',
             qoeType: 'highLatency'
@@ -291,7 +287,7 @@ export default class EntryAbility extends UIAbility {
     netQuality.on('netSceneChange', (list) => {
       if (list.length > 0) {
         const data = list[0]
-        if (debugSettingDataPreferences.getSync('showNetSceneChange', false)) {
+        if (getFlushPreference(context, 'debugSetting', 'showNetSceneChange', false)) {
           const pathType = data.pathType === netQuality.PathType.CELLULAR_PRIMARY ? '蜂窝主卡' :
             data.pathType === netQuality.PathType.CELLULAR_SECONDARY ? '蜂窝副卡' :
               data.pathType === netQuality.PathType.WIFI_PRIMARY ? '主 Wi-Fi' :
@@ -314,7 +310,7 @@ export default class EntryAbility extends UIAbility {
         }
       }
     })
-    if (debugSettingDataPreferences.getSync('deleteErrorLogBeforeUpdateTimeWhenAppLaunch', true)) {
+    if (getFlushPreference(context, 'debugSetting', 'deleteErrorLogBeforeUpdateTimeWhenAppLaunch', true)) {
       const bundleInfo = bundleManager.getBundleInfoForSelfSync(bundleManager.BundleFlag.GET_BUNDLE_INFO_DEFAULT)
       const updateTime = bundleInfo.updateTime
       if (fileIo.accessSync(errorLogDir)) {
@@ -330,7 +326,7 @@ export default class EntryAbility extends UIAbility {
       }
     }
     const showAccountlistSheetAfterAppLaunch =
-      commonSettingDataPreferences.getSync('showAccountlistSheetAfterAppLaunch', false)
+      getFlushPreference(context, 'commonSetting', 'showAccountlistSheetAfterAppLaunch', false)
     const accounts = await getAccountList()
     const isLogin = await getLoginStatus()
     if (showAccountlistSheetAfterAppLaunch) {
@@ -342,7 +338,7 @@ export default class EntryAbility extends UIAbility {
       }
     }
     if (getCurrentNetworkBearerType() !== -1) {
-      const checkVersionUpdate = commonSettingDataPreferences.getSync('checkVersionUpdate', 1)
+      const checkVersionUpdate = getFlushPreference(context, 'commonSetting', 'checkVersionUpdate', 1)
       if (checkVersionUpdate === 2 ||
         (checkVersionUpdate === 1 && getCurrentNetworkBearerType() !== connection.NetBearType.BEARER_CELLULAR)) {
         try {
@@ -361,17 +357,14 @@ export default class EntryAbility extends UIAbility {
 
   async onCreate(want: Want) {
     appRecovery.enableAppRecovery(appRecovery.RestartFlag.RESTART_WHEN_APP_FREEZE)
-    const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-      name: 'commonSetting'
-    })
-    const allowContinue = commonSettingDataPreferences.getSync('allowContinue', true)
+    const allowContinue = getFlushPreference(this.context, 'commonSetting', 'allowContinue', true)
     if (!allowContinue) {
       await this.context.setMissionContinueState(AbilityConstant.ContinueState.INACTIVE)
     }
     if (allowContinue) {
       await this.context.setMissionContinueState(AbilityConstant.ContinueState.ACTIVE)
     }
-    const allowRestore = commonSettingDataPreferences.getSync('allowRestore', true) as boolean
+    const allowRestore = getFlushPreference(this.context, 'commonSetting', 'allowRestore', true) as boolean
     this.context.setRestoreEnabled(allowRestore)
     if (deviceInfo.deviceType === '2in1') {
       statusBarManager.on('statusBarIconClick', async () => {
@@ -382,20 +375,17 @@ export default class EntryAbility extends UIAbility {
         const eventData = JSON.parse(datastring) as MenuCodeEventData
         this.context.eventHub.emit(eventData.data.menuCode)
       })
-      const statusBarDataPreferences = preferences.getPreferencesSync(this.context, {
-        name: 'statusBar'
-      })
       const subscriber = commonEventManager.createSubscriberSync({
         events: ['BACKGROUNDABILITY_EVENT_PREPARETOTERMINATE']
       })
       await commonEventManager.subscribeToEvent(subscriber, async (data) => {
         if (data.event === 'BACKGROUNDABILITY_EVENT_PREPARETOTERMINATE') {
           statusBarManager.removeFromStatusBar(this.context)
-          statusBarDataPreferences.putSync('exist', false)
+          setTempPreference(this.context, 'statusBar', 'exist', false)
           await this.context.terminateSelf()
         }
       })
-      const statusBar = commonSettingDataPreferences.getSync('statusBar', false)
+      const statusBar = getFlushPreference(this.context, 'commonSetting', 'statusBar', false)
       if (statusBar) {
         const fileData = this.context.resourceManager.getRawFileContentSync('icon.png')
         const imageSource = image.createImageSource(fileData.buffer)
@@ -459,12 +449,12 @@ export default class EntryAbility extends UIAbility {
             processMode: contextConstant.ProcessMode.NEW_PROCESS_ATTACH_TO_STATUS_BAR_ITEM,
             startupVisibility: contextConstant.StartupVisibility.STARTUP_HIDE
           })
-          statusBarDataPreferences.putSync('exist', true)
+          getTempPreference(this.context, 'statusBar', 'exist', true)
         }, 200)
       }
     }
     const applicationContext = this.context.getApplicationContext()
-    const colorMode = commonSettingDataPreferences.getSync('colorMode', 0)
+    const colorMode = getFlushPreference(this.context, 'commonSetting', 'colorMode', 0)
     if (colorMode === 0) {
       applicationContext.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET)
     }
@@ -474,11 +464,8 @@ export default class EntryAbility extends UIAbility {
     if (colorMode === 2) {
       applicationContext.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_DARK)
     }
-    const debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-      name: 'debugSetting'
-    })
     if (deviceInfo.deviceType !== 'tablet') {
-      const processCache = debugSettingDataPreferences.getSync('processCache', true) as boolean
+      const processCache = getFlushPreference(this.context, 'debugSetting', 'processCache', true) as boolean
       applicationContext.setSupportedProcessCache(processCache)
     }
     await this.appInit(want)
@@ -500,10 +487,7 @@ export default class EntryAbility extends UIAbility {
   }
 
   async onPrepareToTerminateAsync(): Promise<boolean> {
-    const statusBarDataPreferences = preferences.getPreferencesSync(this.context, {
-      name: 'statusBar'
-    })
-    const statusBarExist = statusBarDataPreferences.getSync('exist', false) as boolean
+    const statusBarExist = getTempPreference(this.context, 'statusBar', 'exist', false) as boolean
     if (statusBarExist) {
       await this.context.hideAbility()
     }
@@ -511,10 +495,7 @@ export default class EntryAbility extends UIAbility {
   }
 
   onBackPressed() {
-    const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-      name: 'commonSetting'
-    })
-    const destroyWhenBackPressed = commonSettingDataPreferences.getSync('destroyWhenBackPressed', false)
+    const destroyWhenBackPressed = getFlushPreference(this.context, 'commonSetting', 'destroyWhenBackPressed', false)
     if (!destroyWhenBackPressed) {
       return true
     } else {
@@ -529,19 +510,13 @@ export default class EntryAbility extends UIAbility {
       })
       return AbilityConstant.OnContinueResult.MISMATCH
     }
-    const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-      name: 'commonSetting'
-    })
-    const exitAfterContinue = commonSettingDataPreferences.getSync('exitAfterContinue', true)
+    const exitAfterContinue = getFlushPreference(this.context, 'commonSetting', 'exitAfterContinue', true)
     wantParam[wantConstant.Params.SUPPORT_CONTINUE_SOURCE_EXIT_KEY] = exitAfterContinue
     return AbilityConstant.OnContinueResult.AGREE
   }
 
   onCollaborate() {
-    const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-      name: 'commonSetting'
-    })
-    const acceptCollaborate = commonSettingDataPreferences.getSync('acceptCollaborate', true)
+    const acceptCollaborate = getFlushPreference(this.context, 'commonSetting', 'acceptCollaborate', true)
     if (!acceptCollaborate) {
       return 1
     } else {
@@ -550,10 +525,7 @@ export default class EntryAbility extends UIAbility {
   }
 
   async onMemoryLevel(level: AbilityConstant.MemoryLevel) {
-    const debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-      name: 'debugSetting'
-    })
-    const showMemoryLevelChange = debugSettingDataPreferences.getSync('showMemoryLevelChange', false)
+    const showMemoryLevelChange = getFlushPreference(this.context, 'debugSetting', 'showMemoryLevelChange', false)
     if (showMemoryLevelChange) {
       let memoryLevel = ''
       if (level === AbilityConstant.MemoryLevel.MEMORY_LEVEL_MODERATE) {

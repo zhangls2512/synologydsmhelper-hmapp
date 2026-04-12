@@ -1,9 +1,9 @@
 import { common } from '@kit.AbilityKit'
-import { preferences } from '@kit.ArkData'
 import { url } from '@kit.ArkTS'
 import { display } from '@kit.ArkUI'
 import { hdsEffect } from '@kit.UIDesignKit'
 import { getLoginStatus } from '../common/Account'
+import { getFlushPreference } from '../common/Preference'
 import { getPreferType } from '../common/Prefertype'
 import { dsmRequest } from '../common/Request'
 import Cardedit from './Cardedit'
@@ -33,10 +33,7 @@ export default struct Cardlist {
 
   async get() {
     this.isLogin = await getLoginStatus()
-    const cardSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-      name: 'cardSetting'
-    })
-    this.cards = cardSettingDataPreferences.getSync('cards', []) as string[]
+    this.cards = getFlushPreference(this.context, 'cardSetting', 'cards', []) as string[]
     this.context.eventHub.emit('refreshCard')
     if (this.isLogin) {
       const res = await dsmRequest(this.context, '', 'SYNO.Core.DSMNotify', new url.URLParams({

@@ -1,5 +1,4 @@
 import { common } from '@kit.AbilityKit'
-import { preferences } from '@kit.ArkData'
 import { LengthMetrics, LoadingDialog, promptAction } from '@kit.ArkUI'
 import { deviceInfo } from '@kit.BasicServicesKit'
 import { HdsNavDestination } from '@kit.UIDesignKit'
@@ -7,6 +6,7 @@ import { getAccountHash, getAccountInfo } from '../common/Account'
 import { generateBackupTaskList } from '../common/Backup'
 import { read, write } from '../common/File'
 import { checkPermission } from '../common/Permission'
+import { getFlushPreference, setFlushPreference } from '../common/Preference'
 
 export interface BackupSetting {
   autoTypes: string[]
@@ -26,9 +26,6 @@ struct Backupsetting {
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   pageInfos = new NavPathStack()
   typeArray: string[] = ['相册', '文档', '桌面']
-  backupSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-    name: 'backupSetting'
-  })
 
   async getSetting() {
     const accountInfo = await getAccountInfo()
@@ -37,7 +34,7 @@ struct Backupsetting {
     if (filestring !== 'fail') {
       this.autoTypes = (JSON.parse(filestring) as BackupSetting).autoTypes
     }
-    this.deleteAfterSuccess = this.backupSettingDataPreferences.getSync('deleteAfterSuccess', true) as boolean
+    this.deleteAfterSuccess = getFlushPreference(this.context, 'backupSetting', 'deleteAfterSuccess', true) as boolean
   }
 
   build() {
@@ -229,8 +226,7 @@ struct Backupsetting {
                 isOn: this.deleteAfterSuccess!!
               })
                 .onChange((isOn) => {
-                  this.backupSettingDataPreferences.putSync('deleteAfterSuccess', isOn)
-                  this.backupSettingDataPreferences.flushSync()
+                  setFlushPreference(this.context, 'backupSetting', 'deleteAfterSuccess', isOn)
                 })
             }
             .borderRadius(12)

@@ -305,10 +305,10 @@ export default struct Cleardata {
                   const promises = this.setting.map(async (item) => {
                     if (item !== 'backupSetting') {
                       const dataPreferences = preferences.getPreferencesSync(this.context, {
-                        name: item
+                        name: item,
+                        storageType: preferences.StorageType.GSKV
                       })
                       dataPreferences.clearSync()
-                      dataPreferences.flushSync()
                     }
                     if (item === 'backupSetting') {
                       const backupSettingDir = this.context.filesDir + '/backupsetting'

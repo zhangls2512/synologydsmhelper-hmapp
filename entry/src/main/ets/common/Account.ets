@@ -1,4 +1,3 @@
-import { preferences } from '@kit.ArkData'
 import { url, util } from '@kit.ArkTS'
 import { promptAction } from '@kit.ArkUI'
 import { appAccount } from '@kit.BasicServicesKit'
@@ -7,6 +6,7 @@ import { rcp } from '@kit.RemoteCommunicationKit'
 import { getDnsServer } from './Dnsserver'
 import { readUri } from './File'
 import { sha256hash } from './Hash'
+import { getFlushPreference } from './Preference'
 import { dsmRequest } from './Request'
 import { AddressGroupItem } from '../pages/Addressgroup'
 
@@ -222,9 +222,6 @@ export async function loginBestPathAccount(context: Context) {
       for (let i = 0; i < addressGroup.length; i++) {
         if (addressGroup[i].list.includes(currentAccountInfo.path)) {
           let bestPath = ''
-          const debugSettingDataPreferences = preferences.getPreferencesSync(context, {
-            name: 'debugSetting'
-          })
           const promises = addressGroup[i].list.map(async (item, index) => {
             const session = rcp.createSession({
               requestConfiguration: {
@@ -232,7 +229,7 @@ export async function loginBestPathAccount(context: Context) {
                   dnsRules: getDnsServer(context)
                 },
                 security: {
-                  remoteValidation: debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
+                  remoteValidation: getFlushPreference(context, 'debugSetting', 'closeRemoteValidationWhenLinkDsm',
                     'system') as 'system' | 'skip',
                   tlsRange: {
                     min: 'TlsV1.2'
