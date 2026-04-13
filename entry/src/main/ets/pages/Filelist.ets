@@ -100,7 +100,7 @@ export default struct Filelist {
       this.account = ''
     }
     if (this.isLogin) {
-      const accountInfo = await getAccountInfo()
+      const accountInfo = await getAccountInfo(this.context)
       const account = getAccountHash(accountInfo)
       if (this.account !== account) {
         this.dirnames = []
@@ -347,7 +347,7 @@ export default struct Filelist {
                       scene: 'download',
                       sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
                     })
-                    const accountInfo = await getAccountInfo()
+                    const accountInfo = await getAccountInfo(this.context)
                     let lastUpdateTime = 0
                     const session = rcp.createSession({
                       requestConfiguration: {
@@ -727,7 +727,7 @@ export default struct Filelist {
                   name: 'transferTask'
                 })
                 const array = this.multipleSelectArray.filter(item => !item.isdir)
-                const accountInfo = await getAccountInfo()
+                const accountInfo = await getAccountInfo(this.context)
                 array.forEach(item => {
                   const id = util.generateRandomUUID()
                   transferTaskDataPreferences.putSync(id, JSON.stringify({
@@ -1192,7 +1192,7 @@ export default struct Filelist {
                   const transferTaskDataPreferences = sendablePreferences.getPreferencesSync(this.context, {
                     name: 'transferTask'
                   })
-                  const accountInfo = await getAccountInfo()
+                  const accountInfo = await getAccountInfo(this.context)
                   uris.forEach(item => {
                     const id = util.generateRandomUUID()
                     transferTaskDataPreferences.putSync(id, JSON.stringify({
@@ -1619,7 +1619,7 @@ export default struct Filelist {
                           this.dialogControllerProgress.close()
                           if (res !== 'fail') {
                             const tid = res['tid'] as string
-                            const accountInfo = await getAccountInfo()
+                            const accountInfo = await getAccountInfo(this.context)
                             const bytes = new util.TextEncoder().encodeInto(item.path)
                             const dlink = Array.from(bytes).map(byte => byte.toString(16).padStart(2, '0')).join('')
                             this.src = accountInfo.path + '/fbdownload/' +
@@ -1693,7 +1693,7 @@ export default struct Filelist {
                               scene: 'download',
                               sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
                             })
-                            const accountInfo = await getAccountInfo()
+                            const accountInfo = await getAccountInfo(this.context)
                             let lastUpdateTime = 0
                             const session = rcp.createSession({
                               requestConfiguration: {
@@ -1920,10 +1920,10 @@ export default struct Filelist {
         this.multipleSelectArray = []
         this.copyMovePath = ''
         this.remove = false
-        this.isLogin = await getLoginStatus()
+        this.isLogin = await getLoginStatus(this.context)
         this.loading = true
       })
-      this.isLogin = await getLoginStatus()
+      this.isLogin = await getLoginStatus(this.context)
       this.loading = true
     })
     .onDisAppear(() => {

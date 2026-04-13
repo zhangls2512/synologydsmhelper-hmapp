@@ -30,7 +30,7 @@ export default struct Storageinfo {
   intervalId = -1
 
   async refresh() {
-    const isLogin = await getLoginStatus()
+    const isLogin = await getLoginStatus(this.context)
     if ((getFlushPreference(this.context, 'cardSetting', 'cards', []) as string[]).includes('storageinfo') &&
       this.status !== 'fail' && isLogin) {
       const res = await dsmRequest(this.context, '', 'SYNO.Storage.CGI.Storage', new url.URLParams({

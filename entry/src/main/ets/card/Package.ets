@@ -29,7 +29,7 @@ export default struct Package {
   })
 
   async refresh() {
-    const isLogin = await getLoginStatus()
+    const isLogin = await getLoginStatus(this.context)
     if ((getFlushPreference(this.context, 'cardSetting', 'cards', []) as string[]).includes('package') &&
       this.status !== 'fail' &&
       isLogin) {

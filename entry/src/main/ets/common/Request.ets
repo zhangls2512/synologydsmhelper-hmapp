@@ -73,7 +73,7 @@ async function getCacheApiVersion(context: Context, path: string, api: string) {
 }
 
 export async function getDsmApiMaxVersion(context: Context, path: string, api: string): Promise<number | 'fail'> {
-  const accountInfo = await getAccountInfo()
+  const accountInfo = await getAccountInfo(context)
   let requestPath = path
   if (!requestPath) {
     if (!accountInfo.path) {
@@ -266,7 +266,7 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
 
 export async function dsmRequest(context: Context, path: string, api: string, params: string, version?: number,
   dsm6Login?: boolean, hide102ErrorCode?: boolean): Promise<string | object> {
-  const accountInfo = await getAccountInfo()
+  const accountInfo = await getAccountInfo(context)
   let requestPath = path
   if (!requestPath) {
     if (!accountInfo.path) {

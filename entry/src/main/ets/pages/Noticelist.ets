@@ -48,7 +48,7 @@ export default struct Noticelist {
   }
 
   async getNoticeJsonString(): Promise<NoticeJsonString | 'fail'> {
-    const accountInfo = await getAccountInfo()
+    const accountInfo = await getAccountInfo(this.context)
     const filePath6 = this.context.cacheDir + '/noticejsonstring/' + sha256hash(accountInfo.path) + '.6.txt'
     const filePath7 = this.context.cacheDir + '/noticejsonstring/' + sha256hash(accountInfo.path) + '.7.txt'
     let exist6 = fileIo.accessSync(filePath6)

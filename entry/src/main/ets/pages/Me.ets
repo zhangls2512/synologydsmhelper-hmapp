@@ -27,7 +27,7 @@ export default struct Me {
   })
 
   async get() {
-    const accountInfo = await getAccountInfo()
+    const accountInfo = await getAccountInfo(this.context)
     this.name = accountInfo.name
   }
 

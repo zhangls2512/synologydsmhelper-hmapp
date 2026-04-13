@@ -24,7 +24,7 @@ export default struct Dockercontainer {
   })
 
   async refresh() {
-    const isLogin = await getLoginStatus()
+    const isLogin = await getLoginStatus(this.context)
     if ((getFlushPreference(this.context, 'cardSetting', 'cards', []) as string[]).includes('dockercontainer') &&
       this.status !== 'fail' && isLogin) {
       await this.get()

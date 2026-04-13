@@ -33,7 +33,7 @@ export default struct Systeminfo {
   intervalId = -1
 
   async refresh() {
-    const isLogin = await getLoginStatus()
+    const isLogin = await getLoginStatus(this.context)
     if ((getFlushPreference(this.context, 'cardSetting', 'cards', []) as string[]).includes('systeminfo') &&
       this.status !== 'fail' && isLogin) {
       const res = await dsmRequest(this.context, '', 'SYNO.Core.System', new url.URLParams({

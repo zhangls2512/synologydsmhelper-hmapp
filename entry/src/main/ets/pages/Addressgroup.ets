@@ -24,6 +24,13 @@ struct Addressgroup {
     HdsNavDestination() {
       List() {
         ListItem() {
+          Text('系统认为同一地址组内的多个地址对应相同的服务器，用于自动选择最佳地址加速网络连接。建议将同一服务器的公网、内网地址添加到同一地址组。')
+        }
+        .margin({
+          top: $r('sys.float.ohos_id_elements_margin_vertical_m')
+        })
+
+        ListItem() {
           Column() {
             TextInput({
               placeholder: '请输入地址组名称',

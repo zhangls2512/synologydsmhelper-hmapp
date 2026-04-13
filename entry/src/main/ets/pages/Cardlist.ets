@@ -32,7 +32,7 @@ export default struct Cardlist {
   context = this.UIContext.getHostContext() as common.UIAbilityContext
 
   async get() {
-    this.isLogin = await getLoginStatus()
+    this.isLogin = await getLoginStatus(this.context)
     this.cards = getFlushPreference(this.context, 'cardSetting', 'cards', []) as string[]
     this.context.eventHub.emit('refreshCard')
     if (this.isLogin) {

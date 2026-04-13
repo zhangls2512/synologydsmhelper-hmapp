@@ -59,7 +59,7 @@ export default struct Cleardata {
     }
     const noticeJsonStringCacheSize = await getDirectorySize(this.context.cacheDir + '/noticejsonstring')
     this.noticeJsonStringCacheSize = getSizeString(noticeJsonStringCacheSize)
-    const accountInfo = await getAccountInfo()
+    const accountInfo = await getAccountInfo(this.context)
     if (!accountInfo.id) {
       const albumPhotoThumbnailCacheSize = await getDirectorySize(this.context.cacheDir + '/albumphotothumbnail')
       this.albumPhotoThumbnailCacheSize = getSizeString(albumPhotoThumbnailCacheSize)
@@ -565,7 +565,7 @@ export default struct Cleardata {
                         await fileIo.rmdir(this.context.cacheDir + '/noticejsonstring')
                       }
                       if (item === 'albumPhotoThumbnailCache') {
-                        const accountInfo = await getAccountInfo()
+                        const accountInfo = await getAccountInfo(this.context)
                         const albumPhotoThumbnailDirectory = this.context.cacheDir + '/albumphotothumbnail/'
                         if (!accountInfo.id) {
                           await fileIo.rmdir(albumPhotoThumbnailDirectory)

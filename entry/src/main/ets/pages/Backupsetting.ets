@@ -28,7 +28,7 @@ struct Backupsetting {
   typeArray: string[] = ['相册', '文档', '桌面']
 
   async getSetting() {
-    const accountInfo = await getAccountInfo()
+    const accountInfo = await getAccountInfo(this.context)
     const filePath = this.context.filesDir + '/backupsetting/' + getAccountHash(accountInfo) + '.txt'
     const filestring = await read(filePath, true)
     if (filestring !== 'fail') {
@@ -95,7 +95,7 @@ struct Backupsetting {
                             this.autoTypes = this.autoTypes.filter(inItem => inItem !== item)
                           }
                         }
-                        const accountInfo = await getAccountInfo()
+                        const accountInfo = await getAccountInfo(this.context)
                         await write(this.context.filesDir + '/backupsetting/' + getAccountHash(accountInfo) + '.txt',
                           JSON.stringify({
                             autoTypes: this.autoTypes

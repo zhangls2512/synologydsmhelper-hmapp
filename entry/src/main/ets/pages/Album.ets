@@ -154,7 +154,7 @@ export default struct Album {
   }
 
   async get(refresh: number = 2, notRefreshWhenAccountSame = false) {
-    this.isLogin = await getLoginStatus()
+    this.isLogin = await getLoginStatus(this.context)
     if (!this.isLogin) {
       this.timelineArray = []
       this.photoArray = []
@@ -177,7 +177,7 @@ export default struct Album {
           this.albumArray = albumres['list']
         }
       }
-      const accountInfo = await getAccountInfo()
+      const accountInfo = await getAccountInfo(this.context)
       const account = getAccountHash(accountInfo)
       if (this.account !== account) {
         this.timelineArray = []
@@ -355,7 +355,7 @@ export default struct Album {
     this.dialogControllerProgress.close()
     if (res !== 'fail') {
       const tid = res['tid'] as string
-      const accountInfo = await getAccountInfo()
+      const accountInfo = await getAccountInfo(this.context)
       const account = getAccountHash(accountInfo)
       const textEncoder = new util.TextEncoder()
       if (getCurrentNetworkBearerType() === 0) {
@@ -720,7 +720,7 @@ export default struct Album {
                   scene: 'download',
                   sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
                 })
-                const accountInfo = await getAccountInfo()
+                const accountInfo = await getAccountInfo(this.context)
                 const session = rcp.createSession({
                   requestConfiguration: {
                     tracing: {
@@ -886,7 +886,7 @@ export default struct Album {
                       scene: 'download',
                       sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
                     })
-                    const accountInfo = await getAccountInfo()
+                    const accountInfo = await getAccountInfo(this.context)
                     let lastUpdateTime = 0
                     const session = rcp.createSession({
                       requestConfiguration: {
@@ -1238,7 +1238,7 @@ export default struct Album {
                   const transferTaskDataPreferences = sendablePreferences.getPreferencesSync(this.context, {
                     name: 'transferTask'
                   })
-                  const accountInfo = await getAccountInfo()
+                  const accountInfo = await getAccountInfo(this.context)
                   await checkPermission(this.context, this.UIContext, 'ohos.permission.MEDIA_LOCATION', true)
                   const photoPicker = new photoAccessHelper.PhotoViewPicker()
                   const pickerres = await photoPicker.select({

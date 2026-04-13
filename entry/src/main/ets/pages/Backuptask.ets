@@ -102,7 +102,7 @@ struct Backuptask {
                       Image($r('app.media.delete'))
                         .height(24)
                         .onClick(async () => {
-                          const accountInfo = await getAccountInfo()
+                          const accountInfo = await getAccountInfo(this.context)
                           await deleteBackupTask(this.context, accountInfo, item.id)
                           await promptAction.openToast({
                             message: '删除成功'
