@@ -108,13 +108,12 @@ export default struct Addphotointoalbum {
             .stateStyles({
               normal: {
                 .backgroundColor(this.hoverId === index ? $r('sys.color.interactive_hover') :
-                  $r('sys.color.comp_background_primary'))
+                  $r('sys.color.ohos_id_color_card_bg'))
               },
               pressed: {
-                .backgroundColor($r('sys.color.comp_background_secondary'))
+                .backgroundColor($r('sys.color.interactive_pressed'))
               }
             })
-            .width('100%')
             .onHover((isHover) => {
               if (!isHover) {
                 this.hoverId = -1
@@ -141,7 +140,7 @@ export default struct Addphotointoalbum {
             })
           })
         }
-        .backgroundColor($r('sys.color.comp_background_primary'))
+        .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
         .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
         .padding($r('sys.float.ohos_id_corner_radius_mark'))
       }

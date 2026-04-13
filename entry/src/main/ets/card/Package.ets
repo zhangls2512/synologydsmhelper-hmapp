@@ -97,7 +97,6 @@ export default struct Package {
               .margin({
                 top: $r('sys.float.ohos_id_text_margin_vertical')
               })
-              .width('100%')
             }
           })
           ForEach(this.installPackageArray, (item: InstallPackageItem) => {
@@ -115,7 +114,6 @@ export default struct Package {
               .margin({
                 top: $r('sys.float.ohos_id_text_margin_vertical')
               })
-              .width('100%')
             }
           })
           ForEach(this.installPackageArray, (item: InstallPackageItem) => {
@@ -132,7 +130,6 @@ export default struct Package {
               .margin({
                 top: $r('sys.float.ohos_id_text_margin_vertical')
               })
-              .width('100%')
             }
           })
         }

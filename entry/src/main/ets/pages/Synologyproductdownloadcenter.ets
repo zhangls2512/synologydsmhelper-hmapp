@@ -247,7 +247,6 @@ struct Synologyproductdownloadcenter {
                   }
                   .borderRadius(12)
                   .padding(12)
-                  .width('100%')
 
                   if (item.desc) {
                     Divider()
@@ -270,7 +269,6 @@ struct Synologyproductdownloadcenter {
                     }
                     .borderRadius(12)
                     .padding(12)
-                    .width('100%')
                   }
                   Divider()
                     .padding({
@@ -292,7 +290,6 @@ struct Synologyproductdownloadcenter {
                   }
                   .borderRadius(12)
                   .padding(12)
-                  .width('100%')
 
                   if (item.version) {
                     Divider()
@@ -314,7 +311,6 @@ struct Synologyproductdownloadcenter {
                     }
                     .borderRadius(12)
                     .padding(12)
-                    .width('100%')
                   }
                   Divider()
                     .padding({
@@ -344,7 +340,6 @@ struct Synologyproductdownloadcenter {
                       .backgroundColor($r('sys.color.interactive_pressed'))
                     }
                   })
-                  .width('100%')
                   .onHover((isHover) => {
                     if (!isHover) {
                       this.hoverId = -1
@@ -386,7 +381,6 @@ struct Synologyproductdownloadcenter {
                         .backgroundColor($r('sys.color.interactive_pressed'))
                       }
                     })
-                    .width('100%')
                     .onHover((isHover) => {
                       if (!isHover) {
                         this.hoverId = -1
@@ -431,7 +425,6 @@ struct Synologyproductdownloadcenter {
                         .backgroundColor($r('sys.color.interactive_pressed'))
                       }
                     })
-                    .width('100%')
                     .onHover((isHover) => {
                       if (!isHover) {
                         this.hoverId = -1

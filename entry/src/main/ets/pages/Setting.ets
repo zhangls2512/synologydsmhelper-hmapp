@@ -99,7 +99,6 @@ export default struct Setting {
                 }
                 .borderRadius(12)
                 .padding(12)
-                .width('100%')
 
                 Divider()
                   .padding({
@@ -131,7 +130,6 @@ export default struct Setting {
                     .backgroundColor($r('sys.color.interactive_pressed'))
                   }
                 })
-                .width('100%')
                 .onHover((isHover) => {
                   if (!isHover) {
                     this.hoverId = -1
@@ -182,7 +180,6 @@ export default struct Setting {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .width('100%')
               .onHover((isHover) => {
                 if (!isHover) {
                   this.hoverId = -1
@@ -236,7 +233,6 @@ export default struct Setting {
                     .backgroundColor($r('sys.color.interactive_pressed'))
                   }
                 })
-                .width('100%')
                 .onHover((isHover) => {
                   if (!isHover) {
                     this.hoverId = -1
@@ -307,7 +303,6 @@ export default struct Setting {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .width('100%')
               .onHover((isHover) => {
                 if (!isHover) {
                   this.hoverId = -1
@@ -358,7 +353,6 @@ export default struct Setting {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .width('100%')
               .onHover((isHover) => {
                 if (!isHover) {
                   this.hoverId = -1
@@ -417,7 +411,6 @@ export default struct Setting {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .width('100%')
               .onHover((isHover) => {
                 if (!isHover) {
                   this.hoverId = -1
@@ -460,7 +453,6 @@ export default struct Setting {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .width('100%')
               .onHover((isHover) => {
                 if (!isHover) {
                   this.hoverId = -1
@@ -510,7 +502,6 @@ export default struct Setting {
                 .backgroundColor($r('sys.color.interactive_pressed'))
               }
             })
-            .width('100%')
             .onHover((isHover) => {
               if (!isHover) {
                 this.hoverId = -1
@@ -566,7 +557,6 @@ export default struct Setting {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .width('100%')
               .onHover((isHover) => {
                 if (!isHover) {
                   this.hoverId = -1
@@ -615,7 +605,6 @@ export default struct Setting {
                     .backgroundColor($r('sys.color.interactive_pressed'))
                   }
                 })
-                .width('100%')
                 .onHover((isHover) => {
                   if (!isHover) {
                     this.hoverId = -1
@@ -654,7 +643,6 @@ export default struct Setting {
                     .backgroundColor($r('sys.color.interactive_pressed'))
                   }
                 })
-                .width('100%')
                 .onHover((isHover) => {
                   if (!isHover) {
                     this.hoverId = -1
@@ -714,7 +702,6 @@ export default struct Setting {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .width('100%')
               .onHover((isHover) => {
                 if (!isHover) {
                   this.hoverId = -1
@@ -767,7 +754,6 @@ export default struct Setting {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .width('100%')
               .onHover((isHover) => {
                 if (!isHover) {
                   this.hoverId = -1
@@ -808,7 +794,6 @@ export default struct Setting {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .width('100%')
               .onHover((isHover) => {
                 if (!isHover) {
                   this.hoverId = -1
@@ -851,7 +836,6 @@ export default struct Setting {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .width('100%')
               .onHover((isHover) => {
                 if (!isHover) {
                   this.hoverId = -1
@@ -915,7 +899,6 @@ export default struct Setting {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .width('100%')
               .onHover((isHover) => {
                 if (!isHover) {
                   this.hoverId = -1
@@ -958,7 +941,6 @@ export default struct Setting {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .width('100%')
               .onHover((isHover) => {
                 if (!isHover) {
                   this.hoverId = -1
@@ -1017,7 +999,6 @@ export default struct Setting {
                 .backgroundColor($r('sys.color.interactive_pressed'))
               }
             })
-            .width('100%')
             .onHover((isHover) => {
               if (!isHover) {
                 this.hoverId = -1
@@ -1060,7 +1041,6 @@ export default struct Setting {
                 .backgroundColor($r('sys.color.interactive_pressed'))
               }
             })
-            .width('100%')
             .onHover((isHover) => {
               if (!isHover) {
                 this.hoverId = -1

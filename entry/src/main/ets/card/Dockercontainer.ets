@@ -196,7 +196,6 @@ export default struct Dockercontainer {
             .margin({
               top: $r('sys.float.ohos_id_text_margin_vertical')
             })
-            .width('100%')
           })
         }
         .alignItems(HorizontalAlign.Start)

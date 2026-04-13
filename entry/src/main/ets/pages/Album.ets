@@ -1527,7 +1527,6 @@ export default struct Album {
                           .backgroundColor($r('sys.color.comp_background_secondary'))
                         }
                       })
-                      .width('100%')
                       .onHover((isHover) => {
                         if (!isHover) {
                           this.hoverId = -1

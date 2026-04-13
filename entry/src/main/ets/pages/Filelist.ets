@@ -1008,7 +1008,6 @@ export default struct Filelist {
             .margin({
               bottom: $r('sys.float.ohos_id_elements_margin_vertical_m')
             })
-            .width('100%')
           }
           Row() {
             if (this.dirnames.length > 0) {
@@ -1590,7 +1589,6 @@ export default struct Filelist {
                         .backgroundColor($r('sys.color.comp_background_secondary'))
                       }
                     })
-                    .width('100%')
                     .onHover((isHover) => {
                       if (!isHover) {
                         this.hoverId = -1
