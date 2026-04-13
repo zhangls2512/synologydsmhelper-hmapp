@@ -1916,6 +1916,10 @@ export default struct Filelist {
         this.loading = true
       })
       this.context.eventHub.on('refreshFilelist', async () => {
+        this.multipleSelect = false
+        this.multipleSelectArray = []
+        this.copyMovePath = ''
+        this.remove = false
         this.isLogin = await getLoginStatus()
         this.loading = true
       })
