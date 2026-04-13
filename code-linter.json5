@@ -53,6 +53,7 @@
     "@cross-device-app-dev/color-contrast": "off",
     "@cross-device-app-dev/color-value": "off",
     "@cross-device-app-dev/immersive-effect-check": "off",
+    "@cross-device-app-dev/one-multi-breakpoint-check": "off",
     "@hw-stylistic/max-len": "off",
     "@correctness/listen-multi-network-concurrent": "off"
   }

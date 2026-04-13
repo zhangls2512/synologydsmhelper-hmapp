@@ -1386,8 +1386,7 @@ export default struct Filelist {
                 await promptAction.openToast({
                   message: '敬请期待'
                 })
-                /*
-                this.dialogControllerProgress.open()
+                /*this.dialogControllerProgress.open()
                 const startres = await dsmRequest(this.context, '', 'SYNO.FileStation.Compress', new url.URLParams({
                   method: 'start',
                   path: JSON.stringify(this.multipleSelectArray.map(item => item.path)),
@@ -1887,6 +1886,10 @@ export default struct Filelist {
                   .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
                 }
               })
+              ListItem()
+                .margin({
+                  bottom: this.preferType === 0 ? 80 : 0
+                })
             }
           }
           .layoutWeight(1)

@@ -239,6 +239,10 @@ export default struct Cardlist {
               }
             })
           }
+          ListItem()
+            .margin({
+              bottom: this.preferType === 0 ? 80 : 0
+            })
         }
         .layoutWeight(1)
       }

@@ -1,7 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { LengthMetrics, SegmentButtonV2Items, TabSegmentButtonV2 } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
-import { HdsNavDestination } from '@kit.UIDesignKit'
+import { hdsMaterial, HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType } from '@kit.UIDesignKit'
 import { read } from '../common/File'
 import { ApiVersionCacheItem, ApiVersionItem } from '../common/Request'
 
@@ -100,28 +100,64 @@ struct Apiversioncache {
                 })
               })
             }
+            ListItem()
+              .margin({
+                bottom: 28
+              })
           }
           .layoutWeight(1)
         }
-        .padding({
-          bottom: $r('sys.float.ohos_id_default_padding_bottom_fixed'),
-          left: $r('sys.float.ohos_id_elements_margin_horizontal_l'),
-          right: $r('sys.float.ohos_id_elements_margin_horizontal_l')
+        .margin({
+          top: 64
         })
       }
+      .padding({
+        left: $r('sys.float.ohos_id_elements_margin_horizontal_l'),
+        right: $r('sys.float.ohos_id_elements_margin_horizontal_l')
+      })
     }
     .backgroundColor($r('app.color.sheet_background'))
+    .recoverable(true)
     .titleBar({
       padding: {
         end: LengthMetrics.vp(60)
+      },
+      style: {
+        scrollEffectOpts: {
+          scrollEffectType: ScrollEffectType.IMMERSIVE_GRADIENT_BLUR
+        },
+        originalStyle: {
+          contentStyle: {
+            titleStyle: {
+              mainTitleColor: $r('sys.color.font_primary')
+            },
+            backIconStyle: {
+              backgroundColor: $r('sys.color.comp_background_color_floating_smooth'),
+              iconColor: $r('sys.color.icon_primary')
+            }
+          }
+        },
+        scrollEffectStyle: {
+          contentStyle: {
+            backIconStyle: {
+              backgroundColor: $r('sys.color.comp_background_color_floating_smooth'),
+              iconColor: $r('sys.color.icon_primary')
+            }
+          }
+        },
+        thermoCtrl: true,
+        systemMaterialEffect: {
+          materialType: hdsMaterial.MaterialType.ADAPTIVE,
+          materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE
+        }
       },
       content: {
         title: {
           mainTitle: 'API 版本号缓存'
         }
-      },
-      enableComponentSafeArea: true
+      }
     })
+    .titleMode(HdsNavDestinationTitleMode.MODAL)
     .onAppear(async () => {
       const filePath = this.context.cacheDir + '/apiversion.txt'
       if (fileIo.accessSync(filePath)) {

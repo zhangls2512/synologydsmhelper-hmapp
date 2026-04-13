@@ -1477,6 +1477,10 @@ export default struct Album {
                         })
                       })
                       .virtualScroll()
+                    ListItem()
+                      .margin({
+                        bottom: this.preferType === 0 ? 80 : 0
+                      })
                   }
                   .height('100%')
                 }
@@ -1554,6 +1558,9 @@ export default struct Album {
                   }
                   .backgroundColor($r('sys.color.comp_background_primary'))
                   .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+                  .margin({
+                    bottom: this.preferType === 0 ? 80 : 0
+                  })
                   .padding($r('sys.float.ohos_id_corner_radius_mark'))
                 }
               }
@@ -1884,6 +1891,9 @@ export default struct Album {
               }
             }
             .alignItems(HorizontalAlign.Start)
+            .margin({
+              bottom: this.preferType === 0 ? 80 : 0
+            })
             .bindSheet(this.isShowInfoSheet!!, this.InfoSheetBuilder(), {
               height: SheetSize.FIT_CONTENT,
               preferType: this.preferType,
@@ -2061,6 +2071,10 @@ export default struct Album {
                       }
                     })
                     .virtualScroll()
+                  ListItem()
+                    .margin({
+                      bottom: this.preferType === 0 ? 80 : 0
+                    })
                 }
                 .lanes(4)
                 .layoutWeight(1)
@@ -2069,7 +2083,6 @@ export default struct Album {
           }
         }
       }
-      .alignItems(HorizontalAlign.Start)
     }
     .padding({
       left: $r('sys.float.ohos_id_elements_margin_horizontal_l'),
