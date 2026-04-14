@@ -22,12 +22,12 @@ export default struct Me {
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   dialogControllerProgress = new CustomDialogController({
     builder: LoadingDialog({
-      content: '加载中...'
+      content: '请求中...'
     })
   })
 
   async get() {
-    const accountInfo = await getAccountInfo()
+    const accountInfo = await getAccountInfo(this.context)
     this.name = accountInfo.name
   }
 
@@ -53,6 +53,10 @@ export default struct Me {
 
   build() {
     List() {
+      ListItem()
+        .margin({
+          top: this.preferType === 0 ? 56 : 0
+        })
       ListItem() {
         Column() {
           Row() {
@@ -86,7 +90,6 @@ export default struct Me {
               .backgroundColor($r('sys.color.comp_background_secondary'))
             }
           })
-          .width('100%')
           .onHover((isHover) => {
             if (!isHover) {
               this.hoverId = -1
@@ -146,7 +149,6 @@ export default struct Me {
               .backgroundColor($r('sys.color.comp_background_secondary'))
             }
           })
-          .width('100%')
           .onHover((isHover) => {
             if (!isHover) {
               this.hoverId = -1
@@ -211,7 +213,6 @@ export default struct Me {
                   .backgroundColor($r('sys.color.comp_background_secondary'))
                 }
               })
-              .width('100%')
               .onHover((isHover) => {
                 if (!isHover) {
                   this.hoverId = -1
@@ -284,7 +285,6 @@ export default struct Me {
                   .backgroundColor($r('sys.color.comp_background_secondary'))
                 }
               })
-              .width('100%')
               .onHover((isHover) => {
                 if (!isHover) {
                   this.hoverId = -1
@@ -365,7 +365,6 @@ export default struct Me {
                 .backgroundColor($r('sys.color.comp_background_secondary'))
               }
             })
-            .width('100%')
             .onHover((isHover) => {
               if (!isHover) {
                 this.hoverId = -1
@@ -424,7 +423,6 @@ export default struct Me {
               .backgroundColor($r('sys.color.comp_background_secondary'))
             }
           })
-          .width('100%')
           .onHover((isHover) => {
             if (!isHover) {
               this.hoverId = -1
@@ -472,14 +470,9 @@ export default struct Me {
                 ]
               })
               if (data.index === 0) {
-                const dialogControllerProgress = new CustomDialogController({
-                  builder: LoadingDialog({
-                    content: '注销会话中...'
-                  })
-                })
-                dialogControllerProgress.open()
+                this.dialogControllerProgress.open()
                 await exitAccount(this.context, true)
-                dialogControllerProgress.close()
+                this.dialogControllerProgress.close()
               }
               if (data.index === 1) {
                 await exitAccount(this.context, false)
@@ -494,6 +487,10 @@ export default struct Me {
           top: $r('sys.float.ohos_id_elements_margin_vertical_l')
         })
       }
+      ListItem()
+        .margin({
+          bottom: this.preferType === 0 ? 80 : 0
+        })
     }
     .padding({
       left: $r('sys.float.ohos_id_elements_margin_horizontal_l'),

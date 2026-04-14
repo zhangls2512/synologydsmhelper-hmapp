@@ -1,5 +1,5 @@
 import { common, wantAgent } from '@kit.AbilityKit'
-import { dataSharePredicates, preferences } from '@kit.ArkData'
+import { dataSharePredicates, sendablePreferences } from '@kit.ArkData'
 import { taskpool, url, util } from '@kit.ArkTS'
 import { display, LoadingDialog, promptAction, SegmentButtonV2Items, TabSegmentButtonV2, window } from '@kit.ArkUI'
 import { backgroundTaskManager } from '@kit.BackgroundTasksKit'
@@ -16,6 +16,7 @@ import { getDnsServer } from '../common/Dnsserver'
 import { write } from '../common/File'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import { checkPermission } from '../common/Permission'
+import { getFlushPreference, setTempPreference } from '../common/Preference'
 import { getPreferType } from '../common/Prefertype'
 import { pushPhotoIntoPhotoArray } from '../common/Pushphoto'
 import { dsmRequest, getDsmApiMaxVersion } from '../common/Request'
@@ -138,23 +139,9 @@ export default struct Album {
   photoFinished = true
   editId = -1
   editName = ''
-  backDataPreferences = preferences.getPreferencesSync(this.context, {
-    name: 'back'
-  })
-  commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-    name: 'commonSetting'
-  })
-  debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-    name: 'debugSetting'
-  })
-  deleteDialogControllerProgress = new CustomDialogController({
+  dialogControllerProgress = new CustomDialogController({
     builder: LoadingDialog({
-      content: '删除中...'
-    })
-  })
-  loadingDialogControllerProgress = new CustomDialogController({
-    builder: LoadingDialog({
-      content: '加载中...'
+      content: '请求中...'
     })
   })
 
@@ -167,7 +154,7 @@ export default struct Album {
   }
 
   async get(refresh: number = 2, notRefreshWhenAccountSame = false) {
-    this.isLogin = await getLoginStatus()
+    this.isLogin = await getLoginStatus(this.context)
     if (!this.isLogin) {
       this.timelineArray = []
       this.photoArray = []
@@ -179,18 +166,18 @@ export default struct Album {
     if (this.isLogin) {
       if (refresh !== 0) {
         this.albumArray = []
-        this.loadingDialogControllerProgress.open()
+        this.dialogControllerProgress.open()
         const albumres = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.Album', new url.URLParams({
           method: 'list',
           offset: '0',
           limit: '5000'
         }).toString())
-        this.loadingDialogControllerProgress.close()
+        this.dialogControllerProgress.close()
         if (albumres !== 'fail') {
           this.albumArray = albumres['list']
         }
       }
-      const accountInfo = await getAccountInfo()
+      const accountInfo = await getAccountInfo(this.context)
       const account = getAccountHash(accountInfo)
       if (this.account !== account) {
         this.timelineArray = []
@@ -209,11 +196,11 @@ export default struct Album {
         }
         this.timelineArray = []
         this.photoArray = []
-        this.loadingDialogControllerProgress.open()
+        this.dialogControllerProgress.open()
         const timelineres = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.Timeline', new url.URLParams({
           method: 'get'
         }).toString())
-        this.loadingDialogControllerProgress.close()
+        this.dialogControllerProgress.close()
         if (timelineres !== 'fail') {
           const timelineSection = timelineres as TimelineResponse
           let timelineList: TimelineListItem[] = []
@@ -229,13 +216,13 @@ export default struct Album {
               count: item.item_count
             })
           })
-          this.loadingDialogControllerProgress.open()
+          this.dialogControllerProgress.open()
           const keyres = await dsmRequest(this.context, '', 'SYNO.API.Auth.Key', new url.URLParams({
             method: 'grant',
             allow_api: 'SYNO.FileStation.Download',
             allow_methods: JSON.stringify(['download'])
           }).toString())
-          this.loadingDialogControllerProgress.close()
+          this.dialogControllerProgress.close()
           if (keyres !== 'fail') {
             const tid = keyres['tid'] as string
             const textEncoder = new util.TextEncoder()
@@ -304,7 +291,7 @@ export default struct Album {
                         time: item.time,
                         folder_id: item.folder_id,
                         url: accountInfo.path + '/fbdownload/' +
-                        item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
+                          item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
                           '?tid=' + tid + '&mode=open&dlink=' + Array.from(textEncoder.encodeInto(path + item.filename))
                           .map(byte => byte.toString(16).padStart(2, '0')).join(''),
                         path: path + item.filename,
@@ -329,9 +316,10 @@ export default struct Album {
                       time: item.time,
                       folder_id: item.folder_id,
                       url: accountInfo.path + '/fbdownload/' +
-                      item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') + '?tid=' + tid + '&mode=open&dlink=' +
-                      Array.from(textEncoder.encodeInto(this.folderMap.get(item.folder_id) + item.filename))
-                        .map(byte => byte.toString(16).padStart(2, '0')).join(''),
+                        item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') + '?tid=' + tid +
+                        '&mode=open&dlink=' +
+                        Array.from(textEncoder.encodeInto(this.folderMap.get(item.folder_id) + item.filename))
+                          .map(byte => byte.toString(16).padStart(2, '0')).join(''),
                       path: this.folderMap.get(item.folder_id) + item.filename,
                       additional: item.additional,
                       type: item.type,
@@ -358,16 +346,16 @@ export default struct Album {
 
   async getAlbumPhoto() {
     this.albumPhotoArray = []
-    this.loadingDialogControllerProgress.open()
+    this.dialogControllerProgress.open()
     const res = await dsmRequest(this.context, '', 'SYNO.API.Auth.Key', new url.URLParams({
       method: 'grant',
       allow_api: 'SYNO.FileStation.Download',
       allow_methods: JSON.stringify(['download'])
     }).toString())
-    this.loadingDialogControllerProgress.close()
+    this.dialogControllerProgress.close()
     if (res !== 'fail') {
       const tid = res['tid'] as string
-      const accountInfo = await getAccountInfo()
+      const accountInfo = await getAccountInfo(this.context)
       const account = getAccountHash(accountInfo)
       const textEncoder = new util.TextEncoder()
       if (getCurrentNetworkBearerType() === 0) {
@@ -437,7 +425,7 @@ export default struct Album {
                   time: item.time,
                   folder_id: item.folder_id,
                   url: accountInfo.path + '/fbdownload/' +
-                  item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
+                    item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') +
                     '?tid=' + tid + '&mode=open&dlink=' + Array.from(textEncoder.encodeInto(path + item.filename))
                     .map(byte => byte.toString(16).padStart(2, '0')).join(''),
                   path: path + item.filename,
@@ -462,9 +450,9 @@ export default struct Album {
                 time: item.time,
                 folder_id: item.folder_id,
                 url: accountInfo.path + '/fbdownload/' +
-                item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') + '?tid=' + tid + '&mode=open&dlink=' +
-                Array.from(textEncoder.encodeInto(this.folderMap.get(item.folder_id) + item.filename))
-                  .map(byte => byte.toString(16).padStart(2, '0')).join(''),
+                  item.filename.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') + '?tid=' + tid + '&mode=open&dlink=' +
+                  Array.from(textEncoder.encodeInto(this.folderMap.get(item.folder_id) + item.filename))
+                    .map(byte => byte.toString(16).padStart(2, '0')).join(''),
                 path: this.folderMap.get(item.folder_id) + item.filename,
                 additional: item.additional,
                 type: item.type,
@@ -487,10 +475,7 @@ export default struct Album {
   }
 
   getDayNightMode() {
-    const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-      name: 'commonSetting'
-    })
-    const colorMode = commonSettingDataPreferences.getSync('colorMode', 0)
+    const colorMode = getFlushPreference(this.context, 'commonSetting', 'colorMode', 0)
     if (colorMode === 0) {
       return mapCommon.DayNightMode.AUTO
     }
@@ -554,7 +539,7 @@ export default struct Album {
                 Span('尺寸：')
                   .fontWeight(FontWeight.Medium)
                 Span(this.previewPhoto.additional.resolution.width + 'x' +
-                this.previewPhoto.additional.resolution.height)
+                  this.previewPhoto.additional.resolution.height)
               }
               .margin({
                 top: $r('sys.float.ohos_id_text_margin_vertical')
@@ -674,7 +659,8 @@ export default struct Album {
                   tiltGesturesEnabled: false,
                   zoomControlsEnabled: false,
                   compassControlsEnabled: false,
-                  dayNightMode: this.getDayNightMode()
+                  dayNightMode: this.getDayNightMode(),
+                  approveNumberEnabled: true
                 },
                 mapCallback: () => {
                 }
@@ -720,12 +706,7 @@ export default struct Album {
         })
           .onClick(async () => {
             if (item.type === 'photo') {
-              const dialogControllerProgress = new CustomDialogController({
-                builder: LoadingDialog({
-                  content: '下载中...'
-                })
-              })
-              dialogControllerProgress.open()
+              this.dialogControllerProgress.open()
               const version = await getDsmApiMaxVersion(this.context, '', 'SYNO.FileStation.Download')
               if (version !== 'fail') {
                 const dir = this.context.tempDir + '/downloadphoto'
@@ -739,7 +720,7 @@ export default struct Album {
                   scene: 'download',
                   sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
                 })
-                const accountInfo = await getAccountInfo()
+                const accountInfo = await getAccountInfo(this.context)
                 const session = rcp.createSession({
                   requestConfiguration: {
                     tracing: {
@@ -747,37 +728,14 @@ export default struct Album {
                         onDataReceive: async (incomingData) => {
                           await fileStream.write(incomingData)
                         },
-                        onDataEnd: async () => {
-                          dialogControllerProgress.close()
+                        onDataEnd: () => {
                           session.close()
+                          this.dialogControllerProgress.close()
                           netBoost.setSceneDesc({
                             scene: 'download',
                             sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
                           })
                           fileStream.closeSync()
-                          const uri = fileUri.getUriFromPath(path)
-                          let houzhui = ''
-                          const lastDotIndex = item.filename.lastIndexOf('.')
-                          if (lastDotIndex !== -1) {
-                            houzhui = item.filename.slice(lastDotIndex + 1)
-                          }
-                          const phAccessHelper = photoAccessHelper.getPhotoAccessHelper(this.context)
-                          const uris = await phAccessHelper.showAssetsCreationDialog([uri], [{
-                            fileNameExtension: houzhui,
-                            photoType: photoAccessHelper.PhotoType.IMAGE
-                          }])
-                          await phAccessHelper.release()
-                          if (uris.length === 1) {
-                            const srcFile = fileIo.openSync(uri)
-                            const destFile = fileIo.openSync(uris[0], fileIo.OpenMode.WRITE_ONLY)
-                            await fileIo.copyFile(srcFile.fd, destFile.fd)
-                            fileIo.closeSync(srcFile)
-                            fileIo.closeSync(destFile)
-                            await fileIo.unlink(path)
-                            await promptAction.openToast({
-                              message: '保存成功'
-                            })
-                          }
                         }
                       }
                     },
@@ -785,7 +743,8 @@ export default struct Album {
                       dnsRules: getDnsServer(this.context)
                     },
                     security: {
-                      remoteValidation: this.debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
+                      remoteValidation: getFlushPreference(this.context, 'debugSetting',
+                        'closeRemoteValidationWhenLinkDsm',
                         'system') as 'system' | 'skip',
                       tlsRange: {
                         min: 'TlsV1.2'
@@ -808,23 +767,55 @@ export default struct Album {
                     path: item.path,
                     mode: 'download'
                   }).toString())
-                  if (response.statusCode !== 200) {
+                  if (response.statusCode >= 200 && response.statusCode < 300) {
+                    const uri = fileUri.getUriFromPath(path)
+                    let houzhui = ''
+                    const lastDotIndex = item.filename.lastIndexOf('.')
+                    if (lastDotIndex !== -1) {
+                      houzhui = item.filename.slice(lastDotIndex + 1)
+                    }
+                    const phAccessHelper = photoAccessHelper.getPhotoAccessHelper(this.context)
+                    const uris = await phAccessHelper.showAssetsCreationDialog([uri], [{
+                      fileNameExtension: houzhui,
+                      photoType: photoAccessHelper.PhotoType.IMAGE
+                    }])
+                    await phAccessHelper.release()
+                    if (uris.length === 1) {
+                      const srcFile = fileIo.openSync(uri)
+                      const destFile = fileIo.openSync(uris[0], fileIo.OpenMode.WRITE_ONLY)
+                      await fileIo.copyFile(srcFile.fd, destFile.fd)
+                      fileIo.closeSync(srcFile)
+                      fileIo.closeSync(destFile)
+                      await promptAction.openToast({
+                        message: '保存成功'
+                      })
+                    }
+                  } else {
                     await promptAction.openToast({
                       message: 'HTTP 请求失败，状态码：' + response.statusCode
                     })
                   }
                 } catch (err) {
+                  session.close()
+                  this.dialogControllerProgress.close()
+                  netBoost.setSceneDesc({
+                    scene: 'download',
+                    sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                  })
+                  fileStream.closeSync()
                   await promptAction.openToast({
                     message: '下载失败，错误码：' + err.code
                   })
                 }
+                await fileIo.unlink(path)
                 return
               }
-              dialogControllerProgress.close()
+              this.dialogControllerProgress.close()
             }
             if (item.type === 'video') {
               if (getCurrentNetworkBearerType() === 0) {
-                const cellularDataUseRemind = this.commonSettingDataPreferences.getSync('cellularDataUseRemind', 0)
+                const cellularDataUseRemind =
+                  getFlushPreference(this.context, 'commonSetting', 'cellularDataUseRemind', 0)
                 if (cellularDataUseRemind === 0 ||
                   (cellularDataUseRemind === 1 && item.filesize > 200 * Math.pow(1024, 2))) {
                   const promptAction = this.UIContext.getPromptAction()
@@ -848,10 +839,13 @@ export default struct Album {
                   }
                 }
               }
+              const transferTaskDataPreferences = sendablePreferences.getPreferencesSync(this.context, {
+                name: 'transferTask'
+              })
               try {
                 const documentSaveOptions = new picker.DocumentSaveOptions()
                 const selectFileDownloadPath =
-                  this.commonSettingDataPreferences.getSync('selectFileDownloadPath', false)
+                  getFlushPreference(this.context, 'commonSetting', 'selectFileDownloadPath', false)
                 if (!selectFileDownloadPath) {
                   documentSaveOptions.pickerMode = picker.DocumentPickerMode.DOWNLOAD
                 }
@@ -876,14 +870,9 @@ export default struct Album {
                   if (selectFileDownloadPath) {
                     filePath = uris[0]
                   }
-                  const prepareDownloadDialogControllerProgress = new CustomDialogController({
-                    builder: LoadingDialog({
-                      content: '下载准备中...'
-                    })
-                  })
-                  prepareDownloadDialogControllerProgress.open()
+                  this.dialogControllerProgress.open()
                   const version = await getDsmApiMaxVersion(this.context, '', 'SYNO.FileStation.Download')
-                  prepareDownloadDialogControllerProgress.close()
+                  this.dialogControllerProgress.close()
                   if (version !== 'fail') {
                     const wandAgent = await wantAgent.getWantAgent({
                       wants: [
@@ -904,7 +893,8 @@ export default struct Album {
                       scene: 'download',
                       sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
                     })
-                    const accountInfo = await getAccountInfo()
+                    const accountInfo = await getAccountInfo(this.context)
+                    let lastUpdateTime = 0
                     const session = rcp.createSession({
                       requestConfiguration: {
                         transfer: {
@@ -918,34 +908,39 @@ export default struct Album {
                               await fileStream.write(incomingData)
                             },
                             onDownloadProgress: async (totalSize, transferredSize) => {
-                              this.transferredSize = transferredSize
-                              try {
-                                await notificationManager.publish({
-                                  content: {
-                                    notificationContentType: notificationManager.ContentType.NOTIFICATION_CONTENT_SYSTEM_LIVE_VIEW,
-                                    systemLiveView: {
-                                      typeCode: 8,
-                                      title: '正在下载文件：' + item.filename,
-                                      text: '进度：' + Number((transferredSize / totalSize).toFixed(2)) * 100 + '% (' +
-                                      getSizeString(transferredSize) + '/' + getSizeString(totalSize) + ')'
+                              const currentTime = Date.now()
+                              if (currentTime - lastUpdateTime >= 50) {
+                                this.transferredSize = transferredSize
+                                try {
+                                  await notificationManager.publish({
+                                    content: {
+                                      notificationContentType: notificationManager.ContentType.NOTIFICATION_CONTENT_SYSTEM_LIVE_VIEW,
+                                      systemLiveView: {
+                                        typeCode: 8,
+                                        title: '正在下载文件：' + item.filename,
+                                        text: '进度：' + Number((transferredSize / totalSize).toFixed(2)) * 100 + '% (' +
+                                          getSizeString(transferredSize) + '/' + getSizeString(totalSize) + ')'
+                                      }
+                                    },
+                                    id: continuousTaskNotificationInfo.notificationId,
+                                    notificationSlotType: notificationManager.SlotType.LIVE_VIEW,
+                                    template: {
+                                      name: 'downloadTemplate',
+                                      data: {
+                                        title: '正在下载文件，进度：' +
+                                          Number((transferredSize / totalSize).toFixed(2)) * 100 + '%',
+                                        fileName: item.filename,
+                                        progressValue: Number((transferredSize / totalSize).toFixed(2)) * 100
+                                      }
                                     }
-                                  },
-                                  id: continuousTaskNotificationInfo.notificationId,
-                                  notificationSlotType: notificationManager.SlotType.LIVE_VIEW,
-                                  template: {
-                                    name: 'downloadTemplate',
-                                    data: {
-                                      title: '正在下载文件，进度：' +
-                                        Number((transferredSize / totalSize).toFixed(2)) * 100 + '%',
-                                      fileName: item.filename,
-                                      progressValue: Number((transferredSize / totalSize).toFixed(2)) * 100
-                                    }
-                                  }
-                                })
-                              } catch {
+                                  })
+                                } catch {
+                                }
                               }
+                              lastUpdateTime = currentTime
                             },
                             onDataEnd: async () => {
+                              this.isShowProgressSheet = false
                               session.close()
                               netBoost.setSceneDesc({
                                 scene: 'download',
@@ -954,13 +949,9 @@ export default struct Album {
                               fileStream.closeSync()
                               await backgroundTaskManager.stopBackgroundRunning(this.context,
                                 continuousTaskNotificationInfo.continuousTaskId)
-                              this.isShowProgressSheet = false
                               this.context.eventHub.off('cancelDownload')
                               this.transferredSize = 0
                               this.totalSize = 0
-                              await promptAction.openToast({
-                                message: '下载完成'
-                              })
                             }
                           }
                         },
@@ -968,7 +959,8 @@ export default struct Album {
                           dnsRules: getDnsServer(this.context)
                         },
                         security: {
-                          remoteValidation: this.debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
+                          remoteValidation: getFlushPreference(this.context, 'debugSetting',
+                            'closeRemoteValidationWhenLinkDsm',
                             'system') as 'system' | 'skip',
                           tlsRange: {
                             min: 'TlsV1.2'
@@ -988,6 +980,11 @@ export default struct Album {
                       await promptAction.openToast({
                         message: '下载失败'
                       })
+                      transferTaskDataPreferences.putSync(util.generateRandomUUID(), JSON.stringify({
+                        name: item.filename,
+                        status: 'cancel',
+                        type: 'download'
+                      }))
                     })
                     this.totalSize = item.filesize
                     this.context.eventHub.on('cancelDownload', () => {
@@ -1002,16 +999,55 @@ export default struct Album {
                         path: item.path,
                         mode: 'download'
                       }).toString())
-                      if (response.statusCode !== 200) {
+                      if (response.statusCode >= 200 && response.statusCode < 300) {
+                        await promptAction.openToast({
+                          message: '下载完成'
+                        })
+                        transferTaskDataPreferences.putSync(util.generateRandomUUID(), JSON.stringify({
+                          name: item.filename,
+                          status: 'success',
+                          type: 'download'
+                        }))
+                      } else {
                         await promptAction.openToast({
                           message: 'HTTP 请求失败，状态码：' + response.statusCode
                         })
+                        transferTaskDataPreferences.putSync(util.generateRandomUUID(), JSON.stringify({
+                          name: item.filename,
+                          status: 'fail',
+                          errCode: response.statusCode,
+                          type: 'download'
+                        }))
                       }
                     } catch (err) {
+                      session.close()
+                      netBoost.setSceneDesc({
+                        scene: 'download',
+                        sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                      })
+                      fileStream.closeSync()
+                      await backgroundTaskManager.stopBackgroundRunning(this.context,
+                        continuousTaskNotificationInfo.continuousTaskId)
+                      this.context.eventHub.off('cancelDownload')
+                      this.transferredSize = 0
+                      this.totalSize = 0
                       if (err.code !== 1007900992) {
                         await promptAction.openToast({
                           message: '下载失败，错误码：' + err.code
                         })
+                        transferTaskDataPreferences.putSync(util.generateRandomUUID(), JSON.stringify({
+                          name: item.filename,
+                          status: 'fail',
+                          errCode: err.code,
+                          type: 'download'
+                        }))
+                      }
+                      if (err.code === 1007900992) {
+                        transferTaskDataPreferences.putSync(util.generateRandomUUID(), JSON.stringify({
+                          name: item.filename,
+                          status: 'cancel',
+                          type: 'download'
+                        }))
                       }
                     }
                   }
@@ -1020,6 +1056,12 @@ export default struct Album {
                 await promptAction.openToast({
                   message: '发生错误，错误码：' + err.code
                 })
+                transferTaskDataPreferences.putSync(util.generateRandomUUID(), JSON.stringify({
+                  name: item.filename,
+                  status: 'fail',
+                  errCode: err.code,
+                  type: 'download'
+                }))
               }
             }
           })
@@ -1052,7 +1094,7 @@ export default struct Album {
             ]
           })
           if (data.index === 1) {
-            this.deleteDialogControllerProgress.open()
+            this.dialogControllerProgress.open()
             const startres = await dsmRequest(this.context, '', 'SYNO.FileStation.Delete', new url.URLParams({
               method: 'start',
               path: item.path
@@ -1081,7 +1123,7 @@ export default struct Album {
                       }
                     }, 5000)
                     this.previewPhoto = undefined
-                    this.backDataPreferences.putSync('album', false)
+                    setTempPreference(this.context, 'back', 'album', false)
                     await this.get()
                     if (this.previewAlbum) {
                       await this.getAlbumPhoto()
@@ -1093,7 +1135,7 @@ export default struct Album {
                 }
               }
             }
-            this.deleteDialogControllerProgress.close()
+            this.dialogControllerProgress.close()
           }
         })
       if (this.previewAlbum) {
@@ -1102,13 +1144,13 @@ export default struct Album {
         })
           .contentFontColor($r('sys.color.warning'))
           .onClick(async () => {
-            this.deleteDialogControllerProgress.open()
+            this.dialogControllerProgress.open()
             const res = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.NormalAlbum', new url.URLParams({
               method: 'delete_item',
               item: JSON.stringify([item.id]),
               id: String(this.previewAlbum?.id)
             }).toString())
-            this.deleteDialogControllerProgress.close()
+            this.dialogControllerProgress.close()
             if (res !== 'fail') {
               await promptAction.openToast({
                 message: '删除成功'
@@ -1155,12 +1197,12 @@ export default struct Album {
             ]
           })
           if (data.index === 1) {
-            this.deleteDialogControllerProgress.open()
+            this.dialogControllerProgress.open()
             const res = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.Album', new url.URLParams({
               method: 'delete',
               id: JSON.stringify([item.id])
             }).toString())
-            this.deleteDialogControllerProgress.close()
+            this.dialogControllerProgress.close()
             if (res !== 'fail') {
               await promptAction.openToast({
                 message: '删除成功'
@@ -1218,10 +1260,10 @@ export default struct Album {
                   .buildEffect())
                 .width(40)
                 .onClick(async () => {
-                  const transferTaskDataPreferences = preferences.getPreferencesSync(this.context, {
+                  const transferTaskDataPreferences = sendablePreferences.getPreferencesSync(this.context, {
                     name: 'transferTask'
                   })
-                  const accountInfo = await getAccountInfo()
+                  const accountInfo = await getAccountInfo(this.context)
                   await checkPermission(this.context, this.UIContext, 'ohos.permission.MEDIA_LOCATION', true)
                   const photoPicker = new photoAccessHelper.PhotoViewPicker()
                   const pickerres = await photoPicker.select({
@@ -1304,7 +1346,7 @@ export default struct Album {
                   List() {
                     ListItem() {
                       Text(this.photoArray.filter(item => item.type === 'photo').length + '张照片和' +
-                      this.photoArray.filter(item => item.type === 'video').length + '个视频')
+                        this.photoArray.filter(item => item.type === 'video').length + '个视频')
                         .enableAutoSpacing(true)
                         .fontColor($r('sys.color.font_secondary'))
                         .fontSize($r('sys.float.ohos_id_text_size_body2'))
@@ -1362,7 +1404,7 @@ export default struct Album {
                                               }
                                             }
                                             this.previewPhoto = photoItem.item
-                                            this.backDataPreferences.putSync('album', true)
+                                            setTempPreference(this.context, 'back', 'album', true)
                                           })
                                       }
                                       if (photoItem.item.type === 'movingphoto') {
@@ -1401,7 +1443,7 @@ export default struct Album {
                                               }
                                             }
                                             this.previewPhoto = photoItem.item
-                                            this.backDataPreferences.putSync('album', true)
+                                            setTempPreference(this.context, 'back', 'album', true)
                                           })
                                       }
                                       if (photoItem.item.type === 'video') {
@@ -1440,7 +1482,7 @@ export default struct Album {
                                         }
                                       }
                                       this.previewPhoto = photoItem.item
-                                      this.backDataPreferences.putSync('album', true)
+                                      setTempPreference(this.context, 'back', 'album', true)
                                     })
                                   }
                                 })
@@ -1460,6 +1502,10 @@ export default struct Album {
                         })
                       })
                       .virtualScroll()
+                    ListItem()
+                      .margin({
+                        bottom: this.preferType === 0 ? 80 : 0
+                      })
                   }
                   .height('100%')
                 }
@@ -1506,7 +1552,6 @@ export default struct Album {
                           .backgroundColor($r('sys.color.comp_background_secondary'))
                         }
                       })
-                      .width('100%')
                       .onHover((isHover) => {
                         if (!isHover) {
                           this.hoverId = -1
@@ -1517,7 +1562,7 @@ export default struct Album {
                       })
                       .onClick(async () => {
                         this.previewAlbum = albumItem
-                        this.backDataPreferences.putSync('album', true)
+                        setTempPreference(this.context, 'back', 'album', true)
                         await this.getAlbumPhoto()
                       })
                       .bindContextMenu(this.AlbumMenuBuilder(albumItem), ResponseType.LongPress, {
@@ -1537,6 +1582,9 @@ export default struct Album {
                   }
                   .backgroundColor($r('sys.color.comp_background_primary'))
                   .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+                  .margin({
+                    bottom: this.preferType === 0 ? 80 : 0
+                  })
                   .padding($r('sys.float.ohos_id_corner_radius_mark'))
                 }
               }
@@ -1577,7 +1625,7 @@ export default struct Album {
                 .width(40)
                 .onClick(() => {
                   this.previewPhoto = undefined
-                  this.backDataPreferences.putSync('album', false)
+                  setTempPreference(this.context, 'back', 'album', false)
                 })
 
                 Text(this.previewPhoto.filename)
@@ -1666,7 +1714,7 @@ export default struct Album {
                               }
                             }
                             this.previewPhoto = photoArray[index - 1]
-                            this.backDataPreferences.putSync('album', true)
+                            setTempPreference(this.context, 'back', 'album', true)
                           }
                           if (index === 0) {
                             await promptAction.openToast({
@@ -1694,7 +1742,7 @@ export default struct Album {
                               }
                             }
                             this.previewPhoto = photoArray[index + 1]
-                            this.backDataPreferences.putSync('album', true)
+                            setTempPreference(this.context, 'back', 'album', true)
                           }
                           if (index === maxIndex) {
                             await promptAction.openToast({
@@ -1762,7 +1810,7 @@ export default struct Album {
                               }
                             }
                             this.previewPhoto = photoArray[index - 1]
-                            this.backDataPreferences.putSync('album', true)
+                            setTempPreference(this.context, 'back', 'album', true)
                           }
                           if (index === 0) {
                             await promptAction.openToast({
@@ -1790,7 +1838,7 @@ export default struct Album {
                               }
                             }
                             this.previewPhoto = photoArray[index + 1]
-                            this.backDataPreferences.putSync('album', true)
+                            setTempPreference(this.context, 'back', 'album', true)
                           }
                           if (index === maxIndex) {
                             await promptAction.openToast({
@@ -1867,6 +1915,9 @@ export default struct Album {
               }
             }
             .alignItems(HorizontalAlign.Start)
+            .margin({
+              bottom: this.preferType === 0 ? 80 : 0
+            })
             .bindSheet(this.isShowInfoSheet!!, this.InfoSheetBuilder(), {
               height: SheetSize.FIT_CONTENT,
               preferType: this.preferType,
@@ -1905,7 +1956,7 @@ export default struct Album {
                   .width(40)
                   .onClick(() => {
                     this.previewAlbum = undefined
-                    this.backDataPreferences.putSync('album', false)
+                    setTempPreference(this.context, 'back', 'album', false)
                   })
 
                   Text(this.previewAlbum.name)
@@ -1961,7 +2012,7 @@ export default struct Album {
                                   }
                                 }
                                 this.previewPhoto = photoItem.item
-                                this.backDataPreferences.putSync('album', true)
+                                setTempPreference(this.context, 'back', 'album', true)
                               })
                           }
                           if (photoItem.item.type === 'movingphoto') {
@@ -2000,7 +2051,7 @@ export default struct Album {
                                   }
                                 }
                                 this.previewPhoto = photoItem.item
-                                this.backDataPreferences.putSync('album', true)
+                                setTempPreference(this.context, 'back', 'album', true)
                               })
                           }
                           if (photoItem.item.type === 'video') {
@@ -2039,11 +2090,15 @@ export default struct Album {
                             }
                           }
                           this.previewPhoto = photoItem.item
-                          this.backDataPreferences.putSync('album', true)
+                          setTempPreference(this.context, 'back', 'album', true)
                         })
                       }
                     })
                     .virtualScroll()
+                  ListItem()
+                    .margin({
+                      bottom: this.preferType === 0 ? 80 : 0
+                    })
                 }
                 .lanes(4)
                 .layoutWeight(1)
@@ -2052,7 +2107,6 @@ export default struct Album {
           }
         }
       }
-      .alignItems(HorizontalAlign.Start)
     }
     .padding({
       left: $r('sys.float.ohos_id_elements_margin_horizontal_l'),
@@ -2074,7 +2128,7 @@ export default struct Album {
       this.context.eventHub.on('backAlbum', () => {
         if (this.previewPhoto && !this.previewAlbum) {
           this.previewPhoto = undefined
-          this.backDataPreferences.putSync('album', false)
+          setTempPreference(this.context, 'back', 'album', false)
         }
         if (this.previewPhoto && this.previewAlbum) {
           this.previewPhoto = undefined
@@ -2082,14 +2136,14 @@ export default struct Album {
         }
         if (this.previewAlbum) {
           this.previewAlbum = undefined
-          this.backDataPreferences.putSync('album', false)
+          setTempPreference(this.context, 'back', 'album', false)
         }
       })
       this.context.eventHub.on('refreshAlbum', async (clear = true) => {
         if (clear) {
           this.previewPhoto = undefined
           this.previewAlbum = undefined
-          this.backDataPreferences.putSync('album', false)
+          setTempPreference(this.context, 'back', 'album', false)
         }
         await this.get(2, true)
       })

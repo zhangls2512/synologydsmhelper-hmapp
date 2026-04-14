@@ -1,7 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { LengthMetrics, promptAction, SegmentButtonV2Items, TabSegmentButtonV2 } from '@kit.ArkUI'
 import { fileUri } from '@kit.CoreFileKit'
-import { HdsNavDestination } from '@kit.UIDesignKit'
+import { hdsMaterial, HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType } from '@kit.UIDesignKit'
 import { getAccountInfo } from '../common/Account'
 import { BackupTask, deleteBackupTask, getBackupTaskList, startBackupTask } from '../common/Backup'
 
@@ -102,7 +102,7 @@ struct Backuptask {
                       Image($r('app.media.delete'))
                         .height(24)
                         .onClick(async () => {
-                          const accountInfo = await getAccountInfo()
+                          const accountInfo = await getAccountInfo(this.context)
                           await deleteBackupTask(this.context, accountInfo, item.id)
                           await promptAction.openToast({
                             message: '删除成功'
@@ -112,7 +112,6 @@ struct Backuptask {
                     }
                     .borderRadius(12)
                     .padding(12)
-                    .width('100%')
                   })
                 }
                 .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
@@ -163,7 +162,6 @@ struct Backuptask {
                     }
                     .borderRadius(12)
                     .padding(12)
-                    .width('100%')
                   })
                 }
                 .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
@@ -174,28 +172,64 @@ struct Backuptask {
                 top: $r('sys.float.ohos_id_elements_margin_vertical_m')
               })
             }
+            ListItem()
+              .margin({
+                bottom: 28
+              })
           }
           .layoutWeight(1)
         }
+        .margin({
+          top: 64
+        })
       }
       .padding({
-        bottom: $r('sys.float.ohos_id_default_padding_bottom_fixed'),
         left: $r('sys.float.ohos_id_elements_margin_horizontal_l'),
         right: $r('sys.float.ohos_id_elements_margin_horizontal_l')
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
+    .recoverable(true)
     .titleBar({
       padding: {
         end: LengthMetrics.vp(60)
+      },
+      style: {
+        scrollEffectOpts: {
+          scrollEffectType: ScrollEffectType.IMMERSIVE_GRADIENT_BLUR
+        },
+        originalStyle: {
+          contentStyle: {
+            titleStyle: {
+              mainTitleColor: $r('sys.color.font_primary')
+            },
+            backIconStyle: {
+              backgroundColor: $r('sys.color.comp_background_color_floating_smooth'),
+              iconColor: $r('sys.color.icon_primary')
+            }
+          }
+        },
+        scrollEffectStyle: {
+          contentStyle: {
+            backIconStyle: {
+              backgroundColor: $r('sys.color.comp_background_color_floating_smooth'),
+              iconColor: $r('sys.color.icon_primary')
+            }
+          }
+        },
+        thermoCtrl: true,
+        systemMaterialEffect: {
+          materialType: hdsMaterial.MaterialType.ADAPTIVE,
+          materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE
+        }
       },
       content: {
         title: {
           mainTitle: '备份任务'
         }
-      },
-      enableComponentSafeArea: true
+      }
     })
+    .titleMode(HdsNavDestinationTitleMode.MODAL)
     .onAppear(async () => {
       this.backupTaskArray = await getBackupTaskList(this.context)
     })

@@ -1,4 +1,4 @@
-import { dataSharePredicates, preferences } from '@kit.ArkData'
+import { dataSharePredicates, sendablePreferences } from '@kit.ArkData'
 import { taskpool, util } from '@kit.ArkTS'
 import { deviceInfo, zlib } from '@kit.BasicServicesKit'
 import { Environment, fileIo, fileUri } from '@kit.CoreFileKit'
@@ -26,13 +26,13 @@ interface AlbumItem {
 
 @Concurrent
 export async function startBackupTask(context: Context, id: string) {
-  const accountInfo = await getAccountInfo()
+  const accountInfo = await getAccountInfo(context)
   if (accountInfo.id) {
     const filePath = getAccountHash(accountInfo, context, context.filesDir + '/backuptask') + '/' + id + '.txt'
     const filestring = await read(filePath, true)
     if (filestring !== 'fail') {
       const backupTask = JSON.parse(filestring) as BackupTask
-      const transferTaskDataPreferences = preferences.getPreferencesSync(context, {
+      const transferTaskDataPreferences = sendablePreferences.getPreferencesSync(context, {
         name: 'transferTask'
       })
       const transferTaskId = util.generateRandomUUID()
@@ -56,7 +56,7 @@ export async function startBackupTask(context: Context, id: string) {
 }
 
 export async function getBackupTaskList(context: Context) {
-  const accountInfo = await getAccountInfo()
+  const accountInfo = await getAccountInfo(context)
   if (accountInfo.id) {
     const backupTaskArray: BackupTask[] = []
     const dirPath = getAccountHash(accountInfo, context, context.filesDir + '/backuptask') + '/'
@@ -92,7 +92,7 @@ export async function deleteBackupTask(context: Context, accountInfo: AccountInf
 }
 
 export async function generateBackupTaskList(context: Context, type: string) {
-  const accountInfo = await getAccountInfo()
+  const accountInfo = await getAccountInfo(context)
   if (accountInfo.id) {
     const backupTaskArray: BackupTask[] = []
     const dirPath = getAccountHash(accountInfo, context, context.filesDir + '/backuptask') + '/'
@@ -293,7 +293,7 @@ export async function generateBackupTaskList(context: Context, type: string) {
 }
 
 export async function autoBackup(context: Context) {
-  const accountInfo = await getAccountInfo()
+  const accountInfo = await getAccountInfo(context)
   if (accountInfo.id) {
     const filePath = context.filesDir + '/backupsetting/' + getAccountHash(accountInfo) + '.txt'
     const filestring = await read(filePath, true)

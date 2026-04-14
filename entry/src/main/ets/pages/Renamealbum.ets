@@ -35,7 +35,7 @@ export default struct Renamealbum {
               }
               const dialogControllerProgress = new CustomDialogController({
                 builder: LoadingDialog({
-                  content: '重命名中...'
+                  content: '请求中...'
                 })
               })
               dialogControllerProgress.open()

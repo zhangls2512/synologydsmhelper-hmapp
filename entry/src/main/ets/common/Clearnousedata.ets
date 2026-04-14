@@ -1,4 +1,3 @@
-import { preferences } from '@kit.ArkData'
 import { fileIo } from '@kit.CoreFileKit'
 
 export async function clearNouseData(context: Context) {
@@ -15,11 +14,4 @@ export async function clearNouseData(context: Context) {
     }
   })
   await Promise.all(promises)
-  const commonSettingDataPreferences = preferences.getPreferencesSync(context, {
-    name: 'commonSetting'
-  })
-  const commonKeys = ['disallowScreenshot', 'cellularDataDownloadRemind']
-  commonKeys.forEach(item => {
-    commonSettingDataPreferences.deleteSync(item)
-  })
 }

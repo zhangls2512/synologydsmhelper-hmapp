@@ -2,7 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { url } from '@kit.ArkTS'
 import { LengthMetrics, LoadingDialog, promptAction } from '@kit.ArkUI'
 import { rcp } from '@kit.RemoteCommunicationKit'
-import { HdsNavDestination } from '@kit.UIDesignKit'
+import { hdsMaterial, HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType } from '@kit.UIDesignKit'
 import { getDnsServer } from '../common/Dnsserver'
 import copy from '../common/Pasteboard'
 
@@ -92,7 +92,7 @@ struct Synologyproductdownloadcenter {
               this.files = []
               const dialogControllerProgress = new CustomDialogController({
                 builder: LoadingDialog({
-                  content: '查询中...'
+                  content: '请求中...'
                 })
               })
               dialogControllerProgress.open()
@@ -116,8 +116,8 @@ struct Synologyproductdownloadcenter {
                   }).toString())
                 session.close()
                 dialogControllerProgress.close()
-                if (response.statusCode === 200) {
-                  const res = JSON.parse(String(response)) as Response
+                if (response.statusCode >= 200 && response.statusCode < 300) {
+                  const res = response.toJSON() as Response
                   if (!res.success) {
                     await promptAction.openToast({
                       message: '暂不支持查询此产品型号'
@@ -247,7 +247,6 @@ struct Synologyproductdownloadcenter {
                   }
                   .borderRadius(12)
                   .padding(12)
-                  .width('100%')
 
                   if (item.desc) {
                     Divider()
@@ -270,7 +269,6 @@ struct Synologyproductdownloadcenter {
                     }
                     .borderRadius(12)
                     .padding(12)
-                    .width('100%')
                   }
                   Divider()
                     .padding({
@@ -292,7 +290,6 @@ struct Synologyproductdownloadcenter {
                   }
                   .borderRadius(12)
                   .padding(12)
-                  .width('100%')
 
                   if (item.version) {
                     Divider()
@@ -314,7 +311,6 @@ struct Synologyproductdownloadcenter {
                     }
                     .borderRadius(12)
                     .padding(12)
-                    .width('100%')
                   }
                   Divider()
                     .padding({
@@ -344,7 +340,6 @@ struct Synologyproductdownloadcenter {
                       .backgroundColor($r('sys.color.interactive_pressed'))
                     }
                   })
-                  .width('100%')
                   .onHover((isHover) => {
                     if (!isHover) {
                       this.hoverId = -1
@@ -386,7 +381,6 @@ struct Synologyproductdownloadcenter {
                         .backgroundColor($r('sys.color.interactive_pressed'))
                       }
                     })
-                    .width('100%')
                     .onHover((isHover) => {
                       if (!isHover) {
                         this.hoverId = -1
@@ -431,7 +425,6 @@ struct Synologyproductdownloadcenter {
                         .backgroundColor($r('sys.color.interactive_pressed'))
                       }
                     })
-                    .width('100%')
                     .onHover((isHover) => {
                       if (!isHover) {
                         this.hoverId = -1
@@ -456,29 +449,64 @@ struct Synologyproductdownloadcenter {
                 top: $r('sys.float.ohos_id_elements_margin_vertical_m')
               })
             })
+            ListItem()
+              .margin({
+                bottom: 28
+              })
           }
           .layoutWeight(1)
         }
-        .alignItems(HorizontalAlign.Start)
+        .margin({
+          top: 64
+        })
       }
       .padding({
-        bottom: $r('sys.float.ohos_id_default_padding_bottom_fixed'),
         left: $r('sys.float.ohos_id_elements_margin_horizontal_l'),
         right: $r('sys.float.ohos_id_elements_margin_horizontal_l')
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
+    .recoverable(true)
     .titleBar({
       padding: {
         end: LengthMetrics.vp(60)
+      },
+      style: {
+        scrollEffectOpts: {
+          scrollEffectType: ScrollEffectType.IMMERSIVE_GRADIENT_BLUR
+        },
+        originalStyle: {
+          contentStyle: {
+            titleStyle: {
+              mainTitleColor: $r('sys.color.font_primary')
+            },
+            backIconStyle: {
+              backgroundColor: $r('sys.color.comp_background_color_floating_smooth'),
+              iconColor: $r('sys.color.icon_primary')
+            }
+          }
+        },
+        scrollEffectStyle: {
+          contentStyle: {
+            backIconStyle: {
+              backgroundColor: $r('sys.color.comp_background_color_floating_smooth'),
+              iconColor: $r('sys.color.icon_primary')
+            }
+          }
+        },
+        thermoCtrl: true,
+        systemMaterialEffect: {
+          materialType: hdsMaterial.MaterialType.ADAPTIVE,
+          materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE
+        }
       },
       content: {
         title: {
           mainTitle: '群晖产品下载中心'
         }
-      },
-      enableComponentSafeArea: true
+      }
     })
+    .titleMode(HdsNavDestinationTitleMode.MODAL)
     .onReady((context) => {
       this.pageInfos = context.pathStack
     })

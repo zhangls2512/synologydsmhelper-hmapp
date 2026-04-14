@@ -1,7 +1,7 @@
 import { common } from '@kit.AbilityKit'
-import { preferences } from '@kit.ArkData'
 import { url } from '@kit.ArkTS'
 import { getLoginStatus } from '../common/Account'
+import { getFlushPreference } from '../common/Preference'
 import { dsmRequest } from '../common/Request'
 import { getSizeString } from '../common/Stringformat'
 
@@ -30,11 +30,8 @@ export default struct Storageinfo {
   intervalId = -1
 
   async refresh() {
-    const cardSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-      name: 'cardSetting'
-    })
-    const isLogin = await getLoginStatus()
-    if ((cardSettingDataPreferences.getSync('cards', []) as string[]).includes('storageinfo') &&
+    const isLogin = await getLoginStatus(this.context)
+    if ((getFlushPreference(this.context, 'cardSetting', 'cards', []) as string[]).includes('storageinfo') &&
       this.status !== 'fail' && isLogin) {
       const res = await dsmRequest(this.context, '', 'SYNO.Storage.CGI.Storage', new url.URLParams({
         method: 'load_info'

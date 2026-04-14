@@ -2,19 +2,19 @@ import { common } from '@kit.AbilityKit'
 import { LengthMetrics, SegmentButtonV2Items, TabSegmentButtonV2 } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
 import { hdsMaterial, HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType } from '@kit.UIDesignKit'
+import { BestAddressItem } from '../common/Account'
 import { read } from '../common/File'
-import { ApiVersionCacheItem, ApiVersionItem } from '../common/Request'
 
 @Builder
-export function ApiversioncacheBuilder() {
-  Apiversioncache()
+export function BestaddressBuilder() {
+  Bestaddress()
 }
 
 @ComponentV2
-struct Apiversioncache {
+struct Bestaddress {
   @Local selectedIndex: number = 0
   @Local content: string = ''
-  @Local array: ApiVersionCacheItem[] = []
+  @Local array: BestAddressItem[] = []
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
   build() {
@@ -52,10 +52,10 @@ struct Apiversioncache {
               .width('100%')
             }
             if (this.selectedIndex === 1) {
-              ForEach(this.array, (apiVersionCacheItem: ApiVersionCacheItem) => {
+              ForEach(this.array, (bestAddressItem: BestAddressItem) => {
                 ListItem() {
                   Column() {
-                    Text(apiVersionCacheItem.path)
+                    Text('最佳：' + bestAddressItem.best)
                       .fontColor($r('sys.color.font_secondary'))
                       .fontSize($r('sys.float.ohos_id_text_size_body2'))
                       .fontWeight(FontWeight.Medium)
@@ -65,8 +65,8 @@ struct Apiversioncache {
                         right: 12
                       })
                     Column() {
-                      ForEach(apiVersionCacheItem.apiVersion, (apiVersionItem: ApiVersionItem, apiVersionIndex) => {
-                        if (apiVersionIndex !== 0) {
+                      ForEach(bestAddressItem.list, (addressItem: string, addressIndex) => {
+                        if (addressIndex !== 0) {
                           Divider()
                             .padding({
                               left: 12,
@@ -74,18 +74,15 @@ struct Apiversioncache {
                             })
                         }
                         Row() {
-                          Text(apiVersionItem.name)
+                          Text(addressItem)
                             .fontWeight(FontWeight.Medium)
-                            .layoutWeight(1)
                             .margin({
                               right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                             })
-                          Text(String(apiVersionItem.version))
-                            .fontColor($r('sys.color.font_secondary'))
-                            .fontSize($r('sys.float.ohos_id_text_size_body2'))
                         }
                         .borderRadius(12)
                         .padding(12)
+                        .width('100%')
                       })
                     }
                     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
@@ -152,13 +149,13 @@ struct Apiversioncache {
       },
       content: {
         title: {
-          mainTitle: 'API 版本号缓存'
+          mainTitle: '最佳地址'
         }
       }
     })
     .titleMode(HdsNavDestinationTitleMode.MODAL)
     .onAppear(async () => {
-      const filePath = this.context.cacheDir + '/apiversion.txt'
+      const filePath = this.context.cacheDir + '/bestaddress.txt'
       if (fileIo.accessSync(filePath)) {
         this.content = await read(filePath, true)
         this.array = JSON.parse(this.content)
