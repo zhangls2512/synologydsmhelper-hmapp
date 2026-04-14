@@ -1,16 +1,17 @@
 import { common } from '@kit.AbilityKit'
 import { privacyManager } from '@kit.AppGalleryKit'
-import { preferences, uniformTypeDescriptor } from '@kit.ArkData'
+import { uniformTypeDescriptor } from '@kit.ArkData'
 import { LengthMetrics, promptAction } from '@kit.ArkUI'
 import { appAccount, deviceInfo } from '@kit.BasicServicesKit'
 import { fileIo, fileUri, picker } from '@kit.CoreFileKit'
 import { formProvider } from '@kit.FormKit'
 import { harmonyShare, systemShare } from '@kit.ShareKit'
-import { HdsNavigation, HdsNavigationTitleMode } from '@kit.UIDesignKit'
+import { hdsMaterial, HdsNavigation, HdsNavigationTitleMode, ScrollEffectType } from '@kit.UIDesignKit'
 import { getAccountInfo, getAccountList, getLoginStatus, importAccounts } from '../common/Account'
 import { write, writeUri } from '../common/File'
 import openLink from '../common/Openlink'
 import { checkPermission } from '../common/Permission'
+import { getFlushPreference } from '../common/Preference'
 import { getSizeString } from '../common/Stringformat'
 
 @ComponentV2
@@ -27,10 +28,7 @@ export default struct Setting {
   accountDataSync = false
 
   async getSetting() {
-    const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-      name: 'commonSetting'
-    })
-    this.allService = commonSettingDataPreferences.getSync('allService', true) as boolean
+    this.allService = getFlushPreference(this.context, 'commonSetting', 'allService', true) as boolean
     try {
       const appPrivacyResults: privacyManager.AppPrivacyResult[] = privacyManager.getAppPrivacyResult()
       this.agreedPrivacyAgreement =
@@ -40,9 +38,9 @@ export default struct Setting {
         message: '发生错误，错误码：' + err.code + '，错误信息：' + err.message
       })
     }
-    this.isLogin = await getLoginStatus()
+    this.isLogin = await getLoginStatus(this.context)
     if (this.isLogin) {
-      const accountInfo = await getAccountInfo()
+      const accountInfo = await getAccountInfo(this.context)
       const appAccountManager = appAccount.createAppAccountManager()
       const res = await checkPermission(this.context, this.UIContext, 'ohos.permission.DISTRIBUTED_DATASYNC')
       this.accountDataSyncEnabled = res
@@ -50,13 +48,17 @@ export default struct Setting {
         this.accountDataSync = await appAccountManager.checkDataSyncEnabled(accountInfo.id)
       }
     }
-    const accounts = await getAccountList()
+    const accounts = await getAccountList(this.context)
     this.accountCount = accounts.length
   }
 
   build() {
     HdsNavigation(this.pageInfos) {
       List() {
+        ListItem()
+          .margin({
+            top: 64
+          })
         ListItem() {
           Column() {
             Text('账号')
@@ -84,7 +86,7 @@ export default struct Setting {
                     .enabled(this.accountDataSyncEnabled)
                     .onChange(async (isOn) => {
                       try {
-                        const accountInfo = await getAccountInfo()
+                        const accountInfo = await getAccountInfo(this.context)
                         const appAccountManager = appAccount.createAppAccountManager()
                         await appAccountManager.setDataSyncEnabled(accountInfo.id, isOn)
                       } catch (err) {
@@ -97,7 +99,6 @@ export default struct Setting {
                 }
                 .borderRadius(12)
                 .padding(12)
-                .width('100%')
 
                 Divider()
                   .padding({
@@ -129,7 +130,6 @@ export default struct Setting {
                     .backgroundColor($r('sys.color.interactive_pressed'))
                   }
                 })
-                .width('100%')
                 .onHover((isHover) => {
                   if (!isHover) {
                     this.hoverId = -1
@@ -180,7 +180,6 @@ export default struct Setting {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .width('100%')
               .onHover((isHover) => {
                 if (!isHover) {
                   this.hoverId = -1
@@ -197,7 +196,7 @@ export default struct Setting {
                 const uris = await documentViewPicker.save(documentSaveOptions)
                 if (uris.length === 1) {
                   const filePath = uris[0]
-                  const array = await getAccountList()
+                  const array = await getAccountList(this.context)
                   await writeUri(filePath, JSON.stringify(array))
                   await promptAction.openToast({
                     message: '导出成功'
@@ -234,7 +233,6 @@ export default struct Setting {
                     .backgroundColor($r('sys.color.interactive_pressed'))
                   }
                 })
-                .width('100%')
                 .onHover((isHover) => {
                   if (!isHover) {
                     this.hoverId = -1
@@ -244,7 +242,7 @@ export default struct Setting {
                   }
                 })
                 .onClick(async () => {
-                  const array = await getAccountList()
+                  const array = await getAccountList(this.context)
                   const filePath = this.context.tempDir + '/synologydsmhelperaccounts.txt'
                   await write(filePath, JSON.stringify(array))
                   const shareData = new systemShare.SharedData({
@@ -305,7 +303,6 @@ export default struct Setting {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .width('100%')
               .onHover((isHover) => {
                 if (!isHover) {
                   this.hoverId = -1
@@ -356,7 +353,6 @@ export default struct Setting {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .width('100%')
               .onHover((isHover) => {
                 if (!isHover) {
                   this.hoverId = -1
@@ -415,7 +411,6 @@ export default struct Setting {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .width('100%')
               .onHover((isHover) => {
                 if (!isHover) {
                   this.hoverId = -1
@@ -458,7 +453,6 @@ export default struct Setting {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .width('100%')
               .onHover((isHover) => {
                 if (!isHover) {
                   this.hoverId = -1
@@ -508,7 +502,6 @@ export default struct Setting {
                 .backgroundColor($r('sys.color.interactive_pressed'))
               }
             })
-            .width('100%')
             .onHover((isHover) => {
               if (!isHover) {
                 this.hoverId = -1
@@ -564,7 +557,6 @@ export default struct Setting {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .width('100%')
               .onHover((isHover) => {
                 if (!isHover) {
                   this.hoverId = -1
@@ -613,7 +605,6 @@ export default struct Setting {
                     .backgroundColor($r('sys.color.interactive_pressed'))
                   }
                 })
-                .width('100%')
                 .onHover((isHover) => {
                   if (!isHover) {
                     this.hoverId = -1
@@ -652,7 +643,6 @@ export default struct Setting {
                     .backgroundColor($r('sys.color.interactive_pressed'))
                   }
                 })
-                .width('100%')
                 .onHover((isHover) => {
                   if (!isHover) {
                     this.hoverId = -1
@@ -712,7 +702,6 @@ export default struct Setting {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .width('100%')
               .onHover((isHover) => {
                 if (!isHover) {
                   this.hoverId = -1
@@ -765,7 +754,6 @@ export default struct Setting {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .width('100%')
               .onHover((isHover) => {
                 if (!isHover) {
                   this.hoverId = -1
@@ -806,7 +794,6 @@ export default struct Setting {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .width('100%')
               .onHover((isHover) => {
                 if (!isHover) {
                   this.hoverId = -1
@@ -849,7 +836,6 @@ export default struct Setting {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .width('100%')
               .onHover((isHover) => {
                 if (!isHover) {
                   this.hoverId = -1
@@ -913,7 +899,6 @@ export default struct Setting {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .width('100%')
               .onHover((isHover) => {
                 if (!isHover) {
                   this.hoverId = -1
@@ -956,7 +941,6 @@ export default struct Setting {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .width('100%')
               .onHover((isHover) => {
                 if (!isHover) {
                   this.hoverId = -1
@@ -1015,7 +999,6 @@ export default struct Setting {
                 .backgroundColor($r('sys.color.interactive_pressed'))
               }
             })
-            .width('100%')
             .onHover((isHover) => {
               if (!isHover) {
                 this.hoverId = -1
@@ -1058,7 +1041,6 @@ export default struct Setting {
                 .backgroundColor($r('sys.color.interactive_pressed'))
               }
             })
-            .width('100%')
             .onHover((isHover) => {
               if (!isHover) {
                 this.hoverId = -1
@@ -1080,30 +1062,48 @@ export default struct Setting {
         .margin({
           top: $r('sys.float.ohos_id_elements_margin_vertical_l')
         })
+
+        ListItem()
+          .margin({
+            bottom: 28
+          })
       }
       .padding({
-        bottom: $r('sys.float.ohos_id_default_padding_bottom_fixed'),
         left: $r('sys.float.ohos_id_elements_margin_horizontal_l'),
         right: $r('sys.float.ohos_id_elements_margin_horizontal_l')
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
     .hideBackButton(true)
-    .padding({
-      top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-    })
+    .recoverable(true)
     .titleBar({
       padding: {
         end: LengthMetrics.vp(60)
+      },
+      style: {
+        scrollEffectOpts: {
+          scrollEffectType: ScrollEffectType.IMMERSIVE_GRADIENT_BLUR
+        },
+        originalStyle: {
+          contentStyle: {
+            titleStyle: {
+              mainTitleColor: $r('sys.color.font_primary')
+            }
+          }
+        },
+        thermoCtrl: true,
+        systemMaterialEffect: {
+          materialType: hdsMaterial.MaterialType.ADAPTIVE,
+          materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE
+        }
       },
       content: {
         title: {
           mainTitle: '设置'
         }
-      },
-      enableComponentSafeArea: true
+      }
     })
-    .titleMode(HdsNavigationTitleMode.MINI)
+    .titleMode(HdsNavigationTitleMode.MODAL)
     .onAppear(async () => {
       this.context.eventHub.on('refreshSetting', async () => {
         await this.getSetting()

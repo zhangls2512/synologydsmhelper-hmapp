@@ -1,5 +1,4 @@
 import { common } from '@kit.AbilityKit'
-import { preferences } from '@kit.ArkData'
 import { url } from '@kit.ArkTS'
 import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
@@ -7,6 +6,7 @@ import { getAccountInfo } from '../common/Account'
 import { read, write } from '../common/File'
 import { dsmRequest } from '../common/Request'
 import { sha256hash } from '../common/Hash'
+import { getFlushPreference } from '../common/Preference'
 import { getTimeStringFromSecond } from '../common/Stringformat'
 
 interface NoticeJsonString {
@@ -48,15 +48,12 @@ export default struct Noticelist {
   }
 
   async getNoticeJsonString(): Promise<NoticeJsonString | 'fail'> {
-    const accountInfo = await getAccountInfo()
+    const accountInfo = await getAccountInfo(this.context)
     const filePath6 = this.context.cacheDir + '/noticejsonstring/' + sha256hash(accountInfo.path) + '.6.txt'
     const filePath7 = this.context.cacheDir + '/noticejsonstring/' + sha256hash(accountInfo.path) + '.7.txt'
     let exist6 = fileIo.accessSync(filePath6)
     let exist7 = fileIo.accessSync(filePath7)
-    const commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-      name: 'commonSetting'
-    })
-    const cacheNoticeJsonString = commonSettingDataPreferences.getSync('cacheNoticeJsonString', true)
+    const cacheNoticeJsonString = getFlushPreference(this.context, 'commonSetting', 'cacheNoticeJsonString', true)
     if (!cacheNoticeJsonString) {
       exist6 = false
       exist7 = false
@@ -192,7 +189,7 @@ export default struct Noticelist {
             .onClick(async () => {
               const dialogControllerProgress = new CustomDialogController({
                 builder: LoadingDialog({
-                  content: '清除中...'
+                  content: '请求中...'
                 })
               })
               dialogControllerProgress.open()
@@ -239,7 +236,6 @@ export default struct Noticelist {
                 }
                 .borderRadius(12)
                 .padding(12)
-                .width('100%')
 
                 Divider()
                   .padding({
@@ -260,7 +256,6 @@ export default struct Noticelist {
                 }
                 .borderRadius(12)
                 .padding(12)
-                .width('100%')
 
                 Divider()
                   .padding({
@@ -269,7 +264,6 @@ export default struct Noticelist {
                   })
                 Row() {
                   Text('主题')
-                    .enableAutoSpacing(true)
                     .fontWeight(FontWeight.Medium)
                     .margin({
                       right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -282,7 +276,6 @@ export default struct Noticelist {
                 }
                 .borderRadius(12)
                 .padding(12)
-                .width('100%')
 
                 Divider()
                   .padding({
@@ -303,7 +296,6 @@ export default struct Noticelist {
                 }
                 .borderRadius(12)
                 .padding(12)
-                .width('100%')
               }
               .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
               .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))

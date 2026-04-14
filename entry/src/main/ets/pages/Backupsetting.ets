@@ -1,12 +1,12 @@
 import { common } from '@kit.AbilityKit'
-import { preferences } from '@kit.ArkData'
 import { LengthMetrics, LoadingDialog, promptAction } from '@kit.ArkUI'
 import { deviceInfo } from '@kit.BasicServicesKit'
-import { HdsNavDestination } from '@kit.UIDesignKit'
+import { hdsMaterial, HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType } from '@kit.UIDesignKit'
 import { getAccountHash, getAccountInfo } from '../common/Account'
 import { generateBackupTaskList } from '../common/Backup'
 import { read, write } from '../common/File'
 import { checkPermission } from '../common/Permission'
+import { getFlushPreference, setFlushPreference } from '../common/Preference'
 
 export interface BackupSetting {
   autoTypes: string[]
@@ -26,23 +26,24 @@ struct Backupsetting {
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   pageInfos = new NavPathStack()
   typeArray: string[] = ['相册', '文档', '桌面']
-  backupSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-    name: 'backupSetting'
-  })
 
   async getSetting() {
-    const accountInfo = await getAccountInfo()
+    const accountInfo = await getAccountInfo(this.context)
     const filePath = this.context.filesDir + '/backupsetting/' + getAccountHash(accountInfo) + '.txt'
     const filestring = await read(filePath, true)
     if (filestring !== 'fail') {
       this.autoTypes = (JSON.parse(filestring) as BackupSetting).autoTypes
     }
-    this.deleteAfterSuccess = this.backupSettingDataPreferences.getSync('deleteAfterSuccess', true) as boolean
+    this.deleteAfterSuccess = getFlushPreference(this.context, 'backupSetting', 'deleteAfterSuccess', true) as boolean
   }
 
   build() {
     HdsNavDestination() {
       List() {
+        ListItem()
+          .margin({
+            top: 64
+          })
         ListItem() {
           Column() {
             Text('自动')
@@ -98,7 +99,7 @@ struct Backupsetting {
                             this.autoTypes = this.autoTypes.filter(inItem => inItem !== item)
                           }
                         }
-                        const accountInfo = await getAccountInfo()
+                        const accountInfo = await getAccountInfo(this.context)
                         await write(this.context.filesDir + '/backupsetting/' + getAccountHash(accountInfo) + '.txt',
                           JSON.stringify({
                             autoTypes: this.autoTypes
@@ -107,7 +108,6 @@ struct Backupsetting {
                   }
                   .borderRadius(12)
                   .padding(12)
-                  .width('100%')
                 }
               })
             }
@@ -165,7 +165,6 @@ struct Backupsetting {
                       .backgroundColor($r('sys.color.interactive_pressed'))
                     }
                   })
-                  .width('100%')
                   .onHover((isHover) => {
                     if (!isHover) {
                       this.hoverId = -1
@@ -191,14 +190,14 @@ struct Backupsetting {
                     if (res) {
                       const dialogControllerProgress = new CustomDialogController({
                         builder: LoadingDialog({
-                          content: '备份准备中...'
+                          content: '准备中...'
                         })
                       })
                       dialogControllerProgress.open()
                       await generateBackupTaskList(this.context, item)
                       dialogControllerProgress.close()
                       await promptAction.openToast({
-                        message: '备份已开始'
+                        message: '已开始'
                       })
                     }
                   })
@@ -229,13 +228,11 @@ struct Backupsetting {
                 isOn: this.deleteAfterSuccess!!
               })
                 .onChange((isOn) => {
-                  this.backupSettingDataPreferences.putSync('deleteAfterSuccess', isOn)
-                  this.backupSettingDataPreferences.flushSync()
+                  setFlushPreference(this.context, 'backupSetting', 'deleteAfterSuccess', isOn)
                 })
             }
             .borderRadius(12)
             .padding(12)
-            .width('100%')
           }
           .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
           .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
@@ -270,7 +267,6 @@ struct Backupsetting {
                 .backgroundColor($r('sys.color.interactive_pressed'))
               }
             })
-            .width('100%')
             .onHover((isHover) => {
               if (!isHover) {
                 this.hoverId = -1
@@ -292,25 +288,59 @@ struct Backupsetting {
         .margin({
           top: $r('sys.float.ohos_id_elements_margin_vertical_l')
         })
+
+        ListItem()
+          .margin({
+            bottom: 28
+          })
       }
       .padding({
-        bottom: $r('sys.float.ohos_id_default_padding_bottom_fixed'),
         left: $r('sys.float.ohos_id_elements_margin_horizontal_l'),
         right: $r('sys.float.ohos_id_elements_margin_horizontal_l')
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
+    .recoverable(true)
     .titleBar({
       padding: {
         end: LengthMetrics.vp(60)
+      },
+      style: {
+        scrollEffectOpts: {
+          scrollEffectType: ScrollEffectType.IMMERSIVE_GRADIENT_BLUR
+        },
+        originalStyle: {
+          contentStyle: {
+            titleStyle: {
+              mainTitleColor: $r('sys.color.font_primary')
+            },
+            backIconStyle: {
+              backgroundColor: $r('sys.color.comp_background_color_floating_smooth'),
+              iconColor: $r('sys.color.icon_primary')
+            }
+          }
+        },
+        scrollEffectStyle: {
+          contentStyle: {
+            backIconStyle: {
+              backgroundColor: $r('sys.color.comp_background_color_floating_smooth'),
+              iconColor: $r('sys.color.icon_primary')
+            }
+          }
+        },
+        thermoCtrl: true,
+        systemMaterialEffect: {
+          materialType: hdsMaterial.MaterialType.ADAPTIVE,
+          materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE
+        }
       },
       content: {
         title: {
           mainTitle: '备份'
         }
-      },
-      enableComponentSafeArea: true
+      }
     })
+    .titleMode(HdsNavDestinationTitleMode.MODAL)
     .onReady(async (context) => {
       this.pageInfos = context.pathStack
       await this.getSetting()

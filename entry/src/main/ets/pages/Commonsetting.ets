@@ -1,12 +1,13 @@
 import { common, ConfigurationConstant } from '@kit.AbilityKit'
-import { preferences } from '@kit.ArkData'
-import { LengthMetrics, window } from '@kit.ArkUI'
+import { LengthMetrics, LoadingDialog, promptAction, window } from '@kit.ArkUI'
 import { deviceInfo } from '@kit.BasicServicesKit'
 import { fileIo } from '@kit.CoreFileKit'
 import { image } from '@kit.ImageKit'
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
-import { HdsNavDestination } from '@kit.UIDesignKit'
+import { hdsMaterial, HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType } from '@kit.UIDesignKit'
+import { generateBestAddress } from '../common/Account'
 import { checkPermission, getPermission } from '../common/Permission'
+import { getFlushPreference, setFlushPreference } from '../common/Preference'
 
 @Builder
 export function CommonsettingBuilder() {
@@ -46,13 +47,14 @@ struct Commonsetting {
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   pageInfos = new NavPathStack()
-  commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-    name: 'commonSetting'
-  })
 
   build() {
     HdsNavDestination() {
       List() {
+        ListItem()
+          .margin({
+            top: 64
+          })
         ListItem() {
           Column() {
             Text('应用')
@@ -77,8 +79,7 @@ struct Commonsetting {
                   isOn: this.allowContinue!!
                 })
                   .onChange(async (isOn) => {
-                    this.commonSettingDataPreferences.putSync('allowContinue', isOn)
-                    this.commonSettingDataPreferences.flushSync()
+                    setFlushPreference(this.context, 'commonSetting', 'allowContinue', isOn)
                     const promptAction = this.UIContext.getPromptAction()
                     const data = await promptAction.showDialog({
                       title: '提示',
@@ -105,7 +106,6 @@ struct Commonsetting {
               }
               .borderRadius(12)
               .padding(12)
-              .width('100%')
 
               Divider()
                 .padding({
@@ -124,13 +124,11 @@ struct Commonsetting {
                   isOn: this.exitAfterContinue!!
                 })
                   .onChange((isOn) => {
-                    this.commonSettingDataPreferences.putSync('exitAfterContinue', isOn)
-                    this.commonSettingDataPreferences.flushSync()
+                    setFlushPreference(this.context, 'commonSetting', 'exitAfterContinue', isOn)
                   })
               }
               .borderRadius(12)
               .padding(12)
-              .width('100%')
 
               Divider()
                 .padding({
@@ -149,8 +147,7 @@ struct Commonsetting {
                   isOn: this.allowRestore!!
                 })
                   .onChange(async (isOn) => {
-                    this.commonSettingDataPreferences.putSync('allowRestore', isOn)
-                    this.commonSettingDataPreferences.flushSync()
+                    setFlushPreference(this.context, 'commonSetting', 'allowRestore', isOn)
                     const promptAction = this.UIContext.getPromptAction()
                     const data = await promptAction.showDialog({
                       title: '提示',
@@ -177,7 +174,6 @@ struct Commonsetting {
               }
               .borderRadius(12)
               .padding(12)
-              .width('100%')
 
               Divider()
                 .padding({
@@ -196,13 +192,11 @@ struct Commonsetting {
                   isOn: this.acceptCollaborate!!
                 })
                   .onChange((isOn) => {
-                    this.commonSettingDataPreferences.putSync('acceptCollaborate', isOn)
-                    this.commonSettingDataPreferences.flushSync()
+                    setFlushPreference(this.context, 'commonSetting', 'acceptCollaborate', isOn)
                   })
               }
               .borderRadius(12)
               .padding(12)
-              .width('100%')
 
               Divider()
                 .padding({
@@ -221,13 +215,11 @@ struct Commonsetting {
                   isOn: this.destroyWhenBackPressed!!
                 })
                   .onChange((isOn) => {
-                    this.commonSettingDataPreferences.putSync('destroyWhenBackPressed', isOn)
-                    this.commonSettingDataPreferences.flushSync()
+                    setFlushPreference(this.context, 'commonSetting', 'destroyWhenBackPressed', isOn)
                   })
               }
               .borderRadius(12)
               .padding(12)
-              .width('100%')
 
               if (deviceInfo.deviceType === '2in1') {
                 Divider()
@@ -247,8 +239,7 @@ struct Commonsetting {
                     isOn: this.statusBar!!
                   })
                     .onChange(async (isOn) => {
-                      this.commonSettingDataPreferences.putSync('statusBar', isOn)
-                      this.commonSettingDataPreferences.flushSync()
+                      setFlushPreference(this.context, 'commonSetting', 'statusBar', isOn)
                       const promptAction = this.UIContext.getPromptAction()
                       const data = await promptAction.showDialog({
                         title: '提示',
@@ -275,7 +266,6 @@ struct Commonsetting {
                 }
                 .borderRadius(12)
                 .padding(12)
-                .width('100%')
               }
               Divider()
                 .padding({
@@ -311,7 +301,6 @@ struct Commonsetting {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .width('100%')
               .onHover((isHover) => {
                 if (!isHover) {
                   this.hoverId = -1
@@ -388,13 +377,11 @@ struct Commonsetting {
                     if (index === 2) {
                       applicationContext.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_DARK)
                     }
-                    this.commonSettingDataPreferences.putSync('colorMode', index)
-                    this.commonSettingDataPreferences.flushSync()
+                    setFlushPreference(this.context, 'commonSetting', 'colorMode', index)
                   })
               }
               .borderRadius(12)
               .padding(12)
-              .width('100%')
 
               if (deviceInfo.deviceType === '2in1') {
                 Divider()
@@ -414,8 +401,7 @@ struct Commonsetting {
                     isOn: this.windowRectAutoSave!!
                   })
                     .onChange(async (isOn) => {
-                      this.commonSettingDataPreferences.putSync('windowRectAutoSave', isOn)
-                      this.commonSettingDataPreferences.flushSync()
+                      setFlushPreference(this.context, 'commonSetting', 'windowRectAutoSave', isOn)
                       const promptAction = this.UIContext.getPromptAction()
                       const data = await promptAction.showDialog({
                         title: '提示',
@@ -442,7 +428,6 @@ struct Commonsetting {
                 }
                 .borderRadius(12)
                 .padding(12)
-                .width('100%')
 
                 Divider()
                   .padding({
@@ -463,13 +448,11 @@ struct Commonsetting {
                     .onChange(async (isOn) => {
                       const lastWindow = await window.getLastWindow(this.context)
                       await lastWindow.setWindowTopmost(isOn)
-                      this.commonSettingDataPreferences.putSync('windowTopmost', isOn)
-                      this.commonSettingDataPreferences.flushSync()
+                      setFlushPreference(this.context, 'commonSetting', 'windowTopmost', isOn)
                     })
                 }
                 .borderRadius(12)
                 .padding(12)
-                .width('100%')
               }
               Divider()
                 .padding({
@@ -504,7 +487,6 @@ struct Commonsetting {
               }
               .borderRadius(12)
               .padding(12)
-              .width('100%')
 
               Divider()
                 .padding({
@@ -534,7 +516,6 @@ struct Commonsetting {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .width('100%')
               .onHover((isHover) => {
                 if (!isHover) {
                   this.hoverId = -1
@@ -680,13 +661,11 @@ struct Commonsetting {
                           return
                         }
                       }
-                      this.commonSettingDataPreferences.putSync('downloadDirectory', index)
-                      this.commonSettingDataPreferences.flushSync()
+                      setFlushPreference(this.context, 'commonSetting', 'downloadDirectory', index)
                     })
                 }
                 .borderRadius(12)
                 .padding(12)
-                .width('100%')
               }
               .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
               .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
@@ -724,13 +703,11 @@ struct Commonsetting {
                   .selected(this.filePreviewTypeIndex!!)
                   .value(this.filePreviewTypeValue!!)
                   .onSelect((index) => {
-                    this.commonSettingDataPreferences.putSync('filePreviewType', index)
-                    this.commonSettingDataPreferences.flushSync()
+                    setFlushPreference(this.context, 'commonSetting', 'filePreviewType', index)
                   })
               }
               .borderRadius(12)
               .padding(12)
-              .width('100%')
 
               Divider()
                 .padding({
@@ -760,13 +737,11 @@ struct Commonsetting {
                   isOn: this.onlinePreviewMedia!!
                 })
                   .onChange((isOn) => {
-                    this.commonSettingDataPreferences.putSync('onlinePreviewMedia', isOn)
-                    this.commonSettingDataPreferences.flushSync()
+                    setFlushPreference(this.context, 'commonSetting', 'onlinePreviewMedia', isOn)
                   })
               }
               .borderRadius(12)
               .padding(12)
-              .width('100%')
 
               Divider()
                 .padding({
@@ -785,13 +760,11 @@ struct Commonsetting {
                   isOn: this.selectFileDownloadPath!!
                 })
                   .onChange((isOn) => {
-                    this.commonSettingDataPreferences.putSync('selectFileDownloadPath', isOn)
-                    this.commonSettingDataPreferences.flushSync()
+                    setFlushPreference(this.context, 'commonSetting', 'selectFileDownloadPath', isOn)
                   })
               }
               .borderRadius(12)
               .padding(12)
-              .width('100%')
             }
             .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
             .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
@@ -827,14 +800,12 @@ struct Commonsetting {
                   isOn: this.showAlbum!!
                 })
                   .onChange((isOn) => {
-                    this.commonSettingDataPreferences.putSync('showAlbum', isOn)
-                    this.commonSettingDataPreferences.flushSync()
+                    setFlushPreference(this.context, 'commonSetting', 'showAlbum', isOn)
                     this.context.eventHub.emit('refreshIndex')
                   })
               }
               .borderRadius(12)
               .padding(12)
-              .width('100%')
             }
             .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
             .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
@@ -848,7 +819,7 @@ struct Commonsetting {
 
         ListItem() {
           Column() {
-            Text('更多')
+            Text('性能')
               .fontColor($r('sys.color.font_secondary'))
               .fontSize($r('sys.float.ohos_id_text_size_body2'))
               .fontWeight(FontWeight.Medium)
@@ -859,24 +830,91 @@ struct Commonsetting {
               })
             Column() {
               Row() {
-                Text('应用启动后拉起切换账号弹窗')
+                Text('刷新最佳地址')
                   .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
                   .margin({
                     right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                   })
-                Toggle({
-                  type: ToggleType.Switch,
-                  isOn: this.showAccountlistSheetAfterAppLaunch!!
-                })
-                  .onChange((isOn) => {
-                    this.commonSettingDataPreferences.putSync('showAccountlistSheetAfterAppLaunch', isOn)
-                    this.commonSettingDataPreferences.flushSync()
-                  })
+                Image($r('app.media.right'))
+                  .fillColor($r('sys.color.icon_fourth'))
+                  .height(12)
+                  .width(12)
               }
               .borderRadius(12)
               .padding(12)
-              .width('100%')
+              .stateStyles({
+                normal: {
+                  .backgroundColor(this.hoverId === 2 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
+                },
+                pressed: {
+                  .backgroundColor($r('sys.color.interactive_pressed'))
+                }
+              })
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 2
+                }
+              })
+              .onClick(async () => {
+                const dialogControllerProgress = new CustomDialogController({
+                  builder: LoadingDialog({
+                    content: '请求中...'
+                  })
+                })
+                dialogControllerProgress.open()
+                await generateBestAddress(this.context)
+                dialogControllerProgress.close()
+                await promptAction.openToast({
+                  message: '刷新成功'
+                })
+              })
+
+              Divider()
+                .padding({
+                  left: 12,
+                  right: 12
+                })
+              Row() {
+                Text('最佳地址')
+                  .fontWeight(FontWeight.Medium)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                Image($r('app.media.right'))
+                  .fillColor($r('sys.color.icon_fourth'))
+                  .height(12)
+                  .width(12)
+              }
+              .borderRadius(12)
+              .padding(12)
+              .stateStyles({
+                normal: {
+                  .backgroundColor(this.hoverId === 3 ? $r('sys.color.interactive_hover') :
+                    $r('sys.color.ohos_id_color_card_bg'))
+                },
+                pressed: {
+                  .backgroundColor($r('sys.color.interactive_pressed'))
+                }
+              })
+              .onHover((isHover) => {
+                if (!isHover) {
+                  this.hoverId = -1
+                }
+                if (isHover) {
+                  this.hoverId = 3
+                }
+              })
+              .onClick(() => {
+                this.pageInfos.pushPath({
+                  name: 'Bestaddress'
+                })
+              })
 
               Divider()
                 .padding({
@@ -907,13 +945,11 @@ struct Commonsetting {
                   isOn: this.cacheApiVersion!!
                 })
                   .onChange((isOn) => {
-                    this.commonSettingDataPreferences.putSync('cacheApiVersion', isOn)
-                    this.commonSettingDataPreferences.flushSync()
+                    setFlushPreference(this.context, 'commonSetting', 'cacheApiVersion', isOn)
                   })
               }
               .borderRadius(12)
               .padding(12)
-              .width('100%')
 
               Divider()
                 .padding({
@@ -937,20 +973,19 @@ struct Commonsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 2 ? $r('sys.color.interactive_hover') :
+                  .backgroundColor(this.hoverId === 4 ? $r('sys.color.interactive_hover') :
                     $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .width('100%')
               .onHover((isHover) => {
                 if (!isHover) {
                   this.hoverId = -1
                 }
                 if (isHover) {
-                  this.hoverId = 2
+                  this.hoverId = 4
                 }
               })
               .onClick(() => {
@@ -988,13 +1023,51 @@ struct Commonsetting {
                   isOn: this.cacheNoticeJsonString!!
                 })
                   .onChange((isOn) => {
-                    this.commonSettingDataPreferences.putSync('cacheNoticeJsonString', isOn)
-                    this.commonSettingDataPreferences.flushSync()
+                    setFlushPreference(this.context, 'commonSetting', 'cacheNoticeJsonString', isOn)
                   })
               }
               .borderRadius(12)
               .padding(12)
-              .width('100%')
+            }
+            .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+            .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+            .padding($r('sys.float.ohos_id_corner_radius_mark'))
+          }
+          .alignItems(HorizontalAlign.Start)
+        }
+        .margin({
+          top: $r('sys.float.ohos_id_elements_margin_vertical_l')
+        })
+
+        ListItem() {
+          Column() {
+            Text('更多')
+              .fontColor($r('sys.color.font_secondary'))
+              .fontSize($r('sys.float.ohos_id_text_size_body2'))
+              .fontWeight(FontWeight.Medium)
+              .margin({
+                bottom: 6,
+                left: 12,
+                right: 12
+              })
+            Column() {
+              Row() {
+                Text('应用启动后拉起切换账号弹窗')
+                  .fontWeight(FontWeight.Medium)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                Toggle({
+                  type: ToggleType.Switch,
+                  isOn: this.showAccountlistSheetAfterAppLaunch!!
+                })
+                  .onChange((isOn) => {
+                    setFlushPreference(this.context, 'commonSetting', 'showAccountlistSheetAfterAppLaunch', isOn)
+                  })
+              }
+              .borderRadius(12)
+              .padding(12)
 
               Divider()
                 .padding({
@@ -1016,13 +1089,11 @@ struct Commonsetting {
                   .selected(this.cellularDataUseRemindIndex!!)
                   .value(this.cellularDataUseRemindValue!!)
                   .onSelect((index) => {
-                    this.commonSettingDataPreferences.putSync('cellularDataUseRemind', index)
-                    this.commonSettingDataPreferences.flushSync()
+                    setFlushPreference(this.context, 'commonSetting', 'cellularDataUseRemind', index)
                   })
               }
               .borderRadius(12)
               .padding(12)
-              .width('100%')
 
               Divider()
                 .padding({
@@ -1044,13 +1115,11 @@ struct Commonsetting {
                   .selected(this.checkVersionUpdateIndex!!)
                   .value(this.checkVersionUpdateValue!!)
                   .onSelect((index) => {
-                    this.commonSettingDataPreferences.putSync('checkVersionUpdate', index)
-                    this.commonSettingDataPreferences.flushSync()
+                    setFlushPreference(this.context, 'commonSetting', 'checkVersionUpdate', index)
                   })
               }
               .borderRadius(12)
               .padding(12)
-              .width('100%')
 
               Divider()
                 .padding({
@@ -1071,13 +1140,11 @@ struct Commonsetting {
                   .selected(this.openLinkTypeIndex!!)
                   .value(this.openLinkTypeValue!!)
                   .onSelect((index) => {
-                    this.commonSettingDataPreferences.putSync('openLinkType', index)
-                    this.commonSettingDataPreferences.flushSync()
+                    setFlushPreference(this.context, 'commonSetting', 'openLinkType', index)
                   })
               }
               .borderRadius(12)
               .padding(12)
-              .width('100%')
             }
             .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
             .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
@@ -1088,35 +1155,69 @@ struct Commonsetting {
         .margin({
           top: $r('sys.float.ohos_id_elements_margin_vertical_l')
         })
+
+        ListItem()
+          .margin({
+            bottom: 28
+          })
       }
       .padding({
-        bottom: $r('sys.float.ohos_id_default_padding_bottom_fixed'),
         left: $r('sys.float.ohos_id_elements_margin_horizontal_l'),
         right: $r('sys.float.ohos_id_elements_margin_horizontal_l')
       })
     }
     .backgroundColor($r('app.color.sheet_background'))
+    .recoverable(true)
     .titleBar({
       padding: {
         end: LengthMetrics.vp(60)
+      },
+      style: {
+        scrollEffectOpts: {
+          scrollEffectType: ScrollEffectType.IMMERSIVE_GRADIENT_BLUR
+        },
+        originalStyle: {
+          contentStyle: {
+            titleStyle: {
+              mainTitleColor: $r('sys.color.font_primary')
+            },
+            backIconStyle: {
+              backgroundColor: $r('sys.color.comp_background_color_floating_smooth'),
+              iconColor: $r('sys.color.icon_primary')
+            }
+          }
+        },
+        scrollEffectStyle: {
+          contentStyle: {
+            backIconStyle: {
+              backgroundColor: $r('sys.color.comp_background_color_floating_smooth'),
+              iconColor: $r('sys.color.icon_primary')
+            }
+          }
+        },
+        thermoCtrl: true,
+        systemMaterialEffect: {
+          materialType: hdsMaterial.MaterialType.ADAPTIVE,
+          materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE
+        }
       },
       content: {
         title: {
           mainTitle: '通用'
         }
-      },
-      enableComponentSafeArea: true
+      }
     })
+    .titleMode(HdsNavDestinationTitleMode.MODAL)
     .onReady(async (context) => {
       this.pageInfos = context.pathStack
-      this.allowContinue = this.commonSettingDataPreferences.getSync('allowContinue', true) as boolean
-      this.exitAfterContinue = this.commonSettingDataPreferences.getSync('exitAfterContinue', true) as boolean
-      this.allowRestore = this.commonSettingDataPreferences.getSync('allowRestore', true) as boolean
-      this.acceptCollaborate = this.commonSettingDataPreferences.getSync('acceptCollaborate', true) as boolean
+      this.allowContinue = getFlushPreference(this.context, 'commonSetting', 'allowContinue', true) as boolean
+      this.exitAfterContinue = getFlushPreference(this.context, 'commonSetting', 'exitAfterContinue', true) as boolean
+      this.allowRestore = getFlushPreference(this.context, 'commonSetting', 'allowRestore', true) as boolean
+      this.acceptCollaborate = getFlushPreference(this.context, 'commonSetting', 'acceptCollaborate', true) as boolean
       this.destroyWhenBackPressed =
-        this.commonSettingDataPreferences.getSync('destroyWhenBackPressed', false) as boolean
-      this.statusBar = this.commonSettingDataPreferences.getSync('statusBar', false) as boolean
-      const colorMode = this.commonSettingDataPreferences.getSync('colorMode', 0)
+        getFlushPreference(this.context, 'commonSetting', 'destroyWhenBackPressed', false) as boolean
+      this.statusBar = getFlushPreference(this.context, 'commonSetting', 'statusBar', false) as boolean
+      const colorMode = getFlushPreference(this.context, 'commonSetting', 'colorMode', 0)
       this.colorModeIndex = colorMode as number
       if (colorMode === 0) {
         this.colorModeValue = '跟随系统'
@@ -1127,11 +1228,12 @@ struct Commonsetting {
       if (colorMode === 2) {
         this.colorModeValue = '深色模式'
       }
-      this.windowRectAutoSave = this.commonSettingDataPreferences.getSync('windowRectAutoSave', false) as boolean
-      this.windowTopmost = this.commonSettingDataPreferences.getSync('windowTopmost', false) as boolean
+      this.windowRectAutoSave =
+        getFlushPreference(this.context, 'commonSetting', 'windowRectAutoSave', false) as boolean
+      this.windowTopmost = getFlushPreference(this.context, 'commonSetting', 'windowTopmost', false) as boolean
       const lastWindow = await window.getLastWindow(this.context)
       this.keepScreenOn = lastWindow.getWindowProperties().isKeepScreenOn
-      const downloadDirectory = this.commonSettingDataPreferences.getSync('downloadDirectory', 0)
+      const downloadDirectory = getFlushPreference(this.context, 'commonSetting', 'downloadDirectory', 0)
       this.downloadDirectoryIndex = downloadDirectory as number
       if (downloadDirectory === 0) {
         this.downloadDirectoryValue = '应用'
@@ -1139,7 +1241,7 @@ struct Commonsetting {
       if (downloadDirectory === 1 && getPermission('ohos.permission.READ_WRITE_DOWNLOAD_DIRECTORY')) {
         this.downloadDirectoryValue = '系统'
       }
-      const filePreviewType = this.commonSettingDataPreferences.getSync('filePreviewType', 0)
+      const filePreviewType = getFlushPreference(this.context, 'commonSetting', 'filePreviewType', 0)
       this.filePreviewTypeIndex = filePreviewType as number
       if (filePreviewType === 0) {
         this.filePreviewTypeValue = '系统预览'
@@ -1147,15 +1249,16 @@ struct Commonsetting {
       if (filePreviewType === 1) {
         this.filePreviewTypeValue = '自行选择'
       }
-      this.onlinePreviewMedia = this.commonSettingDataPreferences.getSync('onlinePreviewMedia', true) as boolean
+      this.onlinePreviewMedia = getFlushPreference(this.context, 'commonSetting', 'onlinePreviewMedia', true) as boolean
       this.selectFileDownloadPath =
-        this.commonSettingDataPreferences.getSync('selectFileDownloadPath', false) as boolean
-      this.showAlbum = this.commonSettingDataPreferences.getSync('showAlbum', true) as boolean
+        getFlushPreference(this.context, 'commonSetting', 'selectFileDownloadPath', false) as boolean
+      this.showAlbum = getFlushPreference(this.context, 'commonSetting', 'showAlbum', true) as boolean
       this.showAccountlistSheetAfterAppLaunch =
-        this.commonSettingDataPreferences.getSync('showAccountlistSheetAfterAppLaunch', false) as boolean
-      this.cacheApiVersion = this.commonSettingDataPreferences.getSync('cacheApiVersion', true) as boolean
-      this.cacheNoticeJsonString = this.commonSettingDataPreferences.getSync('cacheNoticeJsonString', true) as boolean
-      const cellularDataUseRemind = this.commonSettingDataPreferences.getSync('cellularDataUseRemind', 0)
+        getFlushPreference(this.context, 'commonSetting', 'showAccountlistSheetAfterAppLaunch', false) as boolean
+      this.cacheApiVersion = getFlushPreference(this.context, 'commonSetting', 'cacheApiVersion', true) as boolean
+      this.cacheNoticeJsonString =
+        getFlushPreference(this.context, 'commonSetting', 'cacheNoticeJsonString', true) as boolean
+      const cellularDataUseRemind = getFlushPreference(this.context, 'commonSetting', 'cellularDataUseRemind', 0)
       this.cellularDataUseRemindIndex = cellularDataUseRemind as number
       if (cellularDataUseRemind === 0) {
         this.cellularDataUseRemindValue = '始终'
@@ -1166,7 +1269,7 @@ struct Commonsetting {
       if (cellularDataUseRemind === 2) {
         this.cellularDataUseRemindValue = '从不'
       }
-      const checkVersionUpdate = this.commonSettingDataPreferences.getSync('checkVersionUpdate', 1)
+      const checkVersionUpdate = getFlushPreference(this.context, 'commonSetting', 'checkVersionUpdate', 1)
       this.checkVersionUpdateIndex = checkVersionUpdate as number
       if (checkVersionUpdate === 0) {
         this.checkVersionUpdateValue = '从不'
@@ -1177,7 +1280,7 @@ struct Commonsetting {
       if (checkVersionUpdate === 2) {
         this.checkVersionUpdateValue = '始终'
       }
-      const openLinkType = this.commonSettingDataPreferences.getSync('openLinkType', 0)
+      const openLinkType = getFlushPreference(this.context, 'commonSetting', 'openLinkType', 0)
       this.openLinkTypeIndex = openLinkType as number
       if (openLinkType === 0) {
         this.openLinkTypeValue = '系统默认'

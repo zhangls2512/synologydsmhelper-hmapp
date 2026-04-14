@@ -1,12 +1,22 @@
 import { common } from '@kit.AbilityKit'
-import { preferences } from '@kit.ArkData'
+import { sendablePreferences } from '@kit.ArkData'
 import { taskpool } from '@kit.ArkTS'
 import { display } from '@kit.ArkUI'
+import { deviceInfo } from '@kit.BasicServicesKit'
 import { fileIo } from '@kit.CoreFileKit'
 import { image } from '@kit.ImageKit'
-import { HdsTabs, HdsTabsController } from '@kit.UIDesignKit'
+import {
+  hdsMaterial,
+  HdsNavigation,
+  HdsNavigationTitleMode,
+  HdsSideMenu,
+  HdsSideMenuMainItem,
+  HdsTabs,
+  HdsTabsController
+} from '@kit.UIDesignKit'
 import { AccountInfo, importAccounts } from '../common/Account'
 import { getCurrentNetworkBearerType } from '../common/Network'
+import { getFlushPreference, getTempPreference } from '../common/Preference'
 import { getPreferType } from '../common/Prefertype'
 import { download, upload } from '../common/Transfertask'
 import Accountlist from './Accountlist'
@@ -42,7 +52,6 @@ struct Index {
   @Local backgroundImagePixelMap: PixelMap | undefined = undefined
   @Local preferType: number = 1
   @Local index: number = 0
-  @Local title: string = '卡片'
   @Local showAlbum: boolean = false
   @Local isShowCleardataSheet: boolean = false
   @Local isShowNoticeSheet: boolean = false
@@ -50,16 +59,10 @@ struct Index {
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   controller = new HdsTabsController()
   intervalId = -1
-  backDataPreferences = preferences.getPreferencesSync(this.context, {
-    name: 'back'
-  })
-  commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-    name: 'commonSetting'
-  })
 
   onBackPress() {
     if (this.index === 1) {
-      const filelist = this.backDataPreferences.getSync('filelist', false)
+      const filelist = getTempPreference(this.context, 'back', 'filelist', false)
       if (!filelist) {
         return false
       } else {
@@ -68,7 +71,7 @@ struct Index {
       }
     } else {
       if (this.index === 2 && this.showAlbum) {
-        const album = this.backDataPreferences.getSync('album', false)
+        const album = getTempPreference(this.context, 'back', 'album', false)
         if (!album) {
           return false
         } else {
@@ -83,7 +86,7 @@ struct Index {
   async get() {
     this.backgroundImagePixelMap = await this.getBackgroundImage()
     const oldShowAlbum = this.showAlbum
-    this.showAlbum = this.commonSettingDataPreferences.getSync('showAlbum', true) as boolean
+    this.showAlbum = getFlushPreference(this.context, 'commonSetting', 'showAlbum', true) as boolean
     if (oldShowAlbum !== this.showAlbum) {
       if (!oldShowAlbum) {
         if (this.index === 2) {
@@ -161,106 +164,297 @@ struct Index {
 
   build() {
     Column() {
-      if (this.preferType === 0) {
-        Text(this.title)
-          .fontSize(24)
-          .fontWeight(FontWeight.Bold)
-          .margin({
-            bottom: $r('sys.float.ohos_id_elements_margin_vertical_l'),
-            left: $r('sys.float.ohos_id_elements_margin_horizontal_l')
+      if (deviceInfo.deviceType !== '2in1') {
+        HdsTabs({
+          controller: this.controller
+        }) {
+          TabContent() {
+            HdsNavigation() {
+              Cardlist()
+                .padding({
+                  top: 56
+                })
+            }
+            .hideBackButton(true)
+            .padding({
+              top: 36
+            })
+            .recoverable(true)
+            .titleBar({
+              content: {
+                title: {
+                  mainTitle: '卡片'
+                }
+              }
+            })
+            .titleMode(HdsNavigationTitleMode.MINI)
+          }
+          .tabBar(this.tabBuilder(0, $r('app.media.card'), '卡片'))
+          .bindSheet(this.isShowAccountlistSheet!!, this.AccountlistSheetBuilder(), {
+            height: SheetSize.FIT_CONTENT,
+            preferType: this.preferType,
+            showClose: false
           })
-      }
-      HdsTabs({
-        controller: this.controller
-      }) {
-        TabContent() {
-          Cardlist()
+
+          TabContent() {
+            HdsNavigation() {
+              Filelist()
+                .padding({
+                  top: 56
+                })
+            }
+            .hideBackButton(true)
+            .padding({
+              top: 36
+            })
+            .recoverable(true)
+            .titleBar({
+              content: {
+                title: {
+                  mainTitle: '文件'
+                }
+              }
+            })
+            .titleMode(HdsNavigationTitleMode.MINI)
+          }
+          .tabBar(this.tabBuilder(1, $r('app.media.file'), '文件'))
+          .bindSheet(this.isShowNoticeSheet!!, this.NoticeSheetBuilder(), {
+            preferType: this.preferType,
+            title: {
+              title: '消息通知'
+            }
+          })
+
+          if (this.showAlbum) {
+            TabContent() {
+              HdsNavigation() {
+                Album()
+                  .padding({
+                    top: 56
+                  })
+              }
+              .hideBackButton(true)
+              .padding({
+                top: 36
+              })
+              .recoverable(true)
+              .titleBar({
+                content: {
+                  title: {
+                    mainTitle: '相册'
+                  }
+                }
+              })
+              .titleMode(HdsNavigationTitleMode.MINI)
+            }
+            .tabBar(this.tabBuilder(2, $r('app.media.album'), '相册'))
+          }
+          TabContent() {
+            HdsNavigation() {
+              Me()
+            }
+            .hideBackButton(true)
+            .padding({
+              top: 36
+            })
+            .recoverable(true)
+            .titleBar({
+              content: {
+                title: {
+                  mainTitle: '我的'
+                }
+              }
+            })
+            .titleMode(HdsNavigationTitleMode.MINI)
+          }
+          .tabBar(this.tabBuilder(3, $r('app.media.me'), '我的'))
         }
-        .tabBar(this.tabBuilder(0, $r('app.media.card'), '卡片'))
-        .bindSheet(this.isShowAccountlistSheet!!, this.AccountlistSheetBuilder(), {
+        .barBackgroundBlurStyle(BlurStyle.Regular)
+        .barFloatingStyle({
+          barBottomMargin: 24,
+          adaptToHandedness: true,
+          thermoCtrl: true,
+          systemMaterialEffect: {
+            materialType: hdsMaterial.MaterialType.ADAPTIVE,
+            materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE
+          }
+        })
+        .barOverlap(true)
+        .barPosition(BarPosition.End)
+        .barWidth(this.showAlbum ? 320 : 240)
+        .scrollable(false)
+        .vertical(this.preferType === 0 ? false : true)
+        .onChange((index) => {
+          this.index = index
+        })
+        .onAnimationStart((index, targetIndex) => {
+          if (targetIndex === 0) {
+            this.context.eventHub.emit('refreshCardlist')
+          }
+          if (targetIndex === 1) {
+            this.context.eventHub.emit('refreshFilelist')
+          }
+          if (!this.showAlbum) {
+            if (targetIndex === 2) {
+              this.context.eventHub.emit('refreshMe')
+            }
+          }
+          if (this.showAlbum) {
+            if (targetIndex === 2) {
+              this.context.eventHub.emit('refreshAlbum')
+            }
+            if (targetIndex === 3) {
+              this.context.eventHub.emit('refreshMe')
+            }
+          }
+        })
+        .bindSheet(this.isShowUploaderrorlogSheet!!, this.UploaderrorlogSheetBuilder(), {
           height: SheetSize.FIT_CONTENT,
           preferType: this.preferType,
-          showClose: false
+          title: {
+            title: '上传故障日志'
+          }
         })
-
-        TabContent() {
-          Filelist()
+      }
+      if (deviceInfo.deviceType === '2in1') {
+        Row() {
+          if (!this.showAlbum) {
+            HdsSideMenu({
+              items: [
+                new HdsSideMenuMainItem({
+                  icon: $r('app.media.card_tab'),
+                  label: '卡片'
+                }),
+                new HdsSideMenuMainItem({
+                  icon: $r('app.media.file_tab'),
+                  label: '文件'
+                }),
+                new HdsSideMenuMainItem({
+                  icon: $r('app.media.me_tab'),
+                  label: '我的'
+                })
+              ],
+              selectedIndex: 0,
+              $selectedIndex: (index) => {
+                this.index = index
+                if (index === 0) {
+                  this.context.eventHub.emit('refreshCardlist')
+                }
+                if (index === 1) {
+                  this.context.eventHub.emit('refreshFilelist')
+                }
+                if (index === 2) {
+                  this.context.eventHub.emit('refreshMe')
+                }
+              }
+            })
+              .padding({
+                top: $r('sys.float.ohos_id_default_padding_top')
+              })
+              .width(240)
+              .bindSheet(this.isShowNoticeSheet!!, this.NoticeSheetBuilder(), {
+                preferType: this.preferType,
+                title: {
+                  title: '消息通知'
+                }
+              })
+          }
+          if (this.showAlbum) {
+            HdsSideMenu({
+              items: [
+                new HdsSideMenuMainItem({
+                  icon: $r('app.media.card_tab'),
+                  label: '卡片'
+                }),
+                new HdsSideMenuMainItem({
+                  icon: $r('app.media.file_tab'),
+                  label: '文件'
+                }),
+                new HdsSideMenuMainItem({
+                  icon: $r('app.media.album_tab'),
+                  label: '相册'
+                }),
+                new HdsSideMenuMainItem({
+                  icon: $r('app.media.me_tab'),
+                  label: '我的'
+                })
+              ],
+              selectedIndex: 0,
+              $selectedIndex: (index) => {
+                this.index = index
+                if (index === 0) {
+                  this.context.eventHub.emit('refreshCardlist')
+                }
+                if (index === 1) {
+                  this.context.eventHub.emit('refreshFilelist')
+                }
+                if (index === 2) {
+                  this.context.eventHub.emit('refreshAlbum')
+                }
+                if (index === 3) {
+                  this.context.eventHub.emit('refreshMe')
+                }
+              }
+            })
+              .padding({
+                top: $r('sys.float.ohos_id_default_padding_top')
+              })
+              .width(240)
+              .bindSheet(this.isShowNoticeSheet!!, this.NoticeSheetBuilder(), {
+                preferType: this.preferType,
+                title: {
+                  title: '消息通知'
+                }
+              })
+          }
+          Divider()
+            .vertical(true)
+            .bindSheet(this.isShowAccountlistSheet!!, this.AccountlistSheetBuilder(), {
+              height: SheetSize.FIT_CONTENT,
+              preferType: this.preferType,
+              showClose: false
+            })
+          if (this.index === 0) {
+            Cardlist()
+              .layoutWeight(1)
+          }
+          if (this.index === 1) {
+            Filelist()
+              .layoutWeight(1)
+          }
+          if (this.index === 2) {
+            if (!this.showAlbum) {
+              Me()
+                .layoutWeight(1)
+            }
+            if (this.showAlbum) {
+              Album()
+                .layoutWeight(1)
+            }
+          }
+          if (this.index === 3) {
+            Me()
+              .layoutWeight(1)
+          }
         }
-        .tabBar(this.tabBuilder(1, $r('app.media.file'), '文件'))
-        .bindSheet(this.isShowNoticeSheet!!, this.NoticeSheetBuilder(), {
+        .alignItems(VerticalAlign.Top)
+        .bindSheet(this.isShowUploaderrorlogSheet!!, this.UploaderrorlogSheetBuilder(), {
+          height: SheetSize.FIT_CONTENT,
           preferType: this.preferType,
           title: {
-            title: '消息通知'
+            title: '上传故障日志'
           }
         })
-
-        if (this.showAlbum) {
-          TabContent() {
-            Album()
-          }
-          .tabBar(this.tabBuilder(2, $r('app.media.album'), '相册'))
-        }
-        TabContent() {
-          Me()
-            .height('100%')
-        }
-        .tabBar(this.tabBuilder(3, $r('app.media.me'), '我的'))
       }
-      .barBackgroundBlurStyle(BlurStyle.Regular)
-      .barPosition(this.preferType === 0 ? BarPosition.End : BarPosition.Start)
-      .barWidth(this.preferType === 0 ? '100%' : 56)
-      .scrollable(false)
-      .vertical(this.preferType === 0 ? false : true)
-      .onChange((index) => {
-        this.index = index
-      })
-      .onAnimationStart((index, targetIndex) => {
-        if (targetIndex === 0) {
-          this.title = '卡片'
-          this.context.eventHub.emit('refreshCardlist')
-        }
-        if (targetIndex === 1) {
-          this.title = '文件'
-          this.context.eventHub.emit('refreshFilelist')
-        }
-        if (!this.showAlbum) {
-          if (targetIndex === 2) {
-            this.title = '我的'
-            this.context.eventHub.emit('refreshMe')
-          }
-        }
-        if (this.showAlbum) {
-          if (targetIndex === 2) {
-            this.title = '相册'
-            this.context.eventHub.emit('refreshAlbum')
-          }
-          if (targetIndex === 3) {
-            this.title = '我的'
-            this.context.eventHub.emit('refreshMe')
-          }
-        }
-      })
-      .bindSheet(this.isShowUploaderrorlogSheet!!, this.UploaderrorlogSheetBuilder(), {
-        height: SheetSize.FIT_CONTENT,
-        preferType: this.preferType,
-        title: {
-          title: '上传故障日志'
-        }
-      })
     }
     .alignItems(HorizontalAlign.Start)
     .backgroundColor($r('sys.color.background_secondary'))
     .backgroundImage(this.backgroundImagePixelMap)
     .backgroundImageSize(ImageSize.FILL)
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
-    .padding({
-      bottom: this.preferType === 0 ? 36 : 0,
-      top: this.preferType === 0 ? 12 : 0
-    })
     .onAppear(async () => {
       this.intervalId = setInterval(async () => {
         const transferTaskArray: TransferTaskItem[] = []
-        const transferTaskDataPreferences = preferences.getPreferencesSync(this.context, {
+        const transferTaskDataPreferences = sendablePreferences.getPreferencesSync(this.context, {
           name: 'transferTask'
         })
         const transferTaskObject = transferTaskDataPreferences.getAllSync() as object
@@ -276,7 +470,8 @@ struct Index {
             const item = pendingTransferTaskArray[i]
             let exec = true
             if (getCurrentNetworkBearerType() === 0) {
-              const cellularDataUseRemind = this.commonSettingDataPreferences.getSync('cellularDataUseRemind', 0)
+              const cellularDataUseRemind =
+                getFlushPreference(this.context, 'commonSetting', 'cellularDataUseRemind', 0)
               if (cellularDataUseRemind === 0 ||
                 (cellularDataUseRemind === 1 && item.totalSize > 200 * Math.pow(1024, 2))) {
                 exec = false
@@ -312,28 +507,82 @@ struct Index {
           this.isShowAccountlistSheet = true
         }
       })
-      this.context.eventHub.on('card', () => {
-        this.controller.changeIndex(0)
-        this.context.eventHub.emit('refreshCardlist')
+      this.context.eventHub.on('card', async () => {
+        if (deviceInfo.deviceType !== '2in1') {
+          this.controller.changeIndex(0)
+          this.context.eventHub.emit('refreshCardlist')
+        }
+        if (deviceInfo.deviceType === '2in1') {
+          await promptAction.showDialog({
+            title: '提示',
+            message: '暂不支持',
+            buttons: [
+              {
+                text: '确定',
+                color: $r('sys.color.font_emphasize')
+              }
+            ]
+          })
+        }
       })
-      this.context.eventHub.on('file', () => {
-        this.controller.changeIndex(1)
-        this.context.eventHub.emit('refreshFilelist')
+      this.context.eventHub.on('file', async () => {
+        if (deviceInfo.deviceType !== '2in1') {
+          this.controller.changeIndex(1)
+          this.context.eventHub.emit('refreshFilelist')
+        }
+        if (deviceInfo.deviceType === '2in1') {
+          await promptAction.showDialog({
+            title: '提示',
+            message: '暂不支持',
+            buttons: [
+              {
+                text: '确定',
+                color: $r('sys.color.font_emphasize')
+              }
+            ]
+          })
+        }
       })
-      this.context.eventHub.on('album', () => {
-        if (this.showAlbum) {
+      this.context.eventHub.on('album', async () => {
+        if (deviceInfo.deviceType !== '2in1' && this.showAlbum) {
           this.controller.changeIndex(2)
           this.context.eventHub.emit('refreshAlbum')
         }
-      })
-      this.context.eventHub.on('me', () => {
-        if (!this.showAlbum) {
-          this.controller.changeIndex(2)
-          this.context.eventHub.emit('refreshMe')
+        if (deviceInfo.deviceType === '2in1') {
+          await promptAction.showDialog({
+            title: '提示',
+            message: '暂不支持',
+            buttons: [
+              {
+                text: '确定',
+                color: $r('sys.color.font_emphasize')
+              }
+            ]
+          })
         }
-        if (this.showAlbum) {
-          this.controller.changeIndex(3)
-          this.context.eventHub.emit('refreshMe')
+      })
+      this.context.eventHub.on('me', async () => {
+        if (deviceInfo.deviceType !== '2in1') {
+          if (!this.showAlbum) {
+            this.controller.changeIndex(2)
+            this.context.eventHub.emit('refreshMe')
+          }
+          if (this.showAlbum) {
+            this.controller.changeIndex(3)
+            this.context.eventHub.emit('refreshMe')
+          }
+        }
+        if (deviceInfo.deviceType === '2in1') {
+          await promptAction.showDialog({
+            title: '提示',
+            message: '暂不支持',
+            buttons: [
+              {
+                text: '确定',
+                color: $r('sys.color.font_emphasize')
+              }
+            ]
+          })
         }
       })
       this.context.eventHub.on('wantUri', async (wantUri: string) => {
@@ -386,10 +635,7 @@ struct Index {
       display.off('change')
     })
     .bindSheet(this.isShowCleardataSheet!!, this.CleardataSheetBuilder(), {
-      preferType: this.preferType,
-      title: {
-        title: '清理数据'
-      }
+      preferType: this.preferType
     })
   }
 }

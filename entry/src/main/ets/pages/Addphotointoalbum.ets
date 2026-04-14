@@ -17,6 +17,11 @@ export default struct Addphotointoalbum {
   @Local buttonHoverId: number = -1
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
+  dialogControllerProgress = new CustomDialogController({
+    builder: LoadingDialog({
+      content: '请求中...'
+    })
+  })
 
   @Builder
   NewalbumSheetBuilder() {
@@ -103,13 +108,12 @@ export default struct Addphotointoalbum {
             .stateStyles({
               normal: {
                 .backgroundColor(this.hoverId === index ? $r('sys.color.interactive_hover') :
-                  $r('sys.color.comp_background_primary'))
+                  $r('sys.color.ohos_id_color_card_bg'))
               },
               pressed: {
-                .backgroundColor($r('sys.color.comp_background_secondary'))
+                .backgroundColor($r('sys.color.interactive_pressed'))
               }
             })
-            .width('100%')
             .onHover((isHover) => {
               if (!isHover) {
                 this.hoverId = -1
@@ -119,18 +123,13 @@ export default struct Addphotointoalbum {
               }
             })
             .onClick(async () => {
-              const dialogControllerProgress = new CustomDialogController({
-                builder: LoadingDialog({
-                  content: '加载中...'
-                })
-              })
-              dialogControllerProgress.open()
+              this.dialogControllerProgress.open()
               const res = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.NormalAlbum', new url.URLParams({
                 method: 'add_item',
                 id: String(item.id),
                 item: JSON.stringify([this.addId])
               }).toString())
-              dialogControllerProgress.close()
+              this.dialogControllerProgress.close()
               if (res !== 'fail') {
                 await promptAction.openToast({
                   message: '加入成功'
@@ -141,7 +140,7 @@ export default struct Addphotointoalbum {
             })
           })
         }
-        .backgroundColor($r('sys.color.comp_background_primary'))
+        .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
         .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
         .padding($r('sys.float.ohos_id_corner_radius_mark'))
       }
@@ -164,18 +163,13 @@ export default struct Addphotointoalbum {
       this.context.eventHub.on('refreshAlbum', () => {
         this.isShowAddphotointoalbumSheet = false
       })
-      const loadingDialogControllerProgress = new CustomDialogController({
-        builder: LoadingDialog({
-          content: '加载中...'
-        })
-      })
-      loadingDialogControllerProgress.open()
+      this.dialogControllerProgress.open()
       const res = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.NormalAlbum', new url.URLParams({
         method: 'list',
         offset: '0',
         limit: '5000'
       }).toString(), 2)
-      loadingDialogControllerProgress.close()
+      this.dialogControllerProgress.close()
       if (res !== 'fail') {
         this.albumArray = res['list']
       }

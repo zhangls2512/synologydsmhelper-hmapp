@@ -1,4 +1,5 @@
-import { preferences } from '@kit.ArkData'
+import { common } from '@kit.AbilityKit'
+import { getFlushPreference, setFlushPreference } from '../common/Preference'
 
 interface CardItem {
   name: string,
@@ -8,10 +9,7 @@ interface CardItem {
 @ComponentV2
 export default struct Cardeditsetting {
   @Local cards: string[] = []
-  context = this.getUIContext().getHostContext()
-  cardSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-    name: 'cardSetting'
-  })
+  context = this.getUIContext().getHostContext() as common.UIAbilityContext
   cardArray: CardItem[] = [
     {
       name: '资源监控',
@@ -65,8 +63,7 @@ export default struct Cardeditsetting {
                     const temp = this.cards[index]
                     this.cards[index] = this.cards[index - 1]
                     this.cards[index - 1] = temp
-                    this.cardSettingDataPreferences.putSync('cards', this.cards)
-                    this.cardSettingDataPreferences.flushSync()
+                    setFlushPreference(this.context, 'cardSetting', 'cards', this.cards)
                   })
               }
               if (index !== this.cards.length - 1) {
@@ -79,21 +76,18 @@ export default struct Cardeditsetting {
                     const temp = this.cards[index]
                     this.cards[index] = this.cards[index + 1]
                     this.cards[index + 1] = temp
-                    this.cardSettingDataPreferences.putSync('cards', this.cards)
-                    this.cardSettingDataPreferences.flushSync()
+                    setFlushPreference(this.context, 'cardSetting', 'cards', this.cards)
                   })
               }
               Image($r('app.media.delete'))
                 .height(24)
                 .onClick(() => {
                   this.cards.splice(index, 1)
-                  this.cardSettingDataPreferences.putSync('cards', this.cards)
-                  this.cardSettingDataPreferences.flushSync()
+                  setFlushPreference(this.context, 'cardSetting', 'cards', this.cards)
                 })
             }
             .borderRadius(12)
             .padding(12)
-            .width('100%')
           }
           .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
           .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
@@ -117,13 +111,11 @@ export default struct Cardeditsetting {
                 .height(24)
                 .onClick(() => {
                   this.cards.push(item.value)
-                  this.cardSettingDataPreferences.putSync('cards', this.cards)
-                  this.cardSettingDataPreferences.flushSync()
+                  setFlushPreference(this.context, 'cardSetting', 'cards', this.cards)
                 })
             }
             .borderRadius(12)
             .padding(12)
-            .width('100%')
           }
           .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
           .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
@@ -140,7 +132,7 @@ export default struct Cardeditsetting {
       right: $r('sys.float.ohos_id_elements_margin_horizontal_l')
     })
     .onAppear(() => {
-      this.cards = this.cardSettingDataPreferences.getSync('cards', []) as string[]
+      this.cards = getFlushPreference(this.context, 'cardSetting', 'cards', []) as string[]
     })
   }
 }

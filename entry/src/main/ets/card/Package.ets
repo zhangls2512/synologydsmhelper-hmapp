@@ -1,8 +1,8 @@
 import { common } from '@kit.AbilityKit'
-import { preferences } from '@kit.ArkData'
 import { url } from '@kit.ArkTS'
 import { LoadingDialog } from '@kit.ArkUI'
 import { getLoginStatus } from '../common/Account'
+import { getFlushPreference } from '../common/Preference'
 import { dsmRequest } from '../common/Request'
 
 interface InstallPackageItem {
@@ -24,16 +24,14 @@ export default struct Package {
   intervalId = -1
   dialogControllerProgress = new CustomDialogController({
     builder: LoadingDialog({
-      content: '加载中...'
+      content: '请求中...'
     })
   })
 
   async refresh() {
-    const cardSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-      name: 'cardSetting'
-    })
-    const isLogin = await getLoginStatus()
-    if ((cardSettingDataPreferences.getSync('cards', []) as string[]).includes('package') && this.status !== 'fail' &&
+    const isLogin = await getLoginStatus(this.context)
+    if ((getFlushPreference(this.context, 'cardSetting', 'cards', []) as string[]).includes('package') &&
+      this.status !== 'fail' &&
       isLogin) {
       let serverPackageArray: ServerPackageItem[] = []
       const serverofficalres = await dsmRequest(this.context, '', 'SYNO.Core.Package.Server', new url.URLParams({
@@ -83,7 +81,6 @@ export default struct Package {
       if (this.installPackageArray) {
         Column() {
           Text('套件')
-            .enableAutoSpacing(true)
             .fontWeight(FontWeight.Bold)
           ForEach(this.installPackageArray, (item: InstallPackageItem) => {
             if (item.version !== item.latestVersion && item.latestVersion !== '-1') {
@@ -100,7 +97,6 @@ export default struct Package {
               .margin({
                 top: $r('sys.float.ohos_id_text_margin_vertical')
               })
-              .width('100%')
             }
           })
           ForEach(this.installPackageArray, (item: InstallPackageItem) => {
@@ -118,7 +114,6 @@ export default struct Package {
               .margin({
                 top: $r('sys.float.ohos_id_text_margin_vertical')
               })
-              .width('100%')
             }
           })
           ForEach(this.installPackageArray, (item: InstallPackageItem) => {
@@ -135,7 +130,6 @@ export default struct Package {
               .margin({
                 top: $r('sys.float.ohos_id_text_margin_vertical')
               })
-              .width('100%')
             }
           })
         }

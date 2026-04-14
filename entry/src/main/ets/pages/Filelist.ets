@@ -1,5 +1,5 @@
 import { common, wantAgent, wantConstant } from '@kit.AbilityKit'
-import { preferences, uniformTypeDescriptor } from '@kit.ArkData'
+import { sendablePreferences, uniformTypeDescriptor } from '@kit.ArkData'
 import { fastbuffer, url, util } from '@kit.ArkTS'
 import { display, LoadingDialog, promptAction } from '@kit.ArkUI'
 import { backgroundTaskManager } from '@kit.BackgroundTasksKit'
@@ -15,6 +15,7 @@ import { getDnsServer } from '../common/Dnsserver'
 import { getFileTypeIcon } from '../common/File'
 import { sha256hash } from '../common/Hash'
 import { getCurrentNetworkBearerType } from '../common/Network'
+import { getFlushPreference, setTempPreference } from '../common/Preference'
 import { getPreferType } from '../common/Prefertype'
 import { dsmRequest, getDsmApiMaxVersion } from '../common/Request'
 import { getSizeString, getTimeStringFromSecond } from '../common/Stringformat'
@@ -79,28 +80,9 @@ export default struct Filelist {
   srcName = ''
   editPath = ''
   editName = ''
-  backDataPreferences = preferences.getPreferencesSync(this.context, {
-    name: 'back'
-  })
-  commonSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-    name: 'commonSetting'
-  })
-  debugSettingDataPreferences = preferences.getPreferencesSync(this.context, {
-    name: 'debugSetting'
-  })
-  deleteDialogControllerProgress = new CustomDialogController({
+  dialogControllerProgress = new CustomDialogController({
     builder: LoadingDialog({
-      content: '删除中...'
-    })
-  })
-  prepareDownloadDialogControllerProgress = new CustomDialogController({
-    builder: LoadingDialog({
-      content: '下载准备中...'
-    })
-  })
-  searchDialogControllerProgress = new CustomDialogController({
-    builder: LoadingDialog({
-      content: '搜索中...'
+      content: '请求中...'
     })
   })
 
@@ -114,12 +96,11 @@ export default struct Filelist {
 
   async get() {
     this.searchKeyword = ''
-    this.isLogin = await getLoginStatus()
     if (!this.isLogin) {
       this.account = ''
     }
     if (this.isLogin) {
-      const accountInfo = await getAccountInfo()
+      const accountInfo = await getAccountInfo(this.context)
       const account = getAccountHash(accountInfo)
       if (this.account !== account) {
         this.dirnames = []
@@ -174,7 +155,7 @@ export default struct Filelist {
   }
 
   async search() {
-    this.searchDialogControllerProgress.open()
+    this.dialogControllerProgress.open()
     const res = await dsmRequest(this.context, '', 'SYNO.FileStation.Search', new url.URLParams({
       method: 'start',
       folder_path: JSON.stringify([this.getPath()]),
@@ -221,7 +202,7 @@ export default struct Filelist {
         }
       }
     }
-    this.searchDialogControllerProgress.close()
+    this.dialogControllerProgress.close()
   }
 
   @Builder
@@ -287,7 +268,8 @@ export default struct Filelist {
           })
             .onClick(async () => {
               if (getCurrentNetworkBearerType() === 0) {
-                const cellularDataUseRemind = this.commonSettingDataPreferences.getSync('cellularDataUseRemind', 0)
+                const cellularDataUseRemind =
+                  getFlushPreference(this.context, 'commonSetting', 'cellularDataUseRemind', 0)
                 if (cellularDataUseRemind === 0 ||
                   (cellularDataUseRemind === 1 && item.additional.size > 200 * Math.pow(1024, 2))) {
                   const promptAction = this.UIContext.getPromptAction()
@@ -311,10 +293,13 @@ export default struct Filelist {
                   }
                 }
               }
+              const transferTaskDataPreferences = sendablePreferences.getPreferencesSync(this.context, {
+                name: 'transferTask'
+              })
               try {
                 const documentSaveOptions = new picker.DocumentSaveOptions()
                 const selectFileDownloadPath =
-                  this.commonSettingDataPreferences.getSync('selectFileDownloadPath', false)
+                  getFlushPreference(this.context, 'commonSetting', 'selectFileDownloadPath', false)
                 if (!selectFileDownloadPath) {
                   documentSaveOptions.pickerMode = picker.DocumentPickerMode.DOWNLOAD
                 }
@@ -339,9 +324,9 @@ export default struct Filelist {
                   if (selectFileDownloadPath) {
                     filePath = uris[0]
                   }
-                  this.prepareDownloadDialogControllerProgress.open()
+                  this.dialogControllerProgress.open()
                   const version = await getDsmApiMaxVersion(this.context, '', 'SYNO.FileStation.Download')
-                  this.prepareDownloadDialogControllerProgress.close()
+                  this.dialogControllerProgress.close()
                   if (version !== 'fail') {
                     const wandAgent = await wantAgent.getWantAgent({
                       wants: [
@@ -362,7 +347,8 @@ export default struct Filelist {
                       scene: 'download',
                       sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
                     })
-                    const accountInfo = await getAccountInfo()
+                    const accountInfo = await getAccountInfo(this.context)
+                    let lastUpdateTime = 0
                     const session = rcp.createSession({
                       requestConfiguration: {
                         transfer: {
@@ -376,34 +362,39 @@ export default struct Filelist {
                               await fileStream.write(incomingData)
                             },
                             onDownloadProgress: async (totalSize, transferredSize) => {
-                              this.transferredSize = transferredSize
-                              try {
-                                await notificationManager.publish({
-                                  content: {
-                                    notificationContentType: notificationManager.ContentType.NOTIFICATION_CONTENT_SYSTEM_LIVE_VIEW,
-                                    systemLiveView: {
-                                      typeCode: 8,
-                                      title: '正在下载文件：' + item.name,
-                                      text: '进度：' + Number((transferredSize / totalSize).toFixed(2)) * 100 + '% (' +
-                                      getSizeString(transferredSize) + '/' + getSizeString(totalSize) + ')'
+                              const currentTime = Date.now()
+                              if (currentTime - lastUpdateTime >= 50) {
+                                this.transferredSize = transferredSize
+                                try {
+                                  await notificationManager.publish({
+                                    content: {
+                                      notificationContentType: notificationManager.ContentType.NOTIFICATION_CONTENT_SYSTEM_LIVE_VIEW,
+                                      systemLiveView: {
+                                        typeCode: 8,
+                                        title: '正在下载文件：' + item.name,
+                                        text: '进度：' + Number((transferredSize / totalSize).toFixed(2)) * 100 + '% (' +
+                                          getSizeString(transferredSize) + '/' + getSizeString(totalSize) + ')'
+                                      }
+                                    },
+                                    id: continuousTaskNotificationInfo.notificationId,
+                                    notificationSlotType: notificationManager.SlotType.LIVE_VIEW,
+                                    template: {
+                                      name: 'downloadTemplate',
+                                      data: {
+                                        title: '正在下载文件，进度：' +
+                                          Number((transferredSize / totalSize).toFixed(2)) * 100 + '%',
+                                        fileName: item.name,
+                                        progressValue: Number((transferredSize / totalSize).toFixed(2)) * 100
+                                      }
                                     }
-                                  },
-                                  id: continuousTaskNotificationInfo.notificationId,
-                                  notificationSlotType: notificationManager.SlotType.LIVE_VIEW,
-                                  template: {
-                                    name: 'downloadTemplate',
-                                    data: {
-                                      title: '正在下载文件，进度：' +
-                                        Number((transferredSize / totalSize).toFixed(2)) * 100 + '%',
-                                      fileName: item.name,
-                                      progressValue: Number((transferredSize / totalSize).toFixed(2)) * 100
-                                    }
-                                  }
-                                })
-                              } catch {
+                                  })
+                                } catch {
+                                }
                               }
+                              lastUpdateTime = currentTime
                             },
                             onDataEnd: async () => {
+                              this.isShowProgressSheet = false
                               session.close()
                               netBoost.setSceneDesc({
                                 scene: 'download',
@@ -412,13 +403,9 @@ export default struct Filelist {
                               fileStream.closeSync()
                               await backgroundTaskManager.stopBackgroundRunning(this.context,
                                 continuousTaskNotificationInfo.continuousTaskId)
-                              this.isShowProgressSheet = false
                               this.context.eventHub.off('cancelDownload')
                               this.transferredSize = 0
                               this.totalSize = 0
-                              await promptAction.openToast({
-                                message: '下载完成'
-                              })
                             }
                           }
                         },
@@ -426,7 +413,8 @@ export default struct Filelist {
                           dnsRules: getDnsServer(this.context)
                         },
                         security: {
-                          remoteValidation: this.debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
+                          remoteValidation: getFlushPreference(this.context, 'debugSetting',
+                            'closeRemoteValidationWhenLinkDsm',
                             'system') as 'system' | 'skip',
                           tlsRange: {
                             min: 'TlsV1.2'
@@ -446,6 +434,11 @@ export default struct Filelist {
                       await promptAction.openToast({
                         message: '下载失败'
                       })
+                      transferTaskDataPreferences.putSync(util.generateRandomUUID(), JSON.stringify({
+                        name: item.name,
+                        status: 'cancel',
+                        type: 'download'
+                      }))
                     })
                     this.totalSize = item.additional.size
                     this.context.eventHub.on('cancelDownload', () => {
@@ -460,16 +453,55 @@ export default struct Filelist {
                         path: item.path,
                         mode: 'download'
                       }).toString())
-                      if (response.statusCode !== 200) {
+                      if (response.statusCode >= 200 && response.statusCode < 300) {
+                        await promptAction.openToast({
+                          message: '下载完成'
+                        })
+                        transferTaskDataPreferences.putSync(util.generateRandomUUID(), JSON.stringify({
+                          name: item.name,
+                          status: 'success',
+                          type: 'download'
+                        }))
+                      } else {
                         await promptAction.openToast({
                           message: 'HTTP 请求失败，状态码：' + response.statusCode
                         })
+                        transferTaskDataPreferences.putSync(util.generateRandomUUID(), JSON.stringify({
+                          name: item.name,
+                          status: 'fail',
+                          errCode: response.statusCode,
+                          type: 'download'
+                        }))
                       }
                     } catch (err) {
+                      session.close()
+                      netBoost.setSceneDesc({
+                        scene: 'download',
+                        sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                      })
+                      fileStream.closeSync()
+                      await backgroundTaskManager.stopBackgroundRunning(this.context,
+                        continuousTaskNotificationInfo.continuousTaskId)
+                      this.context.eventHub.off('cancelDownload')
+                      this.transferredSize = 0
+                      this.totalSize = 0
                       if (err.code !== 1007900992) {
                         await promptAction.openToast({
                           message: '下载失败，错误码：' + err.code
                         })
+                        transferTaskDataPreferences.putSync(util.generateRandomUUID(), JSON.stringify({
+                          name: item.name,
+                          status: 'fail',
+                          errCode: err.code,
+                          type: 'download'
+                        }))
+                      }
+                      if (err.code === 1007900992) {
+                        transferTaskDataPreferences.putSync(util.generateRandomUUID(), JSON.stringify({
+                          name: item.name,
+                          status: 'cancel',
+                          type: 'download'
+                        }))
                       }
                     }
                   }
@@ -478,6 +510,12 @@ export default struct Filelist {
                 await promptAction.openToast({
                   message: '发生错误，错误码：' + err.code
                 })
+                transferTaskDataPreferences.putSync(util.generateRandomUUID(), JSON.stringify({
+                  name: item.name,
+                  status: 'fail',
+                  errCode: err.code,
+                  type: 'download'
+                }))
               }
             })
           if (item.name.endsWith('.zip')) {
@@ -486,12 +524,7 @@ export default struct Filelist {
               content: '解压缩'
             })
               .onClick(async () => {
-                const extractDialogControllerProgress = new CustomDialogController({
-                  builder: LoadingDialog({
-                    content: '解压缩中...'
-                  })
-                })
-                extractDialogControllerProgress.open()
+                this.dialogControllerProgress.open()
                 const startres = await dsmRequest(this.context, '', 'SYNO.FileStation.Extract', new url.URLParams({
                   method: 'start',
                   file_path: item.path,
@@ -520,7 +553,7 @@ export default struct Filelist {
                     }
                   }
                 }
-                extractDialogControllerProgress.close()
+                this.dialogControllerProgress.close()
               })
           }
         }
@@ -529,17 +562,12 @@ export default struct Filelist {
           content: '分享'
         })
           .onClick(async () => {
-            const dialogControllerProgress = new CustomDialogController({
-              builder: LoadingDialog({
-                content: '获取分享链接...'
-              })
-            })
-            dialogControllerProgress.open()
+            this.dialogControllerProgress.open()
             const res = await dsmRequest(this.context, '', 'SYNO.FileStation.Sharing', new url.URLParams({
               method: 'create',
               path: JSON.stringify([item.path])
             }).toString())
-            dialogControllerProgress.close()
+            this.dialogControllerProgress.close()
             if (res !== 'fail') {
               const links = res['links'] as ShareLinkItem[]
               const qrcodebase64 = links[0].qrcode.slice(22)
@@ -600,7 +628,7 @@ export default struct Filelist {
               ]
             })
             if (data.index === 1) {
-              this.deleteDialogControllerProgress.open()
+              this.dialogControllerProgress.open()
               const startres = await dsmRequest(this.context, '', 'SYNO.FileStation.Delete', new url.URLParams({
                 method: 'start',
                 path: item.path
@@ -627,7 +655,7 @@ export default struct Filelist {
                   }
                 }
               }
-              this.deleteDialogControllerProgress.close()
+              this.dialogControllerProgress.close()
             }
           })
       }
@@ -713,11 +741,11 @@ export default struct Filelist {
                   })
                   return
                 }
-                const transferTaskDataPreferences = preferences.getPreferencesSync(this.context, {
+                const transferTaskDataPreferences = sendablePreferences.getPreferencesSync(this.context, {
                   name: 'transferTask'
                 })
                 const array = this.multipleSelectArray.filter(item => !item.isdir)
-                const accountInfo = await getAccountInfo()
+                const accountInfo = await getAccountInfo(this.context)
                 array.forEach(item => {
                   const id = util.generateRandomUUID()
                   transferTaskDataPreferences.putSync(id, JSON.stringify({
@@ -770,19 +798,14 @@ export default struct Filelist {
                   })
                   return
                 }
-                const prepareDialogControllerProgress = new CustomDialogController({
-                  builder: LoadingDialog({
-                    content: '复制准备中...'
-                  })
-                })
-                prepareDialogControllerProgress.open()
+                this.dialogControllerProgress.open()
                 const startres = await dsmRequest(this.context, '', 'SYNO.FileStation.CopyMove', new url.URLParams({
                   method: 'start',
                   path: JSON.stringify(this.multipleSelectArray.map(item => item.path)),
                   dest_folder_path: this.getPath(),
                   remove_src: 'false'
                 }).toString())
-                prepareDialogControllerProgress.close()
+                this.dialogControllerProgress.close()
                 const length = this.multipleSelectArray.length
                 this.multipleSelect = false
                 this.multipleSelectArray = []
@@ -822,7 +845,7 @@ export default struct Filelist {
                               typeCode: 8,
                               title: '正在复制文件',
                               text: '进度：' + Number((transferredSize / totalSize).toFixed(2)) * 100 + '% (' +
-                              getSizeString(transferredSize) + '/' + getSizeString(totalSize) + ')'
+                                getSizeString(transferredSize) + '/' + getSizeString(totalSize) + ')'
                             }
                           },
                           id: continuousTaskNotificationInfo.notificationId,
@@ -887,12 +910,7 @@ export default struct Filelist {
                   })
                   return
                 }
-                const dialogControllerProgress = new CustomDialogController({
-                  builder: LoadingDialog({
-                    content: '移动中...'
-                  })
-                })
-                dialogControllerProgress.open()
+                this.dialogControllerProgress.open()
                 const startres = await dsmRequest(this.context, '', 'SYNO.FileStation.CopyMove', new url.URLParams({
                   method: 'start',
                   path: JSON.stringify(this.multipleSelectArray.map(item => item.path)),
@@ -924,7 +942,7 @@ export default struct Filelist {
                     }
                   }
                 }
-                dialogControllerProgress.close()
+                this.dialogControllerProgress.close()
               })
 
               Column() {
@@ -971,7 +989,7 @@ export default struct Filelist {
                   ]
                 })
                 if (data.index === 1) {
-                  this.deleteDialogControllerProgress.open()
+                  this.dialogControllerProgress.open()
                   const startres = await dsmRequest(this.context, '', 'SYNO.FileStation.Delete', new url.URLParams({
                     method: 'start',
                     path: JSON.stringify(this.multipleSelectArray.map(item => item.path))
@@ -1001,14 +1019,13 @@ export default struct Filelist {
                       }
                     }
                   }
-                  this.deleteDialogControllerProgress.close()
+                  this.dialogControllerProgress.close()
                 }
               })
             }
             .margin({
               bottom: $r('sys.float.ohos_id_elements_margin_vertical_m')
             })
-            .width('100%')
           }
           Row() {
             if (this.dirnames.length > 0) {
@@ -1038,7 +1055,7 @@ export default struct Filelist {
               .width(40)
               .onClick(() => {
                 this.dirnames.pop()
-                this.backDataPreferences.putSync('filelist', this.dirnames.length === 0 ? false : true)
+                setTempPreference(this.context, 'back', 'filelist', this.dirnames.length === 0 ? false : true)
                 this.loading = true
               })
             }
@@ -1086,7 +1103,7 @@ export default struct Filelist {
               .fontColor($r('sys.color.font_emphasize'))
               .onClick(() => {
                 this.dirnames = []
-                this.backDataPreferences.putSync('filelist', false)
+                setTempPreference(this.context, 'back', 'filelist', false)
                 this.loading = true
               })
             ForEach(this.dirnames, (item: string, index) => {
@@ -1097,7 +1114,7 @@ export default struct Filelist {
                 .fontColor($r('sys.color.font_emphasize'))
                 .onClick(() => {
                   this.dirnames = this.dirnames.slice(0, index + 1)
-                  this.backDataPreferences.putSync('filelist', this.dirnames.length === 0 ? false : true)
+                  setTempPreference(this.context, 'back', 'filelist', this.dirnames.length === 0 ? false : true)
                   this.loading = true
                 })
             })
@@ -1189,10 +1206,10 @@ export default struct Filelist {
                 const documentViewPicker = new picker.DocumentViewPicker(this.context)
                 const uris = await documentViewPicker.select()
                 if (uris.length > 0) {
-                  const transferTaskDataPreferences = preferences.getPreferencesSync(this.context, {
+                  const transferTaskDataPreferences = sendablePreferences.getPreferencesSync(this.context, {
                     name: 'transferTask'
                   })
-                  const accountInfo = await getAccountInfo()
+                  const accountInfo = await getAccountInfo(this.context)
                   uris.forEach(item => {
                     const id = util.generateRandomUUID()
                     transferTaskDataPreferences.putSync(id, JSON.stringify({
@@ -1274,19 +1291,14 @@ export default struct Filelist {
                 if (this.remove) {
                   text = '移动'
                 }
-                const prepareDialogControllerProgress = new CustomDialogController({
-                  builder: LoadingDialog({
-                    content: text + '准备中...'
-                  })
-                })
-                prepareDialogControllerProgress.open()
+                this.dialogControllerProgress.open()
                 const startres = await dsmRequest(this.context, '', 'SYNO.FileStation.CopyMove', new url.URLParams({
                   method: 'start',
                   path: JSON.stringify([this.copyMovePath]),
                   dest_folder_path: this.getPath(),
                   remove_src: String(this.remove)
                 }).toString())
-                prepareDialogControllerProgress.close()
+                this.dialogControllerProgress.close()
                 const lastIndex = this.copyMovePath.lastIndexOf('/')
                 const fileName = this.copyMovePath.slice(lastIndex + 1)
                 this.copyMovePath = ''
@@ -1327,7 +1339,7 @@ export default struct Filelist {
                               typeCode: 8,
                               title: '正在' + text + '文件',
                               text: '进度：' + Number((transferredSize / totalSize).toFixed(2)) * 100 + '% (' +
-                              getSizeString(transferredSize) + '/' + getSizeString(totalSize) + ')'
+                                getSizeString(transferredSize) + '/' + getSizeString(totalSize) + ')'
                             }
                           },
                           id: continuousTaskNotificationInfo.notificationId,
@@ -1391,12 +1403,7 @@ export default struct Filelist {
                 await promptAction.openToast({
                   message: '敬请期待'
                 })
-                /*const compressDialogControllerProgress = new CustomDialogController({
-                  builder: LoadingDialog({
-                    content: '压缩中...'
-                  })
-                })
-                compressDialogControllerProgress.open()
+                /*this.dialogControllerProgress.open()
                 const startres = await dsmRequest(this.context, '', 'SYNO.FileStation.Compress', new url.URLParams({
                   method: 'start',
                   path: JSON.stringify(this.multipleSelectArray.map(item => item.path)),
@@ -1427,11 +1434,11 @@ export default struct Filelist {
                     }
                   }
                 }
-                compressDialogControllerProgress.close()*/
+                this.dialogControllerProgress.close()*/
               })
 
               if (!this.fileArray.every(item => this.multipleSelectArray.find(selectItem => selectItem.path ===
-              item.path))) {
+                item.path))) {
                 Column() {
                   Image($r('app.media.selectall'))
                 }
@@ -1462,7 +1469,7 @@ export default struct Filelist {
                 })
               }
               if (this.fileArray.every(item => this.multipleSelectArray.find(selectItem => selectItem.path ===
-              item.path))) {
+                item.path))) {
                 Column() {
                   Image($r('app.media.cancelselectall'))
                 }
@@ -1533,7 +1540,7 @@ export default struct Filelist {
                             const exist = this.multipleSelectArray.find(selectItem => selectItem.path === item.path)
                             if (!isOn && exist) {
                               this.multipleSelectArray.splice(this.multipleSelectArray.findIndex(selectItem => selectItem.path ===
-                              item.path), 1)
+                                item.path), 1)
                             }
                             if (isOn && !exist) {
                               this.multipleSelectArray.push(item)
@@ -1542,7 +1549,6 @@ export default struct Filelist {
                       }
                       if (!item.isdir) {
                         Image(getFileTypeIcon(item.name))
-                          .fillColor($r('sys.color.icon_secondary'))
                           .height(24)
                           .margin({
                             right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
@@ -1601,7 +1607,6 @@ export default struct Filelist {
                         .backgroundColor($r('sys.color.comp_background_secondary'))
                       }
                     })
-                    .width('100%')
                     .onHover((isHover) => {
                       if (!isHover) {
                         this.hoverId = -1
@@ -1619,26 +1624,21 @@ export default struct Filelist {
                         }
                         const supportedformats = ['mp4', 'mkv', 'm4a', 'aac', 'mp3', 'ogg', 'wav', 'flac', 'amr', 'ape']
                         if (supportedformats.includes(houzhui) &&
-                        this.commonSettingDataPreferences.getSync('onlinePreviewMedia', true)) {
-                          const dialogControllerProgress = new CustomDialogController({
-                            builder: LoadingDialog({
-                              content: '播放准备中...'
-                            })
-                          })
-                          dialogControllerProgress.open()
+                          getFlushPreference(this.context, 'commonSetting', 'onlinePreviewMedia', true)) {
+                          this.dialogControllerProgress.open()
                           const res = await dsmRequest(this.context, '', 'SYNO.API.Auth.Key', new url.URLParams({
                             method: 'grant',
                             allow_api: 'SYNO.FileStation.Download',
                             allow_methods: JSON.stringify(['download'])
                           }).toString())
-                          dialogControllerProgress.close()
+                          this.dialogControllerProgress.close()
                           if (res !== 'fail') {
                             const tid = res['tid'] as string
-                            const accountInfo = await getAccountInfo()
+                            const accountInfo = await getAccountInfo(this.context)
                             const bytes = new util.TextEncoder().encodeInto(item.path)
                             const dlink = Array.from(bytes).map(byte => byte.toString(16).padStart(2, '0')).join('')
                             this.src = accountInfo.path + '/fbdownload/' +
-                            item.name.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') + '?tid=' + tid +
+                              item.name.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') + '?tid=' + tid +
                               '&mode=open&dlink=' + dlink
                             this.srcName = item.name
                             this.isShowPlayerSheet = true
@@ -1653,14 +1653,14 @@ export default struct Filelist {
                         }
                         if (getCurrentNetworkBearerType() === 0) {
                           const cellularDataUseRemind =
-                            this.commonSettingDataPreferences.getSync('cellularDataUseRemind', 0)
+                            getFlushPreference(this.context, 'commonSetting', 'cellularDataUseRemind', 0)
                           if (cellularDataUseRemind === 0 ||
                             (cellularDataUseRemind === 1 && item.additional.size > 200 * Math.pow(1024, 2))) {
                             const promptAction = this.UIContext.getPromptAction()
                             const data = await promptAction.showDialog({
                               title: '流量使用提醒',
                               message: '当前正在使用流量上网，下载此文件将消耗约 ' +
-                              getSizeString(item.additional.size) + ' 流量，确定下载？',
+                                getSizeString(item.additional.size) + ' 流量，确定下载？',
                               buttons: [
                                 {
                                   text: '取消',
@@ -1684,9 +1684,9 @@ export default struct Filelist {
                             await fileIo.mkdir(previewDir, true)
                           }
                           const filePath = previewDir + '/' + item.name
-                          this.prepareDownloadDialogControllerProgress.open()
+                          this.dialogControllerProgress.open()
                           const version = await getDsmApiMaxVersion(this.context, '', 'SYNO.FileStation.Download')
-                          this.prepareDownloadDialogControllerProgress.close()
+                          this.dialogControllerProgress.close()
                           if (version !== 'fail') {
                             const wandAgent = await wantAgent.getWantAgent({
                               wants: [
@@ -1708,7 +1708,8 @@ export default struct Filelist {
                               scene: 'download',
                               sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
                             })
-                            const accountInfo = await getAccountInfo()
+                            const accountInfo = await getAccountInfo(this.context)
+                            let lastUpdateTime = 0
                             const session = rcp.createSession({
                               requestConfiguration: {
                                 transfer: {
@@ -1722,35 +1723,40 @@ export default struct Filelist {
                                       await fileStream.write(incomingData)
                                     },
                                     onDownloadProgress: async (totalSize, transferredSize) => {
-                                      this.transferredSize = transferredSize
-                                      try {
-                                        await notificationManager.publish({
-                                          content: {
-                                            notificationContentType: notificationManager.ContentType.NOTIFICATION_CONTENT_SYSTEM_LIVE_VIEW,
-                                            systemLiveView: {
-                                              typeCode: 8,
-                                              title: '正在下载文件：' + item.name,
-                                              text: '进度：' + Number((transferredSize / totalSize).toFixed(2)) * 100 +
-                                                '% (' + getSizeString(transferredSize) + '/' +
-                                              getSizeString(totalSize) + ')'
+                                      const currentTime = Date.now()
+                                      if (currentTime - lastUpdateTime >= 50) {
+                                        this.transferredSize = transferredSize
+                                        try {
+                                          await notificationManager.publish({
+                                            content: {
+                                              notificationContentType: notificationManager.ContentType.NOTIFICATION_CONTENT_SYSTEM_LIVE_VIEW,
+                                              systemLiveView: {
+                                                typeCode: 8,
+                                                title: '正在下载文件：' + item.name,
+                                                text: '进度：' + Number((transferredSize / totalSize).toFixed(2)) * 100 +
+                                                  '% (' + getSizeString(transferredSize) + '/' +
+                                                  getSizeString(totalSize) + ')'
+                                              }
+                                            },
+                                            id: continuousTaskNotificationInfo.notificationId,
+                                            notificationSlotType: notificationManager.SlotType.LIVE_VIEW,
+                                            template: {
+                                              name: 'downloadTemplate',
+                                              data: {
+                                                title: '正在下载文件，进度：' +
+                                                  Number((transferredSize / totalSize).toFixed(2)) * 100 + '%',
+                                                fileName: item.name,
+                                                progressValue: Number((transferredSize / totalSize).toFixed(2)) * 100
+                                              }
                                             }
-                                          },
-                                          id: continuousTaskNotificationInfo.notificationId,
-                                          notificationSlotType: notificationManager.SlotType.LIVE_VIEW,
-                                          template: {
-                                            name: 'downloadTemplate',
-                                            data: {
-                                              title: '正在下载文件，进度：' +
-                                                Number((transferredSize / totalSize).toFixed(2)) * 100 + '%',
-                                              fileName: item.name,
-                                              progressValue: Number((transferredSize / totalSize).toFixed(2)) * 100
-                                            }
-                                          }
-                                        })
-                                      } catch {
+                                          })
+                                        } catch {
+                                        }
                                       }
+                                      lastUpdateTime = currentTime
                                     },
                                     onDataEnd: async () => {
+                                      this.isShowProgressSheet = false
                                       session.close()
                                       netBoost.setSceneDesc({
                                         scene: 'download',
@@ -1759,53 +1765,9 @@ export default struct Filelist {
                                       fileStream.closeSync()
                                       await backgroundTaskManager.stopBackgroundRunning(this.context,
                                         continuousTaskNotificationInfo.continuousTaskId)
-                                      this.isShowProgressSheet = false
                                       this.context.eventHub.off('cancelDownload')
                                       this.transferredSize = 0
                                       this.totalSize = 0
-                                      const uri = fileUri.getUriFromPath(filePath)
-                                      const filePreviewType =
-                                        this.commonSettingDataPreferences.getSync('filePreviewType', 0)
-                                      if (filePreviewType === 0) {
-                                        const supportedReaderFormats = ['.epub', '.mobi', '.azw', '.azw3']
-                                        if (!supportedReaderFormats.some(formatItem => item.name.endsWith(formatItem))) {
-                                          const canPreview = await filePreview.canPreview(this.context, uri)
-                                          if (!canPreview) {
-                                            await promptAction.openToast({
-                                              message: '此类型不支持预览'
-                                            })
-                                          }
-                                          if (canPreview) {
-                                            await filePreview.openPreview(this.context, {
-                                              title: item.name,
-                                              uri: uri,
-                                              mimeType: ''
-                                            })
-                                          }
-                                        }
-                                        if (supportedReaderFormats.some(formatItem => item.name.endsWith(formatItem))) {
-                                          const dir = this.context.tempDir + '/preview/reader/' + this.account + '/' +
-                                          sha256hash(item.name)
-                                          if (!fileIo.accessSync(dir)) {
-                                            await fileIo.mkdir(dir, true)
-                                          }
-                                          const newFilePath = dir + '/' + item.name
-                                          await fileIo.moveFile(filePath, newFilePath)
-                                          this.src = newFilePath
-                                          this.srcName = item.name
-                                          this.isShowReaderSheet = true
-                                        }
-                                      }
-                                      if (filePreviewType === 1) {
-                                        await this.context.startAbility({
-                                          action: 'ohos.want.action.viewData',
-                                          uri: uri,
-                                          parameters: {
-                                            'ohos.ability.params.showDefaultPicker': true
-                                          },
-                                          flags: wantConstant.Flags.FLAG_AUTH_READ_URI_PERMISSION
-                                        })
-                                      }
                                     }
                                   }
                                 },
@@ -1813,7 +1775,8 @@ export default struct Filelist {
                                   dnsRules: getDnsServer(this.context)
                                 },
                                 security: {
-                                  remoteValidation: this.debugSettingDataPreferences.getSync('closeRemoteValidationWhenLinkDsm',
+                                  remoteValidation: getFlushPreference(this.context, 'debugSetting',
+                                    'closeRemoteValidationWhenLinkDsm',
                                     'system') as 'system' | 'skip',
                                   tlsRange: {
                                     min: 'TlsV1.2'
@@ -1848,13 +1811,68 @@ export default struct Filelist {
                                   path: item.path,
                                   mode: 'download'
                                 }).toString())
-                              if (response.statusCode !== 200) {
+                              if (response.statusCode >= 200 && response.statusCode < 300) {
+                                const uri = fileUri.getUriFromPath(filePath)
+                                const filePreviewType =
+                                  getFlushPreference(this.context, 'commonSetting', 'filePreviewType', 0)
+                                if (filePreviewType === 0) {
+                                  const supportedReaderFormats = ['.epub', '.mobi', '.azw', '.azw3']
+                                  if (!supportedReaderFormats.some(formatItem => item.name.endsWith(formatItem))) {
+                                    const canPreview = await filePreview.canPreview(this.context, uri)
+                                    if (!canPreview) {
+                                      await promptAction.openToast({
+                                        message: '此类型不支持预览'
+                                      })
+                                    }
+                                    if (canPreview) {
+                                      await filePreview.openPreview(this.context, {
+                                        title: item.name,
+                                        uri: uri,
+                                        mimeType: ''
+                                      })
+                                    }
+                                  }
+                                  if (supportedReaderFormats.some(formatItem => item.name.endsWith(formatItem))) {
+                                    const dir = this.context.tempDir + '/preview/reader/' + this.account + '/' +
+                                      sha256hash(item.name)
+                                    if (!fileIo.accessSync(dir)) {
+                                      await fileIo.mkdir(dir, true)
+                                    }
+                                    const newFilePath = dir + '/' + item.name
+                                    await fileIo.moveFile(filePath, newFilePath)
+                                    this.src = newFilePath
+                                    this.srcName = item.name
+                                    this.isShowReaderSheet = true
+                                  }
+                                }
+                                if (filePreviewType === 1) {
+                                  await this.context.startAbility({
+                                    action: 'ohos.want.action.viewData',
+                                    uri: uri,
+                                    parameters: {
+                                      'ohos.ability.params.showDefaultPicker': true
+                                    },
+                                    flags: wantConstant.Flags.FLAG_AUTH_READ_URI_PERMISSION
+                                  })
+                                }
+                              } else {
                                 await fileIo.unlink(filePath)
                                 await promptAction.openToast({
                                   message: 'HTTP 请求失败，状态码：' + response.statusCode
                                 })
                               }
                             } catch (err) {
+                              session.close()
+                              netBoost.setSceneDesc({
+                                scene: 'download',
+                                sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                              })
+                              fileStream.closeSync()
+                              await backgroundTaskManager.stopBackgroundRunning(this.context,
+                                continuousTaskNotificationInfo.continuousTaskId)
+                              this.context.eventHub.off('cancelDownload')
+                              this.transferredSize = 0
+                              this.totalSize = 0
                               await fileIo.unlink(filePath)
                               if (err.code !== 1007900992) {
                                 await promptAction.openToast({
@@ -1871,7 +1889,7 @@ export default struct Filelist {
                       }
                       if (item.isdir) {
                         this.dirnames.push(item.name)
-                        this.backDataPreferences.putSync('filelist', true)
+                        setTempPreference(this.context, 'back', 'filelist', true)
                         this.loading = true
                       }
                     })
@@ -1895,6 +1913,10 @@ export default struct Filelist {
                   .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
                 }
               })
+              ListItem()
+                .margin({
+                  bottom: this.preferType === 0 ? 80 : 0
+                })
             }
           }
           .layoutWeight(1)
@@ -1920,13 +1942,19 @@ export default struct Filelist {
       })
       this.context.eventHub.on('backFilelist', () => {
         this.dirnames.pop()
-        this.backDataPreferences.putSync('filelist', this.dirnames.length === 0 ? false : true)
+        setTempPreference(this.context, 'back', 'filelist', this.dirnames.length === 0 ? false : true)
         this.loading = true
       })
       this.context.eventHub.on('refreshFilelist', async () => {
-        await this.get()
+        this.multipleSelect = false
+        this.multipleSelectArray = []
+        this.copyMovePath = ''
+        this.remove = false
+        this.isLogin = await getLoginStatus(this.context)
+        this.loading = true
       })
-      await this.get()
+      this.isLogin = await getLoginStatus(this.context)
+      this.loading = true
     })
     .onDisAppear(() => {
       this.context.eventHub.off('refreshFilelist')
