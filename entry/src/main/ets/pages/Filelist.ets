@@ -394,6 +394,7 @@ export default struct Filelist {
                               lastUpdateTime = currentTime
                             },
                             onDataEnd: async () => {
+                              this.isShowProgressSheet = false
                               session.close()
                               netBoost.setSceneDesc({
                                 scene: 'download',
@@ -402,7 +403,6 @@ export default struct Filelist {
                               fileStream.closeSync()
                               await backgroundTaskManager.stopBackgroundRunning(this.context,
                                 continuousTaskNotificationInfo.continuousTaskId)
-                              this.isShowProgressSheet = false
                               this.context.eventHub.off('cancelDownload')
                               this.transferredSize = 0
                               this.totalSize = 0
@@ -474,6 +474,17 @@ export default struct Filelist {
                         }))
                       }
                     } catch (err) {
+                      session.close()
+                      netBoost.setSceneDesc({
+                        scene: 'download',
+                        sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                      })
+                      fileStream.closeSync()
+                      await backgroundTaskManager.stopBackgroundRunning(this.context,
+                        continuousTaskNotificationInfo.continuousTaskId)
+                      this.context.eventHub.off('cancelDownload')
+                      this.transferredSize = 0
+                      this.totalSize = 0
                       if (err.code !== 1007900992) {
                         await promptAction.openToast({
                           message: '下载失败，错误码：' + err.code
@@ -482,6 +493,13 @@ export default struct Filelist {
                           name: item.name,
                           status: 'fail',
                           errCode: err.code,
+                          type: 'download'
+                        }))
+                      }
+                      if (err.code === 1007900992) {
+                        transferTaskDataPreferences.putSync(util.generateRandomUUID(), JSON.stringify({
+                          name: item.name,
+                          status: 'cancel',
                           type: 'download'
                         }))
                       }
@@ -1738,6 +1756,7 @@ export default struct Filelist {
                                       lastUpdateTime = currentTime
                                     },
                                     onDataEnd: async () => {
+                                      this.isShowProgressSheet = false
                                       session.close()
                                       netBoost.setSceneDesc({
                                         scene: 'download',
@@ -1746,7 +1765,6 @@ export default struct Filelist {
                                       fileStream.closeSync()
                                       await backgroundTaskManager.stopBackgroundRunning(this.context,
                                         continuousTaskNotificationInfo.continuousTaskId)
-                                      this.isShowProgressSheet = false
                                       this.context.eventHub.off('cancelDownload')
                                       this.transferredSize = 0
                                       this.totalSize = 0
@@ -1844,6 +1862,17 @@ export default struct Filelist {
                                 })
                               }
                             } catch (err) {
+                              session.close()
+                              netBoost.setSceneDesc({
+                                scene: 'download',
+                                sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                              })
+                              fileStream.closeSync()
+                              await backgroundTaskManager.stopBackgroundRunning(this.context,
+                                continuousTaskNotificationInfo.continuousTaskId)
+                              this.context.eventHub.off('cancelDownload')
+                              this.transferredSize = 0
+                              this.totalSize = 0
                               await fileIo.unlink(filePath)
                               if (err.code !== 1007900992) {
                                 await promptAction.openToast({

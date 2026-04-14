@@ -80,6 +80,12 @@ export async function pushPhotoIntoPhotoArray(context: Context, accountInfo: Acc
         }
         await session.get(requestPath)
       } catch {
+        session.close()
+        netBoost.setSceneDesc({
+          scene: 'download',
+          sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+        })
+        fileStream.closeSync()
       }
     }
     if (thumbnailPathExist) {

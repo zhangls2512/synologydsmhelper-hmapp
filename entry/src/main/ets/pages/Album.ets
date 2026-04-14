@@ -796,6 +796,13 @@ export default struct Album {
                     })
                   }
                 } catch (err) {
+                  session.close()
+                  this.dialogControllerProgress.close()
+                  netBoost.setSceneDesc({
+                    scene: 'download',
+                    sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                  })
+                  fileStream.closeSync()
                   await promptAction.openToast({
                     message: '下载失败，错误码：' + err.code
                   })
@@ -933,6 +940,7 @@ export default struct Album {
                               lastUpdateTime = currentTime
                             },
                             onDataEnd: async () => {
+                              this.isShowProgressSheet = false
                               session.close()
                               netBoost.setSceneDesc({
                                 scene: 'download',
@@ -941,7 +949,6 @@ export default struct Album {
                               fileStream.closeSync()
                               await backgroundTaskManager.stopBackgroundRunning(this.context,
                                 continuousTaskNotificationInfo.continuousTaskId)
-                              this.isShowProgressSheet = false
                               this.context.eventHub.off('cancelDownload')
                               this.transferredSize = 0
                               this.totalSize = 0
@@ -1013,6 +1020,17 @@ export default struct Album {
                         }))
                       }
                     } catch (err) {
+                      session.close()
+                      netBoost.setSceneDesc({
+                        scene: 'download',
+                        sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                      })
+                      fileStream.closeSync()
+                      await backgroundTaskManager.stopBackgroundRunning(this.context,
+                        continuousTaskNotificationInfo.continuousTaskId)
+                      this.context.eventHub.off('cancelDownload')
+                      this.transferredSize = 0
+                      this.totalSize = 0
                       if (err.code !== 1007900992) {
                         await promptAction.openToast({
                           message: '下载失败，错误码：' + err.code
@@ -1021,6 +1039,13 @@ export default struct Album {
                           name: item.filename,
                           status: 'fail',
                           errCode: err.code,
+                          type: 'download'
+                        }))
+                      }
+                      if (err.code === 1007900992) {
+                        transferTaskDataPreferences.putSync(util.generateRandomUUID(), JSON.stringify({
+                          name: item.filename,
+                          status: 'cancel',
                           type: 'download'
                         }))
                       }
