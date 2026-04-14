@@ -44,9 +44,9 @@ export default struct Cleardata {
   async getSize() {
     const backupSettingSize = await getDirectorySize(this.context.filesDir + '/backupsetting')
     this.backupSettingSize = getSizeString(backupSettingSize)
-    this.commonSettingSize = getSizeString(getFileSize(this.context.preferencesDir + '/commonSetting'))
-    this.permissionSettingSize = getSizeString(getFileSize(this.context.preferencesDir + '/permissionSetting'))
-    this.debugSettingSize = getSizeString(getFileSize(this.context.preferencesDir + '/debugSetting'))
+    this.commonSettingSize = getSizeString(getFileSize(this.context.preferencesDir + '/commonSetting.db'))
+    this.permissionSettingSize = getSizeString(getFileSize(this.context.preferencesDir + '/permissionSetting.db'))
+    this.debugSettingSize = getSizeString(getFileSize(this.context.preferencesDir + '/debugSetting.db'))
     const appCacheSize = await getDirectorySize(this.context.cacheDir)
     this.appCacheSize = getSizeString(appCacheSize)
     const apiVersionCacheFilePath = this.context.cacheDir + '/apiversion.txt'
