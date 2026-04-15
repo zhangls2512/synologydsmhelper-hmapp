@@ -349,7 +349,7 @@ export default struct Accountlist {
           }
         })
         try {
-          const response = await session.get(item.path + '/webapi/entry.cgi')
+          const response = await session.get(item.path)
           session.close()
           if (response.statusCode >= 200 && response.statusCode < 300) {
             this.pathConnectionStatusArray[index] = 'connected'
