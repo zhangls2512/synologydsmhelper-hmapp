@@ -34,14 +34,6 @@ export interface JsErrorObject {
   info: Error
 }
 
-interface MenuCodeEventData {
-  data: EventData
-}
-
-interface EventData {
-  menuCode: string
-}
-
 export default class EntryAbility extends UIAbility {
   async appInit(want: Want) {
     await notificationManager.setBadgeNumber(0)
