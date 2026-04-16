@@ -165,7 +165,7 @@ struct Backupsetting {
                       .backgroundColor($r('sys.color.interactive_pressed'))
                     }
                   })
-                  .onHover((isHover) => {
+                  .onHover(isHover => {
                     if (!isHover) {
                       this.hoverId = -1
                     }
@@ -227,7 +227,7 @@ struct Backupsetting {
                 type: ToggleType.Switch,
                 isOn: this.deleteAfterSuccess!!
               })
-                .onChange((isOn) => {
+                .onChange(isOn => {
                   setFlushPreference(this.context, 'backupSetting', 'deleteAfterSuccess', isOn)
                 })
             }
@@ -267,7 +267,7 @@ struct Backupsetting {
                 .backgroundColor($r('sys.color.interactive_pressed'))
               }
             })
-            .onHover((isHover) => {
+            .onHover(isHover => {
               if (!isHover) {
                 this.hoverId = -1
               }

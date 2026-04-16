@@ -94,7 +94,7 @@ struct Permissionsetting {
                 .backgroundColor($r('sys.color.interactive_pressed'))
               }
             })
-            .onHover((isHover) => {
+            .onHover(isHover => {
               if (!isHover) {
                 this.hoverId = -1
               }
@@ -475,7 +475,7 @@ struct Permissionsetting {
                   type: ToggleType.Switch,
                   isOn: this.writePasteBoard!!
                 })
-                  .onChange((isOn) => {
+                  .onChange(isOn => {
                     setFlushPreference(this.context, 'permissionSetting', 'writePasteBoard', isOn)
                   })
               }

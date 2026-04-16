@@ -48,7 +48,7 @@ export default struct Addphotointoalbum {
           }
         })
         .width(40)
-        .onHover((isHover) => {
+        .onHover(isHover => {
           if (!isHover) {
             this.buttonHoverId = -1
           }
@@ -114,7 +114,7 @@ export default struct Addphotointoalbum {
                 .backgroundColor($r('sys.color.interactive_pressed'))
               }
             })
-            .onHover((isHover) => {
+            .onHover(isHover => {
               if (!isHover) {
                 this.hoverId = -1
               }

@@ -311,7 +311,7 @@ struct Sandboxfilelist {
                       .backgroundColor($r('sys.color.comp_background_secondary'))
                     }
                   })
-                  .onHover((isHover) => {
+                  .onHover(isHover => {
                     if (!isHover) {
                       this.hoverId = -1
                     }
@@ -393,7 +393,7 @@ struct Sandboxfilelist {
                       .backgroundColor($r('sys.color.comp_background_secondary'))
                     }
                   })
-                  .onHover((isHover) => {
+                  .onHover(isHover => {
                     if (!isHover) {
                       this.hoverId = -1
                     }

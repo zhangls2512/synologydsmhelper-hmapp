@@ -1536,7 +1536,7 @@ export default struct Filelist {
                           .margin({
                             right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                           })
-                          .onChange((isOn) => {
+                          .onChange(isOn => {
                             const exist = this.multipleSelectArray.find(selectItem => selectItem.path === item.path)
                             if (!isOn && exist) {
                               this.multipleSelectArray.splice(this.multipleSelectArray.findIndex(selectItem => selectItem.path ===
@@ -1607,7 +1607,7 @@ export default struct Filelist {
                         .backgroundColor($r('sys.color.comp_background_secondary'))
                       }
                     })
-                    .onHover((isHover) => {
+                    .onHover(isHover => {
                       if (!isHover) {
                         this.hoverId = -1
                       }
