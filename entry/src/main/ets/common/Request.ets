@@ -74,13 +74,7 @@ async function getCacheApiVersion(context: Context, path: string, api: string) {
 
 export async function getDsmApiMaxVersion(context: Context, path: string, api: string): Promise<number | 'fail'> {
   const accountInfo = await getAccountInfo(context)
-  let requestPath = path
-  if (!requestPath) {
-    if (!accountInfo.path) {
-      return 'fail'
-    }
-    requestPath = accountInfo.path
-  }
+  const requestPath = accountInfo.path ? accountInfo.path : path
   const cacheApiVersionSetting = getFlushPreference(context, 'commonSetting', 'cacheApiVersion', true)
   if (cacheApiVersionSetting) {
     const cacheApiVersion = await getCacheApiVersion(context, requestPath, api)
@@ -267,13 +261,7 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
 export async function dsmRequest(context: Context, path: string, api: string, params: string, version?: number,
   dsm6Login?: boolean, hide102ErrorCode?: boolean): Promise<string | object> {
   const accountInfo = await getAccountInfo(context)
-  let requestPath = path
-  if (!requestPath) {
-    if (!accountInfo.path) {
-      return 'fail'
-    }
-    requestPath = accountInfo.path
-  }
+  const requestPath = accountInfo.path ? accountInfo.path : path
   let apiVersion = version
   if (!apiVersion) {
     const maxVersion = await getDsmApiMaxVersion(context, path, api)
@@ -354,7 +342,8 @@ export async function dsmRequest(context: Context, path: string, api: string, pa
             bz: accountInfo.bz,
             isLogin: 'true'
           })
-          return await dsmRequest(context, path, api, params, version, dsm6Login, hide102ErrorCode)
+          const resb = await dsmRequest(context, '', api, params, version, dsm6Login, hide102ErrorCode)
+          return resb
         }
         netBoost.setSceneDesc({
           scene: 'login',
@@ -382,7 +371,8 @@ export async function dsmRequest(context: Context, path: string, api: string, pa
             bz: accountInfo.bz,
             isLogin: 'true'
           })
-          return await dsmRequest(context, path, api, params, version, dsm6Login, hide102ErrorCode)
+          const resb = await dsmRequest(context, '', api, params, version, dsm6Login, hide102ErrorCode)
+          return resb
         }
         await promptAction.openToast({
           message: '登录态失效，请重新登录'

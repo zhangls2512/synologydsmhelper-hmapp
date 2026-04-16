@@ -1899,16 +1899,6 @@ export default struct Filelist {
                     .bindContextMenu(this.MenuBuilder(item), ResponseType.RightClick, {
                       hapticFeedbackMode: HapticFeedbackMode.AUTO
                     })
-                    .bindSheet(this.isShowProgressSheet!!, this.ProgressSheetBuilder(), {
-                      height: SheetSize.FIT_CONTENT,
-                      preferType: this.preferType,
-                      showClose: false,
-                      onWillDismiss: () => {
-                      },
-                      onDisappear: () => {
-                        this.context.eventHub.emit('cancelDownload')
-                      }
-                    })
                   }
                   .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
                 }
@@ -1916,6 +1906,16 @@ export default struct Filelist {
               ListItem()
                 .margin({
                   bottom: this.preferType === 0 ? 80 : 0
+                })
+                .bindSheet(this.isShowProgressSheet!!, this.ProgressSheetBuilder(), {
+                  height: SheetSize.FIT_CONTENT,
+                  preferType: this.preferType,
+                  showClose: false,
+                  onWillDismiss: () => {
+                  },
+                  onDisappear: () => {
+                    this.context.eventHub.emit('cancelDownload')
+                  }
                 })
             }
           }
