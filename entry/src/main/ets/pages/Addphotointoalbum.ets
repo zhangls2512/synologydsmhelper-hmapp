@@ -23,6 +23,10 @@ export default struct Addphotointoalbum {
     })
   })
 
+  refreshAlbumEventHub() {
+    this.isShowAddphotointoalbumSheet = false
+  }
+
   @Builder
   NewalbumSheetBuilder() {
     Newalbum({
@@ -134,7 +138,6 @@ export default struct Addphotointoalbum {
                 await promptAction.openToast({
                   message: '加入成功'
                 })
-                this.context.eventHub.emit('refreshAlbum', false)
                 this.isShowAddphotointoalbumSheet = false
               }
             })
@@ -160,9 +163,7 @@ export default struct Addphotointoalbum {
           this.preferType = getPreferType(this.UIContext)
         }, 200)
       })
-      this.context.eventHub.on('refreshAlbum', () => {
-        this.isShowAddphotointoalbumSheet = false
-      })
+      this.context.eventHub.on('refreshAlbum', this.refreshAlbumEventHub)
       this.dialogControllerProgress.open()
       const res = await dsmRequest(this.context, '', 'SYNO.Foto.Browse.NormalAlbum', new url.URLParams({
         method: 'list',
@@ -175,6 +176,7 @@ export default struct Addphotointoalbum {
       }
     })
     .onDisAppear(() => {
+      this.context.eventHub.off('refreshAlbum', this.refreshAlbumEventHub)
       display.off('change')
     })
   }
