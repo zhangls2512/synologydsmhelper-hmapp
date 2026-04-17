@@ -47,11 +47,6 @@ export default struct Storageinfo {
     }
   }
 
-  async refreshCard() {
-    this.status = 'pending'
-    await this.refresh()
-  }
-
   build() {
     Column() {
       if (this.status === 'pending' && !this.storageinfo) {
@@ -107,7 +102,10 @@ export default struct Storageinfo {
     .padding(12)
     .width('100%')
     .onAppear(async () => {
-      this.context.eventHub.on('refreshCard', this.refreshCard)
+      this.context.eventHub.on('refreshCard', async () => {
+        this.status = 'pending'
+        await this.refresh()
+      })
       this.status = 'pending'
       this.intervalId = setInterval(async () => {
         await this.refresh()
@@ -118,7 +116,7 @@ export default struct Storageinfo {
       if (this.intervalId !== -1) {
         clearInterval(this.intervalId)
       }
-      this.context.eventHub.off('refreshCard', this.refreshCard)
+      this.context.eventHub.off('refreshCard')
     })
   }
 }
