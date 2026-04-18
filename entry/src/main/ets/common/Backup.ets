@@ -119,7 +119,7 @@ export async function generateBackupTaskList(context: Context, type: string) {
     }
     const finishedArray = backupTaskArray.filter(item => item.type === type && item.status !== 'pending')
     let latestMotifyTime = 0
-    finishedArray.forEach((item) => {
+    finishedArray.forEach(item => {
       if (item.modifyTime > latestMotifyTime) {
         latestMotifyTime = item.modifyTime
       }

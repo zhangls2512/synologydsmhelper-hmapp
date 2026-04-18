@@ -176,6 +176,7 @@ struct Index {
                 })
             }
             .hideBackButton(true)
+            .mode(NavigationMode.Stack)
             .padding({
               top: 36
             })
@@ -204,6 +205,7 @@ struct Index {
                 })
             }
             .hideBackButton(true)
+            .mode(NavigationMode.Stack)
             .padding({
               top: 36
             })
@@ -234,6 +236,7 @@ struct Index {
                   })
               }
               .hideBackButton(true)
+              .mode(NavigationMode.Stack)
               .padding({
                 top: 36
               })
@@ -254,6 +257,7 @@ struct Index {
               Me()
             }
             .hideBackButton(true)
+            .mode(NavigationMode.Stack)
             .padding({
               top: 36
             })
@@ -284,7 +288,7 @@ struct Index {
         .barWidth(this.showAlbum ? 320 : 240)
         .scrollable(false)
         .vertical(this.preferType === 0 ? false : true)
-        .onChange((index) => {
+        .onChange(index => {
           this.index = index
         })
         .onAnimationStart((index, targetIndex) => {

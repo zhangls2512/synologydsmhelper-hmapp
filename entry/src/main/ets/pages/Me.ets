@@ -90,7 +90,7 @@ export default struct Me {
               .backgroundColor($r('sys.color.comp_background_secondary'))
             }
           })
-          .onHover((isHover) => {
+          .onHover(isHover => {
             if (!isHover) {
               this.hoverId = -1
             }
@@ -149,7 +149,7 @@ export default struct Me {
               .backgroundColor($r('sys.color.comp_background_secondary'))
             }
           })
-          .onHover((isHover) => {
+          .onHover(isHover => {
             if (!isHover) {
               this.hoverId = -1
             }
@@ -213,7 +213,7 @@ export default struct Me {
                   .backgroundColor($r('sys.color.comp_background_secondary'))
                 }
               })
-              .onHover((isHover) => {
+              .onHover(isHover => {
                 if (!isHover) {
                   this.hoverId = -1
                 }
@@ -285,7 +285,7 @@ export default struct Me {
                   .backgroundColor($r('sys.color.comp_background_secondary'))
                 }
               })
-              .onHover((isHover) => {
+              .onHover(isHover => {
                 if (!isHover) {
                   this.hoverId = -1
                 }
@@ -365,7 +365,7 @@ export default struct Me {
                 .backgroundColor($r('sys.color.comp_background_secondary'))
               }
             })
-            .onHover((isHover) => {
+            .onHover(isHover => {
               if (!isHover) {
                 this.hoverId = -1
               }
@@ -423,7 +423,7 @@ export default struct Me {
               .backgroundColor($r('sys.color.comp_background_secondary'))
             }
           })
-          .onHover((isHover) => {
+          .onHover(isHover => {
             if (!isHover) {
               this.hoverId = -1
             }

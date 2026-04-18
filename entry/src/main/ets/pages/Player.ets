@@ -57,7 +57,7 @@ export default struct Player {
             ])
               .selected(this.progressRateIndex!!)
               .value(this.progressRateValue!!)
-              .onSelect((index) => {
+              .onSelect(index => {
                 if (index === 0) {
                   this.progressRate = PlaybackSpeed.Speed_Forward_0_75_X
                 }
