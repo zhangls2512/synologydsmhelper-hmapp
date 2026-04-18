@@ -4,9 +4,9 @@ import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
 import { getAccountInfo } from '../common/Account'
 import { read, write } from '../common/File'
-import { dsmRequest } from '../common/Request'
 import { sha256hash } from '../common/Hash'
 import { getFlushPreference } from '../common/Preference'
+import { dsmRequest } from '../common/Request'
 import { getTimeStringFromSecond } from '../common/Stringformat'
 
 interface NoticeJsonString {

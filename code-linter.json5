@@ -44,6 +44,7 @@
     ],
     "@typescript-eslint/space-before-function-paren": "off",
     "@typescript-eslint/strict-boolean-expressions": "off",
+    "@typescript-eslint/unbound-method": "off",
     "@security/no-cycle": "off",
     "@performance/avoid-overusing-custom-component-check": "off",
     "@performance/bad-deep-clone-check": "off",
