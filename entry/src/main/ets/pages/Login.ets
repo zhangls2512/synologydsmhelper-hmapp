@@ -6,7 +6,6 @@ import { netBoost } from '@kit.NetworkBoostKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { setAccount } from '../common/Account'
 import { autoBackup } from '../common/Backup'
-import { getDnsServer } from '../common/Dnsserver'
 import openLink from '../common/Openlink'
 import { getFlushPreference } from '../common/Preference'
 import { dsmRequest } from '../common/Request'
@@ -308,9 +307,6 @@ export default struct Login {
               if (this.quickConnectId) {
                 const session = rcp.createSession({
                   requestConfiguration: {
-                    dns: {
-                      dnsRules: getDnsServer(this.context)
-                    },
                     security: {
                       tlsRange: {
                         min: 'TlsV1.2'
