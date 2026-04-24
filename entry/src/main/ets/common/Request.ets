@@ -7,6 +7,7 @@ import { getAccountInfo, setAccount } from './Account'
 import { getDnsServer } from './Dnsserver'
 import { read, write } from './File'
 import { getFlushPreference } from './Preference'
+import { AddressGroupItem } from '../pages/Addressgroup'
 import { LoginResponseData } from '../pages/Login'
 
 export interface ApiVersionItem {
@@ -38,22 +39,35 @@ interface DeveloperErrorResponse {
 async function getCacheApiVersion(context: Context, path: string, api: string) {
   let apiVersionCacheValue = ''
   const filePath = context.cacheDir + '/apiversion.txt'
-  if (!fileIo.accessSync(filePath)) {
-    return -1
+  const filestring = await read(filePath, true)
+  if (filestring !== 'fail') {
+    apiVersionCacheValue = filestring
   } else {
-    const filestring = await read(filePath)
-    if (filestring !== 'fail') {
-      apiVersionCacheValue = filestring
-    } else {
-      return -1
-    }
+    return -1
   }
   if (!apiVersionCacheValue) {
     return -1
   } else {
     try {
       const apiVersionCache = JSON.parse(apiVersionCacheValue) as ApiVersionCacheItem[]
-      const apiVersionCacheItem = apiVersionCache.find(item => item.path === path)
+      let apiVersionCacheItem: ApiVersionCacheItem | undefined = undefined
+      apiVersionCacheItem = apiVersionCache.find(item => item.path === path)
+      if (!apiVersionCacheItem) {
+        const addressGroupFilePath = context.filesDir + '/addressgroup.txt'
+        if (fileIo.accessSync(addressGroupFilePath)) {
+          const addressGroup = JSON.parse(fileIo.readTextSync(addressGroupFilePath)) as AddressGroupItem[]
+          for (let i = 0; i < addressGroup.length; i++) {
+            if (addressGroup[i].list.includes(path)) {
+              for (let j = 0; j < addressGroup[i].list.length; j++) {
+                const apiVersionCacheItemTemp = apiVersionCache.find(item => addressGroup[i].list[j] === item.path)
+                if (apiVersionCacheItemTemp) {
+                  apiVersionCacheItem = apiVersionCacheItemTemp
+                }
+              }
+            }
+          }
+        }
+      }
       if (!apiVersionCacheItem) {
         return -1
       } else {
@@ -417,9 +431,6 @@ export async function developerRequest(context: Context, path: string, body: rcp
   }
   const session = rcp.createSession({
     requestConfiguration: {
-      dns: {
-        dnsRules: getDnsServer(context)
-      },
       security: {
         tlsRange: {
           min: 'TlsV1.2'
