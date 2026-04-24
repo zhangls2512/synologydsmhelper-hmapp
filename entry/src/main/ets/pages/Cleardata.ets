@@ -550,7 +550,10 @@ export default struct Cleardata {
                         await fileIo.unlink(this.context.cacheDir + '/apiversion.txt')
                       }
                       if (item === 'noticeJsonStringCache') {
-                        await fileIo.rmdir(this.context.cacheDir + '/noticejsonstring')
+                        const noticeJsonStringCacheDir = this.context.cacheDir + '/noticejsonstring'
+                        if (fileIo.accessSync(noticeJsonStringCacheDir)) {
+                          await fileIo.rmdir(noticeJsonStringCacheDir)
+                        }
                       }
                       if (item === 'albumPhotoThumbnailCache') {
                         const accountInfo = await getAccountInfo(this.context)
@@ -674,13 +677,9 @@ export default struct Cleardata {
                 if (data.index === 1) {
                   const promises = this.log.map(async (item) => {
                     if (item === 'errorLog') {
-                      const errorLogDir = this.context.filesDir + '/log/error/'
+                      const errorLogDir = this.context.filesDir + '/log/error'
                       if (fileIo.accessSync(errorLogDir)) {
-                        const fileNames = await fileIo.listFile(errorLogDir)
-                        const promises = fileNames.map(async (item) => {
-                          await fileIo.unlink(errorLogDir + item)
-                        })
-                        await Promise.all(promises)
+                        await fileIo.rmdir(errorLogDir)
                       }
                     }
                   })
@@ -710,6 +709,7 @@ export default struct Cleardata {
     }
     .backgroundColor($r('app.color.sheet_background'))
     .hideBackButton(true)
+    .mode(NavigationMode.Stack)
     .recoverable(true)
     .titleBar({
       padding: {

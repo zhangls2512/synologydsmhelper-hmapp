@@ -158,7 +158,7 @@ export async function generateBackupTaskList(context: Context, type: string) {
               let albumName = ''
               const album = albumArray.find(albumItem => albumItem.id === String(item.get('owner_album_id')))
               if (album) {
-                albumName = '/' + album.name
+                albumName = album.name
               }
               const id = util.generateRandomUUID()
               backupTaskArray.push({
@@ -166,7 +166,7 @@ export async function generateBackupTaskList(context: Context, type: string) {
                 type: type,
                 srcFileUri: item.uri,
                 modifyTime: item.get('date_modified') as number,
-                path: '/home/Photos/backup/' + deviceInfo.marketName + albumName,
+                path: '/home/Photos/backup/' + deviceInfo.marketName + '/' + albumName,
                 status: 'pending'
               })
               await write(dirPath + id + '.txt', JSON.stringify({
@@ -174,7 +174,7 @@ export async function generateBackupTaskList(context: Context, type: string) {
                 type: type,
                 srcFileUri: item.uri,
                 modifyTime: item.get('date_modified') as number,
-                path: '/home/Photos/backup/' + deviceInfo.marketName + albumName,
+                path: '/home/Photos/backup/' + deviceInfo.marketName + '/' + albumName,
                 status: 'pending'
               }))
             }
@@ -206,7 +206,7 @@ export async function generateBackupTaskList(context: Context, type: string) {
                   let albumName = ''
                   const album = albumArray.find(albumItem => albumItem.id === String(item.get('owner_album_id')))
                   if (album) {
-                    albumName = '/' + album.name
+                    albumName = album.name
                   }
                   const id = util.generateRandomUUID()
                   backupTaskArray.push({
@@ -214,7 +214,7 @@ export async function generateBackupTaskList(context: Context, type: string) {
                     type: type,
                     srcFileUri: uri,
                     modifyTime: item.get('date_modified') as number,
-                    path: '/home/Photos/backup/' + deviceInfo.marketName + albumName,
+                    path: '/home/Photos/backup/' + deviceInfo.marketName + '/' + albumName,
                     status: 'pending'
                   })
                   await write(dirPath + id + '.txt', JSON.stringify({
@@ -222,7 +222,7 @@ export async function generateBackupTaskList(context: Context, type: string) {
                     type: type,
                     srcFileUri: uri,
                     modifyTime: item.get('date_modified') as number,
-                    path: '/home/Photos/backup/' + deviceInfo.marketName + albumName,
+                    path: '/home/Photos/backup/' + deviceInfo.marketName + '/' + albumName,
                     status: 'pending'
                   }))
                   await startBackupTask(context, id)
@@ -253,7 +253,7 @@ export async function generateBackupTaskList(context: Context, type: string) {
       })
       for (let i = 0; i < res.length; i++) {
         const item = res[i]
-        const path = dir + '/' + item
+        const path = dir + item
         const stat = fileIo.statSync(path)
         if (!stat.isDirectory() && stat.mtime > latestMotifyTime) {
           const uri = fileUri.getUriFromPath(path)
@@ -268,7 +268,7 @@ export async function generateBackupTaskList(context: Context, type: string) {
             type: type,
             srcFileUri: uri,
             modifyTime: stat.mtime,
-            path: '/home/' + type + '备份/' + deviceInfo.marketName + '/' + item.substring(0, item.lastIndexOf('/')),
+            path: '/home/' + type + '备份/' + deviceInfo.marketName + item.substring(0, item.lastIndexOf('/')),
             status: 'pending'
           })
           await write(dirPath + id + '.txt', JSON.stringify({
@@ -276,7 +276,7 @@ export async function generateBackupTaskList(context: Context, type: string) {
             type: type,
             srcFileUri: uri,
             modifyTime: stat.mtime,
-            path: '/home/' + type + '备份/' + deviceInfo.marketName + '/' + item.substring(0, item.lastIndexOf('/')),
+            path: '/home/' + type + '备份/' + deviceInfo.marketName + item.substring(0, item.lastIndexOf('/')),
             status: 'pending'
           }))
         }
