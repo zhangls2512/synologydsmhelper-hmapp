@@ -267,12 +267,12 @@ export default struct Filelist {
             content: '下载'
           })
             .onClick(async () => {
+              const promptAction = this.UIContext.getPromptAction()
               if (getCurrentNetworkBearerType() === 0) {
                 const cellularDataUseRemind =
                   getFlushPreference(this.context, 'commonSetting', 'cellularDataUseRemind', 0)
                 if (cellularDataUseRemind === 0 ||
                   (cellularDataUseRemind === 1 && item.additional.size > 200 * Math.pow(1024, 2))) {
-                  const promptAction = this.UIContext.getPromptAction()
                   const data = await promptAction.showDialog({
                     title: '流量使用提醒',
                     message: '当前正在使用流量上网，下载此文件将消耗约 ' + getSizeString(item.additional.size) +
@@ -431,14 +431,6 @@ export default struct Filelist {
                     })
                     backgroundTaskManager.on('continuousTaskCancel', async () => {
                       session.cancel()
-                      await promptAction.openToast({
-                        message: '下载失败'
-                      })
-                      transferTaskDataPreferences.putSync(util.generateRandomUUID(), JSON.stringify({
-                        name: item.name,
-                        status: 'cancel',
-                        type: 'download'
-                      }))
                     })
                     this.totalSize = item.additional.size
                     this.context.eventHub.on('cancelDownload', () => {
@@ -474,6 +466,7 @@ export default struct Filelist {
                         }))
                       }
                     } catch (err) {
+                      this.isShowProgressSheet = false
                       session.close()
                       netBoost.setSceneDesc({
                         scene: 'download',
@@ -1645,6 +1638,7 @@ export default struct Filelist {
                           }
                           return
                         }
+                        const promptAction = this.UIContext.getPromptAction()
                         if (item.additional.size > Math.pow(1024, 3)) {
                           await promptAction.openToast({
                             message: '大小大于 1GB，请长按将其下载到本地后预览'
@@ -1656,7 +1650,6 @@ export default struct Filelist {
                             getFlushPreference(this.context, 'commonSetting', 'cellularDataUseRemind', 0)
                           if (cellularDataUseRemind === 0 ||
                             (cellularDataUseRemind === 1 && item.additional.size > 200 * Math.pow(1024, 2))) {
-                            const promptAction = this.UIContext.getPromptAction()
                             const data = await promptAction.showDialog({
                               title: '流量使用提醒',
                               message: '当前正在使用流量上网，下载此文件将消耗约 ' +
@@ -1793,9 +1786,6 @@ export default struct Filelist {
                             })
                             backgroundTaskManager.on('continuousTaskCancel', async () => {
                               session.cancel()
-                              await promptAction.openToast({
-                                message: '下载失败'
-                              })
                             })
                             this.totalSize = item.additional.size
                             this.context.eventHub.on('cancelDownload', () => {
@@ -1862,6 +1852,7 @@ export default struct Filelist {
                                 })
                               }
                             } catch (err) {
+                              this.isShowProgressSheet = false
                               session.close()
                               netBoost.setSceneDesc({
                                 scene: 'download',

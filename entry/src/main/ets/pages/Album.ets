@@ -705,6 +705,7 @@ export default struct Album {
           content: '下载'
         })
           .onClick(async () => {
+            const promptAction = this.UIContext.getPromptAction()
             if (item.type === 'photo') {
               this.dialogControllerProgress.open()
               const version = await getDsmApiMaxVersion(this.context, '', 'SYNO.FileStation.Download')
@@ -818,7 +819,6 @@ export default struct Album {
                   getFlushPreference(this.context, 'commonSetting', 'cellularDataUseRemind', 0)
                 if (cellularDataUseRemind === 0 ||
                   (cellularDataUseRemind === 1 && item.filesize > 200 * Math.pow(1024, 2))) {
-                  const promptAction = this.UIContext.getPromptAction()
                   const data = await promptAction.showDialog({
                     title: '流量使用提醒',
                     message: '当前正在使用流量上网，下载此视频将消耗约 ' + getSizeString(item.filesize) +
@@ -977,14 +977,6 @@ export default struct Album {
                     })
                     backgroundTaskManager.on('continuousTaskCancel', async () => {
                       session.cancel()
-                      await promptAction.openToast({
-                        message: '下载失败'
-                      })
-                      transferTaskDataPreferences.putSync(util.generateRandomUUID(), JSON.stringify({
-                        name: item.filename,
-                        status: 'cancel',
-                        type: 'download'
-                      }))
                     })
                     this.totalSize = item.filesize
                     this.context.eventHub.on('cancelDownload', () => {
@@ -1020,6 +1012,7 @@ export default struct Album {
                         }))
                       }
                     } catch (err) {
+                      this.isShowProgressSheet = false
                       session.close()
                       netBoost.setSceneDesc({
                         scene: 'download',
