@@ -975,7 +975,7 @@ export default struct Album {
                         id: accountInfo.sid
                       }
                     })
-                    backgroundTaskManager.on('continuousTaskCancel', async () => {
+                    backgroundTaskManager.on('continuousTaskCancel', () => {
                       session.cancel()
                     })
                     this.totalSize = item.filesize

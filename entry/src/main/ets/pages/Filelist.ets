@@ -429,7 +429,7 @@ export default struct Filelist {
                         id: accountInfo.sid
                       }
                     })
-                    backgroundTaskManager.on('continuousTaskCancel', async () => {
+                    backgroundTaskManager.on('continuousTaskCancel', () => {
                       session.cancel()
                     })
                     this.totalSize = item.additional.size
@@ -1784,7 +1784,7 @@ export default struct Filelist {
                                 id: accountInfo.sid
                               }
                             })
-                            backgroundTaskManager.on('continuousTaskCancel', async () => {
+                            backgroundTaskManager.on('continuousTaskCancel', () => {
                               session.cancel()
                             })
                             this.totalSize = item.additional.size
