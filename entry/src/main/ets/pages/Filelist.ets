@@ -154,57 +154,6 @@ export default struct Filelist {
     }
   }
 
-  async search() {
-    this.dialogControllerProgress.open()
-    const res = await dsmRequest(this.context, '', 'SYNO.FileStation.Search', new url.URLParams({
-      method: 'start',
-      folder_path: JSON.stringify([this.getPath()]),
-      pattern: this.searchKeyword
-    }).toString())
-    if (res !== 'fail') {
-      const taskId = res['taskid'] as string
-      let sortBy = ''
-      if (this.sortByValue === '名称') {
-        sortBy = 'name'
-      }
-      if (this.sortByValue === '大小') {
-        sortBy = 'size'
-      }
-      if (this.sortByValue === '类型') {
-        sortBy = 'type'
-      }
-      if (this.sortByValue === '修改时间') {
-        sortBy = 'mt'
-      }
-      let sortDirection = ''
-      if (this.sortDirectionValue === '升序') {
-        sortDirection = 'ASC'
-      }
-      if (this.sortDirectionValue === '降序') {
-        sortDirection = 'DESC'
-      }
-      const resb = await dsmRequest(this.context, '', 'SYNO.FileStation.Search', new url.URLParams({
-        method: 'list',
-        additional: JSON.stringify(['size', 'time']),
-        taskid: taskId,
-        sort_by: sortBy,
-        sort_direction: sortDirection
-      }).toString())
-      if (resb !== 'fail') {
-        const files = resb['files'] as FileItem[]
-        if (!files) {
-          await promptAction.openToast({
-            message: '系统繁忙，请稍后再试'
-          })
-        }
-        if (files) {
-          this.fileArray = files
-        }
-      }
-    }
-    this.dialogControllerProgress.close()
-  }
-
   @Builder
   NewfolderSheetBuilder() {
     Newfolder({
@@ -1127,14 +1076,21 @@ export default struct Filelist {
             }
           })
 
-          Search({
-            placeholder: '请输入搜索关键词',
-            value: this.searchKeyword!!
-          })
-            .searchButton('搜索')
-            .onSubmit(async () => {
-              await this.search()
+          if (this.dirnames.length > 0) {
+            Search({
+              placeholder: '请输入搜索关键词',
+              value: this.searchKeyword!!
             })
+              .searchButton('搜索')
+              .onChange(() => {
+                if (!this.searchKeyword) {
+                  this.loading = true
+                }
+                if (this.searchKeyword) {
+                  this.fileArray = this.fileArray.filter(item => item.name.includes(this.searchKeyword))
+                }
+              })
+          }
           Row() {
             Column() {
               Image($r('app.media.newfolder'))

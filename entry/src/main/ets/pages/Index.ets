@@ -87,21 +87,16 @@ struct Index {
     this.backgroundImagePixelMap = await this.getBackgroundImage()
     const oldShowAlbum = this.showAlbum
     this.showAlbum = getFlushPreference(this.context, 'commonSetting', 'showAlbum', true) as boolean
-    if (oldShowAlbum !== this.showAlbum) {
-      if (!oldShowAlbum) {
-        if (this.index === 2) {
+    setTimeout(() => {
+      if (oldShowAlbum !== this.showAlbum) {
+        if (!oldShowAlbum) {
           this.controller.changeIndex(3)
         }
-      }
-      if (oldShowAlbum) {
-        if (this.index === 2) {
-          this.controller.changeIndex(0)
-        }
-        if (this.index === 3) {
+        if (oldShowAlbum) {
           this.controller.changeIndex(2)
         }
       }
-    }
+    }, 100)
   }
 
   isSelected(index: number) {
@@ -619,6 +614,7 @@ struct Index {
       this.context.eventHub.on('refreshIndex', async () => {
         await this.get()
       })
+      this.showAlbum = getFlushPreference(this.context, 'commonSetting', 'showAlbum', true) as boolean
       await this.get()
     })
     .onDisAppear(() => {
