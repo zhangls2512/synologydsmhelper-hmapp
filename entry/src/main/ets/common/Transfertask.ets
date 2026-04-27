@@ -75,6 +75,10 @@ export async function download(context: Context, id: string) {
                 await fileStream.write(incomingData)
               },
               onDownloadProgress: async (totalSize, transferredSize) => {
+                const continuousTasks = await backgroundTaskManager.getAllContinuousTasks(context)
+                if (continuousTasks.length === 0) {
+                  session.cancel()
+                }
                 const currentTime = Date.now()
                 if (currentTime - lastUpdateTime >= 50) {
                   transferTask.transferredSize = transferredSize
@@ -161,8 +165,8 @@ export async function download(context: Context, id: string) {
           sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
         })
         fileStream.closeSync()
-        await backgroundTaskManager.stopBackgroundRunning(context, continuousTaskNotificationInfo.continuousTaskId)
         if (err.code !== 1007900992) {
+          await backgroundTaskManager.stopBackgroundRunning(context, continuousTaskNotificationInfo.continuousTaskId)
           transferTask.status = 'fail'
           transferTask.errCode = err.code
         }
@@ -258,6 +262,10 @@ export async function upload(context: Context, id: string) {
           tracing: {
             httpEventsHandler: {
               onUploadProgress: async (totalSize, transferredSize) => {
+                const continuousTasks = await backgroundTaskManager.getAllContinuousTasks(context)
+                if (continuousTasks.length === 0) {
+                  session.cancel()
+                }
                 const currentTime = Date.now()
                 if (currentTime - lastUpdateTime >= 50) {
                   transferTask.transferredSize = transferredSize
@@ -363,12 +371,12 @@ export async function upload(context: Context, id: string) {
           scene: 'upload',
           sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
         })
-        await backgroundTaskManager.stopBackgroundRunning(context, continuousTaskNotificationInfo.continuousTaskId)
         await fileIo.unlink(filePath)
         if (transferTask.srcFileUri.endsWith('.mv.png')) {
           await fileIo.unlink(new fileUri.FileUri(transferTask.srcFileUri).path)
         }
         if (err.code !== 1007900992) {
+          await backgroundTaskManager.stopBackgroundRunning(context, continuousTaskNotificationInfo.continuousTaskId)
           transferTask.status = 'fail'
           transferTask.errCode = err.code
           if (transferTask.backupTaskId) {

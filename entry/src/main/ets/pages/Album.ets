@@ -842,6 +842,7 @@ export default struct Album {
               const transferTaskDataPreferences = sendablePreferences.getPreferencesSync(this.context, {
                 name: 'transferTask'
               })
+              const transferTaskId = util.generateRandomUUID()
               try {
                 const documentSaveOptions = new picker.DocumentSaveOptions()
                 const selectFileDownloadPath =
@@ -908,6 +909,10 @@ export default struct Album {
                               await fileStream.write(incomingData)
                             },
                             onDownloadProgress: async (totalSize, transferredSize) => {
+                              const continuousTasks = await backgroundTaskManager.getAllContinuousTasks(this.context)
+                              if (continuousTasks.length === 0) {
+                                session.cancel()
+                              }
                               const currentTime = Date.now()
                               if (currentTime - lastUpdateTime >= 50) {
                                 this.transferredSize = transferredSize
@@ -979,8 +984,8 @@ export default struct Album {
                       session.cancel()
                     })
                     this.totalSize = item.filesize
-                    this.context.eventHub.on('cancelDownload', () => {
-                      session.cancel()
+                    this.context.eventHub.on('cancelDownload', async () => {
+                      await backgroundTaskManager.stopBackgroundRunning(this.context)
                     })
                     this.isShowProgressSheet = true
                     try {
@@ -995,7 +1000,8 @@ export default struct Album {
                         await promptAction.openToast({
                           message: '下载完成'
                         })
-                        transferTaskDataPreferences.putSync(util.generateRandomUUID(), JSON.stringify({
+                        transferTaskDataPreferences.putSync(transferTaskId, JSON.stringify({
+                          id: transferTaskId,
                           name: item.filename,
                           status: 'success',
                           type: 'download'
@@ -1004,7 +1010,8 @@ export default struct Album {
                         await promptAction.openToast({
                           message: 'HTTP 请求失败，状态码：' + response.statusCode
                         })
-                        transferTaskDataPreferences.putSync(util.generateRandomUUID(), JSON.stringify({
+                        transferTaskDataPreferences.putSync(transferTaskId, JSON.stringify({
+                          id: transferTaskId,
                           name: item.filename,
                           status: 'fail',
                           errCode: response.statusCode,
@@ -1019,16 +1026,17 @@ export default struct Album {
                         sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
                       })
                       fileStream.closeSync()
-                      await backgroundTaskManager.stopBackgroundRunning(this.context,
-                        continuousTaskNotificationInfo.continuousTaskId)
                       this.context.eventHub.off('cancelDownload')
                       this.transferredSize = 0
                       this.totalSize = 0
                       if (err.code !== 1007900992) {
+                        await backgroundTaskManager.stopBackgroundRunning(this.context,
+                          continuousTaskNotificationInfo.continuousTaskId)
                         await promptAction.openToast({
                           message: '下载失败，错误码：' + err.code
                         })
-                        transferTaskDataPreferences.putSync(util.generateRandomUUID(), JSON.stringify({
+                        transferTaskDataPreferences.putSync(transferTaskId, JSON.stringify({
+                          id: transferTaskId,
                           name: item.filename,
                           status: 'fail',
                           errCode: err.code,
@@ -1036,7 +1044,8 @@ export default struct Album {
                         }))
                       }
                       if (err.code === 1007900992) {
-                        transferTaskDataPreferences.putSync(util.generateRandomUUID(), JSON.stringify({
+                        transferTaskDataPreferences.putSync(transferTaskId, JSON.stringify({
+                          id: transferTaskId,
                           name: item.filename,
                           status: 'cancel',
                           type: 'download'
@@ -1049,7 +1058,8 @@ export default struct Album {
                 await promptAction.openToast({
                   message: '发生错误，错误码：' + err.code
                 })
-                transferTaskDataPreferences.putSync(util.generateRandomUUID(), JSON.stringify({
+                transferTaskDataPreferences.putSync(transferTaskId, JSON.stringify({
+                  id: transferTaskId,
                   name: item.filename,
                   status: 'fail',
                   errCode: err.code,
