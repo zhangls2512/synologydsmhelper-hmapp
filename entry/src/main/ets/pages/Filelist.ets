@@ -782,6 +782,12 @@ export default struct Filelist {
                 this.multipleSelectArray = []
                 if (startres !== 'fail') {
                   const taskId = startres['taskid'] as string
+                  const dialogControllerProgress = new CustomDialogController({
+                    builder: LoadingDialog({
+                      content: '正在移动文件...'
+                    })
+                  })
+                  dialogControllerProgress.open()
                   let finished = false
                   while (!finished) {
                     const statusres =
@@ -792,6 +798,7 @@ export default struct Filelist {
                     if (statusres !== 'fail') {
                       if (statusres['finished']) {
                         finished = true
+                        dialogControllerProgress.close()
                         await promptAction.openToast({
                           message: '移动成功'
                         })
@@ -800,6 +807,7 @@ export default struct Filelist {
                     }
                     if (statusres === 'fail') {
                       finished = true
+                      dialogControllerProgress.close()
                     }
                   }
                 }
@@ -1168,8 +1176,6 @@ export default struct Filelist {
                   remove_src: String(this.remove)
                 }).toString())
                 this.dialogControllerProgress.close()
-                const lastIndex = this.copyMovePath.lastIndexOf('/')
-                const fileName = this.copyMovePath.slice(lastIndex + 1)
                 this.copyMovePath = ''
                 this.remove = false
                 if (startres !== 'fail') {
