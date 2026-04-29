@@ -4,7 +4,7 @@ import { taskpool, url, util } from '@kit.ArkTS'
 import { display, LoadingDialog, promptAction, SegmentButtonV2Items, TabSegmentButtonV2, window } from '@kit.ArkUI'
 import { zlib } from '@kit.BasicServicesKit'
 import { fileIo, fileUri, picker } from '@kit.CoreFileKit'
-import { mapCommon, MapComponent, petalMaps, site } from '@kit.MapKit'
+import { map, mapCommon, MapComponent, petalMaps, site } from '@kit.MapKit'
 import { MovingPhotoView, MovingPhotoViewController, photoAccessHelper } from '@kit.MediaLibraryKit'
 import { netBoost } from '@kit.NetworkBoostKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
@@ -633,10 +633,15 @@ export default struct Album {
               })
               .onClick(async () => {
                 if (this.previewPhoto) {
-                  await petalMaps.openMapPoiDetail(this.context, {
-                    destinationPosition: {
+                  const geo =
+                    await map.convertCoordinate(mapCommon.CoordinateType.WGS84, mapCommon.CoordinateType.GCJ02, {
                       latitude: this.previewPhoto.additional.gps.latitude,
                       longitude: this.previewPhoto.additional.gps.longitude
+                    })
+                  await petalMaps.openMapPoiDetail(this.context, {
+                    destinationPosition: {
+                      latitude: geo.latitude,
+                      longitude: geo.longitude
                     }
                   })
                 }
@@ -646,8 +651,16 @@ export default struct Album {
                 mapOptions: {
                   position: {
                     target: {
-                      latitude: this.previewPhoto.additional.gps.latitude,
-                      longitude: this.previewPhoto.additional.gps.longitude
+                      latitude: map.convertCoordinateSync(mapCommon.CoordinateType.WGS84,
+                        mapCommon.CoordinateType.GCJ02, {
+                          latitude: this.previewPhoto.additional.gps.latitude,
+                          longitude: this.previewPhoto.additional.gps.longitude
+                        }).latitude,
+                      longitude: map.convertCoordinateSync(mapCommon.CoordinateType.WGS84,
+                        mapCommon.CoordinateType.GCJ02, {
+                          latitude: this.previewPhoto.additional.gps.latitude,
+                          longitude: this.previewPhoto.additional.gps.longitude
+                        }).longitude
                     },
                     zoom: 17
                   },
@@ -1335,11 +1348,16 @@ export default struct Album {
                                           })
                                           .onClick(async () => {
                                             if (photoItem.item.additional.gps) {
+                                              const geo = await map.convertCoordinate(mapCommon.CoordinateType.WGS84,
+                                                mapCommon.CoordinateType.GCJ02, {
+                                                  latitude: photoItem.item.additional.gps.latitude,
+                                                  longitude: photoItem.item.additional.gps.longitude
+                                                })
                                               try {
                                                 const res = await site.reverseGeocode({
                                                   location: {
-                                                    latitude: photoItem.item.additional.gps.latitude,
-                                                    longitude: photoItem.item.additional.gps.longitude
+                                                    latitude: geo.latitude,
+                                                    longitude: geo.longitude
                                                   },
                                                   language: 'zh-CN'
                                                 })
@@ -1374,11 +1392,16 @@ export default struct Album {
                                           })
                                           .onClick(async () => {
                                             if (photoItem.item.additional.gps) {
+                                              const geo = await map.convertCoordinate(mapCommon.CoordinateType.WGS84,
+                                                mapCommon.CoordinateType.GCJ02, {
+                                                  latitude: photoItem.item.additional.gps.latitude,
+                                                  longitude: photoItem.item.additional.gps.longitude
+                                                })
                                               try {
                                                 const res = await site.reverseGeocode({
                                                   location: {
-                                                    latitude: photoItem.item.additional.gps.latitude,
-                                                    longitude: photoItem.item.additional.gps.longitude
+                                                    latitude: geo.latitude,
+                                                    longitude: geo.longitude
                                                   },
                                                   language: 'zh-CN'
                                                 })
@@ -1413,11 +1436,16 @@ export default struct Album {
                                     }
                                     .onClick(async () => {
                                       if (photoItem.item.additional.gps) {
+                                        const geo = await map.convertCoordinate(mapCommon.CoordinateType.WGS84,
+                                          mapCommon.CoordinateType.GCJ02, {
+                                            latitude: photoItem.item.additional.gps.latitude,
+                                            longitude: photoItem.item.additional.gps.longitude
+                                          })
                                         try {
                                           const res = await site.reverseGeocode({
                                             location: {
-                                              latitude: photoItem.item.additional.gps.latitude,
-                                              longitude: photoItem.item.additional.gps.longitude
+                                              latitude: geo.latitude,
+                                              longitude: geo.longitude
                                             },
                                             language: 'zh-CN'
                                           })
@@ -1943,11 +1971,16 @@ export default struct Album {
                               })
                               .onClick(async () => {
                                 if (photoItem.item.additional.gps) {
+                                  const geo = await map.convertCoordinate(mapCommon.CoordinateType.WGS84,
+                                    mapCommon.CoordinateType.GCJ02, {
+                                      latitude: photoItem.item.additional.gps.latitude,
+                                      longitude: photoItem.item.additional.gps.longitude
+                                    })
                                   try {
                                     const res = await site.reverseGeocode({
                                       location: {
-                                        latitude: photoItem.item.additional.gps.latitude,
-                                        longitude: photoItem.item.additional.gps.longitude
+                                        latitude: geo.latitude,
+                                        longitude: geo.longitude
                                       },
                                       language: 'zh-CN'
                                     })
@@ -1982,11 +2015,16 @@ export default struct Album {
                               })
                               .onClick(async () => {
                                 if (photoItem.item.additional.gps) {
+                                  const geo = await map.convertCoordinate(mapCommon.CoordinateType.WGS84,
+                                    mapCommon.CoordinateType.GCJ02, {
+                                      latitude: photoItem.item.additional.gps.latitude,
+                                      longitude: photoItem.item.additional.gps.longitude
+                                    })
                                   try {
                                     const res = await site.reverseGeocode({
                                       location: {
-                                        latitude: photoItem.item.additional.gps.latitude,
-                                        longitude: photoItem.item.additional.gps.longitude
+                                        latitude: geo.latitude,
+                                        longitude: geo.longitude
                                       },
                                       language: 'zh-CN'
                                     })
@@ -2021,11 +2059,16 @@ export default struct Album {
                         }
                         .onClick(async () => {
                           if (photoItem.item.additional.gps) {
+                            const geo = await map.convertCoordinate(mapCommon.CoordinateType.WGS84,
+                              mapCommon.CoordinateType.GCJ02, {
+                                latitude: photoItem.item.additional.gps.latitude,
+                                longitude: photoItem.item.additional.gps.longitude
+                              })
                             try {
                               const res = await site.reverseGeocode({
                                 location: {
-                                  latitude: photoItem.item.additional.gps.latitude,
-                                  longitude: photoItem.item.additional.gps.longitude
+                                  latitude: geo.latitude,
+                                  longitude: geo.longitude
                                 },
                                 language: 'zh-CN'
                               })
