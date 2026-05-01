@@ -273,7 +273,7 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
 }
 
 export async function dsmRequest(context: Context, path: string, api: string, params: string, version?: number,
-  dsm6Login?: boolean, hide102ErrorCode?: boolean): Promise<string | object> {
+  dsm6Login = false, hide102ErrorCode = false): Promise<string | object> {
   const accountInfo = await getAccountInfo(context)
   const requestPath = accountInfo.path ? accountInfo.path : path
   let apiVersion = version

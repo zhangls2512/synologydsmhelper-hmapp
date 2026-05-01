@@ -56,6 +56,7 @@
     "@cross-device-app-dev/immersive-effect-check": "off",
     "@cross-device-app-dev/one-multi-breakpoint-check": "off",
     "@hw-stylistic/max-len": "off",
+    "@correctness/listen-default-network-change": "off",
     "@correctness/listen-multi-network-concurrent": "off"
   }
 }
