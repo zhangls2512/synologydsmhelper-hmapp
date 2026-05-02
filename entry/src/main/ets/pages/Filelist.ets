@@ -94,6 +94,9 @@ export default struct Filelist {
 
   async get() {
     this.searchKeyword = ''
+    this.multipleSelect = false
+    this.multipleSelectArray = []
+    this.copyMovePath = ''
     if (!this.isLogin) {
       this.account = ''
     }
@@ -125,6 +128,7 @@ export default struct Filelist {
       if (this.sortDirectionValue === '降序') {
         sortDirection = 'DESC'
       }
+      this.fileArray = []
       if (!path) {
         const res = await dsmRequest(this.context, '', 'SYNO.FileStation.List', new url.URLParams({
           method: 'list_share',
@@ -144,7 +148,6 @@ export default struct Filelist {
           sort_by: sortBy,
           sort_direction: sortDirection
         }).toString())
-        this.fileArray = []
         if (res !== 'fail') {
           this.fileArray = res['files']
         }
@@ -1742,10 +1745,6 @@ export default struct Filelist {
         this.loading = true
       })
       this.context.eventHub.on('refreshFilelist', async () => {
-        this.multipleSelect = false
-        this.multipleSelectArray = []
-        this.copyMovePath = ''
-        this.remove = false
         this.isLogin = await getLoginStatus(this.context)
         this.loading = true
       })
