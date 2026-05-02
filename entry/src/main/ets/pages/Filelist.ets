@@ -93,10 +93,6 @@ export default struct Filelist {
   }
 
   async get() {
-    this.searchKeyword = ''
-    this.multipleSelect = false
-    this.multipleSelectArray = []
-    this.copyMovePath = ''
     if (!this.isLogin) {
       this.account = ''
     }
@@ -1745,6 +1741,10 @@ export default struct Filelist {
         this.loading = true
       })
       this.context.eventHub.on('refreshFilelist', async () => {
+        this.searchKeyword = ''
+        this.multipleSelect = false
+        this.multipleSelectArray = []
+        this.copyMovePath = ''
         this.isLogin = await getLoginStatus(this.context)
         this.loading = true
       })
