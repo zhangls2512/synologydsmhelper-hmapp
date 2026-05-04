@@ -151,7 +151,7 @@ export default class EntryAbility extends UIAbility {
       }
     })
     errorManager.on('unhandledRejection', async (err: Error) => {
-      if (err.message !== 'cancel' && err.message !== 'Default error message') {
+      if (!['cancel', 'Default error message', 'Internal error.'].includes(err.message)) {
         const object: JsErrorObject = {
           name: 'JS_ERROR',
           info: {
