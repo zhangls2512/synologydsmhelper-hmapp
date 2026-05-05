@@ -72,7 +72,7 @@ export default class EntryAbility extends UIAbility {
     try {
       const sharedData = await systemShare.getSharedData(want)
       const sharedRecords = sharedData.getRecords()
-      if (sharedRecords.length !== 0) {
+      if (sharedRecords.length > 0) {
         this.context.eventHub.emit('wantUri', sharedRecords[0].uri)
       }
     } catch {
@@ -320,7 +320,7 @@ export default class EntryAbility extends UIAbility {
     const accounts = await getAccountList(context)
     const isLogin = await getLoginStatus(context)
     if (showAccountlistSheetAfterAppLaunch) {
-      if (!isLogin && accounts.length !== 0) {
+      if (!isLogin && accounts.length > 0) {
         this.context.eventHub.emit('accountList')
       }
       if (isLogin && accounts.length > 1) {
