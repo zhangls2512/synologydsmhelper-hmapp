@@ -22,6 +22,7 @@ export default struct Renamealbum {
             .defaultFocus(true)
             .enableAutoSpacing(true)
           Button('重命名')
+            .keyboardShortcut('S', [ModifierKey.CTRL])
             .margin({
               top: $r('sys.float.ohos_id_elements_margin_vertical_l')
             })

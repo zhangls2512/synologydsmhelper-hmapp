@@ -1,5 +1,5 @@
 import { common, wantConstant } from '@kit.AbilityKit'
-import { sendablePreferences, uniformTypeDescriptor } from '@kit.ArkData'
+import { sendablePreferences, unifiedDataChannel, uniformTypeDescriptor } from '@kit.ArkData'
 import { fastbuffer, url, util } from '@kit.ArkTS'
 import { display, LoadingDialog, promptAction } from '@kit.ArkUI'
 import { fileIo, fileUri, picker } from '@kit.CoreFileKit'
@@ -69,11 +69,11 @@ export default struct Filelist {
   @Local multipleSelect: boolean = false
   @Local multipleSelectArray: FileItem[] = []
   @Local copyMovePath: string = ''
+  @Local remove: boolean | undefined = undefined
   @Local hoverId: number = -1
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   account = ''
-  remove = false
   src = ''
   srcName = ''
   editPath = ''
@@ -151,6 +151,12 @@ export default struct Filelist {
     }
   }
 
+  exitMultipleSelect() {
+    this.multipleSelect = false
+    this.multipleSelectArray = []
+    this.remove = undefined
+  }
+
   @Builder
   NewfolderSheetBuilder() {
     Newfolder({
@@ -194,8 +200,7 @@ export default struct Filelist {
           content: '取消多选'
         })
           .onClick(() => {
-            this.multipleSelect = false
-            this.multipleSelectArray = []
+            this.exitMultipleSelect()
           })
       }
       if (!this.multipleSelect) {
@@ -317,8 +322,7 @@ export default struct Filelist {
                         },
                         security: {
                           remoteValidation: getFlushPreference(this.context, 'debugSetting',
-                            'closeRemoteValidationWhenLinkDsm',
-                            'system') as 'system' | 'skip',
+                            'closeRemoteValidationWhenLinkDsm', 'system') as 'system' | 'skip',
                           tlsRange: {
                             min: 'TlsV1.2'
                           }
@@ -575,6 +579,7 @@ export default struct Filelist {
               }
               .borderRadius(20)
               .height(40)
+              .keyboardShortcut(FunctionKey.ESC, [])
               .margin({
                 right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
               })
@@ -595,8 +600,7 @@ export default struct Filelist {
                 .buildEffect())
               .width(40)
               .onClick(() => {
-                this.multipleSelect = false
-                this.multipleSelectArray = []
+                this.exitMultipleSelect()
               })
 
               Text('已选择 ' + this.multipleSelectArray.length + ' 项')
@@ -659,165 +663,254 @@ export default struct Filelist {
                 await promptAction.openToast({
                   message: array.length + ' 项传输任务已添加'
                 })
-                this.multipleSelect = false
-                this.multipleSelectArray = []
+                this.exitMultipleSelect()
               })
 
-              Column() {
-                Image($r('app.media.copy'))
-              }
-              .borderRadius(20)
-              .height(40)
-              .margin({
-                right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-              })
-              .padding(11)
-              .stateStyles({
-                normal: {
-                  .backgroundColor($r('sys.color.interactive_hover'))
-                },
-                pressed: {
-                  .backgroundColor($r('sys.color.interactive_pressed'))
+              if (this.remove !== undefined) {
+                Column() {
+                  Image($r('app.media.confirm'))
                 }
-              })
-              .visualEffect(new hdsEffect.HdsEffectBuilder()
-                .pointLight({
-                  sourceType: hdsEffect.PointLightSourceType.SOFT,
-                  illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                .borderRadius(20)
+                .height(40)
+                .keyboardShortcut('V', [ModifierKey.CTRL])
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                 })
-                .buildEffect())
-              .width(40)
-              .onClick(async () => {
-                if (this.multipleSelectArray.length === 0) {
-                  await promptAction.openToast({
-                    message: '未选择'
+                .padding(11)
+                .stateStyles({
+                  normal: {
+                    .backgroundColor($r('sys.color.interactive_hover'))
+                  },
+                  pressed: {
+                    .backgroundColor($r('sys.color.interactive_pressed'))
+                  }
+                })
+                .visualEffect(new hdsEffect.HdsEffectBuilder()
+                  .pointLight({
+                    sourceType: hdsEffect.PointLightSourceType.SOFT,
+                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
                   })
-                  return
-                }
-                this.dialogControllerProgress.open()
-                const startres = await dsmRequest(this.context, '', 'SYNO.FileStation.CopyMove', new url.URLParams({
-                  method: 'start',
-                  path: JSON.stringify(this.multipleSelectArray.map(item => item.path)),
-                  dest_folder_path: this.getPath(),
-                  overwrite: 'true',
-                  remove_src: 'false'
-                }).toString())
-                this.dialogControllerProgress.close()
-                this.multipleSelect = false
-                this.multipleSelectArray = []
-                if (startres !== 'fail') {
-                  const taskId = startres['taskid'] as string
-                  const dialogControllerProgress = new CustomDialogController({
-                    builder: LoadingDialog({
-                      content: '正在复制文件...'
+                  .buildEffect())
+                .width(40)
+                .onClick(async () => {
+                  let text = ''
+                  if (!this.remove) {
+                    text = '复制'
+                  }
+                  if (this.remove) {
+                    text = '移动'
+                  }
+                  if (this.multipleSelectArray.length === 0) {
+                    await promptAction.openToast({
+                      message: '未选择'
                     })
-                  })
-                  dialogControllerProgress.open()
-                  let finished = false
-                  while (!finished) {
-                    const statusres =
-                      await dsmRequest(this.context, '', 'SYNO.FileStation.CopyMove', new url.URLParams({
-                        method: 'status',
-                        taskid: taskId
-                      }).toString())
-                    if (statusres !== 'fail') {
-                      if (statusres['finished']) {
+                    return
+                  }
+                  this.dialogControllerProgress.open()
+                  const startres = await dsmRequest(this.context, '', 'SYNO.FileStation.CopyMove', new url.URLParams({
+                    method: 'start',
+                    path: JSON.stringify(this.multipleSelectArray.map(item => item.path)),
+                    dest_folder_path: this.getPath(),
+                    overwrite: 'true',
+                    remove_src: String(this.remove)
+                  }).toString())
+                  this.dialogControllerProgress.close()
+                  this.remove = undefined
+                  this.exitMultipleSelect()
+                  if (startres !== 'fail') {
+                    const taskId = startres['taskid'] as string
+                    const dialogControllerProgress = new CustomDialogController({
+                      builder: LoadingDialog({
+                        content: '正在' + text + '文件...'
+                      })
+                    })
+                    dialogControllerProgress.open()
+                    let finished = false
+                    while (!finished) {
+                      const statusres =
+                        await dsmRequest(this.context, '', 'SYNO.FileStation.CopyMove', new url.URLParams({
+                          method: 'status',
+                          taskid: taskId
+                        }).toString())
+                      if (statusres !== 'fail') {
+                        if (statusres['finished']) {
+                          finished = true
+                          dialogControllerProgress.close()
+                          await promptAction.openToast({
+                            message: text + '成功'
+                          })
+                          this.loading = true
+                        }
+                      }
+                      if (statusres === 'fail') {
                         finished = true
                         dialogControllerProgress.close()
-                        await promptAction.openToast({
-                          message: '复制成功'
-                        })
-                        this.loading = true
                       }
                     }
-                    if (statusres === 'fail') {
-                      finished = true
-                      dialogControllerProgress.close()
-                    }
                   }
-                }
-              })
-
-              Column() {
-                Image($r('app.media.move'))
-              }
-              .borderRadius(20)
-              .height(40)
-              .margin({
-                right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-              })
-              .padding(11)
-              .stateStyles({
-                normal: {
-                  .backgroundColor($r('sys.color.interactive_hover'))
-                },
-                pressed: {
-                  .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .visualEffect(new hdsEffect.HdsEffectBuilder()
-                .pointLight({
-                  sourceType: hdsEffect.PointLightSourceType.SOFT,
-                  illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
                 })
-                .buildEffect())
-              .width(40)
-              .onClick(async () => {
-                if (this.multipleSelectArray.length === 0) {
-                  await promptAction.openToast({
-                    message: '未选择'
-                  })
-                  return
+              }
+              if (this.remove === undefined) {
+                Column() {
+                  Image($r('app.media.copy'))
                 }
-                this.dialogControllerProgress.open()
-                const startres = await dsmRequest(this.context, '', 'SYNO.FileStation.CopyMove', new url.URLParams({
-                  method: 'start',
-                  path: JSON.stringify(this.multipleSelectArray.map(item => item.path)),
-                  dest_folder_path: this.getPath(),
-                  overwrite: 'true',
-                  remove_src: 'true'
-                }).toString())
-                this.multipleSelect = false
-                this.multipleSelectArray = []
-                if (startres !== 'fail') {
-                  const taskId = startres['taskid'] as string
-                  const dialogControllerProgress = new CustomDialogController({
-                    builder: LoadingDialog({
-                      content: '正在移动文件...'
-                    })
+                .borderRadius(20)
+                .height(40)
+                .keyboardShortcut('C', [ModifierKey.CTRL], () => {
+                  this.remove = false
+                })
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+                .padding(11)
+                .stateStyles({
+                  normal: {
+                    .backgroundColor($r('sys.color.interactive_hover'))
+                  },
+                  pressed: {
+                    .backgroundColor($r('sys.color.interactive_pressed'))
+                  }
+                })
+                .visualEffect(new hdsEffect.HdsEffectBuilder()
+                  .pointLight({
+                    sourceType: hdsEffect.PointLightSourceType.SOFT,
+                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
                   })
-                  dialogControllerProgress.open()
-                  let finished = false
-                  while (!finished) {
-                    const statusres =
-                      await dsmRequest(this.context, '', 'SYNO.FileStation.CopyMove', new url.URLParams({
-                        method: 'status',
-                        taskid: taskId
-                      }).toString())
-                    if (statusres !== 'fail') {
-                      if (statusres['finished']) {
+                  .buildEffect())
+                .width(40)
+                .onClick(async () => {
+                  if (this.multipleSelectArray.length === 0) {
+                    await promptAction.openToast({
+                      message: '未选择'
+                    })
+                    return
+                  }
+                  this.dialogControllerProgress.open()
+                  const startres = await dsmRequest(this.context, '', 'SYNO.FileStation.CopyMove', new url.URLParams({
+                    method: 'start',
+                    path: JSON.stringify(this.multipleSelectArray.map(item => item.path)),
+                    dest_folder_path: this.getPath(),
+                    overwrite: 'true',
+                    remove_src: 'false'
+                  }).toString())
+                  this.dialogControllerProgress.close()
+                  this.exitMultipleSelect()
+                  if (startres !== 'fail') {
+                    const taskId = startres['taskid'] as string
+                    const dialogControllerProgress = new CustomDialogController({
+                      builder: LoadingDialog({
+                        content: '正在复制文件...'
+                      })
+                    })
+                    dialogControllerProgress.open()
+                    let finished = false
+                    while (!finished) {
+                      const statusres =
+                        await dsmRequest(this.context, '', 'SYNO.FileStation.CopyMove', new url.URLParams({
+                          method: 'status',
+                          taskid: taskId
+                        }).toString())
+                      if (statusres !== 'fail') {
+                        if (statusres['finished']) {
+                          finished = true
+                          dialogControllerProgress.close()
+                          await promptAction.openToast({
+                            message: '复制成功'
+                          })
+                          this.loading = true
+                        }
+                      }
+                      if (statusres === 'fail') {
                         finished = true
                         dialogControllerProgress.close()
-                        await promptAction.openToast({
-                          message: '移动成功'
-                        })
-                        this.loading = true
                       }
                     }
-                    if (statusres === 'fail') {
-                      finished = true
-                      dialogControllerProgress.close()
+                  }
+                })
+
+                Column() {
+                  Image($r('app.media.move'))
+                }
+                .borderRadius(20)
+                .height(40)
+                .keyboardShortcut('X', [ModifierKey.CTRL], () => {
+                  this.remove = true
+                })
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+                .padding(11)
+                .stateStyles({
+                  normal: {
+                    .backgroundColor($r('sys.color.interactive_hover'))
+                  },
+                  pressed: {
+                    .backgroundColor($r('sys.color.interactive_pressed'))
+                  }
+                })
+                .visualEffect(new hdsEffect.HdsEffectBuilder()
+                  .pointLight({
+                    sourceType: hdsEffect.PointLightSourceType.SOFT,
+                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                  })
+                  .buildEffect())
+                .width(40)
+                .onClick(async () => {
+                  if (this.multipleSelectArray.length === 0) {
+                    await promptAction.openToast({
+                      message: '未选择'
+                    })
+                    return
+                  }
+                  this.dialogControllerProgress.open()
+                  const startres = await dsmRequest(this.context, '', 'SYNO.FileStation.CopyMove', new url.URLParams({
+                    method: 'start',
+                    path: JSON.stringify(this.multipleSelectArray.map(item => item.path)),
+                    dest_folder_path: this.getPath(),
+                    overwrite: 'true',
+                    remove_src: 'true'
+                  }).toString())
+                  this.exitMultipleSelect()
+                  if (startres !== 'fail') {
+                    const taskId = startres['taskid'] as string
+                    const dialogControllerProgress = new CustomDialogController({
+                      builder: LoadingDialog({
+                        content: '正在移动文件...'
+                      })
+                    })
+                    dialogControllerProgress.open()
+                    let finished = false
+                    while (!finished) {
+                      const statusres =
+                        await dsmRequest(this.context, '', 'SYNO.FileStation.CopyMove', new url.URLParams({
+                          method: 'status',
+                          taskid: taskId
+                        }).toString())
+                      if (statusres !== 'fail') {
+                        if (statusres['finished']) {
+                          finished = true
+                          dialogControllerProgress.close()
+                          await promptAction.openToast({
+                            message: '移动成功'
+                          })
+                          this.loading = true
+                        }
+                      }
+                      if (statusres === 'fail') {
+                        finished = true
+                        dialogControllerProgress.close()
+                      }
                     }
                   }
-                }
-                this.dialogControllerProgress.close()
-              })
-
+                  this.dialogControllerProgress.close()
+                })
+              }
               Column() {
                 Image($r('app.media.delete'))
               }
               .borderRadius(20)
               .height(40)
+              .keyboardShortcut('D', [ModifierKey.CTRL])
               .padding(11)
               .stateStyles({
                 normal: {
@@ -862,8 +955,7 @@ export default struct Filelist {
                     method: 'start',
                     path: JSON.stringify(this.multipleSelectArray.map(item => item.path))
                   }).toString())
-                  this.multipleSelect = false
-                  this.multipleSelectArray = []
+                  this.exitMultipleSelect()
                   if (startres !== 'fail') {
                     const taskId = startres['taskid'] as string
                     let finished = false
@@ -1008,13 +1100,11 @@ export default struct Filelist {
               value: this.searchKeyword!!
             })
               .searchButton('搜索')
-              .onChange(() => {
-                if (!this.searchKeyword) {
-                  this.loading = true
-                }
-                if (this.searchKeyword) {
-                  this.fileArray = this.fileArray.filter(item => item.name.includes(this.searchKeyword))
-                }
+              .onSubmit(async (value) => {
+                this.dialogControllerProgress.open()
+                await this.get()
+                this.dialogControllerProgress.close()
+                this.fileArray = this.fileArray.filter(item => item.name.includes(value))
               })
           }
           Row() {
@@ -1023,6 +1113,7 @@ export default struct Filelist {
             }
             .borderRadius(20)
             .height(40)
+            .keyboardShortcut('N', [ModifierKey.CTRL, ModifierKey.SHIFT])
             .padding(11)
             .stateStyles({
               normal: {
@@ -1113,6 +1204,7 @@ export default struct Filelist {
               }
               .borderRadius(20)
               .height(40)
+              .keyboardShortcut(FunctionKey.ESC, [])
               .margin({
                 right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
               })
@@ -1134,7 +1226,7 @@ export default struct Filelist {
               .width(40)
               .onClick(() => {
                 this.copyMovePath = ''
-                this.remove = false
+                this.remove = undefined
               })
 
               Column() {
@@ -1176,7 +1268,7 @@ export default struct Filelist {
                 }).toString())
                 this.dialogControllerProgress.close()
                 this.copyMovePath = ''
-                this.remove = false
+                this.remove = undefined
                 if (startres !== 'fail') {
                   const taskId = startres['taskid'] as string
                   const dialogControllerProgress = new CustomDialogController({
@@ -1246,8 +1338,7 @@ export default struct Filelist {
                   path: JSON.stringify(this.multipleSelectArray.map(item => item.path)),
                   dest_file_path: this.getPath() + '/' + this.dirnames[this.dirnames.length - 1] + '.zip'
                 }).toString())
-                this.multipleSelect = false
-                this.multipleSelectArray = []
+            this.exitMultipleSelect()
                 if (startres !== 'fail') {
                   const taskId = startres['taskid'] as string
                   let finished = false
@@ -1281,6 +1372,7 @@ export default struct Filelist {
                 }
                 .borderRadius(20)
                 .height(40)
+                .keyboardShortcut('A', [ModifierKey.CTRL])
                 .padding(11)
                 .stateStyles({
                   normal: {
@@ -1376,8 +1468,9 @@ export default struct Filelist {
                           .onChange(isOn => {
                             const exist = this.multipleSelectArray.find(selectItem => selectItem.path === item.path)
                             if (!isOn && exist) {
-                              this.multipleSelectArray.splice(this.multipleSelectArray.findIndex(selectItem => selectItem.path ===
-                                item.path), 1)
+                              this.multipleSelectArray.splice(
+                                this.multipleSelectArray.findIndex(selectItem => selectItem.path ===
+                                  item.path), 1)
                             }
                             if (isOn && !exist) {
                               this.multipleSelectArray.push(item)
@@ -1437,8 +1530,7 @@ export default struct Filelist {
                     })
                     .stateStyles({
                       normal: {
-                        .backgroundColor(this.hoverId === index ? $r('sys.color.interactive_hover') :
-                          $r('sys.color.background_secondary'))
+                        .backgroundColor(this.hoverId === index ? $r('sys.color.interactive_hover') : '')
                       },
                       pressed: {
                         .backgroundColor($r('sys.color.comp_background_secondary'))
@@ -1457,8 +1549,9 @@ export default struct Filelist {
                         if (this.multipleSelect) {
                           const exist = this.multipleSelectArray.find(selectItem => selectItem.path === item.path)
                           if (exist) {
-                            this.multipleSelectArray.splice(this.multipleSelectArray.findIndex(selectItem => selectItem.path ===
-                              item.path), 1)
+                            this.multipleSelectArray.splice(
+                              this.multipleSelectArray.findIndex(selectItem => selectItem.path ===
+                                item.path), 1)
                           }
                           if (!exist) {
                             this.multipleSelectArray.push(item)
@@ -1578,8 +1671,7 @@ export default struct Filelist {
                                 },
                                 security: {
                                   remoteValidation: getFlushPreference(this.context, 'debugSetting',
-                                    'closeRemoteValidationWhenLinkDsm',
-                                    'system') as 'system' | 'skip',
+                                    'closeRemoteValidationWhenLinkDsm', 'system') as 'system' | 'skip',
                                   tlsRange: {
                                     min: 'TlsV1.2'
                                   }
@@ -1695,8 +1787,93 @@ export default struct Filelist {
                       hapticFeedbackMode: HapticFeedbackMode.AUTO
                     })
                   }
-                  .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
                 }
+                .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+                .selected(this.multipleSelectArray.some(selectItem => selectItem.path === item.path))
+                .onDragStart(event => {
+                  event.dragBehavior = DragBehavior.MOVE
+                  const data = new unifiedDataChannel.PlainText()
+                  if (!this.multipleSelect) {
+                    data.textContent = JSON.stringify([item.path])
+                  }
+                  if (this.multipleSelect) {
+                    data.textContent = JSON.stringify(this.multipleSelectArray.map(item => item.path))
+                  }
+                  event.setData(new unifiedDataChannel.UnifiedData(data))
+                })
+                .onDrop(event => {
+                  event.dragBehavior = DragBehavior.MOVE
+                  if (event.isRemote() || event.getDragSource() !== 'com.songjy.synologydsmhelper') {
+                    event.setResult(DragResult.DROP_DISABLED)
+                    return
+                  }
+                  if (!item.isdir) {
+                    event.setResult(DragResult.DROP_DISABLED)
+                    return
+                  }
+                  event.setResult(DragResult.DRAG_SUCCESSFUL)
+                  event.getData().getRecords().forEach(async (recordItem) => {
+                    if (recordItem.getType() === uniformTypeDescriptor.UniformDataType.PLAIN_TEXT) {
+                      const data = recordItem as unifiedDataChannel.PlainText
+                      const paths = JSON.parse(data.textContent) as string[]
+                      this.dialogControllerProgress.open()
+                      const startres =
+                        await dsmRequest(this.context, '', 'SYNO.FileStation.CopyMove', new url.URLParams({
+                          method: 'start',
+                          path: JSON.stringify(paths),
+                          dest_folder_path: item.path,
+                          overwrite: 'true',
+                          remove_src: 'true'
+                        }).toString())
+                      this.dialogControllerProgress.close()
+                      this.remove = undefined
+                      this.exitMultipleSelect()
+                      if (startres !== 'fail') {
+                        const taskId = startres['taskid'] as string
+                        const dialogControllerProgress = new CustomDialogController({
+                          builder: LoadingDialog({
+                            content: '正在移动文件...'
+                          })
+                        })
+                        dialogControllerProgress.open()
+                        let finished = false
+                        while (!finished) {
+                          const statusres =
+                            await dsmRequest(this.context, '', 'SYNO.FileStation.CopyMove', new url.URLParams({
+                              method: 'status',
+                              taskid: taskId
+                            }).toString())
+                          if (statusres !== 'fail') {
+                            if (statusres['finished']) {
+                              finished = true
+                              dialogControllerProgress.close()
+                              await promptAction.openToast({
+                                message: '移动成功'
+                              })
+                              this.loading = true
+                            }
+                          }
+                          if (statusres === 'fail') {
+                            finished = true
+                            dialogControllerProgress.close()
+                          }
+                        }
+                      }
+                    }
+                  })
+                })
+                .onSelect(isSelected => {
+                  if (!isSelected) {
+                    this.multipleSelectArray =
+                      this.multipleSelectArray.filter(selectItem => selectItem.path !== item.path)
+                  }
+                  if (isSelected) {
+                    this.multipleSelect = true
+                    if (!this.multipleSelectArray.find(selectItem => selectItem.path === item.path)) {
+                      this.multipleSelectArray.push(item)
+                    }
+                  }
+                })
               })
               ListItem()
                 .margin({
@@ -1713,7 +1890,12 @@ export default struct Filelist {
                   }
                 })
             }
+            .height('100%')
+            .multiSelectable(true)
           }
+          .keyboardShortcut('R', [ModifierKey.CTRL], () => {
+            this.loading = true
+          })
           .layoutWeight(1)
           .onRefreshing(async () => {
             await this.get()
@@ -1742,9 +1924,9 @@ export default struct Filelist {
       })
       this.context.eventHub.on('refreshFilelist', async () => {
         this.searchKeyword = ''
-        this.multipleSelect = false
-        this.multipleSelectArray = []
+        this.exitMultipleSelect()
         this.copyMovePath = ''
+        this.remove = undefined
         this.isLogin = await getLoginStatus(this.context)
         this.loading = true
       })
