@@ -246,7 +246,7 @@ export async function generateBestAddress(context: Context) {
               dnsRules: getDnsServer(context)
             },
             security: {
-              remoteValidation: getFlushPreference(context, 'debugSetting', 'closeRemoteValidationWhenLinkWebdav',
+              remoteValidation: getFlushPreference(context, 'debugSetting', 'closeRemoteValidationWhenLinkDsm',
                 'system') as 'system' | 'skip',
               tlsRange: {
                 min: 'TlsV1.2'
