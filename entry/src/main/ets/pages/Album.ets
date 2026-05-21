@@ -559,6 +559,7 @@ export default struct Album {
                   .fontWeight(FontWeight.Medium)
                 Span(this.previewPhoto.additional.exif.camera)
               }
+              .enableAutoSpacing(true)
               .margin({
                 top: $r('sys.float.ohos_id_text_margin_vertical')
               })
@@ -628,6 +629,7 @@ export default struct Album {
                 Span(String(this.photoAddress))
                   .fontColor($r('sys.color.font_emphasize'))
               }
+              .enableAutoSpacing(true)
               .margin({
                 top: $r('sys.float.ohos_id_text_margin_vertical')
               })
