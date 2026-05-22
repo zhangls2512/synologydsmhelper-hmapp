@@ -132,23 +132,27 @@ export function getAccountHash(accountInfo: AccountInfo, context?: Context, path
   }
 }
 
-export async function getAccountList(context: Context, bestPath?: boolean): Promise<AccountInfo[]> {
+export async function getAccountList(context: Context, bestPath = false): Promise<AccountInfo[]> {
   const appAccountManager = appAccount.createAppAccountManager()
   const appAccountIds = await appAccountManager.getAccountsByOwner('com.songjy.synologydsmhelper')
   const appAccounts: AccountInfo[] = []
   const promises = appAccountIds.map(async (item) => {
     const id = item.name
-    appAccounts.push({
-      id: id,
-      path: bestPath ? getBestAddress(context, appAccountManager.getCustomDataSync(id, 'path')) :
-        appAccountManager.getCustomDataSync(id, 'path'),
-      name: appAccountManager.getCustomDataSync(id, 'name'),
-      password: await appAccountManager.getCredential(id, 'password'),
-      sid: await appAccountManager.getCredential(id, 'sid'),
-      synotoken: await appAccountManager.getCredential(id, 'synotoken'),
-      bz: appAccountManager.getCustomDataSync(item.name, 'bz'),
-      isLogin: appAccountManager.getCustomDataSync(item.name, 'isLogin')
-    })
+    try {
+      appAccounts.push({
+        id: id,
+        path: bestPath ? getBestAddress(context, appAccountManager.getCustomDataSync(id, 'path')) :
+          appAccountManager.getCustomDataSync(id, 'path'),
+        name: appAccountManager.getCustomDataSync(id, 'name'),
+        password: await appAccountManager.getCredential(id, 'password'),
+        sid: await appAccountManager.getCredential(id, 'sid'),
+        synotoken: await appAccountManager.getCredential(id, 'synotoken'),
+        bz: appAccountManager.getCustomDataSync(item.name, 'bz'),
+        isLogin: appAccountManager.getCustomDataSync(item.name, 'isLogin')
+      })
+    } catch {
+      await removeAccount(context, id)
+    }
   })
   await Promise.all(promises)
   return appAccounts
@@ -168,16 +172,14 @@ export async function exitAccount(context: Context, logout: boolean) {
   }
 }
 
-export async function removeAccount(context: Context, id: string, hideToast?: boolean) {
+export async function removeAccount(context: Context, id: string) {
   const accounts = await getAccountList(context)
   if (accounts.find(item => item.id === id)) {
     const appAccountManager = appAccount.createAppAccountManager()
     await appAccountManager.removeAccount(id)
-    if (!hideToast) {
-      await promptAction.openToast({
-        message: '删除成功'
-      })
-    }
+    await promptAction.openToast({
+      message: '删除成功'
+    })
   }
 }
 
@@ -208,6 +210,7 @@ export async function importAccounts(context: Context, uri: string) {
     await promptAction.openToast({
       message: '导入成功'
     })
+    context.eventHub.emit('refreshSetting')
   } catch {
     await promptAction.openToast({
       message: '导入失败'
@@ -243,7 +246,7 @@ export async function generateBestAddress(context: Context) {
               dnsRules: getDnsServer(context)
             },
             security: {
-              remoteValidation: getFlushPreference(context, 'debugSetting', 'closeRemoteValidationWhenLinkWebdav',
+              remoteValidation: getFlushPreference(context, 'debugSetting', 'closeRemoteValidationWhenLinkDsm',
                 'system') as 'system' | 'skip',
               tlsRange: {
                 min: 'TlsV1.2'

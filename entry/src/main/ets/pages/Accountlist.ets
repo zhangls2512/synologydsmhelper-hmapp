@@ -82,6 +82,7 @@ export default struct Accountlist {
           }
           .borderRadius(20)
           .height(40)
+          .keyboardShortcut('N', [ModifierKey.CTRL, ModifierKey.SHIFT])
           .margin({
             right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
           })
@@ -302,6 +303,7 @@ export default struct Accountlist {
               Blank()
                 .width($r('sys.float.ohos_id_elements_margin_horizontal_m'))
               Button('保存')
+                .keyboardShortcut('S', [ModifierKey.CTRL])
                 .layoutWeight(1)
                 .onClick(async () => {
                   await setAccountBz(this.bzId, this.bz)

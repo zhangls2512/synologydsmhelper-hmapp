@@ -167,6 +167,7 @@ export default struct Cardlist {
                 Column() {
                   Text('未添加卡片')
                   Button('添加')
+                    .keyboardShortcut('N', [ModifierKey.CTRL, ModifierKey.SHIFT])
                     .margin({
                       top: $r('sys.float.ohos_id_elements_margin_vertical_l')
                     })

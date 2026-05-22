@@ -23,6 +23,7 @@
     "@typescript-eslint/member-ordering": "off",
     "@typescript-eslint/naming-convention": "off",
     "@typescript-eslint/no-empty-function": "off",
+    "@typescript-eslint/no-extraneous-class": "off",
     "@typescript-eslint/no-extra-non-null-assertion": "off",
     "@typescript-eslint/no-extra-parens": "off",
     "@typescript-eslint/no-magic-numbers": "off",
@@ -56,6 +57,7 @@
     "@cross-device-app-dev/immersive-effect-check": "off",
     "@cross-device-app-dev/one-multi-breakpoint-check": "off",
     "@hw-stylistic/max-len": "off",
+    "@correctness/listen-default-network-change": "off",
     "@correctness/listen-multi-network-concurrent": "off"
   }
 }

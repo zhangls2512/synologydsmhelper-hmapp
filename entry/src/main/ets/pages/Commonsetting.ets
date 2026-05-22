@@ -4,6 +4,7 @@ import { deviceInfo } from '@kit.BasicServicesKit'
 import { fileIo } from '@kit.CoreFileKit'
 import { image } from '@kit.ImageKit'
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
+import { sensor } from '@kit.SensorServiceKit'
 import { hdsMaterial, HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType } from '@kit.UIDesignKit'
 import { generateBestAddress } from '../common/Account'
 import { checkPermission, getPermission } from '../common/Permission'
@@ -22,6 +23,17 @@ struct Commonsetting {
   @Local acceptCollaborate: boolean = false
   @Local destroyWhenBackPressed: boolean = false
   @Local statusBar: boolean = false
+  @Local colorModeList: SelectOption[] = [
+    {
+      value: '跟随系统'
+    },
+    {
+      value: '浅色模式'
+    },
+    {
+      value: '深色模式'
+    }
+  ]
   @Local colorModeIndex: number = 0
   @Local colorModeValue: string = '跟随系统'
   @Local windowRectAutoSave: boolean = false
@@ -267,58 +279,6 @@ struct Commonsetting {
                 .borderRadius(12)
                 .padding(12)
               }
-              Divider()
-                .padding({
-                  left: 12,
-                  right: 12
-                })
-              Row() {
-                Text('防窥保护')
-                  .fontWeight(FontWeight.Medium)
-                  .layoutWeight(1)
-                  .margin({
-                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                  })
-                Text('去设置')
-                  .fontColor($r('sys.color.font_secondary'))
-                  .fontSize($r('sys.float.ohos_id_text_size_body2'))
-                  .margin({
-                    right: $r('sys.float.ohos_id_elements_margin_horizontal_s')
-                  })
-                Image($r('app.media.right'))
-                  .fillColor($r('sys.color.icon_fourth'))
-                  .height(12)
-                  .width(12)
-              }
-              .borderRadius(12)
-              .padding(12)
-              .stateStyles({
-                normal: {
-                  .backgroundColor(this.hoverId === 0 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
-                },
-                pressed: {
-                  .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 0
-                }
-              })
-              .onClick(async () => {
-                await this.context.startAbility({
-                  bundleName: 'com.huawei.hmos.settings',
-                  abilityName: 'com.huawei.hmos.settings.MainAbility',
-                  uri: 'privacy_settings',
-                  parameters: {
-                    pushParams: 'com.songjy.synologydsmhelper'
-                  }
-                })
-              })
             }
             .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
             .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
@@ -359,14 +319,11 @@ struct Commonsetting {
                   right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
                 })
 
-                Select([
-                  { value: '跟随系统' },
-                  { value: '浅色模式' },
-                  { value: '深色模式' }
-                ])
+                Select(this.colorModeList)
                   .selected(this.colorModeIndex!!)
                   .value(this.colorModeValue!!)
-                  .onSelect(index => {
+                  .onSelect(async (index) => {
+                    setFlushPreference(this.context, 'commonSetting', 'colorMode', index)
                     const applicationContext = this.context.getApplicationContext()
                     if (index === 0) {
                       applicationContext.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET)
@@ -377,7 +334,30 @@ struct Commonsetting {
                     if (index === 2) {
                       applicationContext.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_DARK)
                     }
-                    setFlushPreference(this.context, 'commonSetting', 'colorMode', index)
+                    if (index === 3) {
+                      const promptAction = this.UIContext.getPromptAction()
+                      const data = await promptAction.showDialog({
+                        title: '提示',
+                        message: '设置成功，需重启应用生效，是否重启？',
+                        buttons: [
+                          {
+                            text: '取消',
+                            color: $r('sys.color.font_primary')
+                          },
+                          {
+                            text: '重启',
+                            color: $r('sys.color.font_emphasize')
+                          }
+                        ]
+                      })
+                      if (data.index === 1) {
+                        const applicationContext = this.context.getApplicationContext()
+                        applicationContext.restartApp({
+                          bundleName: 'com.songjy.synologydsmhelper',
+                          abilityName: 'EntryAbility'
+                        })
+                      }
+                    }
                   })
               }
               .borderRadius(12)
@@ -509,7 +489,7 @@ struct Commonsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 1 ? $r('sys.color.interactive_hover') :
+                  .backgroundColor(this.hoverId === 0 ? $r('sys.color.interactive_hover') :
                     $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
@@ -521,7 +501,7 @@ struct Commonsetting {
                   this.hoverId = -1
                 }
                 if (isHover) {
-                  this.hoverId = 1
+                  this.hoverId = 0
                 }
               })
               .onClick(async () => {
@@ -845,7 +825,7 @@ struct Commonsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 2 ? $r('sys.color.interactive_hover') :
+                  .backgroundColor(this.hoverId === 1 ? $r('sys.color.interactive_hover') :
                     $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
@@ -857,7 +837,7 @@ struct Commonsetting {
                   this.hoverId = -1
                 }
                 if (isHover) {
-                  this.hoverId = 2
+                  this.hoverId = 1
                 }
               })
               .onClick(async () => {
@@ -895,7 +875,7 @@ struct Commonsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 3 ? $r('sys.color.interactive_hover') :
+                  .backgroundColor(this.hoverId === 2 ? $r('sys.color.interactive_hover') :
                     $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
@@ -907,7 +887,7 @@ struct Commonsetting {
                   this.hoverId = -1
                 }
                 if (isHover) {
-                  this.hoverId = 3
+                  this.hoverId = 2
                 }
               })
               .onClick(() => {
@@ -973,7 +953,7 @@ struct Commonsetting {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 4 ? $r('sys.color.interactive_hover') :
+                  .backgroundColor(this.hoverId === 3 ? $r('sys.color.interactive_hover') :
                     $r('sys.color.ohos_id_color_card_bg'))
                 },
                 pressed: {
@@ -985,7 +965,7 @@ struct Commonsetting {
                   this.hoverId = -1
                 }
                 if (isHover) {
-                  this.hoverId = 4
+                  this.hoverId = 3
                 }
               })
               .onClick(() => {
@@ -1208,6 +1188,13 @@ struct Commonsetting {
       this.destroyWhenBackPressed =
         getFlushPreference(this.context, 'commonSetting', 'destroyWhenBackPressed', false) as boolean
       this.statusBar = getFlushPreference(this.context, 'commonSetting', 'statusBar', false) as boolean
+      try {
+        await sensor.getSingleSensor(sensor.SensorId.AMBIENT_LIGHT)
+        this.colorModeList.push({
+          value: '跟随环境光'
+        })
+      } catch {
+      }
       const colorMode = getFlushPreference(this.context, 'commonSetting', 'colorMode', 0)
       this.colorModeIndex = colorMode as number
       if (colorMode === 0) {
@@ -1218,6 +1205,9 @@ struct Commonsetting {
       }
       if (colorMode === 2) {
         this.colorModeValue = '深色模式'
+      }
+      if (colorMode === 3) {
+        this.colorModeValue = '跟随环境光'
       }
       this.windowRectAutoSave =
         getFlushPreference(this.context, 'commonSetting', 'windowRectAutoSave', false) as boolean

@@ -42,6 +42,7 @@ export default struct Addphotointoalbum {
         }
         .borderRadius(20)
         .height(40)
+        .keyboardShortcut('N', [ModifierKey.CTRL, ModifierKey.SHIFT])
         .padding(11)
         .stateStyles({
           normal: {

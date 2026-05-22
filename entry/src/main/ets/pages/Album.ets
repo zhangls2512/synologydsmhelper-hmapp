@@ -559,6 +559,7 @@ export default struct Album {
                   .fontWeight(FontWeight.Medium)
                 Span(this.previewPhoto.additional.exif.camera)
               }
+              .enableAutoSpacing(true)
               .margin({
                 top: $r('sys.float.ohos_id_text_margin_vertical')
               })
@@ -628,6 +629,7 @@ export default struct Album {
                 Span(String(this.photoAddress))
                   .fontColor($r('sys.color.font_emphasize'))
               }
+              .enableAutoSpacing(true)
               .margin({
                 top: $r('sys.float.ohos_id_text_margin_vertical')
               })
@@ -756,8 +758,7 @@ export default struct Album {
                     },
                     security: {
                       remoteValidation: getFlushPreference(this.context, 'debugSetting',
-                        'closeRemoteValidationWhenLinkDsm',
-                        'system') as 'system' | 'skip',
+                        'closeRemoteValidationWhenLinkDsm', 'system') as 'system' | 'skip',
                       tlsRange: {
                         min: 'TlsV1.2'
                       }
@@ -928,8 +929,7 @@ export default struct Album {
                         },
                         security: {
                           remoteValidation: getFlushPreference(this.context, 'debugSetting',
-                            'closeRemoteValidationWhenLinkDsm',
-                            'system') as 'system' | 'skip',
+                            'closeRemoteValidationWhenLinkDsm', 'system') as 'system' | 'skip',
                           tlsRange: {
                             min: 'TlsV1.2'
                           }
@@ -1565,6 +1565,9 @@ export default struct Album {
                 }
               }
             }
+            .keyboardShortcut('R', [ModifierKey.CTRL], () => {
+              this.loading = true
+            })
             .layoutWeight(1)
             .width('100%')
             .onRefreshing(async () => {
