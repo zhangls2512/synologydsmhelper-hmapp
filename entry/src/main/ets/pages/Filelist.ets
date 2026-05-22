@@ -715,8 +715,8 @@ export default struct Filelist {
                     remove_src: String(this.remove)
                   }).toString())
                   this.dialogControllerProgress.close()
-                  this.remove = undefined
                   this.exitMultipleSelect()
+                  this.remove = undefined
                   if (startres !== 'fail') {
                     const taskId = startres['taskid'] as string
                     const dialogControllerProgress = new CustomDialogController({
@@ -1338,7 +1338,7 @@ export default struct Filelist {
                   path: JSON.stringify(this.multipleSelectArray.map(item => item.path)),
                   dest_file_path: this.getPath() + '/' + this.dirnames[this.dirnames.length - 1] + '.zip'
                 }).toString())
-            this.exitMultipleSelect()
+                this.exitMultipleSelect()
                 if (startres !== 'fail') {
                   const taskId = startres['taskid'] as string
                   let finished = false
@@ -1826,8 +1826,8 @@ export default struct Filelist {
                           remove_src: 'true'
                         }).toString())
                       this.dialogControllerProgress.close()
-                      this.remove = undefined
                       this.exitMultipleSelect()
+                      this.remove = undefined
                       if (startres !== 'fail') {
                         const taskId = startres['taskid'] as string
                         const dialogControllerProgress = new CustomDialogController({
