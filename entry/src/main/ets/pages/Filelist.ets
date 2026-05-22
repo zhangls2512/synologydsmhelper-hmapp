@@ -1788,6 +1788,7 @@ export default struct Filelist {
                     })
                   }
                 }
+                .allowDrop([uniformTypeDescriptor.UniformDataType.PLAIN_TEXT])
                 .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
                 .selected(this.multipleSelectArray.some(selectItem => selectItem.path === item.path))
                 .onDragStart(event => {
