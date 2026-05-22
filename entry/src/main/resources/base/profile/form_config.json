@@ -12,6 +12,7 @@
       ],
       "defaultDimension": "2*2",
       "updateEnabled": false,
+      "enableBlurBackground": true,
       "renderingMode": "autoColor"
     },
     {
@@ -26,6 +27,7 @@
       ],
       "defaultDimension": "1*2",
       "updateEnabled": false,
+      "enableBlurBackground": true,
       "renderingMode": "autoColor"
     }
   ]

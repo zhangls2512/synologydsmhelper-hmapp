@@ -10,7 +10,7 @@ export function getPermission(permission: Permissions) {
 }
 
 export async function checkPermission(context: Context, UIContext: UIContext, permission: Permissions,
-  notForce?: boolean) {
+  notForce = false) {
   const atManager = abilityAccessCtrl.createAtManager()
   const status = atManager.getSelfPermissionStatus(permission)
   if (status === abilityAccessCtrl.PermissionStatus.GRANTED) {

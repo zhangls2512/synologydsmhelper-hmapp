@@ -8,6 +8,12 @@
         "domains": [
           {
             "name": "api.zhangls2512.cn"
+          },
+          {
+            "name": "global.quickconnect.cn"
+          },
+          {
+            "name": "www.synology.cn"
           }
         ],
         "cleartextTrafficPermitted": false
