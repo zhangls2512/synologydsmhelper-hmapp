@@ -1,9 +1,9 @@
 import { common } from '@kit.AbilityKit'
 import { url } from '@kit.ArkTS'
 import { LengthMetrics, LoadingDialog, promptAction } from '@kit.ArkUI'
-import { rcp } from '@kit.RemoteCommunicationKit'
 import { hdsMaterial, HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType } from '@kit.UIDesignKit'
 import copy from '../common/Pasteboard'
+import { defaultGlobalSession } from '../common/Request'
 
 interface FileItem {
   name: string,
@@ -95,22 +95,12 @@ struct Synologyproductdownloadcenter {
                 })
               })
               dialogControllerProgress.open()
-              const session = rcp.createSession({
-                requestConfiguration: {
-                  security: {
-                    tlsRange: {
-                      min: 'TlsV1.2'
-                    }
-                  }
-                }
-              })
               try {
-                const response =
-                  await session.get('https://www.synology.cn/api/support/findDownloadInfo?' + new url.URLParams({
+                const response = await defaultGlobalSession.get(
+                  'https://www.synology.cn/api/support/findDownloadInfo?' + new url.URLParams({
                     lang: 'zh-cn',
                     product: this.product
                   }).toString())
-                session.close()
                 dialogControllerProgress.close()
                 if (response.statusCode >= 200 && response.statusCode < 300) {
                   const res = response.toJSON() as Response
@@ -208,7 +198,6 @@ struct Synologyproductdownloadcenter {
                   })
                 }
               } catch (err) {
-                session.close()
                 dialogControllerProgress.close()
                 await promptAction.openToast({
                   message: '发生错误，错误码：' + err.code

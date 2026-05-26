@@ -2,7 +2,8 @@ import { common, wantConstant } from '@kit.AbilityKit'
 import { sendablePreferences, unifiedDataChannel, uniformTypeDescriptor } from '@kit.ArkData'
 import { fastbuffer, url, util } from '@kit.ArkTS'
 import { display, LoadingDialog, promptAction } from '@kit.ArkUI'
-import { fileIo, fileUri, picker } from '@kit.CoreFileKit'
+import { deviceInfo } from '@kit.BasicServicesKit'
+import { Environment, fileIo, fileUri, picker } from '@kit.CoreFileKit'
 import { netBoost } from '@kit.NetworkBoostKit'
 import { filePreview } from '@kit.PreviewKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
@@ -13,10 +14,11 @@ import { getDnsServer } from '../common/Dnsserver'
 import { getFileTypeIcon } from '../common/File'
 import { sha256hash } from '../common/Hash'
 import { getCurrentNetworkBearerType } from '../common/Network'
+import { getPermission } from '../common/Permission'
 import { getFlushPreference, setTempPreference } from '../common/Preference'
 import { getPreferType } from '../common/Prefertype'
 import { dsmRequest, getDsmApiMaxVersion } from '../common/Request'
-import { getSizeString, getTimeStringFromSecond } from '../common/Stringformat'
+import { addFilePathIndex, getSizeString, getTimeStringFromSecond } from '../common/Stringformat'
 import Newfolder from './Newfolder'
 import Player from './Player'
 import Progress from './Progress'
@@ -272,6 +274,16 @@ export default struct Filelist {
                   let filePath = ''
                   if (!selectFileDownloadPath) {
                     filePath = new fileUri.FileUri(uris[0] + '/' + item.name).path
+                    const originFilePath = filePath
+                    if (getFlushPreference(this.context, 'commonSetting', 'operationWhenDownloadConflict', 0) === 0) {
+                      let index = 0
+                      let fileExist = fileIo.accessSync(filePath)
+                      while (fileExist) {
+                        index++
+                        filePath = addFilePathIndex(originFilePath, index)
+                        fileExist = fileIo.accessSync(filePath)
+                      }
+                    }
                   }
                   if (selectFileDownloadPath) {
                     filePath = uris[0]
@@ -641,6 +653,37 @@ export default struct Filelist {
                   })
                   return
                 }
+                let destDownloadRootPath = ''
+                const selectFileDownloadPath =
+                  getFlushPreference(this.context, 'commonSetting', 'selectFileDownloadPath', false)
+                if (!selectFileDownloadPath) {
+                  const downloadDirectory = getFlushPreference(this.context, 'commonSetting', 'downloadDirectory', 0)
+                  if (downloadDirectory === 1 && getPermission('ohos.permission.READ_WRITE_DOWNLOAD_DIRECTORY') &&
+                    deviceInfo.deviceType !== 'phone') {
+                    destDownloadRootPath = Environment.getUserDownloadDir()
+                  } else {
+                    const documentSaveOptions = new picker.DocumentSaveOptions()
+                    documentSaveOptions.pickerMode = picker.DocumentPickerMode.DOWNLOAD
+                    const documentViewPicker = new picker.DocumentViewPicker(this.context)
+                    const uris = await documentViewPicker.save(documentSaveOptions)
+                    if (uris.length === 1) {
+                      destDownloadRootPath = new fileUri.FileUri(uris[0]).path
+                    }
+                  }
+                }
+                if (selectFileDownloadPath) {
+                  const documentSelectOptions = new picker.DocumentSelectOptions
+                  documentSelectOptions.selectMode = picker.DocumentSelectMode.FOLDER
+                  const documentViewPicker = new picker.DocumentViewPicker(this.context)
+                  const uris = await documentViewPicker.select(documentSelectOptions)
+                  console.error(JSON.stringify(uris))
+                  if (uris.length === 1) {
+                    destDownloadRootPath = new fileUri.FileUri(uris[0]).path
+                  }
+                }
+                if (!destDownloadRootPath) {
+                  return
+                }
                 const transferTaskDataPreferences = sendablePreferences.getPreferencesSync(this.context, {
                   name: 'transferTask'
                 })
@@ -657,7 +700,8 @@ export default struct Filelist {
                     status: 'pending',
                     errCode: 0,
                     type: 'download',
-                    accountInfo: accountInfo
+                    accountInfo: accountInfo,
+                    destDownloadPath: destDownloadRootPath + '/' + item.name
                   }))
                 })
                 await promptAction.openToast({
@@ -711,7 +755,8 @@ export default struct Filelist {
                     method: 'start',
                     path: JSON.stringify(this.multipleSelectArray.map(item => item.path)),
                     dest_folder_path: this.getPath(),
-                    overwrite: 'true',
+                    overwrite: getFlushPreference(this.context, 'commonSetting', 'operationWhenCopyMoveConflict', 0) ===
+                      0 ? 'false' : 'true',
                     remove_src: String(this.remove)
                   }).toString())
                   this.dialogControllerProgress.close()
@@ -790,7 +835,8 @@ export default struct Filelist {
                     method: 'start',
                     path: JSON.stringify(this.multipleSelectArray.map(item => item.path)),
                     dest_folder_path: this.getPath(),
-                    overwrite: 'true',
+                    overwrite: getFlushPreference(this.context, 'commonSetting', 'operationWhenCopyMoveConflict', 0) ===
+                      0 ? 'false' : 'true',
                     remove_src: 'false'
                   }).toString())
                   this.dialogControllerProgress.close()
@@ -867,7 +913,8 @@ export default struct Filelist {
                     method: 'start',
                     path: JSON.stringify(this.multipleSelectArray.map(item => item.path)),
                     dest_folder_path: this.getPath(),
-                    overwrite: 'true',
+                    overwrite: getFlushPreference(this.context, 'commonSetting', 'operationWhenCopyMoveConflict', 0) ===
+                      0 ? 'false' : 'true',
                     remove_src: 'true'
                   }).toString())
                   this.exitMultipleSelect()
@@ -1263,7 +1310,8 @@ export default struct Filelist {
                   method: 'start',
                   path: JSON.stringify([this.copyMovePath]),
                   dest_folder_path: this.getPath(),
-                  overwrite: 'true',
+                  overwrite: getFlushPreference(this.context, 'commonSetting', 'operationWhenCopyMoveConflict', 0) ===
+                    0 ? 'false' : 'true',
                   remove_src: String(this.remove)
                 }).toString())
                 this.dialogControllerProgress.close()
@@ -1823,7 +1871,8 @@ export default struct Filelist {
                           method: 'start',
                           path: JSON.stringify(paths),
                           dest_folder_path: item.path,
-                          overwrite: 'true',
+                          overwrite: getFlushPreference(this.context, 'commonSetting', 'operationWhenCopyMoveConflict',
+                            0) === 0 ? 'false' : 'true',
                           remove_src: 'true'
                         }).toString())
                       this.dialogControllerProgress.close()

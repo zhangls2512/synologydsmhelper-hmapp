@@ -2,18 +2,16 @@ import { wantAgent } from '@kit.AbilityKit'
 import { sendablePreferences } from '@kit.ArkData'
 import { url } from '@kit.ArkTS'
 import { backgroundTaskManager } from '@kit.BackgroundTasksKit'
-import { deviceInfo } from '@kit.BasicServicesKit'
-import { Environment, fileIo, fileUri, picker } from '@kit.CoreFileKit'
+import { fileIo, fileUri } from '@kit.CoreFileKit'
 import { netBoost } from '@kit.NetworkBoostKit'
 import { notificationManager } from '@kit.NotificationKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { deleteBackupTask, updateBackupTaskStatus } from './Backup'
 import { getDnsServer } from './Dnsserver'
 import { write } from './File'
-import { getPermission } from './Permission'
 import { getFlushPreference } from './Preference'
 import { DsmResponse, getDsmApiMaxVersion } from './Request'
-import { getSizeString } from './Stringformat'
+import { addFilePathIndex, getSizeString } from './Stringformat'
 import { TransferTaskItem } from '../pages/Index'
 
 @Concurrent
@@ -25,21 +23,17 @@ export async function download(context: Context, id: string) {
   const transferTask = JSON.parse(transferTaskString) as TransferTaskItem
   transferTask.status = 'processing'
   transferTaskDataPreferences.putSync(id, JSON.stringify(transferTask))
-  try {
-    let filePath = ''
-    const downloadDirectory = getFlushPreference(context, 'commonSetting', 'downloadDirectory', 0)
-    if (downloadDirectory === 1 && getPermission('ohos.permission.READ_WRITE_DOWNLOAD_DIRECTORY') &&
-      deviceInfo.deviceType !== 'phone') {
-      filePath = Environment.getUserDownloadDir() + '/' + transferTask.name
-    } else {
-      const documentSaveOptions = new picker.DocumentSaveOptions()
-      documentSaveOptions.pickerMode = picker.DocumentPickerMode.DOWNLOAD
-      const documentViewPicker = new picker.DocumentViewPicker(context)
-      const uris = await documentViewPicker.save(documentSaveOptions)
-      if (uris.length === 1) {
-        filePath = new fileUri.FileUri(uris[0] + '/' + transferTask.name).path
-      }
+  let filePath = transferTask.destDownloadPath
+  if (getFlushPreference(context, 'commonSetting', 'operationWhenDownloadConflict', 0) === 0) {
+    let index = 0
+    let fileExist = fileIo.accessSync(filePath)
+    while (fileExist) {
+      index++
+      filePath = addFilePathIndex(transferTask.destDownloadPath, index)
+      fileExist = fileIo.accessSync(filePath)
     }
+  }
+  try {
     const version = await getDsmApiMaxVersion(context, transferTask.accountInfo.path, 'SYNO.FileStation.Download')
     if (version !== 'fail') {
       const wandAgent = await wantAgent.getWantAgent({

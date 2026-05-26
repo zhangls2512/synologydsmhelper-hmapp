@@ -36,6 +36,8 @@ export interface BestAddressItem {
   best: string
 }
 
+let globalAccountInfo: AccountInfo | undefined = undefined
+
 export async function setAccount(context: Context, accountInfo: InAccountInfo) {
   await exitAccount(context, false)
   const accounts = await getAccountList(context)
@@ -52,6 +54,18 @@ export async function setAccount(context: Context, accountInfo: InAccountInfo) {
     await appAccountManager.setCredential(id, 'synotoken', accountInfo.synotoken)
     await appAccountManager.setCustomData(id, 'bz', accountInfo.bz)
     await appAccountManager.setCustomData(id, 'isLogin', accountInfo.isLogin)
+    if (accountInfo.isLogin) {
+      globalAccountInfo = {
+        id: id,
+        path: accountInfo.path,
+        name: accountInfo.name,
+        password: accountInfo.password,
+        sid: accountInfo.sid,
+        synotoken: accountInfo.synotoken,
+        bz: accountInfo.bz,
+        isLogin: accountInfo.isLogin
+      }
+    }
   }
   if (accountIndex === -1) {
     let oldAccountIndex = -1
@@ -72,8 +86,20 @@ export async function setAccount(context: Context, accountInfo: InAccountInfo) {
     await appAccountManager.setCredential(id, 'password', accountInfo.password)
     await appAccountManager.setCredential(id, 'sid', accountInfo.sid)
     await appAccountManager.setCredential(id, 'synotoken', accountInfo.synotoken)
+    if (accountInfo.isLogin) {
+      globalAccountInfo = {
+        id: id,
+        path: accountInfo.path,
+        name: accountInfo.name,
+        password: accountInfo.password,
+        sid: accountInfo.sid,
+        synotoken: accountInfo.synotoken,
+        bz: accountInfo.bz,
+        isLogin: accountInfo.isLogin
+      }
+    }
     if (oldAccountIndex !== -1) {
-      await removeAccount(context, accounts[oldAccountIndex].id)
+      await removeAccount(accounts[oldAccountIndex].id)
     }
   }
 }
@@ -81,6 +107,9 @@ export async function setAccount(context: Context, accountInfo: InAccountInfo) {
 export async function setAccountBz(id: string, bz: string) {
   const appAccountManager = appAccount.createAppAccountManager()
   await appAccountManager.setCustomData(id, 'bz', bz)
+  if (globalAccountInfo && globalAccountInfo.id === id) {
+    globalAccountInfo.bz = bz
+  }
 }
 
 export async function getLoginStatus(context: Context) {
@@ -91,13 +120,30 @@ export async function getLoginStatus(context: Context) {
   return false
 }
 
-export async function getAccountInfo(context: Context): Promise<AccountInfo> {
-  const accounts = await getAccountList(context, true)
-  const account = accounts.find(item => item.isLogin === 'true')
-  if (account) {
-    return account
+export async function getAccountInfo(context: Context) {
+  if (globalAccountInfo === undefined) {
+    const accounts = await getAccountList(context, true)
+    const account = accounts.find(item => item.isLogin === 'true')
+    if (!account) {
+      globalAccountInfo = {
+        id: '',
+        path: '',
+        name: '',
+        password: '',
+        sid: '',
+        synotoken: '',
+        bz: '',
+        isLogin: 'false'
+      }
+    }
+    if (account) {
+      globalAccountInfo = account
+    }
   }
-  return {
+  if (globalAccountInfo && globalAccountInfo.path) {
+    globalAccountInfo.path = getBestAddress(context, globalAccountInfo.path)
+  }
+  return globalAccountInfo ?? {
     id: '',
     path: '',
     name: '',
@@ -151,7 +197,7 @@ export async function getAccountList(context: Context, bestPath = false) {
         isLogin: appAccountManager.getCustomDataSync(item.name, 'isLogin')
       })
     } catch {
-      await removeAccount(context, id)
+      await removeAccount(id)
     }
   })
   await Promise.all(promises)
@@ -159,27 +205,44 @@ export async function getAccountList(context: Context, bestPath = false) {
 }
 
 export async function exitAccount(context: Context, logout: boolean) {
-  const accounts = await getAccountList(context)
-  const account = accounts.find(item => item.isLogin === 'true')
-  if (account) {
+  if (globalAccountInfo && globalAccountInfo.id) {
     if (logout) {
       await dsmRequest(context, '', 'SYNO.API.Auth', new url.URLParams({
         method: 'logout'
       }).toString())
     }
     const appAccountManager = appAccount.createAppAccountManager()
-    await appAccountManager.setCustomData(account.id, 'isLogin', 'false')
+    await appAccountManager.setCustomData(globalAccountInfo.id, 'isLogin', 'false')
+    globalAccountInfo = {
+      id: '',
+      path: '',
+      name: '',
+      password: '',
+      sid: '',
+      synotoken: '',
+      bz: '',
+      isLogin: 'false'
+    }
   }
 }
 
-export async function removeAccount(context: Context, id: string) {
-  const accounts = await getAccountList(context)
-  if (accounts.find(item => item.id === id)) {
-    const appAccountManager = appAccount.createAppAccountManager()
-    await appAccountManager.removeAccount(id)
-    await promptAction.openToast({
-      message: '删除成功'
-    })
+export async function removeAccount(id: string) {
+  const appAccountManager = appAccount.createAppAccountManager()
+  await appAccountManager.removeAccount(id)
+  await promptAction.openToast({
+    message: '删除成功'
+  })
+  if (globalAccountInfo && globalAccountInfo.id === id) {
+    globalAccountInfo = {
+      id: '',
+      path: '',
+      name: '',
+      password: '',
+      sid: '',
+      synotoken: '',
+      bz: '',
+      isLogin: 'false'
+    }
   }
 }
 
