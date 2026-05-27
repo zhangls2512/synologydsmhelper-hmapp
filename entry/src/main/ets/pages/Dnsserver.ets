@@ -2,6 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { LengthMetrics, promptAction } from '@kit.ArkUI'
 import { hdsMaterial, HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType } from '@kit.UIDesignKit'
 import { deleteFlushPreferenceKey, getFlushPreference, setFlushPreference } from '../common/Preference'
+import { restartApp } from '../common/Restartapp'
 
 @Builder
 export function DnsserverBuilder() {
@@ -13,7 +14,8 @@ struct Dnsserver {
   @Local ip: string = ''
   @Local port: string = '53'
   @Local focus: boolean = false
-  context = this.getUIContext().getHostContext() as common.UIAbilityContext
+  UIContext = this.getUIContext()
+  context = this.UIContext.getHostContext() as common.UIAbilityContext
   pageInfos = new NavPathStack()
 
   build() {
@@ -89,10 +91,23 @@ struct Dnsserver {
                   setFlushPreference(this.context, 'debugSetting', 'dnsserverip', this.ip)
                   setFlushPreference(this.context, 'debugSetting', 'dnsserverport', port)
                 }
-                await promptAction.openToast({
-                  message: '保存成功'
+                const data = await promptAction.showDialog({
+                  title: '提示',
+                  message: '保存成功，需重启应用生效，是否重启？',
+                  buttons: [
+                    {
+                      text: '取消',
+                      color: $r('sys.color.font_primary')
+                    },
+                    {
+                      text: '重启',
+                      color: $r('sys.color.font_emphasize')
+                    }
+                  ]
                 })
-                this.pageInfos.pop()
+                if (data.index === 1) {
+                  await restartApp(this.context, this.UIContext)
+                }
               })
           }
         }

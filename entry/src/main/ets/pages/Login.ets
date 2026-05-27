@@ -3,12 +3,11 @@ import { privacyManager } from '@kit.AppGalleryKit'
 import { url } from '@kit.ArkTS'
 import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { netBoost } from '@kit.NetworkBoostKit'
-import { rcp } from '@kit.RemoteCommunicationKit'
 import { setAccount } from '../common/Account'
 import { autoBackup } from '../common/Backup'
 import openLink from '../common/Openlink'
 import { getFlushPreference } from '../common/Preference'
-import { dsmRequest } from '../common/Request'
+import { defaultGlobalSession, dsmRequest } from '../common/Request'
 
 export interface LoginResponseData {
   sid: string,
@@ -305,24 +304,15 @@ export default struct Login {
                 }
               }
               if (this.quickConnectId) {
-                const session = rcp.createSession({
-                  requestConfiguration: {
-                    security: {
-                      tlsRange: {
-                        min: 'TlsV1.2'
-                      }
-                    }
-                  }
-                })
                 try {
-                  const response = await session.post('https://global.quickconnect.cn/Serv.php', JSON.stringify([
-                    {
-                      command: 'get_server_info',
-                      id: 'dsm',
-                      serverID: this.quickConnectId
-                    }
-                  ]))
-                  session.close()
+                  const response =
+                    await defaultGlobalSession.post('https://global.quickconnect.cn/Serv.php', JSON.stringify([
+                      {
+                        command: 'get_server_info',
+                        id: 'dsm',
+                        serverID: this.quickConnectId
+                      }
+                    ]))
                   if (response.statusCode >= 200 && response.statusCode < 300) {
                     const bodyObject = response.toJSON() as object
                     if (bodyObject[0]['errno'] === 0) {
@@ -377,7 +367,6 @@ export default struct Login {
                     return
                   }
                 } catch (err) {
-                  session.close()
                   dialogControllerProgress.close()
                   await promptAction.openToast({
                     message: 'QuickConnect 请求失败，错误码：' + err.code

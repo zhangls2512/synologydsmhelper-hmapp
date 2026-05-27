@@ -134,18 +134,13 @@ export default class EntryAbility extends UIAbility {
         if (getFlushPreference(context, 'debugSetting', 'saveErrorLog', true)) {
           await write(errorLogDir + Date.now() + '.txt', JSON.stringify(object))
         }
-        if (getFlushPreference(context, 'debugSetting', 'globalErrorShowType', 0) === 0) {
-          await promptAction.openToast({
-            message: 'js 运行异常，错误名称：' + err.name + '，错误信息：' + err.message
-          })
-        }
         if (getFlushPreference(context, 'debugSetting', 'globalErrorShowType', 0) === 1) {
           context.eventHub.emit('dialog', 'js 运行异常', '名称：' + err.name + '\n信息：' + err.message)
         }
         if (getFlushPreference(context, 'debugSetting', 'autoUploadErrorLog', true) &&
           getFlushPreference(context, 'commonSetting', 'allService', true)) {
-          if ((getFlushPreference(context, 'debugSetting', 'autoUploadErrorLogType',
-            ['JS_ERROR', 'APP_CRASH']) as string[]).includes('JS_ERROR')) {
+          if ((getFlushPreference(context, 'debugSetting', 'autoUploadErrorLogType', ['JS_ERROR', 'APP_CRASH']) as
+            string[]).includes('JS_ERROR')) {
             context.eventHub.emit('uploadErrorLog', object.name, JSON.stringify(object))
           }
         }
@@ -402,7 +397,7 @@ export default class EntryAbility extends UIAbility {
           try {
             await this.context.startAbility({
               bundleName: 'com.songjy.synologydsmhelper',
-              abilityName: 'BackGroundAbility'
+              abilityName: 'BackgroundAbility'
             }, {
               processMode: contextConstant.ProcessMode.NEW_PROCESS_ATTACH_TO_STATUS_BAR_ITEM,
               startupVisibility: contextConstant.StartupVisibility.STARTUP_HIDE
@@ -447,7 +442,6 @@ export default class EntryAbility extends UIAbility {
   }
 
   async onForeground() {
-    const applicationContext = this.context.getApplicationContext()
     const colorMode = getFlushPreference(this.context, 'commonSetting', 'colorMode', 0)
     if (colorMode === 3) {
       try {
@@ -459,6 +453,7 @@ export default class EntryAbility extends UIAbility {
             const currentColorMode = getFlushPreference(this.context, 'commonSetting', 'colorMode', 0)
             if (currentColorMode === 3) {
               lastUpdateTime = currentTime
+              const applicationContext = this.context.getApplicationContext()
               if (event.intensity >= 30 &&
                 this.context.config.colorMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK) {
                 applicationContext.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT)
@@ -488,7 +483,7 @@ export default class EntryAbility extends UIAbility {
     }
   }
 
-  async onPrepareToTerminateAsync(): Promise<boolean> {
+  async onPrepareToTerminateAsync() {
     const statusBarExist = getTempPreference(this.context, 'statusBar', 'exist', false) as boolean
     if (statusBarExist) {
       await this.context.hideAbility()
@@ -506,7 +501,7 @@ export default class EntryAbility extends UIAbility {
   }
 
   async onContinue(wantParam: Record<string, Object>) {
-    if (wantParam.version !== 51) {
+    if (wantParam.version !== 52) {
       await promptAction.openToast({
         message: '接续失败，原因：目标端应用版本号与发起端不匹配'
       })

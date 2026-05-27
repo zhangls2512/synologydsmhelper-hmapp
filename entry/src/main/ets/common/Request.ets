@@ -36,20 +36,60 @@ interface DeveloperErrorResponse {
   errFix: string
 }
 
-async function getCacheApiVersion(context: Context, path: string, api: string) {
-  let apiVersionCacheValue = ''
-  const filePath = context.cacheDir + '/apiversion.txt'
-  const filestring = await read(filePath, true)
-  if (filestring !== 'fail') {
-    apiVersionCacheValue = filestring
-  } else {
-    return -1
+let apiVersionCache: ApiVersionCacheItem[] | undefined = undefined
+
+export let dsmGlobalSession: rcp.Session | undefined = undefined
+
+export const defaultGlobalSession = rcp.createSession({
+  requestConfiguration: {
+    security: {
+      tlsRange: {
+        min: 'TlsV1.2'
+      }
+    }
   }
-  if (!apiVersionCacheValue) {
-    return -1
-  } else {
-    try {
-      const apiVersionCache = JSON.parse(apiVersionCacheValue) as ApiVersionCacheItem[]
+})
+
+export function getDsmGlobalSession(context: Context) {
+  if (!dsmGlobalSession) {
+    dsmGlobalSession = rcp.createSession({
+      requestConfiguration: {
+        dns: {
+          dnsRules: getDnsServer(context)
+        },
+        security: {
+          remoteValidation: getFlushPreference(context, 'debugSetting', 'closeRemoteValidationWhenLinkDsm',
+            'system') as 'system' | 'skip',
+          tlsRange: {
+            min: 'TlsV1.2'
+          }
+        }
+      }
+    })
+  }
+  return dsmGlobalSession
+}
+
+async function getCacheApiVersion(context: Context, path: string, api: string) {
+  if (!apiVersionCache) {
+    const filePath = context.cacheDir + '/apiversion.txt'
+    const filestring = await read(filePath, true)
+    if (filestring !== 'fail') {
+      try {
+        apiVersionCache = JSON.parse(filestring)
+      } catch {
+        await fileIo.unlink(filePath)
+        apiVersionCache = []
+      }
+    }
+    if (filestring === 'fail') {
+      apiVersionCache = []
+    }
+  }
+  if (apiVersionCache) {
+    if (apiVersionCache.length === 0) {
+      return -1
+    } else {
       let apiVersionCacheItem: ApiVersionCacheItem | undefined = undefined
       apiVersionCacheItem = apiVersionCache.find(item => item.path === path)
       if (!apiVersionCacheItem) {
@@ -79,11 +119,9 @@ async function getCacheApiVersion(context: Context, path: string, api: string) {
           return apiVersionItem.version
         }
       }
-    } catch {
-      await fileIo.unlink(filePath)
-      return -1
     }
   }
+  return -1
 }
 
 export async function getDsmApiMaxVersion(context: Context, path: string, api: string): Promise<number | 'fail'> {
@@ -96,33 +134,19 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
       return cacheApiVersion
     }
   }
-  const session = rcp.createSession({
-    requestConfiguration: {
-      dns: {
-        dnsRules: getDnsServer(context)
-      },
-      security: {
-        remoteValidation: getFlushPreference(context, 'debugSetting', 'closeRemoteValidationWhenLinkDsm',
-          'system') as 'system' | 'skip',
-        tlsRange: {
-          min: 'TlsV1.2'
-        }
-      }
-    },
-    headers: {
-      referer: requestPath,
-      'x-syno-token': accountInfo.synotoken
-    }
-  })
   try {
-    const response = await session.get(requestPath + '/webapi/entry.cgi?' + new url.URLParams({
-      api: 'SYNO.API.Info',
-      version: '1',
-      method: 'query'
-    }).toString())
-    session.close()
+    const response =
+      await getDsmGlobalSession(context).fetch(new rcp.Request(requestPath + '/webapi/entry.cgi?' + new url.URLParams({
+        api: 'SYNO.API.Info',
+        version: '1',
+        method: 'query'
+      }).toString(), 'GET', {
+        referer: requestPath,
+        'x-syno-token': accountInfo.synotoken
+      }))
     if (response.statusCode >= 200 && response.statusCode < 300) {
       const res = response.toJSON() as DsmResponse
+      const filePath = context.cacheDir + '/apiversion.txt'
       if (res.success) {
         if (!res.data[api]) {
           await promptAction.openToast({
@@ -131,13 +155,7 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
           return 'fail'
         }
         const version = res.data[api].maxVersion as number
-        if (cacheApiVersionSetting) {
-          let apiVersionCache: ApiVersionCacheItem[] = []
-          const filePath = context.cacheDir + '/apiversion.txt'
-          const filestring = await read(filePath, true)
-          if (filestring !== 'fail') {
-            apiVersionCache = JSON.parse(filestring) as ApiVersionCacheItem[]
-          }
+        if (cacheApiVersionSetting && apiVersionCache) {
           const apiVersionCacheItem = apiVersionCache.find(item => item.path === requestPath)
           if (!apiVersionCacheItem) {
             apiVersionCache.push({
@@ -166,28 +184,16 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
         return version
       }
       if (res.error.code === 102) {
-        const sessionb = rcp.createSession({
-          requestConfiguration: {
-            dns: {
-              dnsRules: getDnsServer(context)
-            },
-            security: {
-              remoteValidation: getFlushPreference(context, 'debugSetting', 'closeRemoteValidationWhenLinkDsm',
-                'system') as 'system' | 'skip'
-            }
-          },
-          headers: {
-            referer: requestPath,
-            'x-syno-token': accountInfo.synotoken
-          }
-        })
         try {
-          const responseb = await sessionb.get(requestPath + '/webapi/query.cgi?' + new url.URLParams({
-            api: 'SYNO.API.Info',
-            version: '1',
-            method: 'query'
-          }).toString())
-          sessionb.close()
+          const responseb = await getDsmGlobalSession(context)
+            .fetch(new rcp.Request(requestPath + '/webapi/query.cgi?' + new url.URLParams({
+              api: 'SYNO.API.Info',
+              version: '1',
+              method: 'query'
+            }).toString(), 'GET', {
+              referer: requestPath,
+              'x-syno-token': accountInfo.synotoken
+            }))
           if (responseb.statusCode >= 200 && responseb.statusCode < 300) {
             const resb = responseb.toJSON() as DsmResponse
             if (resb.success) {
@@ -198,13 +204,7 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
                 return 'fail'
               }
               const version = resb.data[api].maxVersion as number
-              if (cacheApiVersionSetting) {
-                let apiVersionCache: ApiVersionCacheItem[] = []
-                const filePath = context.cacheDir + '/apiversion.txt'
-                const filestring = await read(filePath, true)
-                if (filestring !== 'fail') {
-                  apiVersionCache = JSON.parse(filestring) as ApiVersionCacheItem[]
-                }
+              if (cacheApiVersionSetting && apiVersionCache) {
                 const apiVersionCacheItem = apiVersionCache.find(item => item.path === requestPath)
                 if (!apiVersionCacheItem) {
                   apiVersionCache.push({
@@ -243,7 +243,6 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
             return 'fail'
           }
         } catch (err) {
-          sessionb.close()
           await promptAction.openToast({
             message: '发生错误，错误码：' + err.code
           })
@@ -264,7 +263,6 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
       return 'fail'
     }
   } catch (err) {
-    session.close()
     await promptAction.openToast({
       message: '发生错误，错误码：' + err.code
     })
@@ -285,28 +283,6 @@ export async function dsmRequest(context: Context, path: string, api: string, pa
       return 'fail'
     }
   }
-  const session = rcp.createSession({
-    requestConfiguration: {
-      dns: {
-        dnsRules: getDnsServer(context)
-      },
-      security: {
-        remoteValidation: getFlushPreference(context, 'debugSetting', 'closeRemoteValidationWhenLinkDsm',
-          'system') as 'system' | 'skip',
-        tlsRange: {
-          min: 'TlsV1.2'
-        }
-      }
-    },
-    headers: {
-      'accept-language': 'zh-CN',
-      referer: requestPath,
-      'x-syno-token': accountInfo.synotoken
-    },
-    cookies: {
-      id: accountInfo.sid
-    }
-  })
   try {
     let path = requestPath + '/webapi/entry.cgi?' + new url.URLParams({
       api: api,
@@ -319,8 +295,13 @@ export async function dsmRequest(context: Context, path: string, api: string, pa
         session: 'FileStation'
       }).toString() + '&' + params
     }
-    const response = await session.get(path)
-    session.close()
+    const response = await getDsmGlobalSession(context).fetch(new rcp.Request(path, 'GET', {
+      'accept-language': 'zh-CN',
+      referer: requestPath,
+      'x-syno-token': accountInfo.synotoken
+    }, undefined, {
+      id: accountInfo.sid
+    }))
     if (response.statusCode >= 200 && response.statusCode < 300) {
       const res = response.toJSON() as DsmResponse
       if (!res) {
@@ -407,7 +388,6 @@ export async function dsmRequest(context: Context, path: string, api: string, pa
       return 'fail'
     }
   } catch (err) {
-    session.close()
     if (err.code !== 102) {
       await promptAction.openToast({
         message: '发生错误，错误码：' + err.code
@@ -429,18 +409,8 @@ export async function developerRequest(context: Context, path: string, body: rcp
       '全量模式未开启，无法使用在线功能。如需使用在线功能，请前往“我的”>“设置”>“更多”>“应用服务模式”，开启全量模式。')
     return 'fail'
   }
-  const session = rcp.createSession({
-    requestConfiguration: {
-      security: {
-        tlsRange: {
-          min: 'TlsV1.2'
-        }
-      }
-    }
-  })
   try {
-    const response = await session.post('https://api.zhangls2512.cn' + path, body)
-    session.close()
+    const response = await defaultGlobalSession.post('https://api.zhangls2512.cn' + path, body)
     if (response.statusCode >= 200 && response.statusCode < 300) {
       const res = response.toJSON() as DeveloperErrorResponse
       if (res.errCode === 0) {
@@ -456,7 +426,6 @@ export async function developerRequest(context: Context, path: string, body: rcp
       return 'fail'
     }
   } catch (err) {
-    session.close()
     await promptAction.openToast({
       message: '发生错误，错误码：' + err.code
     })
