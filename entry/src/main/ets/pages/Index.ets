@@ -39,7 +39,8 @@ export interface TransferTaskItem {
   type: string,
   accountInfo: AccountInfo,
   srcFileUri: string,
-  backupTaskId: string
+  backupTaskId: string,
+  destDownloadPath: string
 }
 
 @Entry

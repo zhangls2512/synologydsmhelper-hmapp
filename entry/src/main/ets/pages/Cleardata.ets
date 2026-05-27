@@ -7,6 +7,7 @@ import { hdsMaterial, HdsNavigation, HdsNavigationTitleMode, ScrollEffectType } 
 import { getAccountInfo } from '../common/Account'
 import { getDirectorySize, getFileSize } from '../common/File'
 import { sha256hash } from '../common/Hash'
+import { restartApp } from '../common/Restartapp'
 import { getSizeString } from '../common/Stringformat'
 
 @ComponentV2
@@ -328,11 +329,7 @@ export default struct Cleardata {
                     ]
                   })
                   if (res.index === 1) {
-                    const applicationContext = this.context.getApplicationContext()
-                    applicationContext.restartApp({
-                      bundleName: 'com.songjy.synologydsmhelper',
-                      abilityName: 'EntryAbility'
-                    })
+                    await restartApp(this.context, this.UIContext)
                   }
                 }
               })
