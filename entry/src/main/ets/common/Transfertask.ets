@@ -216,14 +216,6 @@ export async function upload(context: Context, id: string) {
                   lastTransferredSize = transferredSize
                 }
                 transferTaskDataPreferences.putSync(id, JSON.stringify(transferTask))
-              },
-              onDataEnd: async () => {
-                session.close()
-                netBoost.setSceneDesc({
-                  scene: 'upload',
-                  sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-                })
-                await fileIo.unlink(filePath)
               }
             }
           },
@@ -258,6 +250,12 @@ export async function upload(context: Context, id: string) {
           '/webapi/entry.cgi?api=SYNO.FileStation.Upload&version=' + version + '&method=upload&SynoToken=' +
           transferTask.accountInfo.synotoken, new rcp.UploadFromFile(filePath))
         clearInterval(intervalId)
+        session.close()
+        netBoost.setSceneDesc({
+          scene: 'upload',
+          sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+        })
+        await fileIo.unlink(filePath)
         if (response.statusCode >= 200 && response.statusCode < 300) {
           const res = response.toJSON() as DsmResponse
           if (!res.success) {

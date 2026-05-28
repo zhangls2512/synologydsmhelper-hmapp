@@ -1259,7 +1259,7 @@ export default struct Filelist {
               }
             })
 
-            if (!this.copyMovePath && !this.multipleSelect) {
+            if (!this.copyMovePath && !this.multipleSelect && this.dirnames.length > 0) {
               Blank()
               Column() {
                 Image($r('app.media.upload'))
