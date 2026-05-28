@@ -1,4 +1,4 @@
-import { url } from '@kit.ArkTS'
+import { url, util } from '@kit.ArkTS'
 import { fileIo, fileUri } from '@kit.CoreFileKit'
 import { netBoost } from '@kit.NetworkBoostKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
@@ -75,16 +75,20 @@ export async function getFileThumbnail(context: Context, path: string, accountIn
       })
       fileStream.closeSync()
     }
+    const fileb = fileIo.openSync(thumbnailPath)
+    const filebuffer = new ArrayBuffer(15)
+    fileIo.readSync(fileb.fd, filebuffer)
+    fileIo.closeSync(fileb)
+    const decoder = util.TextDecoder.create()
+    const fileHead = decoder.decodeToString(new Uint8Array(filebuffer))
+    if (fileHead === '<!DOCTYPE html>') {
+      await fileIo.unlink(thumbnailPath)
+      const file = fileIo.openSync(thumbnailPath, fileIo.OpenMode.CREATE)
+      fileIo.closeSync(file)
+    }
   }
-  const file = fileIo.openSync(thumbnailPath)
-  const readBuffer = new ArrayBuffer(8)
-  fileIo.readSync(file.fd, readBuffer)
-  fileIo.closeSync(file)
-  const fileHead = new Uint8Array(readBuffer)
-  const pngHead = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
-  if (pngHead.every((item, index) => fileHead[index] === item)) {
-    return fileUri.getUriFromPath(thumbnailPath)
+  if (fileIo.statSync(thumbnailPath).size === 0) {
+    return getFileTypeIcon(path)
   }
-  await write(thumbnailPath, '')
-  return getFileTypeIcon(path)
+  return fileUri.getUriFromPath(thumbnailPath)
 }
