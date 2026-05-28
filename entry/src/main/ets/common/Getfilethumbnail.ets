@@ -4,7 +4,7 @@ import { netBoost } from '@kit.NetworkBoostKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { AccountInfo, getAccountHash } from './Account'
 import { getDnsServer } from './Dnsserver'
-import { getFileTypeIcon, write } from './File'
+import { getFileTypeIcon } from './File'
 import { sha256hash } from './Hash'
 import { getFlushPreference } from './Preference'
 
