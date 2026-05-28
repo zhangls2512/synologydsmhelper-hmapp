@@ -291,7 +291,6 @@ export async function upload(context: Context, id: string) {
           scene: 'upload',
           sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
         })
-        await fileIo.unlink(filePath)
         if (err.code !== 1007900992) {
           transferTask.status = 'fail'
           transferTask.errCode = err.code
@@ -314,22 +313,10 @@ export async function upload(context: Context, id: string) {
       }
     }
   } catch (err) {
-    if (err.code !== 13900002) {
-      transferTask.status = 'fail'
-      transferTask.errCode = err.code
-      if (transferTask.backupTaskId) {
-        await updateBackupTaskStatus(context, transferTask.accountInfo, transferTask.backupTaskId, false)
-      }
-    }
-    if (err.code === 13900002 && transferTask.status === 'processing') {
-      transferTask.status = 'success'
-      if (transferTask.backupTaskId) {
-        await updateBackupTaskStatus(context, transferTask.accountInfo, transferTask.backupTaskId, true)
-        const deleteAfterSuccess = getFlushPreference(context, 'backupSetting', 'deleteAfterSuccess', true)
-        if (deleteAfterSuccess) {
-          await deleteBackupTask(context, transferTask.accountInfo, transferTask.backupTaskId)
-        }
-      }
+    transferTask.status = 'fail'
+    transferTask.errCode = err.code
+    if (transferTask.backupTaskId) {
+      await updateBackupTaskStatus(context, transferTask.accountInfo, transferTask.backupTaskId, false)
     }
   }
   transferTaskDataPreferences.putSync(id, JSON.stringify(transferTask))
