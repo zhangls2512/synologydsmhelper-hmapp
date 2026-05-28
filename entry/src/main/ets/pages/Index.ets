@@ -38,7 +38,7 @@ export interface TransferTaskItem {
   transferredSize: number,
   totalSize: number,
   status: string,
-  errCode: number,
+  errCode: number | string,
   type: string,
   accountInfo: AccountInfo,
   srcFileUri: string,

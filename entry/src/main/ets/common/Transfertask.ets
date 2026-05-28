@@ -293,7 +293,7 @@ export async function upload(context: Context, id: string) {
         })
         if (err.code !== 1007900992) {
           transferTask.status = 'fail'
-          transferTask.errCode = err.code
+          transferTask.errCode = err.code ?? err.message
           if (transferTask.backupTaskId) {
             await updateBackupTaskStatus(context, transferTask.accountInfo, transferTask.backupTaskId, false)
           }
