@@ -63,8 +63,9 @@ export default struct Transfertask {
                             })
                         }
                         if (item.status === 'processing') {
-                          Text(Number((item.transferredSize / item.totalSize).toFixed(2)) * 100 + '%(' +
-                            getSizeString(item.transferredSize) + '/' + getSizeString(item.totalSize) + ')')
+                          Text(Number((item.transferredSize / item.totalSize).toFixed(2)) * 100 + '% - ' +
+                            getSizeString(item.transferredSize) + '/' + getSizeString(item.totalSize) + ' - ' +
+                            getSizeString(item.speed) + '/s')
                             .fontColor($r('sys.color.font_secondary'))
                             .fontSize($r('sys.float.ohos_id_text_size_body2'))
                             .margin({
@@ -169,8 +170,9 @@ export default struct Transfertask {
                             })
                         }
                         if (item.status === 'processing') {
-                          Text(Number((item.transferredSize / item.totalSize).toFixed(2)) * 100 + '%(' +
-                            getSizeString(item.transferredSize) + '/' + getSizeString(item.totalSize) + ')')
+                          Text(Number((item.transferredSize / item.totalSize).toFixed(2)) * 100 + '% - ' +
+                            getSizeString(item.transferredSize) + '/' + getSizeString(item.totalSize) + ' - ' +
+                            getSizeString(item.speed) + '/s')
                             .fontColor($r('sys.color.font_secondary'))
                             .fontSize($r('sys.float.ohos_id_text_size_body2'))
                             .margin({

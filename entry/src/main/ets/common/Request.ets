@@ -126,7 +126,7 @@ async function getCacheApiVersion(context: Context, path: string, api: string) {
 
 export async function getDsmApiMaxVersion(context: Context, path: string, api: string): Promise<number | 'fail'> {
   const accountInfo = await getAccountInfo(context)
-  const requestPath = accountInfo.path ? accountInfo.path : path
+  const requestPath = path ? path : accountInfo.path
   const cacheApiVersionSetting = getFlushPreference(context, 'commonSetting', 'cacheApiVersion', true)
   if (cacheApiVersionSetting) {
     const cacheApiVersion = await getCacheApiVersion(context, requestPath, api)
@@ -273,7 +273,7 @@ export async function getDsmApiMaxVersion(context: Context, path: string, api: s
 export async function dsmRequest(context: Context, path: string, api: string, params: string, version?: number,
   dsm6Login = false, hide102ErrorCode = false): Promise<string | object> {
   const accountInfo = await getAccountInfo(context)
-  const requestPath = accountInfo.path ? accountInfo.path : path
+  const requestPath = path ? path : accountInfo.path
   let apiVersion = version
   if (!apiVersion) {
     const maxVersion = await getDsmApiMaxVersion(context, path, api)

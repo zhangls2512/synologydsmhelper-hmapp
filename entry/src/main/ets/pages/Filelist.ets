@@ -1,6 +1,6 @@
 import { common, wantConstant } from '@kit.AbilityKit'
 import { sendablePreferences, unifiedDataChannel, uniformTypeDescriptor } from '@kit.ArkData'
-import { fastbuffer, url, util } from '@kit.ArkTS'
+import { fastbuffer, taskpool, url, util } from '@kit.ArkTS'
 import { display, LoadingDialog, promptAction } from '@kit.ArkUI'
 import { deviceInfo } from '@kit.BasicServicesKit'
 import { Environment, fileIo, fileUri, picker } from '@kit.CoreFileKit'
@@ -12,6 +12,7 @@ import { hdsEffect } from '@kit.UIDesignKit'
 import { getAccountHash, getAccountInfo, getLoginStatus } from '../common/Account'
 import { getDnsServer } from '../common/Dnsserver'
 import { getFileTypeIcon } from '../common/File'
+import { getFileThumbnail } from '../common/Getfilethumbnail'
 import { sha256hash } from '../common/Hash'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import { getPermission } from '../common/Permission'
@@ -41,7 +42,8 @@ interface FileItem {
   path: string,
   name: string,
   isdir: boolean,
-  additional: Additional
+  additional: Additional,
+  thumbnail: string | Resource
 }
 
 interface ShareLinkItem {
@@ -76,6 +78,8 @@ export default struct Filelist {
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   account = ''
+  tid = ''
+  thumbApiVersion = -1
   src = ''
   srcName = ''
   editPath = ''
@@ -103,6 +107,8 @@ export default struct Filelist {
       const account = getAccountHash(accountInfo)
       if (this.account !== account) {
         this.dirnames = []
+        this.tid = ''
+        this.thumbApiVersion = -1
       }
       this.account = account
       const path = this.getPath()
@@ -147,10 +153,65 @@ export default struct Filelist {
           sort_direction: sortDirection
         }).toString())
         if (res !== 'fail') {
-          this.fileArray = res['files']
+          const fileArray = res['files'] as FileItem[]
+          fileArray.forEach(item => {
+            item.thumbnail = item.isdir ? '' : getFileTypeIcon(item.name)
+          })
+          this.fileArray = fileArray
+          const currentAccount = account
+          const currentPath = this.getPath()
+          if (this.thumbApiVersion === -1) {
+            const res = await getDsmApiMaxVersion(this.context, accountInfo.path, 'SYNO.FileStation.Thumb')
+            if (res !== 'fail') {
+              this.thumbApiVersion = res
+            }
+          }
+          for (let i = 0; i < fileArray.length; i++) {
+            if (this.account !== currentAccount || this.getPath() !== currentPath) {
+              return
+            }
+            const item = fileArray[i]
+            if (!item.isdir) {
+              const task =
+                new taskpool.Task(getFileThumbnail, this.context, item.path, accountInfo, this.thumbApiVersion)
+              const taskres = await taskpool.execute(task)
+              item.thumbnail = taskres as string
+              this.fileArray[i] = {
+                path: item.path,
+                name: item.name,
+                isdir: item.isdir,
+                additional: item.additional,
+                thumbnail: item.thumbnail
+              }
+            }
+          }
         }
       }
     }
+  }
+
+  async getTid() {
+    if (!this.tid) {
+      const res = await dsmRequest(this.context, '', 'SYNO.API.Auth.Key', new url.URLParams({
+        method: 'grant',
+        allow_api: 'SYNO.FileStation.Download',
+        allow_methods: JSON.stringify(['download'])
+      }).toString())
+      this.dialogControllerProgress.close()
+      if (res !== 'fail') {
+        this.tid = res['tid'] as string
+      }
+    }
+    return this.tid
+  }
+
+  async getPreviewUrl(path: string, name: string) {
+    const accountInfo = await getAccountInfo(this.context)
+    const bytes = new util.TextEncoder().encodeInto(path)
+    const dlink = Array.from(bytes).map(byte => byte.toString(16).padStart(2, '0')).join('')
+    const tid = await this.getTid()
+    return accountInfo.path + '/fbdownload/' + name.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') + '?tid=' + tid +
+      '&mode=open&dlink=' + dlink
   }
 
   exitMultipleSelect() {
@@ -559,6 +620,12 @@ export default struct Filelist {
                       await promptAction.openToast({
                         message: '删除成功'
                       })
+                      if (!item.isdir) {
+                        const thumbnailPath = item.thumbnail.toString()
+                        if (fileIo.accessSync(thumbnailPath)) {
+                          await fileIo.unlink(thumbnailPath)
+                        }
+                      }
                       this.loading = true
                     }
                   }
@@ -676,7 +743,6 @@ export default struct Filelist {
                   documentSelectOptions.selectMode = picker.DocumentSelectMode.FOLDER
                   const documentViewPicker = new picker.DocumentViewPicker(this.context)
                   const uris = await documentViewPicker.select(documentSelectOptions)
-                  console.error(JSON.stringify(uris))
                   if (uris.length === 1) {
                     destDownloadRootPath = new fileUri.FileUri(uris[0]).path
                   }
@@ -1018,6 +1084,13 @@ export default struct Filelist {
                           await promptAction.openToast({
                             message: '删除成功'
                           })
+                          const promises = this.multipleSelectArray.filter(item => !item.isdir).map(async (item) => {
+                            const thumbnailPath = item.thumbnail.toString()
+                            if (fileIo.accessSync(thumbnailPath)) {
+                              await fileIo.unlink(thumbnailPath)
+                            }
+                          })
+                          await Promise.all(promises)
                           this.loading = true
                         }
                       }
@@ -1147,12 +1220,6 @@ export default struct Filelist {
               value: this.searchKeyword!!
             })
               .searchButton('搜索')
-              .onSubmit(async (value) => {
-                this.dialogControllerProgress.open()
-                await this.get()
-                this.dialogControllerProgress.close()
-                this.fileArray = this.fileArray.filter(item => item.name.includes(value))
-              })
           }
           Row() {
             Column() {
@@ -1494,437 +1561,482 @@ export default struct Filelist {
                 }
                 .width('100%')
               }
-              ForEach(this.fileArray, (item: FileItem, index) => {
-                ListItem() {
-                  Column() {
-                    if (index !== 0) {
-                      Divider()
-                        .padding({
-                          left: 6,
-                          right: 6
-                        })
-                    }
-                    Row() {
-                      if (this.multipleSelect) {
-                        Toggle({
-                          type: ToggleType.Checkbox,
-                          isOn: this.multipleSelectArray.some(selectItem => selectItem.path === item.path)
-                        })
-                          .margin({
-                            right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+              Repeat<FileItem>(this.fileArray)
+                .each((item: RepeatItem<FileItem>) => {
+                  ListItem() {
+                    Column() {
+                      if (item.index !== 0) {
+                        Divider()
+                          .padding({
+                            left: 6,
+                            right: 6
                           })
-                          .onChange(isOn => {
-                            const exist = this.multipleSelectArray.find(selectItem => selectItem.path === item.path)
-                            if (!isOn && exist) {
+                      }
+                      Row() {
+                        if (this.multipleSelect) {
+                          Toggle({
+                            type: ToggleType.Checkbox,
+                            isOn: this.multipleSelectArray.some(selectItem => selectItem.path === item.item.path)
+                          })
+                            .margin({
+                              right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                            })
+                            .onChange(isOn => {
+                              const exist =
+                                this.multipleSelectArray.find(selectItem => selectItem.path === item.item.path)
+                              if (!isOn && exist) {
+                                this.multipleSelectArray.splice(
+                                  this.multipleSelectArray.findIndex(selectItem => selectItem.path ===
+                                    item.item.path), 1)
+                              }
+                              if (isOn && !exist) {
+                                this.multipleSelectArray.push(item.item)
+                              }
+                            })
+                        }
+                        if (!item.item.isdir) {
+                          Image(item.item.thumbnail)
+                            .height(24)
+                            .margin({
+                              right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                            })
+                            .width(24)
+                        }
+                        if (item.item.isdir) {
+                          Image($r('app.media.foldericon'))
+                            .height(24)
+                            .margin({
+                              right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                            })
+                            .width(24)
+                        }
+                        Column() {
+                          Text(item.item.name)
+                            .enableAutoSpacing(true)
+                            .fontWeight(FontWeight.Medium)
+                            .width('85%')
+                          Text() {
+                            Span(getTimeStringFromSecond(item.item.additional.time.mtime))
+                            if (item.item.additional.size >= 0) {
+                              Span(' - ' + getSizeString(item.item.additional.size))
+                            }
+                          }
+                          .fontColor($r('sys.color.font_secondary'))
+                          .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                          .margin({
+                            top: $r('sys.float.ohos_id_text_margin_vertical')
+                          })
+                        }
+                        .alignItems(HorizontalAlign.Start)
+                        .layoutWeight(1)
+                        .margin({
+                          right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                        })
+
+                        Image($r('app.media.right'))
+                          .fillColor($r('sys.color.icon_fourth'))
+                          .height(12)
+                          .width(12)
+                      }
+                      .borderRadius(12)
+                      .padding({
+                        bottom: 12,
+                        left: 6,
+                        right: 5,
+                        top: 12
+                      })
+                      .stateStyles({
+                        normal: {
+                          .backgroundColor(this.hoverId === item.index ? $r('sys.color.interactive_hover') : '')
+                        },
+                        pressed: {
+                          .backgroundColor($r('sys.color.comp_background_secondary'))
+                        }
+                      })
+                      .onHover(isHover => {
+                        if (!isHover) {
+                          this.hoverId = -1
+                        }
+                        if (isHover) {
+                          this.hoverId = item.index
+                        }
+                      })
+                      .onClick(async () => {
+                        if (!item.item.isdir) {
+                          if (this.multipleSelect) {
+                            const exist =
+                              this.multipleSelectArray.find(selectItem => selectItem.path === item.item.path)
+                            if (exist) {
                               this.multipleSelectArray.splice(
                                 this.multipleSelectArray.findIndex(selectItem => selectItem.path ===
-                                  item.path), 1)
+                                  item.item.path), 1)
                             }
-                            if (isOn && !exist) {
-                              this.multipleSelectArray.push(item)
+                            if (!exist) {
+                              this.multipleSelectArray.push(item.item)
                             }
-                          })
-                      }
-                      if (!item.isdir) {
-                        Image(getFileTypeIcon(item.name))
-                          .height(24)
-                          .margin({
-                            right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                          })
-                          .width(24)
-                      }
-                      if (item.isdir) {
-                        Image($r('app.media.foldericon'))
-                          .height(24)
-                          .margin({
-                            right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                          })
-                          .width(24)
-                      }
-                      Column() {
-                        Text(item.name)
-                          .enableAutoSpacing(true)
-                          .fontWeight(FontWeight.Medium)
-                          .width('85%')
-                        Text() {
-                          Span(getTimeStringFromSecond(item.additional.time.mtime))
-                          if (item.additional.size >= 0) {
-                            Span(' - ' + getSizeString(item.additional.size))
+                            return
                           }
-                        }
-                        .fontColor($r('sys.color.font_secondary'))
-                        .fontSize($r('sys.float.ohos_id_text_size_body2'))
-                        .margin({
-                          top: $r('sys.float.ohos_id_text_margin_vertical')
-                        })
-                      }
-                      .alignItems(HorizontalAlign.Start)
-                      .layoutWeight(1)
-                      .margin({
-                        right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                      })
-
-                      Image($r('app.media.right'))
-                        .fillColor($r('sys.color.icon_fourth'))
-                        .height(12)
-                        .width(12)
-                    }
-                    .borderRadius(12)
-                    .padding({
-                      bottom: 12,
-                      left: 6,
-                      right: 5,
-                      top: 12
-                    })
-                    .stateStyles({
-                      normal: {
-                        .backgroundColor(this.hoverId === index ? $r('sys.color.interactive_hover') : '')
-                      },
-                      pressed: {
-                        .backgroundColor($r('sys.color.comp_background_secondary'))
-                      }
-                    })
-                    .onHover(isHover => {
-                      if (!isHover) {
-                        this.hoverId = -1
-                      }
-                      if (isHover) {
-                        this.hoverId = index
-                      }
-                    })
-                    .onClick(async () => {
-                      if (!item.isdir) {
-                        if (this.multipleSelect) {
-                          const exist = this.multipleSelectArray.find(selectItem => selectItem.path === item.path)
-                          if (exist) {
-                            this.multipleSelectArray.splice(
-                              this.multipleSelectArray.findIndex(selectItem => selectItem.path ===
-                                item.path), 1)
+                          let houzhui = ''
+                          const lastDotIndex = item.item.name.lastIndexOf('.')
+                          if (lastDotIndex !== -1) {
+                            houzhui = item.item.name.slice(lastDotIndex + 1)
                           }
-                          if (!exist) {
-                            this.multipleSelectArray.push(item)
-                          }
-                          return
-                        }
-                        let houzhui = ''
-                        const lastDotIndex = item.name.lastIndexOf('.')
-                        if (lastDotIndex !== -1) {
-                          houzhui = item.name.slice(lastDotIndex + 1)
-                        }
-                        const supportedformats = ['mp4', 'mkv', 'm4a', 'aac', 'mp3', 'ogg', 'wav', 'flac', 'amr', 'ape']
-                        if (supportedformats.includes(houzhui) &&
-                          getFlushPreference(this.context, 'commonSetting', 'onlinePreviewMedia', true)) {
-                          this.dialogControllerProgress.open()
-                          const res = await dsmRequest(this.context, '', 'SYNO.API.Auth.Key', new url.URLParams({
-                            method: 'grant',
-                            allow_api: 'SYNO.FileStation.Download',
-                            allow_methods: JSON.stringify(['download'])
-                          }).toString())
-                          this.dialogControllerProgress.close()
-                          if (res !== 'fail') {
-                            const tid = res['tid'] as string
-                            const accountInfo = await getAccountInfo(this.context)
-                            const bytes = new util.TextEncoder().encodeInto(item.path)
-                            const dlink = Array.from(bytes).map(byte => byte.toString(16).padStart(2, '0')).join('')
-                            this.src = accountInfo.path + '/fbdownload/' +
-                              item.name.replace(/[\/\\\:\?\>\<\*\"\;\|\#\%]/g, '-') + '?tid=' + tid +
-                              '&mode=open&dlink=' + dlink
-                            this.srcName = item.name
+                          const supportedFormats =
+                            ['mp4', 'mkv', 'm4a', 'aac', 'mp3', 'ogg', 'wav', 'flac', 'amr', 'ape']
+                          if (supportedFormats.includes(houzhui.toLowerCase()) &&
+                            getFlushPreference(this.context, 'commonSetting', 'onlinePreviewMedia', true)) {
+                            this.dialogControllerProgress.open()
+                            this.src = await this.getPreviewUrl(item.item.path, item.item.name)
+                            this.srcName = item.item.name
+                            this.dialogControllerProgress.close()
                             this.isShowPlayerSheet = true
+                            return
                           }
-                          return
-                        }
-                        const promptAction = this.UIContext.getPromptAction()
-                        if (item.additional.size > Math.pow(1024, 3)) {
-                          await promptAction.openToast({
-                            message: '大小大于 1GB，请长按将其下载到本地后预览'
-                          })
-                          return
-                        }
-                        if (getCurrentNetworkBearerType() === 0) {
-                          const cellularDataUseRemind =
-                            getFlushPreference(this.context, 'commonSetting', 'cellularDataUseRemind', 0)
-                          if (cellularDataUseRemind === 0 ||
-                            (cellularDataUseRemind === 1 && item.additional.size > 200 * Math.pow(1024, 2))) {
-                            const data = await promptAction.showDialog({
-                              title: '流量使用提醒',
-                              message: '当前正在使用流量上网，下载此文件将消耗约 ' +
-                                getSizeString(item.additional.size) + ' 流量，确定下载？',
-                              buttons: [
-                                {
-                                  text: '取消',
-                                  color: $r('sys.color.font_primary')
-                                },
-                                {
-                                  text: '确定',
-                                  color: $r('sys.color.font_emphasize')
-                                }
-                              ]
+                          const promptAction = this.UIContext.getPromptAction()
+                          if (item.item.additional.size > Math.pow(1024, 3)) {
+                            await promptAction.openToast({
+                              message: '大小大于 1GB，请长按将其下载到本地后预览'
                             })
-                            if (data.index === 0) {
-                              return
+                            return
+                          }
+                          if (getCurrentNetworkBearerType() === 0) {
+                            const cellularDataUseRemind =
+                              getFlushPreference(this.context, 'commonSetting', 'cellularDataUseRemind', 0)
+                            if (cellularDataUseRemind === 0 ||
+                              (cellularDataUseRemind === 1 && item.item.additional.size > 200 * Math.pow(1024, 2))) {
+                              const data = await promptAction.showDialog({
+                                title: '流量使用提醒',
+                                message: '当前正在使用流量上网，下载此文件将消耗约 ' +
+                                  getSizeString(item.item.additional.size) + ' 流量，确定下载？',
+                                buttons: [
+                                  {
+                                    text: '取消',
+                                    color: $r('sys.color.font_primary')
+                                  },
+                                  {
+                                    text: '确定',
+                                    color: $r('sys.color.font_emphasize')
+                                  }
+                                ]
+                              })
+                              if (data.index === 0) {
+                                return
+                              }
                             }
                           }
-                        }
-                        try {
-                          const previewDir =
-                            this.context.tempDir + '/preview/' + this.account + '/' + sha256hash(item.path)
-                          if (!fileIo.accessSync(previewDir)) {
-                            await fileIo.mkdir(previewDir, true)
-                          }
-                          const filePath = previewDir + '/' + item.name
-                          this.dialogControllerProgress.open()
-                          const version = await getDsmApiMaxVersion(this.context, '', 'SYNO.FileStation.Download')
-                          this.dialogControllerProgress.close()
-                          if (version !== 'fail') {
-                            const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.WRITE_ONLY)
-                            const fileStream = fileIo.fdopenStreamSync(file.fd, 'w+')
-                            netBoost.setSceneDesc({
-                              scene: 'download',
-                              sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
-                            })
-                            const accountInfo = await getAccountInfo(this.context)
-                            const session = rcp.createSession({
-                              requestConfiguration: {
-                                transfer: {
-                                  timeout: {
-                                    transferMs: 0
-                                  }
-                                },
-                                tracing: {
-                                  httpEventsHandler: {
-                                    onDataReceive: async (incomingData) => {
-                                      await fileStream.write(incomingData)
-                                    },
-                                    onDownloadProgress: (totalSize, transferredSize) => {
-                                      this.transferredSize = transferredSize
-                                      this.totalSize = totalSize
-                                    },
-                                    onDataEnd: () => {
-                                      this.isShowProgressSheet = false
-                                      session.close()
-                                      netBoost.setSceneDesc({
-                                        scene: 'download',
-                                        sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-                                      })
-                                      fileStream.closeSync()
-                                      this.context.eventHub.off('cancelDownload')
-                                      this.transferredSize = 0
-                                      this.totalSize = 0
-                                    }
-                                  }
-                                },
-                                dns: {
-                                  dnsRules: getDnsServer(this.context)
-                                },
-                                security: {
-                                  remoteValidation: getFlushPreference(this.context, 'debugSetting',
-                                    'closeRemoteValidationWhenLinkDsm', 'system') as 'system' | 'skip',
-                                  tlsRange: {
-                                    min: 'TlsV1.2'
-                                  }
-                                }
-                              },
-                              headers: {
-                                referer: accountInfo.path,
-                                'x-syno-token': accountInfo.synotoken
-                              },
-                              cookies: {
-                                id: accountInfo.sid
-                              }
-                            })
-                            this.totalSize = item.additional.size
-                            this.context.eventHub.on('cancelDownload', () => {
-                              session.cancel()
-                            })
-                            this.isShowProgressSheet = true
-                            try {
-                              const response =
-                                await session.get(accountInfo.path + '/webapi/entry.cgi?' + new url.URLParams({
-                                  api: 'SYNO.FileStation.Download',
-                                  version: String(version),
-                                  method: 'download',
-                                  path: item.path,
-                                  mode: 'download'
-                                }).toString())
-                              if (response.statusCode >= 200 && response.statusCode < 300) {
-                                const uri = fileUri.getUriFromPath(filePath)
-                                const filePreviewType =
-                                  getFlushPreference(this.context, 'commonSetting', 'filePreviewType', 0)
-                                if (filePreviewType === 0) {
-                                  const supportedReaderFormats = ['.epub', '.mobi', '.azw', '.azw3']
-                                  if (!supportedReaderFormats.some(formatItem => item.name.endsWith(formatItem))) {
-                                    const canPreview = await filePreview.canPreview(this.context, uri)
-                                    if (!canPreview) {
-                                      await promptAction.openToast({
-                                        message: '此类型不支持预览'
-                                      })
-                                    }
-                                    if (canPreview) {
-                                      await filePreview.openPreview(this.context, {
-                                        title: item.name,
-                                        uri: uri,
-                                        mimeType: ''
-                                      })
-                                    }
-                                  }
-                                  if (supportedReaderFormats.some(formatItem => item.name.endsWith(formatItem))) {
-                                    const dir = this.context.tempDir + '/preview/reader/' + this.account + '/' +
-                                      sha256hash(item.name)
-                                    if (!fileIo.accessSync(dir)) {
-                                      await fileIo.mkdir(dir, true)
-                                    }
-                                    const newFilePath = dir + '/' + item.name
-                                    await fileIo.moveFile(filePath, newFilePath)
-                                    this.src = newFilePath
-                                    this.srcName = item.name
-                                    this.isShowReaderSheet = true
-                                  }
-                                }
-                                if (filePreviewType === 1) {
-                                  await this.context.startAbility({
-                                    action: 'ohos.want.action.viewData',
-                                    uri: uri,
-                                    parameters: {
-                                      'ohos.ability.params.showDefaultPicker': true
-                                    },
-                                    flags: wantConstant.Flags.FLAG_AUTH_READ_URI_PERMISSION
-                                  })
-                                }
-                              } else {
-                                await fileIo.unlink(filePath)
-                                await promptAction.openToast({
-                                  message: 'HTTP 请求失败，状态码：' + response.statusCode
-                                })
-                              }
-                            } catch (err) {
-                              this.isShowProgressSheet = false
-                              session.close()
+                          try {
+                            const previewDir =
+                              this.context.tempDir + '/preview/' + this.account + '/' + sha256hash(item.item.path)
+                            if (!fileIo.accessSync(previewDir)) {
+                              await fileIo.mkdir(previewDir, true)
+                            }
+                            const filePath = previewDir + '/' + item.item.name
+                            this.dialogControllerProgress.open()
+                            const version = await getDsmApiMaxVersion(this.context, '', 'SYNO.FileStation.Download')
+                            this.dialogControllerProgress.close()
+                            if (version !== 'fail') {
+                              const file =
+                                fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.WRITE_ONLY)
+                              const fileStream = fileIo.fdopenStreamSync(file.fd, 'w+')
                               netBoost.setSceneDesc({
                                 scene: 'download',
-                                sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                                sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
                               })
-                              fileStream.closeSync()
-                              this.context.eventHub.off('cancelDownload')
-                              this.transferredSize = 0
-                              this.totalSize = 0
-                              await fileIo.unlink(filePath)
-                              if (err.code !== 1007900992) {
-                                await promptAction.openToast({
-                                  message: '下载失败，错误码：' + err.code
+                              const accountInfo = await getAccountInfo(this.context)
+                              const session = rcp.createSession({
+                                requestConfiguration: {
+                                  transfer: {
+                                    timeout: {
+                                      transferMs: 0
+                                    }
+                                  },
+                                  tracing: {
+                                    httpEventsHandler: {
+                                      onDataReceive: async (incomingData) => {
+                                        await fileStream.write(incomingData)
+                                      },
+                                      onDownloadProgress: (totalSize, transferredSize) => {
+                                        this.transferredSize = transferredSize
+                                        this.totalSize = totalSize
+                                      },
+                                      onDataEnd: () => {
+                                        this.isShowProgressSheet = false
+                                        session.close()
+                                        netBoost.setSceneDesc({
+                                          scene: 'download',
+                                          sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                                        })
+                                        fileStream.closeSync()
+                                        this.context.eventHub.off('cancelDownload')
+                                        this.transferredSize = 0
+                                        this.totalSize = 0
+                                      }
+                                    }
+                                  },
+                                  dns: {
+                                    dnsRules: getDnsServer(this.context)
+                                  },
+                                  security: {
+                                    remoteValidation: getFlushPreference(this.context, 'debugSetting',
+                                      'closeRemoteValidationWhenLinkDsm', 'system') as 'system' | 'skip',
+                                    tlsRange: {
+                                      min: 'TlsV1.2'
+                                    }
+                                  }
+                                },
+                                headers: {
+                                  referer: accountInfo.path,
+                                  'x-syno-token': accountInfo.synotoken
+                                },
+                                cookies: {
+                                  id: accountInfo.sid
+                                }
+                              })
+                              this.totalSize = item.item.additional.size
+                              this.context.eventHub.on('cancelDownload', () => {
+                                session.cancel()
+                              })
+                              this.isShowProgressSheet = true
+                              try {
+                                const response =
+                                  await session.get(accountInfo.path + '/webapi/entry.cgi?' + new url.URLParams({
+                                    api: 'SYNO.FileStation.Download',
+                                    version: String(version),
+                                    method: 'download',
+                                    path: item.item.path,
+                                    mode: 'download'
+                                  }).toString())
+                                if (response.statusCode >= 200 && response.statusCode < 300) {
+                                  const uri = fileUri.getUriFromPath(filePath)
+                                  const filePreviewType =
+                                    getFlushPreference(this.context, 'commonSetting', 'filePreviewType', 0)
+                                  if (filePreviewType === 0) {
+                                    const supportedReaderFormats = ['.epub', '.mobi', '.azw', '.azw3']
+                                    if (!supportedReaderFormats.some(
+                                      formatItem => item.item.name.endsWith(formatItem))) {
+                                      const canPreview = await filePreview.canPreview(this.context, uri)
+                                      if (!canPreview) {
+                                        await promptAction.openToast({
+                                          message: '此类型不支持预览'
+                                        })
+                                      }
+                                      if (canPreview) {
+                                        await filePreview.openPreview(this.context, {
+                                          title: item.item.name,
+                                          uri: uri,
+                                          mimeType: ''
+                                        })
+                                      }
+                                    }
+                                    if (supportedReaderFormats.some(
+                                      formatItem => item.item.name.endsWith(formatItem))) {
+                                      const dir = this.context.tempDir + '/preview/reader/' + this.account + '/' +
+                                        sha256hash(item.item.name)
+                                      if (!fileIo.accessSync(dir)) {
+                                        await fileIo.mkdir(dir, true)
+                                      }
+                                      const newFilePath = dir + '/' + item.item.name
+                                      await fileIo.moveFile(filePath, newFilePath)
+                                      this.src = newFilePath
+                                      this.srcName = item.item.name
+                                      this.isShowReaderSheet = true
+                                    }
+                                  }
+                                  if (filePreviewType === 1) {
+                                    await this.context.startAbility({
+                                      action: 'ohos.want.action.viewData',
+                                      uri: uri,
+                                      parameters: {
+                                        'ohos.ability.params.showDefaultPicker': true
+                                      },
+                                      flags: wantConstant.Flags.FLAG_AUTH_READ_URI_PERMISSION
+                                    })
+                                  }
+                                } else {
+                                  await fileIo.unlink(filePath)
+                                  await promptAction.openToast({
+                                    message: 'HTTP 请求失败，状态码：' + response.statusCode
+                                  })
+                                }
+                              } catch (err) {
+                                this.isShowProgressSheet = false
+                                session.close()
+                                netBoost.setSceneDesc({
+                                  scene: 'download',
+                                  sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
                                 })
+                                fileStream.closeSync()
+                                this.context.eventHub.off('cancelDownload')
+                                this.transferredSize = 0
+                                this.totalSize = 0
+                                await fileIo.unlink(filePath)
+                                if (err.code !== 1007900992) {
+                                  await promptAction.openToast({
+                                    message: '下载失败，错误码：' + err.code
+                                  })
+                                }
                               }
                             }
+                          } catch (err) {
+                            await promptAction.openToast({
+                              message: '发生错误，错误码：' + err.code
+                            })
                           }
-                        } catch (err) {
-                          await promptAction.openToast({
-                            message: '发生错误，错误码：' + err.code
-                          })
                         }
-                      }
-                      if (item.isdir) {
-                        this.dirnames.push(item.name)
-                        setTempPreference(this.context, 'back', 'filelist', true)
-                        this.loading = true
-                      }
-                    })
-                    .bindContextMenu(this.MenuBuilder(item), ResponseType.LongPress, {
-                      hapticFeedbackMode: HapticFeedbackMode.AUTO
-                    })
-                    .bindContextMenu(this.MenuBuilder(item), ResponseType.RightClick, {
-                      hapticFeedbackMode: HapticFeedbackMode.AUTO
-                    })
+                        if (item.item.isdir) {
+                          this.dirnames.push(item.item.name)
+                          setTempPreference(this.context, 'back', 'filelist', true)
+                          this.loading = true
+                        }
+                      })
+                      .bindContextMenu(this.MenuBuilder(item.item), ResponseType.LongPress, {
+                        hapticFeedbackMode: HapticFeedbackMode.AUTO
+                      })
+                      .bindContextMenu(this.MenuBuilder(item.item), ResponseType.RightClick, {
+                        hapticFeedbackMode: HapticFeedbackMode.AUTO
+                      })
+                    }
                   }
-                }
-                .allowDrop([uniformTypeDescriptor.UniformDataType.PLAIN_TEXT])
-                .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
-                .selected(this.multipleSelectArray.some(selectItem => selectItem.path === item.path))
-                .onDragStart(event => {
-                  event.dragBehavior = DragBehavior.MOVE
-                  const data = new unifiedDataChannel.PlainText()
-                  if (!this.multipleSelect) {
-                    data.textContent = JSON.stringify([item.path])
-                  }
-                  if (this.multipleSelect) {
-                    data.textContent = JSON.stringify(this.multipleSelectArray.map(item => item.path))
-                  }
-                  event.setData(new unifiedDataChannel.UnifiedData(data))
-                })
-                .onDrop(event => {
-                  event.dragBehavior = DragBehavior.MOVE
-                  if (event.isRemote() || event.getDragSource() !== 'com.songjy.synologydsmhelper') {
-                    event.setResult(DragResult.DROP_DISABLED)
-                    return
-                  }
-                  if (!item.isdir) {
-                    event.setResult(DragResult.DROP_DISABLED)
-                    return
-                  }
-                  event.setResult(DragResult.DRAG_SUCCESSFUL)
-                  event.getData().getRecords().forEach(async (recordItem) => {
-                    if (recordItem.getType() === uniformTypeDescriptor.UniformDataType.PLAIN_TEXT) {
-                      const data = recordItem as unifiedDataChannel.PlainText
-                      const paths = JSON.parse(data.textContent) as string[]
-                      this.dialogControllerProgress.open()
-                      const startres =
-                        await dsmRequest(this.context, '', 'SYNO.FileStation.CopyMove', new url.URLParams({
-                          method: 'start',
-                          path: JSON.stringify(paths),
-                          dest_folder_path: item.path,
-                          overwrite: getFlushPreference(this.context, 'commonSetting', 'operationWhenCopyMoveConflict',
-                            0) === 0 ? 'false' : 'true',
-                          remove_src: 'true'
-                        }).toString())
-                      this.dialogControllerProgress.close()
-                      this.exitMultipleSelect()
-                      this.remove = undefined
-                      if (startres !== 'fail') {
-                        const taskId = startres['taskid'] as string
-                        const dialogControllerProgress = new CustomDialogController({
-                          builder: LoadingDialog({
-                            content: '正在移动文件...'
-                          })
+                  .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
+                  .selected(this.multipleSelectArray.some(selectItem => selectItem.path === item.item.path))
+                  .visibility(item.item.name.includes(this.searchKeyword) ? 0 : 2)
+                  .onDragStart(event => {
+                    event.dragBehavior = DragBehavior.MOVE
+                    const data = new unifiedDataChannel.PlainText()
+                    if (!this.multipleSelect) {
+                      data.textContent = JSON.stringify([item.item.path])
+                    }
+                    if (this.multipleSelect) {
+                      data.textContent = JSON.stringify(this.multipleSelectArray.map(item => item.path))
+                    }
+                    event.setData(new unifiedDataChannel.UnifiedData(data))
+                  })
+                  .onDrop(async (event) => {
+                    if (event.getDragSource() !== 'com.songjy.synologydsmhelper') {
+                      if (!item.item.isdir && this.dirnames.length === 0) {
+                        await promptAction.openToast({
+                          message: '不支持上传到根目录'
                         })
-                        dialogControllerProgress.open()
-                        let finished = false
-                        while (!finished) {
-                          const statusres =
-                            await dsmRequest(this.context, '', 'SYNO.FileStation.CopyMove', new url.URLParams({
-                              method: 'status',
-                              taskid: taskId
-                            }).toString())
-                          if (statusres !== 'fail') {
-                            if (statusres['finished']) {
-                              finished = true
-                              dialogControllerProgress.close()
-                              await promptAction.openToast({
-                                message: '移动成功'
-                              })
-                              this.loading = true
+                        event.setResult(DragResult.DROP_DISABLED)
+                      } else {
+                        const transferTaskDataPreferences = sendablePreferences.getPreferencesSync(this.context, {
+                          name: 'transferTask'
+                        })
+                        const accountInfo = await getAccountInfo(this.context)
+                        let count = 0
+                        const records = event.getData().getRecords()
+                        try {
+                          for (let i = 0; i < records.length; i++) {
+                            const recordItem = records[i]
+                            const data = recordItem as unifiedDataChannel.File
+                            const stat = fileIo.statSync(data.uri)
+                            if (!stat.isDirectory()) {
+                              const id = util.generateRandomUUID()
+                              transferTaskDataPreferences.putSync(id, JSON.stringify({
+                                id: id,
+                                path: item.item.isdir ? this.getPath() + '/' + item.item.name : this.getPath(),
+                                name: new fileUri.FileUri(data.uri).name,
+                                transferredSize: 0,
+                                totalSize: stat.size,
+                                status: 'pending',
+                                errCode: 0,
+                                type: 'upload',
+                                accountInfo: accountInfo,
+                                srcFileUri: data.uri
+                              }))
+                              count++
                             }
                           }
-                          if (statusres === 'fail') {
-                            finished = true
-                            dialogControllerProgress.close()
+                          if (count > 0) {
+                            await promptAction.openToast({
+                              message: count + ' 项传输任务已添加'
+                            })
+                            event.setResult(DragResult.DRAG_SUCCESSFUL)
                           }
+                        } catch {
+                          event.setResult(DragResult.DRAG_FAILED)
                         }
+                      }
+                    }
+                    if (event.getDragSource() === 'com.songjy.synologydsmhelper') {
+                      event.dragBehavior = DragBehavior.MOVE
+                      if (!event.isRemote() && item.item.isdir) {
+                        event.getData().getRecords().forEach(async (recordItem) => {
+                          try {
+                            const data = recordItem as unifiedDataChannel.PlainText
+                            const paths = JSON.parse(data.textContent) as string[]
+                            event.setResult(DragResult.DRAG_SUCCESSFUL)
+                            this.dialogControllerProgress.open()
+                            const startres =
+                              await dsmRequest(this.context, '', 'SYNO.FileStation.CopyMove', new url.URLParams({
+                                method: 'start',
+                                path: JSON.stringify(paths),
+                                dest_folder_path: item.item.path,
+                                overwrite: getFlushPreference(this.context, 'commonSetting',
+                                  'operationWhenCopyMoveConflict',
+                                  0) === 0 ? 'false' : 'true',
+                                remove_src: 'true'
+                              }).toString())
+                            this.dialogControllerProgress.close()
+                            this.exitMultipleSelect()
+                            this.remove = undefined
+                            if (startres !== 'fail') {
+                              const taskId = startres['taskid'] as string
+                              const dialogControllerProgress = new CustomDialogController({
+                                builder: LoadingDialog({
+                                  content: '正在移动文件...'
+                                })
+                              })
+                              dialogControllerProgress.open()
+                              let finished = false
+                              while (!finished) {
+                                const statusres =
+                                  await dsmRequest(this.context, '', 'SYNO.FileStation.CopyMove', new url.URLParams({
+                                    method: 'status',
+                                    taskid: taskId
+                                  }).toString())
+                                if (statusres !== 'fail') {
+                                  if (statusres['finished']) {
+                                    finished = true
+                                    dialogControllerProgress.close()
+                                    await promptAction.openToast({
+                                      message: '移动成功'
+                                    })
+                                    this.loading = true
+                                  }
+                                }
+                                if (statusres === 'fail') {
+                                  finished = true
+                                  dialogControllerProgress.close()
+                                }
+                              }
+                            }
+                          } catch {
+                            event.setResult(DragResult.DRAG_FAILED)
+                          }
+                        })
+                      } else {
+                        await promptAction.openToast({
+                          message: '仅支持移动到目录'
+                        })
+                        event.setResult(DragResult.DROP_DISABLED)
+                      }
+                    }
+                  })
+                  .onSelect(isSelected => {
+                    if (!isSelected) {
+                      this.multipleSelectArray =
+                        this.multipleSelectArray.filter(selectItem => selectItem.path !== item.item.path)
+                    }
+                    if (isSelected) {
+                      this.multipleSelect = true
+                      if (!this.multipleSelectArray.find(selectItem => selectItem.path === item.item.path)) {
+                        this.multipleSelectArray.push(item.item)
                       }
                     }
                   })
                 })
-                .onSelect(isSelected => {
-                  if (!isSelected) {
-                    this.multipleSelectArray =
-                      this.multipleSelectArray.filter(selectItem => selectItem.path !== item.path)
-                  }
-                  if (isSelected) {
-                    this.multipleSelect = true
-                    if (!this.multipleSelectArray.find(selectItem => selectItem.path === item.path)) {
-                      this.multipleSelectArray.push(item)
-                    }
-                  }
-                })
-              })
+                .virtualScroll()
               ListItem()
                 .margin({
                   bottom: 80
@@ -1942,6 +2054,52 @@ export default struct Filelist {
             }
             .height('100%')
             .multiSelectable(true)
+            .onDrop(async (event) => {
+              if (event.getDragSource() !== 'com.songjy.synologydsmhelper' && this.dirnames.length > 0) {
+                const transferTaskDataPreferences = sendablePreferences.getPreferencesSync(this.context, {
+                  name: 'transferTask'
+                })
+                const accountInfo = await getAccountInfo(this.context)
+                const records = event.getData().getRecords()
+                let count = 0
+                try {
+                  for (let i = 0; i < records.length; i++) {
+                    const item = records[i]
+                    const data = item as unifiedDataChannel.File
+                    const stat = fileIo.statSync(data.uri)
+                    if (!stat.isDirectory()) {
+                      const id = util.generateRandomUUID()
+                      transferTaskDataPreferences.putSync(id, JSON.stringify({
+                        id: id,
+                        path: this.getPath(),
+                        name: new fileUri.FileUri(data.uri).name,
+                        transferredSize: 0,
+                        totalSize: stat.size,
+                        status: 'pending',
+                        errCode: 0,
+                        type: 'upload',
+                        accountInfo: accountInfo,
+                        srcFileUri: data.uri
+                      }))
+                      count++
+                    }
+                    if (count > 0) {
+                      await promptAction.openToast({
+                        message: count + ' 项传输任务已添加'
+                      })
+                      event.setResult(DragResult.DRAG_SUCCESSFUL)
+                    }
+                  }
+                } catch {
+                  event.setResult(DragResult.DRAG_FAILED)
+                }
+              } else {
+                await promptAction.openToast({
+                  message: '不支持上传到根目录'
+                })
+                event.setResult(DragResult.DROP_DISABLED)
+              }
+            })
           }
           .keyboardShortcut('R', [ModifierKey.CTRL], () => {
             this.loading = true

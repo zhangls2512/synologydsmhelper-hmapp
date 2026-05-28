@@ -32,6 +32,8 @@ export default struct Cleardata {
   @Local apiVersionCacheSize: string = ''
   @Local noticeJsonStringCache: boolean = false
   @Local noticeJsonStringCacheSize: string = ''
+  @Local fileThumbnailCache: boolean = false
+  @Local fileThumbnailCacheSize: string = ''
   @Local albumPhotoThumbnailCache: boolean = false
   @Local albumPhotoThumbnailCacheSize: string = ''
   @Local log: string[] = []
@@ -60,6 +62,8 @@ export default struct Cleardata {
     }
     const noticeJsonStringCacheSize = await getDirectorySize(this.context.cacheDir + '/noticejsonstring')
     this.noticeJsonStringCacheSize = getSizeString(noticeJsonStringCacheSize)
+    const fileThumbnailCacheSize = await getDirectorySize(this.context.cacheDir + '/filethumbnail')
+    this.fileThumbnailCacheSize = getSizeString(fileThumbnailCacheSize)
     const accountInfo = await getAccountInfo(this.context)
     if (!accountInfo.id) {
       const albumPhotoThumbnailCacheSize = await getDirectorySize(this.context.cacheDir + '/albumphotothumbnail')
@@ -485,6 +489,34 @@ export default struct Cleardata {
                   right: 12
                 })
               Row() {
+                Text('文件图标缩略图')
+                  .fontWeight(FontWeight.Medium)
+                  .layoutWeight(1)
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                  })
+                Text(this.fileThumbnailCacheSize)
+                  .fontColor($r('sys.color.font_secondary'))
+                  .fontSize($r('sys.float.ohos_id_text_size_body2'))
+                  .margin({
+                    right: $r('sys.float.ohos_id_elements_margin_horizontal_s')
+                  })
+                Checkbox({
+                  name: 'fileThumbnailCache',
+                  group: 'cache'
+                })
+                  .select(this.fileThumbnailCache!!)
+                  .shape(CheckBoxShape.ROUNDED_SQUARE)
+              }
+              .borderRadius(12)
+              .padding(12)
+
+              Divider()
+                .padding({
+                  left: 12,
+                  right: 12
+                })
+              Row() {
                 Text('相册照片缩略图')
                   .fontWeight(FontWeight.Medium)
                   .layoutWeight(1)
@@ -552,6 +584,9 @@ export default struct Cleardata {
                           await fileIo.rmdir(noticeJsonStringCacheDir)
                         }
                       }
+                      if (item === 'fileThumbnailCache') {
+                        await fileIo.rmdir(this.context.cacheDir + '/filethumbnail')
+                      }
                       if (item === 'albumPhotoThumbnailCache') {
                         const accountInfo = await getAccountInfo(this.context)
                         const albumPhotoThumbnailDirectory = this.context.cacheDir + '/albumphotothumbnail/'
@@ -572,10 +607,24 @@ export default struct Cleardata {
                     }
                   })
                   await Promise.all(promises)
-                  await promptAction.openToast({
-                    message: '清理成功'
-                  })
                   await this.getSize()
+                  const res = await promptAction.showDialog({
+                    title: '提示',
+                    message: '清理成功，需重启应用生效，是否重启？',
+                    buttons: [
+                      {
+                        text: '取消',
+                        color: $r('sys.color.font_primary')
+                      },
+                      {
+                        text: '重启',
+                        color: $r('sys.color.font_emphasize')
+                      }
+                    ]
+                  })
+                  if (res.index === 1) {
+                    await restartApp(this.context, this.UIContext)
+                  }
                 }
               })
           }

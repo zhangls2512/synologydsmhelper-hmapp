@@ -1,10 +1,12 @@
-import { common } from '@kit.AbilityKit'
+import { common, wantAgent } from '@kit.AbilityKit'
 import { sendablePreferences } from '@kit.ArkData'
 import { taskpool } from '@kit.ArkTS'
 import { display } from '@kit.ArkUI'
+import { backgroundTaskManager } from '@kit.BackgroundTasksKit'
 import { deviceInfo } from '@kit.BasicServicesKit'
 import { fileIo } from '@kit.CoreFileKit'
 import { image } from '@kit.ImageKit'
+import { notificationManager } from '@kit.NotificationKit'
 import {
   hdsMaterial,
   HdsNavigation,
@@ -18,6 +20,7 @@ import { AccountInfo, importAccounts } from '../common/Account'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import { getFlushPreference, getTempPreference } from '../common/Preference'
 import { getPreferType } from '../common/Prefertype'
+import { getSizeString } from '../common/Stringformat'
 import { download, upload } from '../common/Transfertask'
 import Accountlist from './Accountlist'
 import Album from './Album'
@@ -40,7 +43,8 @@ export interface TransferTaskItem {
   accountInfo: AccountInfo,
   srcFileUri: string,
   backupTaskId: string,
-  destDownloadPath: string
+  destDownloadPath: string,
+  speed: number
 }
 
 @Entry
@@ -87,7 +91,7 @@ struct Index {
   async get() {
     this.backgroundImagePixelMap = await this.getBackgroundImage()
     const oldShowAlbum = this.showAlbum
-    this.showAlbum = getFlushPreference(this.context, 'commonSetting', 'showAlbum', true) as boolean
+    this.showAlbum = getFlushPreference(this.context, 'commonSetting', 'showAlbum', false) as boolean
     setTimeout(() => {
       if (oldShowAlbum !== this.showAlbum) {
         if (!oldShowAlbum) {
@@ -464,7 +468,12 @@ struct Index {
           const transferTask = JSON.parse(transferTaskString) as TransferTaskItem
           transferTaskArray.push(transferTask)
         })
-        if (!transferTaskArray.find(item => item.status === 'processing')) {
+        const processingTransferTask = transferTaskArray.find(item => item.status === 'processing')
+        if (!processingTransferTask) {
+          const continuousTasks = await backgroundTaskManager.getAllContinuousTasks(this.context)
+          if (continuousTasks.length > 0) {
+            await backgroundTaskManager.stopBackgroundRunning(this.context)
+          }
           const pendingTransferTaskArray = transferTaskArray.filter(item => item.status === 'pending')
           for (let i = 0; i < pendingTransferTaskArray.length; i++) {
             const item = pendingTransferTaskArray[i]
@@ -478,6 +487,26 @@ struct Index {
               }
             }
             if (exec) {
+              const wandAgent = await wantAgent.getWantAgent({
+                wants: [
+                  {
+                    bundleName: 'com.songjy.synologydsmhelper',
+                    abilityName: 'EntryAbility'
+                  }
+                ],
+                actionType: wantAgent.OperationType.START_ABILITY,
+                requestCode: 0,
+                wantAgentFlags: [wantAgent.WantAgentFlags.UPDATE_PRESENT_FLAG]
+              })
+              let taskLength = -1
+              while (taskLength !== 0) {
+                const continuousTasks = await backgroundTaskManager.getAllContinuousTasks(this.context)
+                taskLength = continuousTasks.length
+              }
+              try {
+                await backgroundTaskManager.startBackgroundRunning(this.context, ['dataTransfer'], wandAgent)
+              } catch {
+              }
               item.status = 'processing'
               transferTaskDataPreferences.putSync(item.id, JSON.stringify(item))
               if (item.type === 'download') {
@@ -489,6 +518,47 @@ struct Index {
                 await taskpool.execute(task)
               }
             }
+          }
+        }
+        if (processingTransferTask) {
+          let wz = ''
+          if (processingTransferTask.type === 'download') {
+            wz = '下载'
+          }
+          if (processingTransferTask.type === 'upload') {
+            wz = '上传'
+          }
+          const continuousTasks = await backgroundTaskManager.getAllContinuousTasks(this.context)
+          if (continuousTasks.length > 0) {
+            await notificationManager.publish({
+              content: {
+                notificationContentType: notificationManager.ContentType.NOTIFICATION_CONTENT_SYSTEM_LIVE_VIEW,
+                systemLiveView: {
+                  typeCode: 8,
+                  title: '正在' + wz + '文件：' + processingTransferTask.name,
+                  text: '进度：' +
+                    Number((processingTransferTask.transferredSize / processingTransferTask.totalSize).toFixed(2)) *
+                      100 +
+                    '% (' +
+                    getSizeString(processingTransferTask.transferredSize) + '/' +
+                    getSizeString(processingTransferTask.totalSize) + ')'
+                }
+              },
+              id: continuousTasks[0].notificationId,
+              notificationSlotType: notificationManager.SlotType.LIVE_VIEW,
+              template: {
+                name: 'downloadTemplate',
+                data: {
+                  title: '正在' + wz + '文件，进度：' +
+                    Number((processingTransferTask.transferredSize / processingTransferTask.totalSize).toFixed(2)) *
+                      100 +
+                    '%',
+                  fileName: processingTransferTask.name,
+                  progressValue: Number(
+                    (processingTransferTask.transferredSize / processingTransferTask.totalSize).toFixed(2)) * 100
+                }
+              }
+            })
           }
         }
       }, 1000)
@@ -615,7 +685,7 @@ struct Index {
       this.context.eventHub.on('refreshIndex', async () => {
         await this.get()
       })
-      this.showAlbum = getFlushPreference(this.context, 'commonSetting', 'showAlbum', true) as boolean
+      this.showAlbum = getFlushPreference(this.context, 'commonSetting', 'showAlbum', false) as boolean
       await this.get()
     })
     .onDisAppear(() => {
