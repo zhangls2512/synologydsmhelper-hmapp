@@ -1,17 +1,15 @@
-import { wantAgent } from '@kit.AbilityKit'
 import { sendablePreferences } from '@kit.ArkData'
 import { url } from '@kit.ArkTS'
 import { backgroundTaskManager } from '@kit.BackgroundTasksKit'
-import { fileIo, fileUri } from '@kit.CoreFileKit'
+import { fileIo } from '@kit.CoreFileKit'
 import { netBoost } from '@kit.NetworkBoostKit'
-import { notificationManager } from '@kit.NotificationKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { deleteBackupTask, updateBackupTaskStatus } from './Backup'
 import { getDnsServer } from './Dnsserver'
 import { write } from './File'
 import { getFlushPreference } from './Preference'
 import { DsmResponse, getDsmApiMaxVersion } from './Request'
-import { addFilePathIndex, getSizeString } from './Stringformat'
+import { addFilePathIndex } from './Stringformat'
 import { TransferTaskItem } from '../pages/Index'
 
 @Concurrent
@@ -36,25 +34,14 @@ export async function download(context: Context, id: string) {
   try {
     const version = await getDsmApiMaxVersion(context, transferTask.accountInfo.path, 'SYNO.FileStation.Download')
     if (version !== 'fail') {
-      const wandAgent = await wantAgent.getWantAgent({
-        wants: [
-          {
-            bundleName: 'com.songjy.synologydsmhelper',
-            abilityName: 'EntryAbility'
-          }
-        ],
-        actionType: wantAgent.OperationType.START_ABILITY,
-        requestCode: 0,
-        wantAgentFlags: [wantAgent.WantAgentFlags.UPDATE_PRESENT_FLAG]
-      })
-      const continuousTaskNotificationInfo =
-        await backgroundTaskManager.startBackgroundRunning(context, ['dataTransfer'], wandAgent)
       const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.WRITE_ONLY)
       const fileStream = fileIo.fdopenStreamSync(file.fd, 'w+')
       netBoost.setSceneDesc({
         scene: 'download',
         sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
       })
+      let lastUpdateTime = 0
+      let lastTransferredSize = 0
       const session = rcp.createSession({
         requestConfiguration: {
           transfer: {
@@ -74,41 +61,21 @@ export async function download(context: Context, id: string) {
                 }
                 transferTask.transferredSize = transferredSize
                 transferTask.totalSize = totalSize
-                transferTaskDataPreferences.putSync(id, JSON.stringify(transferTask))
-                try {
-                  await notificationManager.publish({
-                    content: {
-                      notificationContentType: notificationManager.ContentType.NOTIFICATION_CONTENT_SYSTEM_LIVE_VIEW,
-                      systemLiveView: {
-                        typeCode: 8,
-                        title: '正在下载文件：' + transferTask.name,
-                        text: '进度：' + Number((transferredSize / totalSize).toFixed(2)) * 100 + '% (' +
-                          getSizeString(transferredSize) + '/' + getSizeString(totalSize) + ')'
-                      }
-                    },
-                    id: continuousTaskNotificationInfo.notificationId,
-                    notificationSlotType: notificationManager.SlotType.LIVE_VIEW,
-                    template: {
-                      name: 'downloadTemplate',
-                      data: {
-                        title: '正在下载文件，进度：' + Number((transferredSize / totalSize).toFixed(2)) * 100 + '%',
-                        fileName: transferTask.name,
-                        progressValue: Number((transferredSize / totalSize).toFixed(2)) * 100
-                      }
-                    }
-                  })
-                } catch {
+                const currentTime = Date.now()
+                if (currentTime - lastUpdateTime >= 1000) {
+                  transferTask.speed = transferredSize - lastTransferredSize
+                  lastUpdateTime = currentTime
+                  lastTransferredSize = transferredSize
                 }
+                transferTaskDataPreferences.putSync(id, JSON.stringify(transferTask))
               },
-              onDataEnd: async () => {
+              onDataEnd: () => {
                 session.close()
                 netBoost.setSceneDesc({
                   scene: 'download',
                   sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
                 })
                 fileStream.closeSync()
-                await backgroundTaskManager.stopBackgroundRunning(context,
-                  continuousTaskNotificationInfo.continuousTaskId)
               }
             }
           },
@@ -156,7 +123,6 @@ export async function download(context: Context, id: string) {
         })
         fileStream.closeSync()
         if (err.code !== 1007900992) {
-          await backgroundTaskManager.stopBackgroundRunning(context, continuousTaskNotificationInfo.continuousTaskId)
           transferTask.status = 'fail'
           transferTask.errCode = err.code
         }
@@ -195,6 +161,7 @@ export async function upload(context: Context, id: string) {
       header += '--' + transferTask.id + '\r\ncontent-disposition: form-data; name="path"\r\n\r\n' + transferTask.path +
         '\r\n'
       header += '--' + transferTask.id + '\r\ncontent-disposition: form-data; name="create_parents"\r\n\r\ntrue\r\n'
+      header += '--' + transferTask.id + '\r\ncontent-disposition: form-data; name="overwrite"\r\n\r\ntrue\r\n'
       header += '--' + transferTask.id + '\r\ncontent-disposition: form-data; name="file"; filename="' +
         transferTask.name + '"\r\n\r\n'
       await write(filePath, header)
@@ -224,23 +191,12 @@ export async function upload(context: Context, id: string) {
       await fileIo.write(file.fd, '\r\n\r\n--' + transferTask.id + '--', {
         offset: fileIo.statSync(filePath).size
       })
-      const wandAgent = await wantAgent.getWantAgent({
-        wants: [
-          {
-            bundleName: 'com.songjy.synologydsmhelper',
-            abilityName: 'EntryAbility'
-          }
-        ],
-        actionType: wantAgent.OperationType.START_ABILITY,
-        requestCode: 0,
-        wantAgentFlags: [wantAgent.WantAgentFlags.UPDATE_PRESENT_FLAG]
-      })
-      const continuousTaskNotificationInfo =
-        await backgroundTaskManager.startBackgroundRunning(context, ['dataTransfer'], wandAgent)
       netBoost.setSceneDesc({
         scene: 'upload',
         sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
       })
+      let lastUpdateTime = 0
+      let lastTransferredSize = 0
       const session = rcp.createSession({
         requestConfiguration: {
           transfer: {
@@ -250,38 +206,16 @@ export async function upload(context: Context, id: string) {
           },
           tracing: {
             httpEventsHandler: {
-              onUploadProgress: async (totalSize, transferredSize) => {
-                const continuousTasks = await backgroundTaskManager.getAllContinuousTasks(context)
-                if (continuousTasks.length === 0) {
-                  session.cancel()
-                }
+              onUploadProgress: (totalSize, transferredSize) => {
                 transferTask.transferredSize = transferredSize
                 transferTask.totalSize = totalSize
-                transferTaskDataPreferences.putSync(id, JSON.stringify(transferTask))
-                try {
-                  await notificationManager.publish({
-                    content: {
-                      notificationContentType: notificationManager.ContentType.NOTIFICATION_CONTENT_SYSTEM_LIVE_VIEW,
-                      systemLiveView: {
-                        typeCode: 8,
-                        title: '正在上传文件：' + transferTask.name,
-                        text: '进度：' + Number((transferredSize / totalSize).toFixed(2)) * 100 + '% (' +
-                          getSizeString(transferredSize) + '/' + getSizeString(totalSize) + ')'
-                      }
-                    },
-                    id: continuousTaskNotificationInfo.notificationId,
-                    notificationSlotType: notificationManager.SlotType.LIVE_VIEW,
-                    template: {
-                      name: 'downloadTemplate',
-                      data: {
-                        title: '正在上传文件，进度：' + Number((transferredSize / totalSize).toFixed(2)) * 100 + '%',
-                        fileName: transferTask.name,
-                        progressValue: Number((transferredSize / totalSize).toFixed(2)) * 100
-                      }
-                    }
-                  })
-                } catch {
+                const currentTime = Date.now()
+                if (currentTime - lastUpdateTime >= 1000) {
+                  transferTask.speed = transferredSize - lastTransferredSize
+                  lastUpdateTime = currentTime
+                  lastTransferredSize = transferredSize
                 }
+                transferTaskDataPreferences.putSync(id, JSON.stringify(transferTask))
               },
               onDataEnd: async () => {
                 session.close()
@@ -289,12 +223,7 @@ export async function upload(context: Context, id: string) {
                   scene: 'upload',
                   sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
                 })
-                await backgroundTaskManager.stopBackgroundRunning(context,
-                  continuousTaskNotificationInfo.continuousTaskId)
                 await fileIo.unlink(filePath)
-                if (transferTask.srcFileUri.endsWith('.mv.png')) {
-                  await fileIo.unlink(new fileUri.FileUri(transferTask.srcFileUri).path)
-                }
               }
             }
           },
@@ -318,13 +247,17 @@ export async function upload(context: Context, id: string) {
           id: transferTask.accountInfo.sid
         }
       })
-      backgroundTaskManager.on('continuousTaskCancel', () => {
-        session.cancel()
-      })
+      const intervalId = setInterval(async () => {
+        const continuousTasks = await backgroundTaskManager.getAllContinuousTasks(context)
+        if (continuousTasks.length === 0) {
+          session.cancel()
+        }
+      }, 1000)
       try {
         const response = await session.uploadFromFile(transferTask.accountInfo.path +
           '/webapi/entry.cgi?api=SYNO.FileStation.Upload&version=' + version + '&method=upload&SynoToken=' +
           transferTask.accountInfo.synotoken, new rcp.UploadFromFile(filePath))
+        clearInterval(intervalId)
         if (response.statusCode >= 200 && response.statusCode < 300) {
           const res = response.toJSON() as DsmResponse
           if (!res.success) {
@@ -352,19 +285,15 @@ export async function upload(context: Context, id: string) {
           }
         }
       } catch (err) {
+        clearInterval(intervalId)
         session.close()
         netBoost.setSceneDesc({
           scene: 'upload',
           sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
         })
-        await fileIo.unlink(filePath)
-        if (transferTask.srcFileUri.endsWith('.mv.png')) {
-          await fileIo.unlink(new fileUri.FileUri(transferTask.srcFileUri).path)
-        }
         if (err.code !== 1007900992) {
-          await backgroundTaskManager.stopBackgroundRunning(context, continuousTaskNotificationInfo.continuousTaskId)
           transferTask.status = 'fail'
-          transferTask.errCode = err.code
+          transferTask.errCode = err.code ?? err.message
           if (transferTask.backupTaskId) {
             await updateBackupTaskStatus(context, transferTask.accountInfo, transferTask.backupTaskId, false)
           }

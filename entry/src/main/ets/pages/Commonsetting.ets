@@ -1277,7 +1277,7 @@ struct Commonsetting {
       if (operationWhenCopyMoveConflict === 1) {
         this.operationWhenCopyMoveConflictValue = '覆盖'
       }
-      this.showAlbum = getFlushPreference(this.context, 'commonSetting', 'showAlbum', true) as boolean
+      this.showAlbum = getFlushPreference(this.context, 'commonSetting', 'showAlbum', false) as boolean
       this.showAccountlistSheetAfterAppLaunch =
         getFlushPreference(this.context, 'commonSetting', 'showAccountlistSheetAfterAppLaunch', false) as boolean
       this.cacheApiVersion = getFlushPreference(this.context, 'commonSetting', 'cacheApiVersion', true) as boolean

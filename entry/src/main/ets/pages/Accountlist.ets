@@ -255,7 +255,7 @@ export default struct Accountlist {
                 })
                 this.context.eventHub.emit('refreshCardlist')
                 this.context.eventHub.emit('refreshFilelist')
-                if (getFlushPreference(this.context, 'commonSetting', 'showAlbum', true)) {
+                if (getFlushPreference(this.context, 'commonSetting', 'showAlbum', false)) {
                   this.context.eventHub.emit('refreshAlbum')
                 }
                 this.context.eventHub.emit('refreshMe')

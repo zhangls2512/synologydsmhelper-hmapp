@@ -54,7 +54,7 @@ export async function setAccount(context: Context, accountInfo: InAccountInfo) {
     await appAccountManager.setCredential(id, 'synotoken', accountInfo.synotoken)
     await appAccountManager.setCustomData(id, 'bz', accountInfo.bz)
     await appAccountManager.setCustomData(id, 'isLogin', accountInfo.isLogin)
-    if (accountInfo.isLogin) {
+    if (accountInfo.isLogin === 'true') {
       globalAccountInfo = {
         id: id,
         path: accountInfo.path,
@@ -86,7 +86,7 @@ export async function setAccount(context: Context, accountInfo: InAccountInfo) {
     await appAccountManager.setCredential(id, 'password', accountInfo.password)
     await appAccountManager.setCredential(id, 'sid', accountInfo.sid)
     await appAccountManager.setCredential(id, 'synotoken', accountInfo.synotoken)
-    if (accountInfo.isLogin) {
+    if (accountInfo.isLogin === 'true') {
       globalAccountInfo = {
         id: id,
         path: accountInfo.path,

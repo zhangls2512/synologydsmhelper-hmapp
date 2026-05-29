@@ -2,7 +2,6 @@ import { common } from '@kit.AbilityKit'
 import { dataSharePredicates, sendablePreferences } from '@kit.ArkData'
 import { taskpool, url, util } from '@kit.ArkTS'
 import { display, LoadingDialog, promptAction, SegmentButtonV2Items, TabSegmentButtonV2, window } from '@kit.ArkUI'
-import { zlib } from '@kit.BasicServicesKit'
 import { fileIo, fileUri, picker } from '@kit.CoreFileKit'
 import { map, mapCommon, MapComponent, petalMaps, site } from '@kit.MapKit'
 import { MovingPhotoView, MovingPhotoViewController, photoAccessHelper } from '@kit.MediaLibraryKit'
@@ -11,7 +10,6 @@ import { rcp } from '@kit.RemoteCommunicationKit'
 import { hdsEffect } from '@kit.UIDesignKit'
 import { getAccountHash, getAccountInfo, getLoginStatus } from '../common/Account'
 import { getDnsServer } from '../common/Dnsserver'
-import { write } from '../common/File'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import { checkPermission } from '../common/Permission'
 import { getFlushPreference, setTempPreference } from '../common/Preference'
@@ -1255,38 +1253,6 @@ export default struct Album {
                         accountInfo: accountInfo,
                         srcFileUri: item
                       }))
-                    }
-                    if (photoAsset.displayName.endsWith('.heic')) {
-                      const dir = this.context.tempDir + '/upload/movingphoto/'
-                      await photoAccessHelper.MediaAssetManager.requestMovingPhoto(this.context, photoAsset, {
-                        deliveryMode: photoAccessHelper.DeliveryMode.BALANCE_MODE
-                      }, {
-                        async onDataPrepared(movingPhoto) {
-                          const name = photoAsset.displayName.substring(0, photoAsset.displayName.lastIndexOf('.'))
-                          const imageFilePath = dir + name + '.jpg'
-                          const videoFilePath = dir + name + '.mp4'
-                          await write(imageFilePath, '')
-                          await write(videoFilePath, '')
-                          await movingPhoto.requestContent(fileUri.getUriFromPath(imageFilePath),
-                            fileUri.getUriFromPath(videoFilePath))
-                          await zlib.compressFiles([imageFilePath, videoFilePath], dir + name, {})
-                          await fileIo.rename(dir + name + '.zip', dir + name + '.mv.png')
-                          await fileIo.unlink(imageFilePath)
-                          await fileIo.unlink(videoFilePath)
-                          transferTaskDataPreferences.putSync(id, JSON.stringify({
-                            id: id,
-                            path: '/home/Photos',
-                            name: photoAsset.displayName.slice(0, -5) + '.mv.png',
-                            transferredSize: 0,
-                            totalSize: fileIo.statSync(dir + name + '.mv.png').size,
-                            status: 'pending',
-                            errCode: 0,
-                            type: 'upload',
-                            accountInfo: accountInfo,
-                            srcFileUri: fileUri.getUriFromPath(dir + name + '.mv.png')
-                          }))
-                        }
-                      })
                     }
                   })
                   await Promise.all(promises)
