@@ -1,6 +1,5 @@
 import { url } from '@kit.ArkTS'
 import { fileIo, fileUri } from '@kit.CoreFileKit'
-import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { netBoost } from '@kit.NetworkBoostKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { AccountInfo, getAccountHash } from './Account'
@@ -15,14 +14,11 @@ export async function pushPhotoIntoPhotoArray(context: Context, accountInfo: Acc
   if (photoItem.type === 'photo') {
     const inPhotoItem = photoItem
     const dir = getAccountHash(accountInfo, context, context.cacheDir + '/albumphotothumbnail')
-    let thumbnailPath = dir + '/' + sha256hash(inPhotoItem.path) + '.jpg'
+    const thumbnailPath = dir + '/' + sha256hash(inPhotoItem.path) + '.jpg'
     const thumbnailPathExist = fileIo.accessSync(thumbnailPath)
     if (!thumbnailPathExist) {
       if (!fileIo.accessSync(dir)) {
         await fileIo.mkdir(dir, true)
-      }
-      if (photoItem.filename.endsWith('.mv.png')) {
-        thumbnailPath = dir + '/' + sha256hash(inPhotoItem.path) + '.zip'
       }
       inPhotoItem.thumbnailUri = fileUri.getUriFromPath(thumbnailPath)
       const file = fileIo.openSync(thumbnailPath, fileIo.OpenMode.CREATE | fileIo.OpenMode.WRITE_ONLY)
@@ -89,17 +85,7 @@ export async function pushPhotoIntoPhotoArray(context: Context, accountInfo: Acc
       }
     }
     if (thumbnailPathExist) {
-      if (!photoItem.filename.endsWith('.mv.png')) {
-        inPhotoItem.thumbnailUri = fileUri.getUriFromPath(thumbnailPath)
-      }
-      if (photoItem.filename.endsWith('.mv.png')) {
-        const imageUri = fileUri.getUriFromPath(dir + '/' + sha256hash(inPhotoItem.path) + '.jpg')
-        const videoUri = fileUri.getUriFromPath(dir + '/' + sha256hash(inPhotoItem.path) + '.mp4')
-        inPhotoItem.type = 'movingphoto'
-        inPhotoItem.movingPhotoImageUri = imageUri
-        inPhotoItem.movingPhotoVideoUri = videoUri
-        inPhotoItem.movingPhoto = await photoAccessHelper.MediaAssetManager.loadMovingPhoto(context, imageUri, videoUri)
-      }
+      inPhotoItem.thumbnailUri = fileUri.getUriFromPath(thumbnailPath)
     }
     return inPhotoItem
   } else {

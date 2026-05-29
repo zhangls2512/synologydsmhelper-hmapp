@@ -11,24 +11,35 @@ import {
 } from '@kit.AbilityKit'
 import { updateManager } from '@kit.AppGalleryKit'
 import { uniformTypeDescriptor } from '@kit.ArkData'
+import { util } from '@kit.ArkTS'
 import { promptAction, window } from '@kit.ArkUI'
 import { commonEventManager, deviceInfo } from '@kit.BasicServicesKit'
 import { fileIo, fileUri } from '@kit.CoreFileKit'
 import { statusBarManager } from '@kit.DeskTopExtensionKit'
 import { image } from '@kit.ImageKit'
+import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { netQuality } from '@kit.NetworkBoostKit'
 import { connection } from '@kit.NetworkKit'
 import { notificationManager } from '@kit.NotificationKit'
 import { hiAppEvent } from '@kit.PerformanceAnalysisKit'
 import { sensor } from '@kit.SensorServiceKit'
 import { harmonyShare, systemShare } from '@kit.ShareKit'
-import { generateBestAddress, getAccountList, getLoginStatus } from '../common/Account'
-import { autoBackup } from '../common/Backup'
+import { generateBestAddress, getAccountHash, getAccountInfo, getAccountList, getLoginStatus } from '../common/Account'
+import {
+  autoBackup,
+  deleteBackupTask,
+  generateBackupTaskList,
+  getAlbumList,
+  getBackupTaskList,
+  startBackupTask
+} from '../common/Backup'
 import { clearNouseData } from '../common/Clearnousedata'
-import { write } from '../common/File'
+import { read, write } from '../common/File'
 import { getCurrentNetworkBearerType } from '../common/Network'
 import openLink from '../common/Openlink'
+import { getPermission } from '../common/Permission'
 import { getFlushPreference, getTempPreference, setTempPreference } from '../common/Preference'
+import { BackupSetting } from '../pages/Backupsetting'
 
 export interface JsErrorObject {
   name: string,
@@ -427,6 +438,65 @@ export default class EntryAbility extends UIAbility {
     await clearNouseData(this.context)
     await generateBestAddress(this.context)
     await autoBackup(this.context)
+    const res = getPermission('ohos.permission.READ_IMAGEVIDEO')
+    if (res) {
+      const phAccessHelper = photoAccessHelper.getPhotoAccessHelper(this.context)
+      phAccessHelper.on('photoChange', async (photoAssetChangeInfos) => {
+        if (photoAssetChangeInfos.type !== photoAccessHelper.NotifyChangeType.NOTIFY_CHANGE_REMOVE) {
+          const accountInfo = await getAccountInfo(this.context)
+          if (accountInfo.id) {
+            const filePath = this.context.filesDir + '/backupsetting/' + getAccountHash(accountInfo) + '.txt'
+            const filestring = await read(filePath, true)
+            if (filestring !== 'fail') {
+              const backupSetting = JSON.parse(filestring) as BackupSetting
+              if (backupSetting.autoTypes.includes('相册')) {
+                if (!photoAssetChangeInfos.isForRecheck && photoAssetChangeInfos.assetChangeDatas) {
+                  for (let i = 0; i < photoAssetChangeInfos.assetChangeDatas.length; i++) {
+                    const item = photoAssetChangeInfos.assetChangeDatas[i]
+                    if (item.assetAfterChange) {
+                      const asset = item.assetAfterChange
+                      let backupTaskArray = await getBackupTaskList(this.context)
+                      backupTaskArray = backupTaskArray.filter(item => item.type === '相册')
+                      const backupTaskIndex =
+                        backupTaskArray.findIndex(backupTaskItem => backupTaskItem.srcFileUri === asset.uri)
+                      if (backupTaskIndex !== -1) {
+                        await deleteBackupTask(this.context, accountInfo, backupTaskArray[backupTaskIndex].id)
+                        backupTaskArray.splice(backupTaskIndex, 1)
+                      }
+                      let albumName = ''
+                      let albumUri = ''
+                      const albumArray = await getAlbumList(this.context)
+                      const album = albumArray.find(albumItem => albumItem.id === asset.albumUri)
+                      if (album) {
+                        albumName = album.name
+                        albumUri = album.uri
+                      }
+                      if (backupSetting.albumUris.length === 0 || backupSetting.albumUris.includes(albumUri)) {
+                        const id = util.generateRandomUUID()
+                        await write(
+                          getAccountHash(accountInfo, this.context, this.context.filesDir + '/backuptask') + '/' + id +
+                            '.txt', JSON.stringify({
+                          id: id,
+                          type: '相册',
+                          srcFileUri: asset.uri,
+                          modifyTime: Date.now(),
+                          path: '/home/Photos/backup/' + deviceInfo.marketName + (albumName ? ('/' + albumName) : ''),
+                          status: 'pending'
+                        }))
+                        await startBackupTask(this.context, id)
+                      }
+                    }
+                  }
+                }
+              }
+              if (photoAssetChangeInfos.isForRecheck) {
+                await generateBackupTaskList(this.context, '相册', backupSetting.albumUris)
+              }
+            }
+          }
+        }
+      })
+    }
   }
 
   async onNewWant(want: Want) {
@@ -501,7 +571,7 @@ export default class EntryAbility extends UIAbility {
   }
 
   async onContinue(wantParam: Record<string, Object>) {
-    if (wantParam.version !== 52) {
+    if (wantParam.version !== 53) {
       await promptAction.openToast({
         message: '接续失败，原因：目标端应用版本号与发起端不匹配'
       })

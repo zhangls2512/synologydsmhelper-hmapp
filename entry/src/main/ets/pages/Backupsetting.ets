@@ -9,7 +9,8 @@ import { checkPermission } from '../common/Permission'
 import { getFlushPreference, setFlushPreference } from '../common/Preference'
 
 export interface BackupSetting {
-  autoTypes: string[]
+  autoTypes: string[],
+  albumUris: string[]
 }
 
 @Builder
@@ -21,20 +22,26 @@ export function BackupsettingBuilder() {
 struct Backupsetting {
   @Local autoTypes: string[] = []
   @Local deleteAfterSuccess: boolean = false
-  @Local hoverId: number = -1
+  @Local hoverId: number | string = -1
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   pageInfos = new NavPathStack()
   typeArray: string[] = ['相册', '文档', '桌面']
+  backupSettingFileContent: BackupSetting = {
+    autoTypes: [],
+    albumUris: []
+  }
 
-  async getSetting() {
+  async getBackupSetting() {
     const accountInfo = await getAccountInfo(this.context)
     const filePath = this.context.filesDir + '/backupsetting/' + getAccountHash(accountInfo) + '.txt'
     const filestring = await read(filePath, true)
     if (filestring !== 'fail') {
-      this.autoTypes = (JSON.parse(filestring) as BackupSetting).autoTypes
+      const backupSettingFileContent = JSON.parse(filestring) as BackupSetting
+      this.autoTypes = backupSettingFileContent.autoTypes ?? []
+      backupSettingFileContent.autoTypes = this.autoTypes
+      this.backupSettingFileContent.albumUris = backupSettingFileContent.albumUris ?? []
     }
-    this.deleteAfterSuccess = getFlushPreference(this.context, 'backupSetting', 'deleteAfterSuccess', true) as boolean
   }
 
   build() {
@@ -99,11 +106,10 @@ struct Backupsetting {
                             this.autoTypes = this.autoTypes.filter(inItem => inItem !== item)
                           }
                         }
+                        this.backupSettingFileContent.autoTypes = this.autoTypes
                         const accountInfo = await getAccountInfo(this.context)
                         await write(this.context.filesDir + '/backupsetting/' + getAccountHash(accountInfo) + '.txt',
-                          JSON.stringify({
-                            autoTypes: this.autoTypes
-                          }))
+                          JSON.stringify(this.backupSettingFileContent))
                       })
                   }
                   .borderRadius(12)
@@ -188,13 +194,14 @@ struct Backupsetting {
                         'ohos.permission.READ_WRITE_DESKTOP_DIRECTORY')
                     }
                     if (res) {
+                      await this.getBackupSetting()
                       const dialogControllerProgress = new CustomDialogController({
                         builder: LoadingDialog({
                           content: '准备中...'
                         })
                       })
                       dialogControllerProgress.open()
-                      await generateBackupTaskList(this.context, item)
+                      await generateBackupTaskList(this.context, item, this.backupSettingFileContent.albumUris)
                       dialogControllerProgress.close()
                       await promptAction.openToast({
                         message: '已开始'
@@ -233,6 +240,48 @@ struct Backupsetting {
             }
             .borderRadius(12)
             .padding(12)
+
+            Divider()
+              .padding({
+                left: 12,
+                right: 12
+              })
+            Row() {
+              Text('自定义备份相册')
+                .fontWeight(FontWeight.Medium)
+                .layoutWeight(1)
+                .margin({
+                  right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
+                })
+              Image($r('app.media.right'))
+                .fillColor($r('sys.color.icon_fourth'))
+                .height(12)
+                .width(12)
+            }
+            .borderRadius(12)
+            .padding(12)
+            .stateStyles({
+              normal: {
+                .backgroundColor(this.hoverId === '0' ? $r('sys.color.interactive_hover') :
+                  $r('sys.color.ohos_id_color_card_bg'))
+              },
+              pressed: {
+                .backgroundColor($r('sys.color.interactive_pressed'))
+              }
+            })
+            .onHover(isHover => {
+              if (!isHover) {
+                this.hoverId = -1
+              }
+              if (isHover) {
+                this.hoverId = '0'
+              }
+            })
+            .onClick(() => {
+              this.pageInfos.pushPath({
+                name: 'Backupalbum'
+              })
+            })
           }
           .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
           .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
@@ -260,7 +309,7 @@ struct Backupsetting {
             .padding(12)
             .stateStyles({
               normal: {
-                .backgroundColor(this.hoverId === 3 ? $r('sys.color.interactive_hover') :
+                .backgroundColor(this.hoverId === '1' ? $r('sys.color.interactive_hover') :
                   $r('sys.color.ohos_id_color_card_bg'))
               },
               pressed: {
@@ -272,7 +321,7 @@ struct Backupsetting {
                 this.hoverId = -1
               }
               if (isHover) {
-                this.hoverId = 3
+                this.hoverId = '1'
               }
             })
             .onClick(() => {
@@ -334,7 +383,8 @@ struct Backupsetting {
     .titleMode(HdsNavDestinationTitleMode.MODAL)
     .onReady(async (context) => {
       this.pageInfos = context.pathStack
-      await this.getSetting()
+      await this.getBackupSetting()
+      this.deleteAfterSuccess = getFlushPreference(this.context, 'backupSetting', 'deleteAfterSuccess', true) as boolean
     })
   }
 }

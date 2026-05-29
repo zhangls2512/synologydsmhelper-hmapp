@@ -1,13 +1,11 @@
 import { dataSharePredicates, sendablePreferences } from '@kit.ArkData'
-import { taskpool, util } from '@kit.ArkTS'
-import { deviceInfo, zlib } from '@kit.BasicServicesKit'
+import { util } from '@kit.ArkTS'
+import { deviceInfo } from '@kit.BasicServicesKit'
 import { Environment, fileIo, fileUri } from '@kit.CoreFileKit'
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { AccountInfo, getAccountHash, getAccountInfo } from './Account'
 import { read, write } from './File'
-import { sha256hash } from './Hash'
 import { getPermission } from './Permission'
-import { JsErrorObject } from '../entryability/EntryAbility'
 import { BackupSetting } from '../pages/Backupsetting'
 
 export interface BackupTask {
@@ -19,12 +17,34 @@ export interface BackupTask {
   status: string
 }
 
-interface AlbumItem {
+export interface AlbumItem {
   id: string,
-  name: string
+  name: string,
+  uri: string
 }
 
-@Concurrent
+export async function getAlbumList(context: Context) {
+  const allow = getPermission('ohos.permission.READ_IMAGEVIDEO')
+  if (allow) {
+    const phAccessHelper = photoAccessHelper.getPhotoAccessHelper(context)
+    const albumRes =
+      await phAccessHelper.getAlbums(photoAccessHelper.AlbumType.USER, photoAccessHelper.AlbumSubtype.ANY, {
+        fetchColumns: [],
+        predicates: new dataSharePredicates.DataSharePredicates()
+      })
+    await phAccessHelper.release()
+    const albums = await albumRes.getAllObjects()
+    return albums.map((item): AlbumItem => {
+      return {
+        id: item.albumUri.substring(item.albumUri.lastIndexOf('/') + 1),
+        name: item.albumName,
+        uri: item.albumUri
+      }
+    })
+  }
+  return []
+}
+
 export async function startBackupTask(context: Context, id: string) {
   const accountInfo = await getAccountInfo(context)
   if (accountInfo.id) {
@@ -62,11 +82,11 @@ export async function getBackupTaskList(context: Context) {
     const dirPath = getAccountHash(accountInfo, context, context.filesDir + '/backuptask') + '/'
     if (fileIo.accessSync(dirPath)) {
       const fileNames = await fileIo.listFile(dirPath)
-      const promises = fileNames.map(async (item) => {
+      for (let i = 0; i < fileNames.length; i++) {
+        const item = fileNames[i]
         const filestring = await read(dirPath + item)
         backupTaskArray.push(JSON.parse(filestring))
-      })
-      await Promise.all(promises)
+      }
       return backupTaskArray
     }
   }
@@ -75,12 +95,15 @@ export async function getBackupTaskList(context: Context) {
 
 export async function updateBackupTaskStatus(context: Context, accountInfo: AccountInfo, id: string,
   success: boolean) {
-  const filePath = getAccountHash(accountInfo, context, context.filesDir + '/backuptask') + '/' + id + '.txt'
-  const filestring = await read(filePath, true)
-  if (filestring !== 'fail') {
-    const backupTask = JSON.parse(filestring) as BackupTask
-    backupTask.status = success ? 'success' : 'fail'
-    await write(filePath, JSON.stringify(backupTask))
+  try {
+    const filePath = getAccountHash(accountInfo, context, context.filesDir + '/backuptask') + '/' + id + '.txt'
+    const filestring = await read(filePath, true)
+    if (filestring !== 'fail') {
+      const backupTask = JSON.parse(filestring) as BackupTask
+      backupTask.status = success ? 'success' : 'fail'
+      await write(filePath, JSON.stringify(backupTask))
+    }
+  } catch {
   }
 }
 
@@ -91,82 +114,55 @@ export async function deleteBackupTask(context: Context, accountInfo: AccountInf
   }
 }
 
-export async function generateBackupTaskList(context: Context, type: string) {
+export async function generateBackupTaskList(context: Context, type: string, albumUris: string[]) {
   const accountInfo = await getAccountInfo(context)
   if (accountInfo.id) {
-    const backupTaskArray: BackupTask[] = []
-    const dirPath = getAccountHash(accountInfo, context, context.filesDir + '/backuptask') + '/'
-    if (fileIo.accessSync(dirPath)) {
-      const fileNames = await fileIo.listFile(dirPath)
-      const promises = fileNames.map(async (item) => {
-        const filestring = await read(dirPath + item)
-        try {
-          backupTaskArray.push(JSON.parse(filestring))
-        } catch (err) {
-          const object: JsErrorObject = {
-            name: 'JS_ERROR',
-            info: {
-              name: err.name,
-              message: err.message,
-              stack: err.stack
-            }
-          }
-          await write(context.filesDir + '/log/error/' + Date.now() + '.txt', JSON.stringify(object))
-          await write(context.filesDir + '/log/damagedjson/' + sha256hash(filestring) + '.txt', filestring)
-        }
-      })
-      await Promise.all(promises)
-    }
-    const finishedArray = backupTaskArray.filter(item => item.type === type && item.status !== 'pending')
+    let backupTaskArray = await getBackupTaskList(context)
+    backupTaskArray = backupTaskArray.filter(item => item.type === type)
+    const finishedArray = backupTaskArray.filter(item => item.status !== 'pending')
     let latestMotifyTime = 0
     finishedArray.forEach(item => {
       if (item.modifyTime > latestMotifyTime) {
         latestMotifyTime = item.modifyTime
       }
     })
+    backupTaskArray = backupTaskArray.filter(item => item.status === 'pending')
+    const dirPath = getAccountHash(accountInfo, context, context.filesDir + '/backuptask') + '/'
     if (type === '相册') {
       const allow = getPermission('ohos.permission.READ_IMAGEVIDEO')
       if (allow) {
+        const albumArray = await getAlbumList(context)
         const phAccessHelper = photoAccessHelper.getPhotoAccessHelper(context)
-        const albumRes =
-          await phAccessHelper.getAlbums(photoAccessHelper.AlbumType.USER, photoAccessHelper.AlbumSubtype.ANY, {
-            fetchColumns: [],
-            predicates: new dataSharePredicates.DataSharePredicates()
-          })
-        const albums = await albumRes.getAllObjects()
-        const albumArray = albums.map((item): AlbumItem => {
-          return {
-            id: item.albumUri.substring(item.albumUri.lastIndexOf('/') + 1),
-            name: item.albumName
-          }
-        })
         const photoRes = await phAccessHelper.getAssets({
           fetchColumns: ['uri', 'display_name', 'size', 'date_modified', 'owner_album_id'],
           predicates: new dataSharePredicates.DataSharePredicates()
         })
         await phAccessHelper.release()
         const photos = await photoRes.getAllObjects()
-        const promises = photos.map(async (item) => {
-          if (!item.displayName.endsWith('.heic')) {
-            if (item.get('date_modified') > latestMotifyTime) {
-              const backupTaskIndex =
-                backupTaskArray.findIndex(backupTaskItem => backupTaskItem.srcFileUri === item.uri)
-              if (backupTaskIndex !== -1) {
-                backupTaskArray.splice(backupTaskIndex, 1)
-                await deleteBackupTask(context, accountInfo, backupTaskArray[backupTaskIndex].id)
-              }
-              let albumName = ''
-              const album = albumArray.find(albumItem => albumItem.id === String(item.get('owner_album_id')))
-              if (album) {
-                albumName = album.name
-              }
+        for (let i = 0; i < photos.length; i++) {
+          const item = photos[i]
+          if (item.get('date_modified') > latestMotifyTime) {
+            const backupTaskIndex =
+              backupTaskArray.findIndex(backupTaskItem => backupTaskItem.srcFileUri === item.uri)
+            if (backupTaskIndex !== -1) {
+              await deleteBackupTask(context, accountInfo, backupTaskArray[backupTaskIndex].id)
+              backupTaskArray.splice(backupTaskIndex, 1)
+            }
+            let albumName = ''
+            let albumUri = ''
+            const album = albumArray.find(albumItem => albumItem.id === String(item.get('owner_album_id')))
+            if (album) {
+              albumName = album.name
+              albumUri = album.uri
+            }
+            if (albumUris.length === 0 || albumUris.includes(albumUri)) {
               const id = util.generateRandomUUID()
               backupTaskArray.push({
                 id: id,
                 type: type,
                 srcFileUri: item.uri,
                 modifyTime: item.get('date_modified') as number,
-                path: '/home/Photos/backup/' + deviceInfo.marketName + '/' + albumName,
+                path: '/home/Photos/backup/' + deviceInfo.marketName + (albumName ? ('/' + albumName) : ''),
                 status: 'pending'
               })
               await write(dirPath + id + '.txt', JSON.stringify({
@@ -174,64 +170,12 @@ export async function generateBackupTaskList(context: Context, type: string) {
                 type: type,
                 srcFileUri: item.uri,
                 modifyTime: item.get('date_modified') as number,
-                path: '/home/Photos/backup/' + deviceInfo.marketName + '/' + albumName,
+                path: '/home/Photos/backup/' + deviceInfo.marketName + (albumName ? ('/' + albumName) : ''),
                 status: 'pending'
               }))
             }
           }
-          if (item.displayName.endsWith('.heic')) {
-            if (item.get('date_modified') > latestMotifyTime) {
-              const dir = context.tempDir + '/upload/movingphoto/'
-              await photoAccessHelper.MediaAssetManager.requestMovingPhoto(context, item, {
-                deliveryMode: photoAccessHelper.DeliveryMode.BALANCE_MODE
-              }, {
-                async onDataPrepared(movingPhoto) {
-                  const name = item.displayName.substring(0, item.displayName.lastIndexOf('.'))
-                  const imageFilePath = dir + name + '.jpg'
-                  const videoFilePath = dir + name + '.mp4'
-                  await write(imageFilePath, '')
-                  await write(videoFilePath, '')
-                  await movingPhoto.requestContent(fileUri.getUriFromPath(imageFilePath),
-                    fileUri.getUriFromPath(videoFilePath))
-                  await zlib.compressFiles([imageFilePath, videoFilePath], dir + name, {})
-                  await fileIo.rename(dir + name + '.zip', dir + name + '.mv.png')
-                  await fileIo.unlink(imageFilePath)
-                  await fileIo.unlink(videoFilePath)
-                  const uri = fileUri.getUriFromPath(dir + name + '.mv.png')
-                  const backupTaskIndex = backupTaskArray.findIndex(backupTaskItem => backupTaskItem.srcFileUri === uri)
-                  if (backupTaskIndex !== -1) {
-                    backupTaskArray.splice(backupTaskIndex, 1)
-                    await deleteBackupTask(context, accountInfo, backupTaskArray[backupTaskIndex].id)
-                  }
-                  let albumName = ''
-                  const album = albumArray.find(albumItem => albumItem.id === String(item.get('owner_album_id')))
-                  if (album) {
-                    albumName = album.name
-                  }
-                  const id = util.generateRandomUUID()
-                  backupTaskArray.push({
-                    id: id,
-                    type: type,
-                    srcFileUri: uri,
-                    modifyTime: item.get('date_modified') as number,
-                    path: '/home/Photos/backup/' + deviceInfo.marketName + '/' + albumName,
-                    status: 'pending'
-                  })
-                  await write(dirPath + id + '.txt', JSON.stringify({
-                    id: id,
-                    type: type,
-                    srcFileUri: uri,
-                    modifyTime: item.get('date_modified') as number,
-                    path: '/home/Photos/backup/' + deviceInfo.marketName + '/' + albumName,
-                    status: 'pending'
-                  }))
-                  await startBackupTask(context, id)
-                }
-              })
-            }
-          }
-        })
-        await Promise.all(promises)
+        }
       }
     }
     let dir = ''
@@ -259,8 +203,8 @@ export async function generateBackupTaskList(context: Context, type: string) {
           const uri = fileUri.getUriFromPath(path)
           const backupTaskIndex = backupTaskArray.findIndex(item => item.srcFileUri === uri)
           if (backupTaskIndex !== -1) {
-            backupTaskArray.splice(backupTaskIndex, 1)
             await deleteBackupTask(context, accountInfo, backupTaskArray[backupTaskIndex].id)
+            backupTaskArray.splice(backupTaskIndex, 1)
           }
           const id = util.generateRandomUUID()
           backupTaskArray.push({
@@ -282,13 +226,10 @@ export async function generateBackupTaskList(context: Context, type: string) {
         }
       }
     }
-    const promises = backupTaskArray.map(async (item) => {
-      if (item.type === type && item.status === 'pending') {
-        const task = new taskpool.Task(startBackupTask, context, item.id)
-        await taskpool.execute(task)
-      }
-    })
-    await Promise.all(promises)
+    for (let i = 0; i < backupTaskArray.length; i++) {
+      const item = backupTaskArray[i]
+      await startBackupTask(context, item.id)
+    }
   }
 }
 
@@ -298,11 +239,11 @@ export async function autoBackup(context: Context) {
     const filePath = context.filesDir + '/backupsetting/' + getAccountHash(accountInfo) + '.txt'
     const filestring = await read(filePath, true)
     if (filestring !== 'fail') {
-      const autoTypes = (JSON.parse(filestring) as BackupSetting).autoTypes
-      const promises = autoTypes.map(async (item) => {
-        await generateBackupTaskList(context, item)
-      })
-      await Promise.all(promises)
+      const backupSetting = JSON.parse(filestring) as BackupSetting
+      for (let i = 0; i < backupSetting.autoTypes.length; i++) {
+        const item = backupSetting.autoTypes[i]
+        await generateBackupTaskList(context, item, backupSetting.albumUris)
+      }
     }
   }
 }

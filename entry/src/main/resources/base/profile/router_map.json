@@ -6,6 +6,11 @@
       "buildFunction": "AddressgroupBuilder"
     },
     {
+      "name": "Backupalbum",
+      "pageSourceFile": "src/main/ets/pages/Backupalbum.ets",
+      "buildFunction": "BackupalbumBuilder"
+    },
+    {
       "name": "Dumpjsrawheapdata",
       "pageSourceFile": "src/main/ets/pages/Dumpjsrawheapdata.ets",
       "buildFunction": "DumpjsrawheapdataBuilder"
