@@ -106,9 +106,6 @@ export default struct Transfertask {
                       if (item.status === 'processing') {
                         Image($r('app.media.close'))
                           .height(24)
-                          .margin({
-                            right: $r('sys.float.ohos_id_elements_margin_horizontal_m')
-                          })
                           .onClick(async () => {
                             await backgroundTaskManager.stopBackgroundRunning(this.context)
                           })
