@@ -98,9 +98,6 @@ export async function download(context: Context, id: string) {
           id: transferTask.accountInfo.sid
         }
       })
-      backgroundTaskManager.on('continuousTaskCancel', () => {
-        session.cancel()
-      })
       try {
         const response = await session.get(transferTask.accountInfo.path + '/webapi/entry.cgi?' + new url.URLParams({
           api: 'SYNO.FileStation.Download',

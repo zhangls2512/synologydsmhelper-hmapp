@@ -1947,11 +1947,11 @@ export default struct Filelist {
                               count++
                             }
                           }
+                          event.setResult(DragResult.DRAG_SUCCESSFUL)
                           if (count > 0) {
                             await promptAction.openToast({
                               message: count + ' 项传输任务已添加'
                             })
-                            event.setResult(DragResult.DRAG_SUCCESSFUL)
                           }
                         } catch {
                           event.setResult(DragResult.DRAG_FAILED)
@@ -2083,11 +2083,11 @@ export default struct Filelist {
                       }))
                       count++
                     }
+                    event.setResult(DragResult.DRAG_SUCCESSFUL)
                     if (count > 0) {
                       await promptAction.openToast({
                         message: count + ' 项传输任务已添加'
                       })
-                      event.setResult(DragResult.DRAG_SUCCESSFUL)
                     }
                   }
                 } catch {
