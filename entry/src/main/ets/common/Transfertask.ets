@@ -237,6 +237,7 @@ export async function upload(context: Context, id: string) {
         },
         headers: {
           'content-type': 'multipart/form-data; boundary=' + transferTask.id,
+          'content-length': String(fileIo.statSync(filePath).size),
           referer: transferTask.path,
           'x-syno-token': transferTask.accountInfo.synotoken
         },
