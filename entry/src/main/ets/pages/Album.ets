@@ -4,7 +4,7 @@ import { taskpool, url, util } from '@kit.ArkTS'
 import { display, LoadingDialog, promptAction, SegmentButtonV2Items, TabSegmentButtonV2, window } from '@kit.ArkUI'
 import { fileIo, fileUri, picker } from '@kit.CoreFileKit'
 import { map, mapCommon, MapComponent, petalMaps, site } from '@kit.MapKit'
-import { MovingPhotoView, MovingPhotoViewController, photoAccessHelper } from '@kit.MediaLibraryKit'
+import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { netBoost } from '@kit.NetworkBoostKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { hdsEffect } from '@kit.UIDesignKit'
@@ -129,7 +129,6 @@ export default struct Album {
   @Local photoAddress: string = ''
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
-  controller: MovingPhotoViewController = new MovingPhotoViewController()
   folderMap = new Map<number, string>()
   account = ''
   photoFinished = true
@@ -530,17 +529,16 @@ export default struct Album {
               top: $r('sys.float.ohos_id_text_margin_vertical')
             })
 
-            if (this.previewPhoto.type !== 'movingphoto') {
-              Text() {
-                Span('尺寸：')
-                  .fontWeight(FontWeight.Medium)
-                Span(this.previewPhoto.additional.resolution.width + 'x' +
-                  this.previewPhoto.additional.resolution.height)
-              }
-              .margin({
-                top: $r('sys.float.ohos_id_text_margin_vertical')
-              })
+            Text() {
+              Span('尺寸：')
+                .fontWeight(FontWeight.Medium)
+              Span(this.previewPhoto.additional.resolution.width + 'x' +
+                this.previewPhoto.additional.resolution.height)
             }
+            .margin({
+              top: $r('sys.float.ohos_id_text_margin_vertical')
+            })
+
             Text() {
               Span('路径：')
                 .fontWeight(FontWeight.Medium)
@@ -711,320 +709,318 @@ export default struct Album {
         .onClick(() => {
           this.isShowInfoSheet = true
         })
-      if (item.type !== 'movingphoto') {
-        MenuItem({
-          content: '下载'
-        })
-          .onClick(async () => {
-            const promptAction = this.UIContext.getPromptAction()
-            if (item.type === 'photo') {
-              this.dialogControllerProgress.open()
-              const version = await getDsmApiMaxVersion(this.context, '', 'SYNO.FileStation.Download')
-              if (version !== 'fail') {
-                const dir = this.context.tempDir + '/downloadphoto'
-                if (!fileIo.accessSync(dir)) {
-                  await fileIo.mkdir(dir, true)
-                }
-                const path = dir + '/' + item.filename
-                const file = fileIo.openSync(path, fileIo.OpenMode.CREATE | fileIo.OpenMode.WRITE_ONLY)
-                const fileStream = fileIo.fdopenStreamSync(file.fd, 'w+')
-                netBoost.setSceneDesc({
-                  scene: 'download',
-                  sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
-                })
-                const accountInfo = await getAccountInfo(this.context)
-                const session = rcp.createSession({
-                  requestConfiguration: {
-                    tracing: {
-                      httpEventsHandler: {
-                        onDataReceive: async (incomingData) => {
-                          await fileStream.write(incomingData)
-                        },
-                        onDataEnd: () => {
-                          session.close()
-                          this.dialogControllerProgress.close()
-                          netBoost.setSceneDesc({
-                            scene: 'download',
-                            sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-                          })
-                          fileStream.closeSync()
-                        }
-                      }
-                    },
-                    dns: {
-                      dnsRules: getDnsServer(this.context)
-                    },
-                    security: {
-                      remoteValidation: getFlushPreference(this.context, 'debugSetting',
-                        'closeRemoteValidationWhenLinkDsm', 'system') as 'system' | 'skip',
-                      tlsRange: {
-                        min: 'TlsV1.2'
-                      }
-                    }
-                  },
-                  headers: {
-                    referer: accountInfo.path,
-                    'x-syno-token': accountInfo.synotoken
-                  },
-                  cookies: {
-                    id: accountInfo.sid
-                  }
-                })
-                try {
-                  const response = await session.get(accountInfo.path + '/webapi/entry.cgi?' + new url.URLParams({
-                    api: 'SYNO.FileStation.Download',
-                    version: String(version),
-                    method: 'download',
-                    path: item.path,
-                    mode: 'download'
-                  }).toString())
-                  if (response.statusCode >= 200 && response.statusCode < 300) {
-                    const uri = fileUri.getUriFromPath(path)
-                    let houzhui = ''
-                    const lastDotIndex = item.filename.lastIndexOf('.')
-                    if (lastDotIndex !== -1) {
-                      houzhui = item.filename.slice(lastDotIndex + 1)
-                    }
-                    const phAccessHelper = photoAccessHelper.getPhotoAccessHelper(this.context)
-                    const uris = await phAccessHelper.showAssetsCreationDialog([uri], [{
-                      fileNameExtension: houzhui,
-                      photoType: photoAccessHelper.PhotoType.IMAGE
-                    }])
-                    await phAccessHelper.release()
-                    if (uris.length === 1) {
-                      const srcFile = fileIo.openSync(uri)
-                      const destFile = fileIo.openSync(uris[0], fileIo.OpenMode.WRITE_ONLY)
-                      await fileIo.copyFile(srcFile.fd, destFile.fd)
-                      fileIo.closeSync(srcFile)
-                      fileIo.closeSync(destFile)
-                      await promptAction.openToast({
-                        message: '保存成功'
-                      })
-                    }
-                  } else {
-                    await promptAction.openToast({
-                      message: 'HTTP 请求失败，状态码：' + response.statusCode
-                    })
-                  }
-                } catch (err) {
-                  session.close()
-                  this.dialogControllerProgress.close()
-                  netBoost.setSceneDesc({
-                    scene: 'download',
-                    sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-                  })
-                  fileStream.closeSync()
-                  await promptAction.openToast({
-                    message: '下载失败，错误码：' + err.code
-                  })
-                }
-                await fileIo.unlink(path)
-                return
+      MenuItem({
+        content: '下载'
+      })
+        .onClick(async () => {
+          const promptAction = this.UIContext.getPromptAction()
+          if (item.type === 'photo') {
+            this.dialogControllerProgress.open()
+            const version = await getDsmApiMaxVersion(this.context, '', 'SYNO.FileStation.Download')
+            if (version !== 'fail') {
+              const dir = this.context.tempDir + '/downloadphoto'
+              if (!fileIo.accessSync(dir)) {
+                await fileIo.mkdir(dir, true)
               }
-              this.dialogControllerProgress.close()
-            }
-            if (item.type === 'video') {
-              if (getCurrentNetworkBearerType() === 0) {
-                const cellularDataUseRemind =
-                  getFlushPreference(this.context, 'commonSetting', 'cellularDataUseRemind', 0)
-                if (cellularDataUseRemind === 0 ||
-                  (cellularDataUseRemind === 1 && item.filesize > 200 * Math.pow(1024, 2))) {
-                  const data = await promptAction.showDialog({
-                    title: '流量使用提醒',
-                    message: '当前正在使用流量上网，下载此视频将消耗约 ' + getSizeString(item.filesize) +
-                      ' 流量，确定下载？',
-                    buttons: [
-                      {
-                        text: '取消',
-                        color: $r('sys.color.font_primary')
-                      },
-                      {
-                        text: '确定',
-                        color: $r('sys.color.font_emphasize')
-                      }
-                    ]
-                  })
-                  if (data.index === 0) {
-                    return
-                  }
-                }
-              }
-              const transferTaskDataPreferences = sendablePreferences.getPreferencesSync(this.context, {
-                name: 'transferTask'
+              const path = dir + '/' + item.filename
+              const file = fileIo.openSync(path, fileIo.OpenMode.CREATE | fileIo.OpenMode.WRITE_ONLY)
+              const fileStream = fileIo.fdopenStreamSync(file.fd, 'w+')
+              netBoost.setSceneDesc({
+                scene: 'download',
+                sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
               })
-              const transferTaskId = util.generateRandomUUID()
-              try {
-                const documentSaveOptions = new picker.DocumentSaveOptions()
-                const selectFileDownloadPath =
-                  getFlushPreference(this.context, 'commonSetting', 'selectFileDownloadPath', false)
-                if (!selectFileDownloadPath) {
-                  documentSaveOptions.pickerMode = picker.DocumentPickerMode.DOWNLOAD
+              const accountInfo = await getAccountInfo(this.context)
+              const session = rcp.createSession({
+                requestConfiguration: {
+                  tracing: {
+                    httpEventsHandler: {
+                      onDataReceive: async (incomingData) => {
+                        await fileStream.write(incomingData)
+                      },
+                      onDataEnd: () => {
+                        session.close()
+                        this.dialogControllerProgress.close()
+                        netBoost.setSceneDesc({
+                          scene: 'download',
+                          sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                        })
+                        fileStream.closeSync()
+                      }
+                    }
+                  },
+                  dns: {
+                    dnsRules: getDnsServer(this.context)
+                  },
+                  security: {
+                    remoteValidation: getFlushPreference(this.context, 'debugSetting',
+                      'closeRemoteValidationWhenLinkDsm', 'system') as 'system' | 'skip',
+                    tlsRange: {
+                      min: 'TlsV1.2'
+                    }
+                  }
+                },
+                headers: {
+                  referer: accountInfo.path,
+                  'x-syno-token': accountInfo.synotoken
+                },
+                cookies: {
+                  id: accountInfo.sid
                 }
-                if (selectFileDownloadPath) {
+              })
+              try {
+                const response = await session.get(accountInfo.path + '/webapi/entry.cgi?' + new url.URLParams({
+                  api: 'SYNO.FileStation.Download',
+                  version: String(version),
+                  method: 'download',
+                  path: item.path,
+                  mode: 'download'
+                }).toString())
+                if (response.statusCode >= 200 && response.statusCode < 300) {
+                  const uri = fileUri.getUriFromPath(path)
+                  let houzhui = ''
                   const lastDotIndex = item.filename.lastIndexOf('.')
                   if (lastDotIndex !== -1) {
-                    documentSaveOptions.newFileNames = [item.filename.substring(0, lastDotIndex)]
-                    documentSaveOptions.fileSuffixChoices = ['.' + item.filename.substring(lastDotIndex + 1)]
+                    houzhui = item.filename.slice(lastDotIndex + 1)
                   }
-                  if (lastDotIndex === -1) {
-                    documentSaveOptions.newFileNames = [item.filename]
-                    documentSaveOptions.fileSuffixChoices = ['']
-                  }
-                }
-                const documentViewPicker = new picker.DocumentViewPicker(this.context)
-                const uris = await documentViewPicker.save(documentSaveOptions)
-                if (uris.length === 1) {
-                  let filePath = ''
-                  if (!selectFileDownloadPath) {
-                    filePath = new fileUri.FileUri(uris[0] + '/' + item.filename).path
-                  }
-                  if (selectFileDownloadPath) {
-                    filePath = uris[0]
-                  }
-                  this.dialogControllerProgress.open()
-                  const version = await getDsmApiMaxVersion(this.context, '', 'SYNO.FileStation.Download')
-                  this.dialogControllerProgress.close()
-                  if (version !== 'fail') {
-                    const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.WRITE_ONLY)
-                    const fileStream = fileIo.fdopenStreamSync(file.fd, 'w+')
-                    netBoost.setSceneDesc({
-                      scene: 'download',
-                      sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
+                  const phAccessHelper = photoAccessHelper.getPhotoAccessHelper(this.context)
+                  const uris = await phAccessHelper.showAssetsCreationDialog([uri], [{
+                    fileNameExtension: houzhui,
+                    photoType: photoAccessHelper.PhotoType.IMAGE
+                  }])
+                  await phAccessHelper.release()
+                  if (uris.length === 1) {
+                    const srcFile = fileIo.openSync(uri)
+                    const destFile = fileIo.openSync(uris[0], fileIo.OpenMode.WRITE_ONLY)
+                    await fileIo.copyFile(srcFile.fd, destFile.fd)
+                    fileIo.closeSync(srcFile)
+                    fileIo.closeSync(destFile)
+                    await promptAction.openToast({
+                      message: '保存成功'
                     })
-                    const accountInfo = await getAccountInfo(this.context)
-                    const session = rcp.createSession({
-                      requestConfiguration: {
-                        transfer: {
-                          timeout: {
-                            transferMs: 0
-                          }
-                        },
-                        tracing: {
-                          httpEventsHandler: {
-                            onDataReceive: async (incomingData) => {
-                              await fileStream.write(incomingData)
-                            },
-                            onDownloadProgress: (totalSize, transferredSize) => {
-                              this.transferredSize = transferredSize
-                              this.totalSize = totalSize
-                            },
-                            onDataEnd: () => {
-                              this.isShowProgressSheet = false
-                              session.close()
-                              netBoost.setSceneDesc({
-                                scene: 'download',
-                                sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
-                              })
-                              fileStream.closeSync()
-                              this.context.eventHub.off('cancelDownload')
-                              this.transferredSize = 0
-                              this.totalSize = 0
-                            }
-                          }
-                        },
-                        dns: {
-                          dnsRules: getDnsServer(this.context)
-                        },
-                        security: {
-                          remoteValidation: getFlushPreference(this.context, 'debugSetting',
-                            'closeRemoteValidationWhenLinkDsm', 'system') as 'system' | 'skip',
-                          tlsRange: {
-                            min: 'TlsV1.2'
+                  }
+                } else {
+                  await promptAction.openToast({
+                    message: 'HTTP 请求失败，状态码：' + response.statusCode
+                  })
+                }
+              } catch (err) {
+                session.close()
+                this.dialogControllerProgress.close()
+                netBoost.setSceneDesc({
+                  scene: 'download',
+                  sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                })
+                fileStream.closeSync()
+                await promptAction.openToast({
+                  message: '下载失败，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
+                })
+              }
+              await fileIo.unlink(path)
+              return
+            }
+            this.dialogControllerProgress.close()
+          }
+          if (item.type === 'video') {
+            if (getCurrentNetworkBearerType() === 0) {
+              const cellularDataUseRemind =
+                getFlushPreference(this.context, 'commonSetting', 'cellularDataUseRemind', 0)
+              if (cellularDataUseRemind === 0 ||
+                (cellularDataUseRemind === 1 && item.filesize > 200 * Math.pow(1024, 2))) {
+                const data = await promptAction.showDialog({
+                  title: '流量使用提醒',
+                  message: '当前正在使用流量上网，下载此视频将消耗约 ' + getSizeString(item.filesize) +
+                    ' 流量，确定下载？',
+                  buttons: [
+                    {
+                      text: '取消',
+                      color: $r('sys.color.font_primary')
+                    },
+                    {
+                      text: '确定',
+                      color: $r('sys.color.font_emphasize')
+                    }
+                  ]
+                })
+                if (data.index === 0) {
+                  return
+                }
+              }
+            }
+            const transferTaskDataPreferences = sendablePreferences.getPreferencesSync(this.context, {
+              name: 'transferTask'
+            })
+            const transferTaskId = util.generateRandomUUID()
+            try {
+              const documentSaveOptions = new picker.DocumentSaveOptions()
+              const selectFileDownloadPath =
+                getFlushPreference(this.context, 'commonSetting', 'selectFileDownloadPath', false)
+              if (!selectFileDownloadPath) {
+                documentSaveOptions.pickerMode = picker.DocumentPickerMode.DOWNLOAD
+              }
+              if (selectFileDownloadPath) {
+                const lastDotIndex = item.filename.lastIndexOf('.')
+                if (lastDotIndex !== -1) {
+                  documentSaveOptions.newFileNames = [item.filename.substring(0, lastDotIndex)]
+                  documentSaveOptions.fileSuffixChoices = ['.' + item.filename.substring(lastDotIndex + 1)]
+                }
+                if (lastDotIndex === -1) {
+                  documentSaveOptions.newFileNames = [item.filename]
+                  documentSaveOptions.fileSuffixChoices = ['']
+                }
+              }
+              const documentViewPicker = new picker.DocumentViewPicker(this.context)
+              const uris = await documentViewPicker.save(documentSaveOptions)
+              if (uris.length === 1) {
+                let filePath = ''
+                if (!selectFileDownloadPath) {
+                  filePath = new fileUri.FileUri(uris[0] + '/' + item.filename).path
+                }
+                if (selectFileDownloadPath) {
+                  filePath = uris[0]
+                }
+                this.dialogControllerProgress.open()
+                const version = await getDsmApiMaxVersion(this.context, '', 'SYNO.FileStation.Download')
+                this.dialogControllerProgress.close()
+                if (version !== 'fail') {
+                  const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.WRITE_ONLY)
+                  const fileStream = fileIo.fdopenStreamSync(file.fd, 'w+')
+                  netBoost.setSceneDesc({
+                    scene: 'download',
+                    sceneEvent: netBoost.SceneEvent.SCENE_EVENT_ENTER
+                  })
+                  const accountInfo = await getAccountInfo(this.context)
+                  const session = rcp.createSession({
+                    requestConfiguration: {
+                      transfer: {
+                        timeout: {
+                          transferMs: 0
+                        }
+                      },
+                      tracing: {
+                        httpEventsHandler: {
+                          onDataReceive: async (incomingData) => {
+                            await fileStream.write(incomingData)
+                          },
+                          onDownloadProgress: (totalSize, transferredSize) => {
+                            this.transferredSize = transferredSize
+                            this.totalSize = totalSize
+                          },
+                          onDataEnd: () => {
+                            this.isShowProgressSheet = false
+                            session.close()
+                            netBoost.setSceneDesc({
+                              scene: 'download',
+                              sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                            })
+                            fileStream.closeSync()
+                            this.context.eventHub.off('cancelDownload')
+                            this.transferredSize = 0
+                            this.totalSize = 0
                           }
                         }
                       },
-                      headers: {
-                        referer: accountInfo.path,
-                        'x-syno-token': accountInfo.synotoken
+                      dns: {
+                        dnsRules: getDnsServer(this.context)
                       },
-                      cookies: {
-                        id: accountInfo.sid
+                      security: {
+                        remoteValidation: getFlushPreference(this.context, 'debugSetting',
+                          'closeRemoteValidationWhenLinkDsm', 'system') as 'system' | 'skip',
+                        tlsRange: {
+                          min: 'TlsV1.2'
+                        }
                       }
-                    })
-                    this.totalSize = item.filesize
-                    this.context.eventHub.on('cancelDownload', () => {
-                      session.cancel()
-                    })
-                    this.isShowProgressSheet = true
-                    try {
-                      const response = await session.get(accountInfo.path + '/webapi/entry.cgi?' + new url.URLParams({
-                        api: 'SYNO.FileStation.Download',
-                        version: String(version),
-                        method: 'download',
-                        path: item.path,
-                        mode: 'download'
-                      }).toString())
-                      if (response.statusCode >= 200 && response.statusCode < 300) {
-                        await promptAction.openToast({
-                          message: '下载完成'
-                        })
-                        transferTaskDataPreferences.putSync(transferTaskId, JSON.stringify({
-                          id: transferTaskId,
-                          name: item.filename,
-                          status: 'success',
-                          type: 'download'
-                        }))
-                      } else {
-                        await promptAction.openToast({
-                          message: 'HTTP 请求失败，状态码：' + response.statusCode
-                        })
-                        transferTaskDataPreferences.putSync(transferTaskId, JSON.stringify({
-                          id: transferTaskId,
-                          name: item.filename,
-                          status: 'fail',
-                          errCode: response.statusCode,
-                          type: 'download'
-                        }))
-                      }
-                    } catch (err) {
-                      this.isShowProgressSheet = false
-                      session.close()
-                      netBoost.setSceneDesc({
-                        scene: 'download',
-                        sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                    },
+                    headers: {
+                      referer: accountInfo.path,
+                      'x-syno-token': accountInfo.synotoken
+                    },
+                    cookies: {
+                      id: accountInfo.sid
+                    }
+                  })
+                  this.totalSize = item.filesize
+                  this.context.eventHub.on('cancelDownload', () => {
+                    session.cancel()
+                  })
+                  this.isShowProgressSheet = true
+                  try {
+                    const response = await session.get(accountInfo.path + '/webapi/entry.cgi?' + new url.URLParams({
+                      api: 'SYNO.FileStation.Download',
+                      version: String(version),
+                      method: 'download',
+                      path: item.path,
+                      mode: 'download'
+                    }).toString())
+                    if (response.statusCode >= 200 && response.statusCode < 300) {
+                      await promptAction.openToast({
+                        message: '下载完成'
                       })
-                      fileStream.closeSync()
-                      this.context.eventHub.off('cancelDownload')
-                      this.transferredSize = 0
-                      this.totalSize = 0
-                      if (err.code !== 1007900992) {
-                        await promptAction.openToast({
-                          message: '下载失败，错误码：' + err.code
-                        })
-                        transferTaskDataPreferences.putSync(transferTaskId, JSON.stringify({
-                          id: transferTaskId,
-                          name: item.filename,
-                          status: 'fail',
-                          errCode: err.code,
-                          type: 'download'
-                        }))
-                      }
-                      if (err.code === 1007900992) {
-                        transferTaskDataPreferences.putSync(transferTaskId, JSON.stringify({
-                          id: transferTaskId,
-                          name: item.filename,
-                          status: 'cancel',
-                          type: 'download'
-                        }))
-                      }
+                      transferTaskDataPreferences.putSync(transferTaskId, JSON.stringify({
+                        id: transferTaskId,
+                        name: item.filename,
+                        status: 'success',
+                        type: 'download'
+                      }))
+                    } else {
+                      await promptAction.openToast({
+                        message: 'HTTP 请求失败，状态码：' + response.statusCode
+                      })
+                      transferTaskDataPreferences.putSync(transferTaskId, JSON.stringify({
+                        id: transferTaskId,
+                        name: item.filename,
+                        status: 'fail',
+                        errCode: response.statusCode,
+                        type: 'download'
+                      }))
+                    }
+                  } catch (err) {
+                    this.isShowProgressSheet = false
+                    session.close()
+                    netBoost.setSceneDesc({
+                      scene: 'download',
+                      sceneEvent: netBoost.SceneEvent.SCENE_EVENT_LEAVE
+                    })
+                    fileStream.closeSync()
+                    this.context.eventHub.off('cancelDownload')
+                    this.transferredSize = 0
+                    this.totalSize = 0
+                    if (err.code !== 1007900992) {
+                      await promptAction.openToast({
+                        message: '下载失败，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
+                      })
+                      transferTaskDataPreferences.putSync(transferTaskId, JSON.stringify({
+                        id: transferTaskId,
+                        name: item.filename,
+                        status: 'fail',
+                        errCode: err.code,
+                        type: 'download'
+                      }))
+                    }
+                    if (err.code === 1007900992) {
+                      transferTaskDataPreferences.putSync(transferTaskId, JSON.stringify({
+                        id: transferTaskId,
+                        name: item.filename,
+                        status: 'cancel',
+                        type: 'download'
+                      }))
                     }
                   }
                 }
-              } catch (err) {
-                await promptAction.openToast({
-                  message: '发生错误，错误码：' + err.code
-                })
-                transferTaskDataPreferences.putSync(transferTaskId, JSON.stringify({
-                  id: transferTaskId,
-                  name: item.filename,
-                  status: 'fail',
-                  errCode: err.code,
-                  type: 'download'
-                }))
               }
+            } catch (err) {
+              await promptAction.openToast({
+                message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
+              })
+              transferTaskDataPreferences.putSync(transferTaskId, JSON.stringify({
+                id: transferTaskId,
+                name: item.filename,
+                status: 'fail',
+                errCode: err.code,
+                type: 'download'
+              }))
             }
-          })
-      }
+          }
+        })
       MenuItem({
         content: '加入相册'
       })
@@ -1075,10 +1071,6 @@ export default struct Album {
                     setTimeout(async () => {
                       if (item.type === 'photo') {
                         await fileIo.unlink(new fileUri.FileUri(item.thumbnailUri).path)
-                      }
-                      if (item.type === 'movingphoto') {
-                        await fileIo.unlink(new fileUri.FileUri(item.movingPhotoImageUri).path)
-                        await fileIo.unlink(new fileUri.FileUri(item.movingPhotoVideoUri).path)
                       }
                     }, 5000)
                     this.previewPhoto = undefined
@@ -1330,51 +1322,8 @@ export default struct Album {
                                                 this.photoAddress = res.addressDescription
                                               } catch (err) {
                                                 await promptAction.openToast({
-                                                  message: '发生错误，错误码：' + err.code
-                                                })
-                                                this.photoAddress = '地址获取失败，可尝试点此跳转系统地图查看'
-                                              }
-                                            }
-                                            this.previewPhoto = photoItem.item
-                                            setTempPreference(this.context, 'back', 'album', true)
-                                          })
-                                      }
-                                      if (photoItem.item.type === 'movingphoto') {
-                                        MovingPhotoView({
-                                          movingPhoto: photoItem.item.movingPhoto,
-                                          controller: this.controller,
-                                          imageAIOptions: {
-                                            types: [ImageAnalyzerType.SUBJECT, ImageAnalyzerType.TEXT,
-                                              ImageAnalyzerType.OBJECT_LOOKUP]
-                                          }
-                                        })
-                                          .aspectRatio(1)
-                                          .muted(true)
-                                          .objectFit(ImageFit.Auto)
-                                          .onError(async () => {
-                                            await promptAction.openToast({
-                                              message: '加载动态照片时发生错误'
-                                            })
-                                          })
-                                          .onClick(async () => {
-                                            if (photoItem.item.additional.gps) {
-                                              const geo = await map.convertCoordinate(mapCommon.CoordinateType.WGS84,
-                                                mapCommon.CoordinateType.GCJ02, {
-                                                  latitude: photoItem.item.additional.gps.latitude,
-                                                  longitude: photoItem.item.additional.gps.longitude
-                                                })
-                                              try {
-                                                const res = await site.reverseGeocode({
-                                                  location: {
-                                                    latitude: geo.latitude,
-                                                    longitude: geo.longitude
-                                                  },
-                                                  language: 'zh-CN'
-                                                })
-                                                this.photoAddress = res.addressDescription
-                                              } catch (err) {
-                                                await promptAction.openToast({
-                                                  message: '发生错误，错误码：' + err.code
+                                                  message: '发生错误，错误码：' + err.code +
+                                                    (err.message ? '，错误信息：' + err.message : '')
                                                 })
                                                 this.photoAddress = '地址获取失败，可尝试点此跳转系统地图查看'
                                               }
@@ -1395,7 +1344,8 @@ export default struct Album {
                                           .objectFit(ImageFit.Auto)
                                           .onError(async (err) => {
                                             await promptAction.openToast({
-                                              message: '发生错误，错误码：' + err.code
+                                              message: '发生错误，错误码：' + err.code +
+                                                (err.message ? '，错误信息：' + err.message : '')
                                             })
                                           })
                                       }
@@ -1418,7 +1368,8 @@ export default struct Album {
                                           this.photoAddress = res.addressDescription
                                         } catch (err) {
                                           await promptAction.openToast({
-                                            message: '发生错误，错误码：' + err.code
+                                            message: '发生错误，错误码：' + err.code +
+                                              (err.message ? '，错误信息：' + err.message : '')
                                           })
                                           this.photoAddress = '地址获取失败，可尝试点此跳转系统地图查看'
                                         }
@@ -1653,7 +1604,8 @@ export default struct Album {
                                 this.photoAddress = res.addressDescription
                               } catch (err) {
                                 await promptAction.openToast({
-                                  message: '发生错误，错误码：' + err.code
+                                  message: '发生错误，错误码：' + err.code +
+                                    (err.message ? '，错误信息：' + err.message : '')
                                 })
                                 this.photoAddress = '地址获取失败，可尝试点此跳转系统地图查看'
                               }
@@ -1681,7 +1633,8 @@ export default struct Album {
                                 this.photoAddress = res.addressDescription
                               } catch (err) {
                                 await promptAction.openToast({
-                                  message: '发生错误，错误码：' + err.code
+                                  message: '发生错误，错误码：' + err.code +
+                                    (err.message ? '，错误信息：' + err.message : '')
                                 })
                                 this.photoAddress = '地址获取失败，可尝试点此跳转系统地图查看'
                               }
@@ -1697,132 +1650,6 @@ export default struct Album {
                         }
                       })
                   )
-              }
-              if (this.previewPhoto.type === 'movingphoto') {
-                MovingPhotoView({
-                  movingPhoto: this.previewPhoto.movingPhoto,
-                  controller: this.controller,
-                  imageAIOptions: {
-                    types: [ImageAnalyzerType.SUBJECT, ImageAnalyzerType.TEXT, ImageAnalyzerType.OBJECT_LOOKUP]
-                  }
-                })
-                  .autoPlay(true)
-                  .layoutWeight(1)
-                  .margin({
-                    top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-                  })
-                  .objectFit(ImageFit.Contain)
-                  .width('100%')
-                  .onError(async () => {
-                    await promptAction.openToast({
-                      message: '加载动态照片时发生错误'
-                    })
-                  })
-                  .onClick(() => {
-                    this.controller.startPlayback()
-                  })
-                  .gesture(
-                    PanGesture({
-                      direction: PanDirection.Left | PanDirection.Right
-                    })
-                      .onActionEnd(async (gestureEvent) => {
-                        let photoArray: PhotoItem[] = []
-                        if (!this.previewAlbum) {
-                          photoArray = this.photoArray
-                        }
-                        if (this.previewAlbum) {
-                          photoArray = this.albumPhotoArray
-                        }
-                        const index = photoArray.findIndex(item => item.id === this.previewPhoto?.id)
-                        const maxIndex = photoArray.length - 1
-                        if (gestureEvent.offsetX > 0) {
-                          if (index !== 0) {
-                            if (photoArray[index - 1].additional.gps) {
-                              try {
-                                const res = await site.reverseGeocode({
-                                  location: {
-                                    latitude: photoArray[index - 1].additional.gps.latitude,
-                                    longitude: photoArray[index - 1].additional.gps.longitude
-                                  },
-                                  language: 'zh-CN'
-                                })
-                                this.photoAddress = res.addressDescription
-                              } catch (err) {
-                                await promptAction.openToast({
-                                  message: '发生错误，错误码：' + err.code
-                                })
-                                this.photoAddress = '地址获取失败，可尝试点此跳转系统地图查看'
-                              }
-                            }
-                            this.previewPhoto = photoArray[index - 1]
-                            setTempPreference(this.context, 'back', 'album', true)
-                          }
-                          if (index === 0) {
-                            await promptAction.openToast({
-                              message: '已是第一张'
-                            })
-                          }
-                        }
-                        if (gestureEvent.offsetX < 0) {
-                          if (index !== maxIndex) {
-                            if (photoArray[index + 1].additional.gps) {
-                              try {
-                                const res = await site.reverseGeocode({
-                                  location: {
-                                    latitude: photoArray[index + 1].additional.gps.latitude,
-                                    longitude: photoArray[index + 1].additional.gps.longitude
-                                  },
-                                  language: 'zh-CN'
-                                })
-                                this.photoAddress = res.addressDescription
-                              } catch (err) {
-                                await promptAction.openToast({
-                                  message: '发生错误，错误码：' + err.code
-                                })
-                                this.photoAddress = '地址获取失败，可尝试点此跳转系统地图查看'
-                              }
-                            }
-                            this.previewPhoto = photoArray[index + 1]
-                            setTempPreference(this.context, 'back', 'album', true)
-                          }
-                          if (index === maxIndex) {
-                            await promptAction.openToast({
-                              message: '已是最后一张'
-                            })
-                          }
-                        }
-                      })
-                  )
-                Column() {
-                  SaveButton({
-                    icon: SaveIconStyle.FULL_FILLED,
-                    text: SaveDescription.SAVE
-                  })
-                    .onClick(async (event, result) => {
-                      if (result === SaveButtonOnClickResult.SUCCESS) {
-                        const phAccessHelper = photoAccessHelper.getPhotoAccessHelper(this.context)
-                        const assetChangeRequest =
-                          photoAccessHelper.MediaAssetChangeRequest.createAssetRequest(this.context,
-                            photoAccessHelper.PhotoType.IMAGE, 'heic', {
-                              subtype: photoAccessHelper.PhotoSubtype.MOVING_PHOTO
-                            })
-                        assetChangeRequest.addResource(photoAccessHelper.ResourceType.IMAGE_RESOURCE,
-                          this.previewPhoto?.movingPhotoImageUri)
-                        assetChangeRequest.addResource(photoAccessHelper.ResourceType.VIDEO_RESOURCE,
-                          this.previewPhoto?.movingPhotoVideoUri)
-                        await phAccessHelper.applyChanges(assetChangeRequest)
-                        await phAccessHelper.release()
-                        await promptAction.openToast({
-                          message: '保存成功'
-                        })
-                      }
-                    })
-                }
-                .margin({
-                  bottom: $r('sys.float.ohos_id_elements_margin_vertical_m'),
-                  top: $r('sys.float.ohos_id_elements_margin_vertical_m')
-                })
-                .width('100%')
               }
               if (this.previewPhoto.type === 'video') {
                 Video({
@@ -1844,7 +1671,7 @@ export default struct Album {
                   .objectFit(ImageFit.Auto)
                   .onError(async (err) => {
                     await promptAction.openToast({
-                      message: '发生错误，错误码：' + err.code
+                      message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
                     })
                   })
                   .bindSheet(this.isShowProgressSheet!!, this.ProgressSheetBuilder(), {
@@ -1956,51 +1783,8 @@ export default struct Album {
                                     this.photoAddress = res.addressDescription
                                   } catch (err) {
                                     await promptAction.openToast({
-                                      message: '发生错误，错误码：' + err.code
-                                    })
-                                    this.photoAddress = '地址获取失败，可尝试点此跳转系统地图查看'
-                                  }
-                                }
-                                this.previewPhoto = photoItem.item
-                                setTempPreference(this.context, 'back', 'album', true)
-                              })
-                          }
-                          if (photoItem.item.type === 'movingphoto') {
-                            MovingPhotoView({
-                              movingPhoto: photoItem.item.movingPhoto,
-                              controller: this.controller,
-                              imageAIOptions: {
-                                types: [ImageAnalyzerType.SUBJECT, ImageAnalyzerType.TEXT,
-                                  ImageAnalyzerType.OBJECT_LOOKUP]
-                              }
-                            })
-                              .aspectRatio(1)
-                              .muted(true)
-                              .objectFit(ImageFit.Auto)
-                              .onError(async () => {
-                                await promptAction.openToast({
-                                  message: '加载动态照片时发生错误'
-                                })
-                              })
-                              .onClick(async () => {
-                                if (photoItem.item.additional.gps) {
-                                  const geo = await map.convertCoordinate(mapCommon.CoordinateType.WGS84,
-                                    mapCommon.CoordinateType.GCJ02, {
-                                      latitude: photoItem.item.additional.gps.latitude,
-                                      longitude: photoItem.item.additional.gps.longitude
-                                    })
-                                  try {
-                                    const res = await site.reverseGeocode({
-                                      location: {
-                                        latitude: geo.latitude,
-                                        longitude: geo.longitude
-                                      },
-                                      language: 'zh-CN'
-                                    })
-                                    this.photoAddress = res.addressDescription
-                                  } catch (err) {
-                                    await promptAction.openToast({
-                                      message: '发生错误，错误码：' + err.code
+                                      message: '发生错误，错误码：' + err.code +
+                                        (err.message ? '，错误信息：' + err.message : '')
                                     })
                                     this.photoAddress = '地址获取失败，可尝试点此跳转系统地图查看'
                                   }
@@ -2021,7 +1805,8 @@ export default struct Album {
                               .objectFit(ImageFit.Auto)
                               .onError(async (err) => {
                                 await promptAction.openToast({
-                                  message: '发生错误，错误码：' + err.code
+                                  message: '发生错误，错误码：' + err.code +
+                                    (err.message ? '，错误信息：' + err.message : '')
                                 })
                               })
                           }
@@ -2044,7 +1829,7 @@ export default struct Album {
                               this.photoAddress = res.addressDescription
                             } catch (err) {
                               await promptAction.openToast({
-                                message: '发生错误，错误码：' + err.code
+                                message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
                               })
                               this.photoAddress = '地址获取失败，可尝试点此跳转系统地图查看'
                             }

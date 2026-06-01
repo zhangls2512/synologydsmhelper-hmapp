@@ -30,7 +30,7 @@ export default struct Player {
           .objectFit(ImageFit.Auto)
           .onError(async (err) => {
             await promptAction.openToast({
-              message: '发生错误，错误码：' + err.code
+              message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
             })
           })
       }

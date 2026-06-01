@@ -121,7 +121,7 @@ export async function download(context: Context, id: string) {
         fileStream.closeSync()
         if (err.code !== 1007900992) {
           transferTask.status = 'fail'
-          transferTask.errCode = err.code
+          transferTask.errCode = err.code + (err.message ? '，错误信息：' + err.message : '')
         }
         if (err.code === 1007900992) {
           transferTask.status = 'cancel'
@@ -133,7 +133,7 @@ export async function download(context: Context, id: string) {
     }
   } catch (err) {
     transferTask.status = 'fail'
-    transferTask.errCode = err.code
+    transferTask.errCode = err.code + (err.message ? '，错误信息：' + err.message : '')
   }
   transferTaskDataPreferences.putSync(id, JSON.stringify(transferTask))
 }
@@ -291,7 +291,7 @@ export async function upload(context: Context, id: string) {
         })
         if (err.code !== 1007900992) {
           transferTask.status = 'fail'
-          transferTask.errCode = err.code ?? err.message
+          transferTask.errCode = err.code + (err.message ? '，错误信息：' + err.message : '')
           if (transferTask.backupTaskId) {
             await updateBackupTaskStatus(context, transferTask.accountInfo, transferTask.backupTaskId, false)
           }
@@ -312,7 +312,7 @@ export async function upload(context: Context, id: string) {
     }
   } catch (err) {
     transferTask.status = 'fail'
-    transferTask.errCode = err.code
+    transferTask.errCode = err.code + (err.message ? '，错误信息：' + err.message : '')
     if (transferTask.backupTaskId) {
       await updateBackupTaskStatus(context, transferTask.accountInfo, transferTask.backupTaskId, false)
     }

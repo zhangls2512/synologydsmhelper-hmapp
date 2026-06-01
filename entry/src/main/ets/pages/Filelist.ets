@@ -457,7 +457,7 @@ export default struct Filelist {
                       this.totalSize = 0
                       if (err.code !== 1007900992) {
                         await promptAction.openToast({
-                          message: '下载失败，错误码：' + err.code
+                          message: '下载失败，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
                         })
                         transferTaskDataPreferences.putSync(transferTaskId, JSON.stringify({
                           id: transferTaskId,
@@ -480,7 +480,7 @@ export default struct Filelist {
                 }
               } catch (err) {
                 await promptAction.openToast({
-                  message: '发生错误，错误码：' + err.code
+                  message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
                 })
                 transferTaskDataPreferences.putSync(transferTaskId, JSON.stringify({
                   id: transferTaskId,
@@ -1872,14 +1872,15 @@ export default struct Filelist {
                                 await fileIo.unlink(filePath)
                                 if (err.code !== 1007900992) {
                                   await promptAction.openToast({
-                                    message: '下载失败，错误码：' + err.code
+                                    message: '下载失败，错误码：' + err.code +
+                                      (err.message ? '，错误信息：' + err.message : '')
                                   })
                                 }
                               }
                             }
                           } catch (err) {
                             await promptAction.openToast({
-                              message: '发生错误，错误码：' + err.code
+                              message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
                             })
                           }
                         }
