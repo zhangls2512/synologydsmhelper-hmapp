@@ -1914,10 +1914,10 @@ export default struct Filelist {
                   .onDrop(async (event) => {
                     if (event.getDragSource() !== 'com.songjy.synologydsmhelper') {
                       if (!item.item.isdir && this.dirnames.length === 0) {
+                        event.setResult(DragResult.DROP_DISABLED)
                         await promptAction.openToast({
                           message: '不支持上传到根目录'
                         })
-                        event.setResult(DragResult.DROP_DISABLED)
                       } else {
                         const transferTaskDataPreferences = sendablePreferences.getPreferencesSync(this.context, {
                           name: 'transferTask'
@@ -1947,11 +1947,11 @@ export default struct Filelist {
                               count++
                             }
                           }
+                          event.setResult(DragResult.DRAG_SUCCESSFUL)
                           if (count > 0) {
                             await promptAction.openToast({
                               message: count + ' 项传输任务已添加'
                             })
-                            event.setResult(DragResult.DRAG_SUCCESSFUL)
                           }
                         } catch {
                           event.setResult(DragResult.DRAG_FAILED)
@@ -2016,10 +2016,10 @@ export default struct Filelist {
                           }
                         })
                       } else {
+                        event.setResult(DragResult.DROP_DISABLED)
                         await promptAction.openToast({
                           message: '仅支持移动到目录'
                         })
-                        event.setResult(DragResult.DROP_DISABLED)
                       }
                     }
                   })
@@ -2083,21 +2083,21 @@ export default struct Filelist {
                       }))
                       count++
                     }
-                    if (count > 0) {
-                      await promptAction.openToast({
-                        message: count + ' 项传输任务已添加'
-                      })
-                      event.setResult(DragResult.DRAG_SUCCESSFUL)
-                    }
+                  }
+                  event.setResult(DragResult.DRAG_SUCCESSFUL)
+                  if (count > 0) {
+                    await promptAction.openToast({
+                      message: count + ' 项传输任务已添加'
+                    })
                   }
                 } catch {
                   event.setResult(DragResult.DRAG_FAILED)
                 }
               } else {
+                event.setResult(DragResult.DROP_DISABLED)
                 await promptAction.openToast({
                   message: '不支持上传到根目录'
                 })
-                event.setResult(DragResult.DROP_DISABLED)
               }
             })
           }

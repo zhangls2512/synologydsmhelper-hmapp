@@ -1,5 +1,5 @@
 import { common } from '@kit.AbilityKit'
-import { LengthMetrics, promptAction } from '@kit.ArkUI'
+import { LengthMetrics } from '@kit.ArkUI'
 import { hdsMaterial, HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType } from '@kit.UIDesignKit'
 import { deleteFlushPreferenceKey, getFlushPreference, setFlushPreference } from '../common/Preference'
 import { restartApp } from '../common/Restartapp'
@@ -16,7 +16,6 @@ struct Dnsserver {
   @Local focus: boolean = false
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
-  pageInfos = new NavPathStack()
 
   build() {
     HdsNavDestination() {
@@ -74,6 +73,7 @@ struct Dnsserver {
                   deleteFlushPreferenceKey(this.context, 'debugSetting', 'dnsserverip')
                   deleteFlushPreferenceKey(this.context, 'debugSetting', 'dnsserverport')
                 }
+                const promptAction = this.UIContext.getPromptAction()
                 if (this.ip) {
                   if (!this.port) {
                     await promptAction.openToast({
@@ -158,8 +158,7 @@ struct Dnsserver {
       }
     })
     .titleMode(HdsNavDestinationTitleMode.MODAL)
-    .onReady(context => {
-      this.pageInfos = context.pathStack
+    .onAppear(() => {
       this.ip = getFlushPreference(this.context, 'debugSetting', 'dnsserverip', '') as string
       if (this.ip === '') {
         this.focus = true

@@ -462,8 +462,7 @@ struct Index {
           name: 'transferTask'
         })
         const transferTaskObject = transferTaskDataPreferences.getAllSync() as object
-        const transferTaskIdArray = Object.keys(transferTaskObject)
-        transferTaskIdArray.forEach(item => {
+        Object.keys(transferTaskObject).forEach(item => {
           const transferTaskString = transferTaskObject[item] as string
           const transferTask = JSON.parse(transferTaskString) as TransferTaskItem
           transferTaskArray.push(transferTask)
