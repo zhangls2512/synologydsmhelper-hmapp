@@ -108,9 +108,6 @@ export default struct Me {
             preferType: this.preferType,
             title: {
               title: '登录'
-            },
-            onDisappear: async () => {
-              await this.get()
             }
           })
 
@@ -435,10 +432,7 @@ export default struct Me {
             this.isShowSettingSheet = true
           })
           .bindSheet(this.isShowSettingSheet!!, this.SettingSheetBuilder(), {
-            preferType: this.preferType,
-            onDisappear: async () => {
-              await this.get()
-            }
+            preferType: this.preferType
           })
         }
         .backgroundColor($r('sys.color.comp_background_primary'))

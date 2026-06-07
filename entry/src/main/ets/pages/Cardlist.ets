@@ -105,9 +105,6 @@ export default struct Cardlist {
               preferType: this.preferType,
               title: {
                 title: '编辑卡片'
-              },
-              onDisappear: async () => {
-                await this.get()
               }
             })
 
@@ -147,9 +144,6 @@ export default struct Cardlist {
                 preferType: this.preferType,
                 title: {
                   title: '消息'
-                },
-                onDisappear: async () => {
-                  await this.get()
                 }
               })
             }

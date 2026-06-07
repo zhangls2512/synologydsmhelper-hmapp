@@ -1900,7 +1900,7 @@ export default struct Filelist {
                   }
                   .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
                   .selected(this.multipleSelectArray.some(selectItem => selectItem.path === item.item.path))
-                  .visibility(item.item.name.includes(this.searchKeyword) ? 0 : 2)
+                  .visibility(item.item.name.includes(this.searchKeyword) ? Visibility.Visible : Visibility.None)
                   .onDragStart(event => {
                     event.dragBehavior = DragBehavior.MOVE
                     const data = new unifiedDataChannel.PlainText()
