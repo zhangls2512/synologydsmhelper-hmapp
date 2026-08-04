@@ -497,8 +497,11 @@ struct Commonsetting {
                     const photoPicker = new photoAccessHelper.PhotoViewPicker()
                     const pickerres = await photoPicker.select({
                       MIMEType: photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE,
+                      showDateOnScrollbar: true,
+                      preferredCompatibleMode: photoAccessHelper.PreferredCompatibleMode.CURRENT,
                       maxSelectNumber: 1,
-                      isOriginalSupported: false
+                      isOriginalSupported: false,
+                      isDestroyedWithNavigation: true
                     })
                     const fileSource = fileIo.openSync(pickerres.photoUris[0])
                     const imageSource = image.createImageSource(fileSource.fd)
@@ -542,8 +545,11 @@ struct Commonsetting {
                       const photoPicker = new photoAccessHelper.PhotoViewPicker()
                       const pickerres = await photoPicker.select({
                         MIMEType: photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE,
+                        showDateOnScrollbar: true,
+                        preferredCompatibleMode: photoAccessHelper.PreferredCompatibleMode.CURRENT,
                         maxSelectNumber: 1,
-                        isOriginalSupported: false
+                        isOriginalSupported: false,
+                        isDestroyedWithNavigation: true
                       })
                       const fileSource = fileIo.openSync(pickerres.photoUris[0])
                       const imageSource = image.createImageSource(fileSource.fd)

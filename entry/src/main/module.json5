@@ -10,6 +10,12 @@
     ],
     "deliveryWithInstall": true,
     "pages": "$profile:main_pages",
+    "metadata": [
+      {
+        "name": "ohos.arkui.UIMaterial.state",
+        "value": "enable"
+      }
+    ],
     "abilities": [
       {
         "name": "EntryAbility",
@@ -216,6 +222,7 @@
     ],
     "compressNativeLibs": true,
     "fileContextMenu": "$profile:menu",
-    "routerMap": "$profile:router_map"
+    "routerMap": "$profile:router_map",
+    "shareFiles": "$profile:share_files"
   }
 }

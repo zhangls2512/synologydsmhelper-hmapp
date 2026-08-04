@@ -43,6 +43,10 @@ struct Errorlog {
       value: 'APP_FREEZE'
     },
     {
+      name: '应用冻屏告警',
+      value: 'APPFREEZE_WARNING'
+    },
+    {
       name: '资源泄漏',
       value: 'RESOURCE_OVERLIMIT'
     },

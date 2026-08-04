@@ -118,6 +118,7 @@ struct Index {
     if (res) {
       const backgroundImageSource = image.createImageSource(backgroundImagePath)
       const backgroundImagePixelMap = await backgroundImageSource.createPixelMap()
+      await backgroundImageSource.release()
       return backgroundImagePixelMap
     }
     return

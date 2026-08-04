@@ -1,13 +1,20 @@
 import { common } from '@kit.AbilityKit'
 import { dataSharePredicates, sendablePreferences } from '@kit.ArkData'
 import { taskpool, url, util } from '@kit.ArkTS'
-import { display, LoadingDialog, promptAction, SegmentButtonV2Items, TabSegmentButtonV2, window } from '@kit.ArkUI'
+import {
+  display,
+  LoadingDialog,
+  promptAction,
+  SegmentButtonV2Items,
+  TabSegmentButtonV2,
+  uiMaterial,
+  window
+} from '@kit.ArkUI'
 import { fileIo, fileUri, picker } from '@kit.CoreFileKit'
 import { map, mapCommon, MapComponent, petalMaps, site } from '@kit.MapKit'
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { netBoost } from '@kit.NetworkBoostKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
-import { hdsEffect } from '@kit.UIDesignKit'
 import { getAccountHash, getAccountInfo, getLoginStatus } from '../common/Account'
 import { getDnsServer } from '../common/Dnsserver'
 import { getCurrentNetworkBearerType } from '../common/Network'
@@ -1181,7 +1188,8 @@ export default struct Album {
                 { text: '照片' },
                 { text: '相册' }
               ]),
-              selectedIndex: this.selectedIndex!!
+              selectedIndex: this.selectedIndex!!,
+              enableStateAnimation: true
             })
               .margin({
                 bottom: $r('sys.float.ohos_id_elements_margin_vertical_l')
@@ -1203,12 +1211,13 @@ export default struct Album {
                     .backgroundColor($r('sys.color.interactive_pressed'))
                   }
                 })
-                .visualEffect(new hdsEffect.HdsEffectBuilder()
-                  .pointLight({
-                    sourceType: hdsEffect.PointLightSourceType.SOFT,
-                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-                  })
-                  .buildEffect())
+                .systemMaterial(new uiMaterial.ImmersiveMaterial({
+                  style: uiMaterial.ImmersiveStyle.REGULAR,
+                  interactive: true,
+                  lightEffect: {
+                    color: Color.White
+                  }
+                }))
                 .width(40)
                 .onClick(async () => {
                   const transferTaskDataPreferences = sendablePreferences.getPreferencesSync(this.context, {
@@ -1218,8 +1227,12 @@ export default struct Album {
                   await checkPermission(this.context, this.UIContext, 'ohos.permission.MEDIA_LOCATION', true)
                   const photoPicker = new photoAccessHelper.PhotoViewPicker()
                   const pickerres = await photoPicker.select({
+                    MIMEType: photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE,
+                    showDateOnScrollbar: true,
+                    preferredCompatibleMode: photoAccessHelper.PreferredCompatibleMode.CURRENT,
                     maxSelectNumber: 500,
-                    isOriginalSupported: false
+                    isOriginalSupported: false,
+                    isDestroyedWithNavigation: true
                   })
                   const promises = pickerres.photoUris.map(async (item) => {
                     const phAccessHelper = photoAccessHelper.getPhotoAccessHelper(this.context)
@@ -1512,12 +1525,13 @@ export default struct Album {
                     .backgroundColor($r('sys.color.interactive_pressed'))
                   }
                 })
-                .visualEffect(new hdsEffect.HdsEffectBuilder()
-                  .pointLight({
-                    sourceType: hdsEffect.PointLightSourceType.SOFT,
-                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-                  })
-                  .buildEffect())
+                .systemMaterial(new uiMaterial.ImmersiveMaterial({
+                  style: uiMaterial.ImmersiveStyle.REGULAR,
+                  interactive: true,
+                  lightEffect: {
+                    color: Color.White
+                  }
+                }))
                 .width(40)
                 .onClick(() => {
                   this.previewPhoto = undefined
@@ -1549,12 +1563,13 @@ export default struct Album {
                     .backgroundColor($r('sys.color.interactive_pressed'))
                   }
                 })
-                .visualEffect(new hdsEffect.HdsEffectBuilder()
-                  .pointLight({
-                    sourceType: hdsEffect.PointLightSourceType.SOFT,
-                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-                  })
-                  .buildEffect())
+                .systemMaterial(new uiMaterial.ImmersiveMaterial({
+                  style: uiMaterial.ImmersiveStyle.REGULAR,
+                  interactive: true,
+                  lightEffect: {
+                    color: Color.White
+                  }
+                }))
                 .width(40)
                 .bindMenu(this.MenuBuilder(this.previewPhoto))
               }
@@ -1719,12 +1734,13 @@ export default struct Album {
                       .backgroundColor($r('sys.color.interactive_pressed'))
                     }
                   })
-                  .visualEffect(new hdsEffect.HdsEffectBuilder()
-                    .pointLight({
-                      sourceType: hdsEffect.PointLightSourceType.SOFT,
-                      illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-                    })
-                    .buildEffect())
+                  .systemMaterial(new uiMaterial.ImmersiveMaterial({
+                    style: uiMaterial.ImmersiveStyle.REGULAR,
+                    interactive: true,
+                    lightEffect: {
+                      color: Color.White
+                    }
+                  }))
                   .width(40)
                   .onClick(() => {
                     this.previewAlbum = undefined
@@ -1894,9 +1910,11 @@ export default struct Album {
       })
       await this.get()
     })
-    .onDisAppear(() => {
+    .onDisAppear(async () => {
       this.context.eventHub.off('refreshAlbum')
       this.context.eventHub.off('backAlbum')
+      const lastWindow = await window.getLastWindow(this.context)
+      lastWindow.off('windowSizeChange')
       display.off('change')
     })
   }
