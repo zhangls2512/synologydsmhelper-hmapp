@@ -5,6 +5,7 @@ import { display } from '@kit.ArkUI'
 import { backgroundTaskManager } from '@kit.BackgroundTasksKit'
 import { deviceInfo } from '@kit.BasicServicesKit'
 import { fileIo } from '@kit.CoreFileKit'
+import { quickBarManager } from '@kit.DeskTopExtensionKit'
 import { image } from '@kit.ImageKit'
 import { notificationManager } from '@kit.NotificationKit'
 import {
@@ -530,17 +531,16 @@ struct Index {
           }
           const continuousTasks = await backgroundTaskManager.getAllContinuousTasks(this.context)
           if (continuousTasks.length > 0) {
+            const progress =
+              Number((processingTransferTask.transferredSize / processingTransferTask.totalSize).toFixed(2)) * 100
+            await quickBarManager.setProgressValue(this.context, progress, 100)
             await notificationManager.publish({
               content: {
                 notificationContentType: notificationManager.ContentType.NOTIFICATION_CONTENT_SYSTEM_LIVE_VIEW,
                 systemLiveView: {
                   typeCode: 8,
                   title: '正在' + wz + '文件：' + processingTransferTask.name,
-                  text: '进度：' +
-                    Number((processingTransferTask.transferredSize / processingTransferTask.totalSize).toFixed(2)) *
-                      100 +
-                    '% (' +
-                    getSizeString(processingTransferTask.transferredSize) + '/' +
+                  text: '进度：' + progress + '% (' + getSizeString(processingTransferTask.transferredSize) + '/' +
                     getSizeString(processingTransferTask.totalSize) + ')'
                 }
               },
@@ -549,13 +549,9 @@ struct Index {
               template: {
                 name: 'downloadTemplate',
                 data: {
-                  title: '正在' + wz + '文件，进度：' +
-                    Number((processingTransferTask.transferredSize / processingTransferTask.totalSize).toFixed(2)) *
-                      100 +
-                    '%',
+                  title: '正在' + wz + '文件，进度：' + progress + '%',
                   fileName: processingTransferTask.name,
-                  progressValue: Number(
-                    (processingTransferTask.transferredSize / processingTransferTask.totalSize).toFixed(2)) * 100
+                  progressValue: progress
                 }
               }
             })

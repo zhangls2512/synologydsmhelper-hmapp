@@ -73,7 +73,6 @@ export default struct Filelist {
   @Local multipleSelectArray: FileItem[] = []
   @Local copyMovePath: string = ''
   @Local remove: boolean | undefined = undefined
-  @Local hoverId: number = -1
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   account = ''
@@ -1660,18 +1659,13 @@ export default struct Filelist {
                       })
                       .stateStyles({
                         normal: {
-                          .backgroundColor(this.hoverId === item.index ? $r('sys.color.interactive_hover') : '')
+                          .backgroundColor($r('sys.color.background_secondary'))
+                        },
+                        hovered: {
+                          .backgroundColor($r('sys.color.interactive_hover'))
                         },
                         pressed: {
-                          .backgroundColor($r('sys.color.comp_background_secondary'))
-                        }
-                      })
-                      .onHover(isHover => {
-                        if (!isHover) {
-                          this.hoverId = -1
-                        }
-                        if (isHover) {
-                          this.hoverId = item.index
+                          .backgroundColor($r('sys.color.interactive_pressed'))
                         }
                       })
                       .onClick(async () => {

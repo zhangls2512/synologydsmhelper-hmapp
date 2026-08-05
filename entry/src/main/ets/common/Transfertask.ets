@@ -2,6 +2,7 @@ import { sendablePreferences } from '@kit.ArkData'
 import { url } from '@kit.ArkTS'
 import { backgroundTaskManager } from '@kit.BackgroundTasksKit'
 import { fileIo } from '@kit.CoreFileKit'
+import { quickBarManager } from '@kit.DeskTopExtensionKit'
 import { netBoost } from '@kit.NetworkBoostKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { deleteBackupTask, updateBackupTaskStatus } from './Backup'
@@ -99,6 +100,7 @@ export async function download(context: Context, id: string) {
         }
       })
       try {
+        await quickBarManager.setProgressState(context, quickBarManager.ProgressState.NORMAL)
         const response = await session.get(transferTask.accountInfo.path + '/webapi/entry.cgi?' + new url.URLParams({
           api: 'SYNO.FileStation.Download',
           version: String(version),
@@ -108,9 +110,11 @@ export async function download(context: Context, id: string) {
         }).toString())
         if (response.statusCode >= 200 && response.statusCode < 300) {
           transferTask.status = 'success'
+          await quickBarManager.setProgressState(context, quickBarManager.ProgressState.NO_PROGRESS)
         } else {
           transferTask.status = 'fail'
           transferTask.errCode = response.statusCode
+          await quickBarManager.setProgressState(context, quickBarManager.ProgressState.ERROR)
         }
       } catch (err) {
         session.close()
@@ -122,18 +126,22 @@ export async function download(context: Context, id: string) {
         if (err.code !== 1007900992) {
           transferTask.status = 'fail'
           transferTask.errCode = err.code + (err.message ? '，错误信息：' + err.message : '')
+          await quickBarManager.setProgressState(context, quickBarManager.ProgressState.ERROR)
         }
         if (err.code === 1007900992) {
           transferTask.status = 'cancel'
+          await quickBarManager.setProgressState(context, quickBarManager.ProgressState.NO_PROGRESS)
         }
       }
     } else {
       transferTask.status = 'fail'
       transferTask.errCode = -1
+      await quickBarManager.setProgressState(context, quickBarManager.ProgressState.ERROR)
     }
   } catch (err) {
     transferTask.status = 'fail'
     transferTask.errCode = err.code + (err.message ? '，错误信息：' + err.message : '')
+    await quickBarManager.setProgressState(context, quickBarManager.ProgressState.ERROR)
   }
   transferTaskDataPreferences.putSync(id, JSON.stringify(transferTask))
 }
@@ -252,6 +260,7 @@ export async function upload(context: Context, id: string) {
         }
       }, 1000)
       try {
+        await quickBarManager.setProgressState(context, quickBarManager.ProgressState.NORMAL)
         const response = await session.uploadFromFile(transferTask.accountInfo.path +
           '/webapi/entry.cgi?api=SYNO.FileStation.Upload&version=' + version + '&method=upload&SynoToken=' +
           transferTask.accountInfo.synotoken, new rcp.UploadFromFile(filePath))
@@ -261,12 +270,14 @@ export async function upload(context: Context, id: string) {
           if (!res.success) {
             transferTask.status = 'fail'
             transferTask.errCode = res.error.code
+            await quickBarManager.setProgressState(context, quickBarManager.ProgressState.ERROR)
             if (transferTask.backupTaskId) {
               await updateBackupTaskStatus(context, transferTask.accountInfo, transferTask.backupTaskId, false)
             }
           }
           if (res.success) {
             transferTask.status = 'success'
+            await quickBarManager.setProgressState(context, quickBarManager.ProgressState.NO_PROGRESS)
             if (transferTask.backupTaskId) {
               await updateBackupTaskStatus(context, transferTask.accountInfo, transferTask.backupTaskId, true)
               const deleteAfterSuccess = getFlushPreference(context, 'backupSetting', 'deleteAfterSuccess', true)
@@ -278,6 +289,7 @@ export async function upload(context: Context, id: string) {
         } else {
           transferTask.status = 'fail'
           transferTask.errCode = response.statusCode
+          await quickBarManager.setProgressState(context, quickBarManager.ProgressState.ERROR)
           if (transferTask.backupTaskId) {
             await updateBackupTaskStatus(context, transferTask.accountInfo, transferTask.backupTaskId, false)
           }
@@ -292,12 +304,14 @@ export async function upload(context: Context, id: string) {
         if (err.code !== 1007900992) {
           transferTask.status = 'fail'
           transferTask.errCode = err.code + (err.message ? '，错误信息：' + err.message : '')
+          await quickBarManager.setProgressState(context, quickBarManager.ProgressState.ERROR)
           if (transferTask.backupTaskId) {
             await updateBackupTaskStatus(context, transferTask.accountInfo, transferTask.backupTaskId, false)
           }
         }
         if (err.code === 1007900992) {
           transferTask.status = 'cancel'
+          await quickBarManager.setProgressState(context, quickBarManager.ProgressState.NO_PROGRESS)
           if (transferTask.backupTaskId) {
             await updateBackupTaskStatus(context, transferTask.accountInfo, transferTask.backupTaskId, false)
           }
@@ -306,6 +320,7 @@ export async function upload(context: Context, id: string) {
     } else {
       transferTask.status = 'fail'
       transferTask.errCode = -1
+      await quickBarManager.setProgressState(context, quickBarManager.ProgressState.ERROR)
       if (transferTask.backupTaskId) {
         await updateBackupTaskStatus(context, transferTask.accountInfo, transferTask.backupTaskId, false)
       }
@@ -313,6 +328,7 @@ export async function upload(context: Context, id: string) {
   } catch (err) {
     transferTask.status = 'fail'
     transferTask.errCode = err.code + (err.message ? '，错误信息：' + err.message : '')
+    await quickBarManager.setProgressState(context, quickBarManager.ProgressState.ERROR)
     if (transferTask.backupTaskId) {
       await updateBackupTaskStatus(context, transferTask.accountInfo, transferTask.backupTaskId, false)
     }

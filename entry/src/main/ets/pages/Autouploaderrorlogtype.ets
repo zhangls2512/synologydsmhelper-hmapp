@@ -15,8 +15,8 @@ export function AutouploaderrorlogtypeBuilder() {
 
 @ComponentV2
 struct Autouploaderrorlogtype {
+  @Local autoUploadErrorLogType: string[] = []
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
-  autoUploadErrorLogType: string[] = []
   typeArray: Type[] = [
     {
       name: 'js运行异常',

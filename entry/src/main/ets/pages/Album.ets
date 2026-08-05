@@ -130,8 +130,6 @@ export default struct Album {
   @Local previewPhoto: PhotoItem | undefined = undefined
   @Local previewAlbum: AlbumItem | undefined = undefined
   @Local isShowInfoSheet: boolean = false
-  @Local hoverId: number = -1
-  @Local buttonHoverId: number = -1
   @Local photoItemWidth: number = 0
   @Local photoAddress: string = ''
   UIContext = this.getUIContext()
@@ -1451,19 +1449,13 @@ export default struct Album {
                       .padding(12)
                       .stateStyles({
                         normal: {
-                          .backgroundColor(this.hoverId === albumIndex ? $r('sys.color.interactive_hover') :
-                            $r('sys.color.comp_background_primary'))
+                          .backgroundColor($r('sys.color.comp_background_primary'))
+                        },
+                        hovered: {
+                          .backgroundColor($r('sys.color.interactive_hover'))
                         },
                         pressed: {
-                          .backgroundColor($r('sys.color.comp_background_secondary'))
-                        }
-                      })
-                      .onHover(isHover => {
-                        if (!isHover) {
-                          this.hoverId = -1
-                        }
-                        if (isHover) {
-                          this.hoverId = albumIndex
+                          .backgroundColor($r('sys.color.interactive_pressed'))
                         }
                       })
                       .onClick(async () => {
