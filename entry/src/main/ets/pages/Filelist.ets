@@ -1225,6 +1225,10 @@ export default struct Filelist {
               value: this.searchKeyword!!
             })
               .searchButton('搜索')
+              .systemMaterial(new uiMaterial.ImmersiveMaterial({
+                style: uiMaterial.ImmersiveStyle.REGULAR,
+                interactive: true
+              }))
           }
           Row() {
             Column() {
