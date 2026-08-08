@@ -4,6 +4,7 @@ import { LengthMetrics, LoadingDialog, promptAction } from '@kit.ArkUI'
 import { hdsMaterial, HdsNavDestination, HdsNavDestinationTitleMode, ScrollEffectType } from '@kit.UIDesignKit'
 import copy from '../common/Pasteboard'
 import { defaultGlobalSession } from '../common/Request'
+import { Param } from './Webview'
 
 interface FileItem {
   name: string,
@@ -62,7 +63,6 @@ export function SynologyproductdownloadcenterBuilder() {
 struct Synologyproductdownloadcenter {
   @Local product: string = ''
   @Local files: FileItem[] = []
-  @Local hoverId: number | string = -1
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   pageInfos = new NavPathStack()
@@ -200,7 +200,7 @@ struct Synologyproductdownloadcenter {
               } catch (err) {
                 dialogControllerProgress.close()
                 await promptAction.openToast({
-                  message: '发生错误，错误码：' + err.code
+                  message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
                 })
               }
             })
@@ -214,7 +214,7 @@ struct Synologyproductdownloadcenter {
               })
               .width('100%')
             }
-            ForEach(this.files, (item: FileItem, index) => {
+            ForEach(this.files, (item: FileItem) => {
               ListItem() {
                 Column() {
                   Row() {
@@ -318,19 +318,13 @@ struct Synologyproductdownloadcenter {
                   .padding(12)
                   .stateStyles({
                     normal: {
-                      .backgroundColor(this.hoverId === index + ',0' ? $r('sys.color.interactive_hover') :
-                        $r('sys.color.ohos_id_color_card_bg'))
+                      .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                    },
+                    hovered: {
+                      .backgroundColor($r('sys.color.interactive_hover'))
                     },
                     pressed: {
                       .backgroundColor($r('sys.color.interactive_pressed'))
-                    }
-                  })
-                  .onHover(isHover => {
-                    if (!isHover) {
-                      this.hoverId = -1
-                    }
-                    if (isHover) {
-                      this.hoverId = index + ',0'
                     }
                   })
                   .onClick(async () => {
@@ -359,25 +353,22 @@ struct Synologyproductdownloadcenter {
                     .padding(12)
                     .stateStyles({
                       normal: {
-                        .backgroundColor(this.hoverId === index + ',1' ?
-                          $r('sys.color.interactive_hover') : $r('sys.color.ohos_id_color_card_bg'))
+                        .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                      },
+                      hovered: {
+                        .backgroundColor($r('sys.color.interactive_hover'))
                       },
                       pressed: {
                         .backgroundColor($r('sys.color.interactive_pressed'))
                       }
                     })
-                    .onHover(isHover => {
-                      if (!isHover) {
-                        this.hoverId = -1
-                      }
-                      if (isHover) {
-                        this.hoverId = index + ',1'
-                      }
-                    })
                     .onClick(() => {
                       this.pageInfos.pushPath({
                         name: 'Webview',
-                        param: item.allDownloadsUrl
+                        param: {
+                          url: item.allDownloadsUrl,
+                          trust: false
+                        } as Param
                       })
                     })
                   }
@@ -403,25 +394,22 @@ struct Synologyproductdownloadcenter {
                     .padding(12)
                     .stateStyles({
                       normal: {
-                        .backgroundColor(this.hoverId === index + ',2' ?
-                          $r('sys.color.interactive_hover') : $r('sys.color.ohos_id_color_card_bg'))
+                        .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                      },
+                      hovered: {
+                        .backgroundColor($r('sys.color.interactive_hover'))
                       },
                       pressed: {
                         .backgroundColor($r('sys.color.interactive_pressed'))
                       }
                     })
-                    .onHover(isHover => {
-                      if (!isHover) {
-                        this.hoverId = -1
-                      }
-                      if (isHover) {
-                        this.hoverId = index + ',2'
-                      }
-                    })
                     .onClick(() => {
                       this.pageInfos.pushPath({
                         name: 'Webview',
-                        param: item.releaseNotesUrl
+                        param: {
+                          url: item.releaseNotesUrl,
+                          trust: false
+                        } as Param
                       })
                     })
                   }

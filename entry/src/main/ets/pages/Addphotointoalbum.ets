@@ -13,8 +13,6 @@ export default struct Addphotointoalbum {
   @Param addId: number = -1
   @Local preferType: number = 1
   @Local albumArray: AlbumItem[] = []
-  @Local hoverId: number = -1
-  @Local buttonHoverId: number = -1
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   dialogControllerProgress = new CustomDialogController({
@@ -46,21 +44,16 @@ export default struct Addphotointoalbum {
         .padding(11)
         .stateStyles({
           normal: {
-            .backgroundColor(this.buttonHoverId === 0 ? '#0754EB' : $r('sys.color.background_emphasize'))
+            .backgroundColor($r('sys.color.background_emphasize'))
+          },
+          hovered: {
+            .backgroundColor('#0754EB')
           },
           pressed: {
             .backgroundColor('#0A50DE')
           }
         })
         .width(40)
-        .onHover(isHover => {
-          if (!isHover) {
-            this.buttonHoverId = -1
-          }
-          if (isHover) {
-            this.buttonHoverId = 0
-          }
-        })
         .onClick(() => {
           this.isShowNewalbumSheet = true
         })
@@ -112,19 +105,13 @@ export default struct Addphotointoalbum {
             .padding(12)
             .stateStyles({
               normal: {
-                .backgroundColor(this.hoverId === index ? $r('sys.color.interactive_hover') :
-                  $r('sys.color.ohos_id_color_card_bg'))
+                .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+              },
+              hovered: {
+                .backgroundColor($r('sys.color.interactive_hover'))
               },
               pressed: {
                 .backgroundColor($r('sys.color.interactive_pressed'))
-              }
-            })
-            .onHover(isHover => {
-              if (!isHover) {
-                this.hoverId = -1
-              }
-              if (isHover) {
-                this.hoverId = index
               }
             })
             .onClick(async () => {

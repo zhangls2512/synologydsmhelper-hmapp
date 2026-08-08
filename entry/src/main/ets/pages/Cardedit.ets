@@ -64,6 +64,7 @@ export default struct Cardeditsetting {
                     this.cards[index] = this.cards[index - 1]
                     this.cards[index - 1] = temp
                     setFlushPreference(this.context, 'cardSetting', 'cards', this.cards)
+                    this.context.eventHub.emit('refreshCardlist')
                   })
               }
               if (index !== this.cards.length - 1) {
@@ -77,6 +78,7 @@ export default struct Cardeditsetting {
                     this.cards[index] = this.cards[index + 1]
                     this.cards[index + 1] = temp
                     setFlushPreference(this.context, 'cardSetting', 'cards', this.cards)
+                    this.context.eventHub.emit('refreshCardlist')
                   })
               }
               Image($r('app.media.delete'))
@@ -84,6 +86,7 @@ export default struct Cardeditsetting {
                 .onClick(() => {
                   this.cards.splice(index, 1)
                   setFlushPreference(this.context, 'cardSetting', 'cards', this.cards)
+                  this.context.eventHub.emit('refreshCardlist')
                 })
             }
             .borderRadius(12)
@@ -112,6 +115,7 @@ export default struct Cardeditsetting {
                 .onClick(() => {
                   this.cards.push(item.value)
                   setFlushPreference(this.context, 'cardSetting', 'cards', this.cards)
+                  this.context.eventHub.emit('refreshCardlist')
                 })
             }
             .borderRadius(12)

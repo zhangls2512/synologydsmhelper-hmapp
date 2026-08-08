@@ -26,7 +26,8 @@ struct Backuptask {
               { text: '完成' },
               { text: '失败' }
             ]),
-            selectedIndex: this.selectedIndex!!
+            selectedIndex: this.selectedIndex!!,
+            enableStateAnimation: true
           })
             .margin({
               bottom: $r('sys.float.ohos_id_elements_margin_vertical_m'),
