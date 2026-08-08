@@ -20,7 +20,8 @@ export default struct Transfertask {
             { text: '下载' },
             { text: '上传' }
           ]),
-          selectedIndex: this.selectedIndex!!
+          selectedIndex: this.selectedIndex!!,
+          enableStateAnimation: true
         })
           .margin({
             bottom: $r('sys.float.ohos_id_elements_margin_vertical_m'),

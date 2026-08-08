@@ -1,14 +1,13 @@
 import { common, wantConstant } from '@kit.AbilityKit'
 import { sendablePreferences, unifiedDataChannel, uniformTypeDescriptor } from '@kit.ArkData'
 import { fastbuffer, taskpool, url, util } from '@kit.ArkTS'
-import { display, LoadingDialog, promptAction } from '@kit.ArkUI'
+import { display, LoadingDialog, promptAction, uiMaterial } from '@kit.ArkUI'
 import { deviceInfo } from '@kit.BasicServicesKit'
 import { Environment, fileIo, fileUri, picker } from '@kit.CoreFileKit'
 import { netBoost } from '@kit.NetworkBoostKit'
 import { filePreview } from '@kit.PreviewKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { systemShare } from '@kit.ShareKit'
-import { hdsEffect } from '@kit.UIDesignKit'
 import { getAccountHash, getAccountInfo, getLoginStatus } from '../common/Account'
 import { getDnsServer } from '../common/Dnsserver'
 import { getFileTypeIcon } from '../common/File'
@@ -74,7 +73,6 @@ export default struct Filelist {
   @Local multipleSelectArray: FileItem[] = []
   @Local copyMovePath: string = ''
   @Local remove: boolean | undefined = undefined
-  @Local hoverId: number = -1
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
   account = ''
@@ -457,7 +455,7 @@ export default struct Filelist {
                       this.totalSize = 0
                       if (err.code !== 1007900992) {
                         await promptAction.openToast({
-                          message: '下载失败，错误码：' + err.code
+                          message: '下载失败，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
                         })
                         transferTaskDataPreferences.putSync(transferTaskId, JSON.stringify({
                           id: transferTaskId,
@@ -480,7 +478,7 @@ export default struct Filelist {
                 }
               } catch (err) {
                 await promptAction.openToast({
-                  message: '发生错误，错误码：' + err.code
+                  message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
                 })
                 transferTaskDataPreferences.putSync(transferTaskId, JSON.stringify({
                   id: transferTaskId,
@@ -671,12 +669,13 @@ export default struct Filelist {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .visualEffect(new hdsEffect.HdsEffectBuilder()
-                .pointLight({
-                  sourceType: hdsEffect.PointLightSourceType.SOFT,
-                  illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-                })
-                .buildEffect())
+              .systemMaterial(new uiMaterial.ImmersiveMaterial({
+                style: uiMaterial.ImmersiveStyle.REGULAR,
+                interactive: true,
+                lightEffect: {
+                  color: Color.White
+                }
+              }))
               .width(40)
               .onClick(() => {
                 this.exitMultipleSelect()
@@ -706,12 +705,13 @@ export default struct Filelist {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .visualEffect(new hdsEffect.HdsEffectBuilder()
-                .pointLight({
-                  sourceType: hdsEffect.PointLightSourceType.SOFT,
-                  illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-                })
-                .buildEffect())
+              .systemMaterial(new uiMaterial.ImmersiveMaterial({
+                style: uiMaterial.ImmersiveStyle.REGULAR,
+                interactive: true,
+                lightEffect: {
+                  color: Color.White
+                }
+              }))
               .width(40)
               .onClick(async () => {
                 if (this.multipleSelectArray.length === 0) {
@@ -795,12 +795,13 @@ export default struct Filelist {
                     .backgroundColor($r('sys.color.interactive_pressed'))
                   }
                 })
-                .visualEffect(new hdsEffect.HdsEffectBuilder()
-                  .pointLight({
-                    sourceType: hdsEffect.PointLightSourceType.SOFT,
-                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-                  })
-                  .buildEffect())
+                .systemMaterial(new uiMaterial.ImmersiveMaterial({
+                  style: uiMaterial.ImmersiveStyle.REGULAR,
+                  interactive: true,
+                  lightEffect: {
+                    color: Color.White
+                  }
+                }))
                 .width(40)
                 .onClick(async () => {
                   let text = ''
@@ -882,12 +883,13 @@ export default struct Filelist {
                     .backgroundColor($r('sys.color.interactive_pressed'))
                   }
                 })
-                .visualEffect(new hdsEffect.HdsEffectBuilder()
-                  .pointLight({
-                    sourceType: hdsEffect.PointLightSourceType.SOFT,
-                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-                  })
-                  .buildEffect())
+                .systemMaterial(new uiMaterial.ImmersiveMaterial({
+                  style: uiMaterial.ImmersiveStyle.REGULAR,
+                  interactive: true,
+                  lightEffect: {
+                    color: Color.White
+                  }
+                }))
                 .width(40)
                 .onClick(async () => {
                   if (this.multipleSelectArray.length === 0) {
@@ -960,12 +962,13 @@ export default struct Filelist {
                     .backgroundColor($r('sys.color.interactive_pressed'))
                   }
                 })
-                .visualEffect(new hdsEffect.HdsEffectBuilder()
-                  .pointLight({
-                    sourceType: hdsEffect.PointLightSourceType.SOFT,
-                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-                  })
-                  .buildEffect())
+                .systemMaterial(new uiMaterial.ImmersiveMaterial({
+                  style: uiMaterial.ImmersiveStyle.REGULAR,
+                  interactive: true,
+                  lightEffect: {
+                    color: Color.White
+                  }
+                }))
                 .width(40)
                 .onClick(async () => {
                   if (this.multipleSelectArray.length === 0) {
@@ -1033,12 +1036,13 @@ export default struct Filelist {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .visualEffect(new hdsEffect.HdsEffectBuilder()
-                .pointLight({
-                  sourceType: hdsEffect.PointLightSourceType.SOFT,
-                  illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-                })
-                .buildEffect())
+              .systemMaterial(new uiMaterial.ImmersiveMaterial({
+                style: uiMaterial.ImmersiveStyle.REGULAR,
+                interactive: true,
+                lightEffect: {
+                  color: Color.White
+                }
+              }))
               .width(40)
               .onClick(async () => {
                 const promptAction = this.UIContext.getPromptAction()
@@ -1126,12 +1130,13 @@ export default struct Filelist {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .visualEffect(new hdsEffect.HdsEffectBuilder()
-                .pointLight({
-                  sourceType: hdsEffect.PointLightSourceType.SOFT,
-                  illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-                })
-                .buildEffect())
+              .systemMaterial(new uiMaterial.ImmersiveMaterial({
+                style: uiMaterial.ImmersiveStyle.REGULAR,
+                interactive: true,
+                lightEffect: {
+                  color: Color.White
+                }
+              }))
               .width(40)
               .onClick(() => {
                 this.dirnames.pop()
@@ -1220,6 +1225,10 @@ export default struct Filelist {
               value: this.searchKeyword!!
             })
               .searchButton('搜索')
+              .systemMaterial(new uiMaterial.ImmersiveMaterial({
+                style: uiMaterial.ImmersiveStyle.REGULAR,
+                interactive: true
+              }))
           }
           Row() {
             Column() {
@@ -1237,12 +1246,13 @@ export default struct Filelist {
                 .backgroundColor($r('sys.color.interactive_pressed'))
               }
             })
-            .visualEffect(new hdsEffect.HdsEffectBuilder()
-              .pointLight({
-                sourceType: hdsEffect.PointLightSourceType.SOFT,
-                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-              })
-              .buildEffect())
+            .systemMaterial(new uiMaterial.ImmersiveMaterial({
+              style: uiMaterial.ImmersiveStyle.REGULAR,
+              interactive: true,
+              lightEffect: {
+                color: Color.White
+              }
+            }))
             .width(40)
             .onClick(() => {
               this.editPath = this.getPath()
@@ -1275,12 +1285,13 @@ export default struct Filelist {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .visualEffect(new hdsEffect.HdsEffectBuilder()
-                .pointLight({
-                  sourceType: hdsEffect.PointLightSourceType.SOFT,
-                  illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-                })
-                .buildEffect())
+              .systemMaterial(new uiMaterial.ImmersiveMaterial({
+                style: uiMaterial.ImmersiveStyle.REGULAR,
+                interactive: true,
+                lightEffect: {
+                  color: Color.White
+                }
+              }))
               .width(40)
               .onClick(async () => {
                 const documentViewPicker = new picker.DocumentViewPicker(this.context)
@@ -1331,12 +1342,13 @@ export default struct Filelist {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .visualEffect(new hdsEffect.HdsEffectBuilder()
-                .pointLight({
-                  sourceType: hdsEffect.PointLightSourceType.SOFT,
-                  illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-                })
-                .buildEffect())
+              .systemMaterial(new uiMaterial.ImmersiveMaterial({
+                style: uiMaterial.ImmersiveStyle.REGULAR,
+                interactive: true,
+                lightEffect: {
+                  color: Color.White
+                }
+              }))
               .width(40)
               .onClick(() => {
                 this.copyMovePath = ''
@@ -1357,12 +1369,13 @@ export default struct Filelist {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .visualEffect(new hdsEffect.HdsEffectBuilder()
-                .pointLight({
-                  sourceType: hdsEffect.PointLightSourceType.SOFT,
-                  illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-                })
-                .buildEffect())
+              .systemMaterial(new uiMaterial.ImmersiveMaterial({
+                style: uiMaterial.ImmersiveStyle.REGULAR,
+                interactive: true,
+                lightEffect: {
+                  color: Color.White
+                }
+              }))
               .width(40)
               .onClick(async () => {
                 let text = ''
@@ -1436,12 +1449,13 @@ export default struct Filelist {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .visualEffect(new hdsEffect.HdsEffectBuilder()
-                .pointLight({
-                  sourceType: hdsEffect.PointLightSourceType.SOFT,
-                  illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-                })
-                .buildEffect())
+              .systemMaterial(new uiMaterial.ImmersiveMaterial({
+                style: uiMaterial.ImmersiveStyle.REGULAR,
+                interactive: true,
+                lightEffect: {
+                  color: Color.White
+                }
+              }))
               .width(40)
               .onClick(async () => {
                 await promptAction.openToast({
@@ -1497,12 +1511,13 @@ export default struct Filelist {
                     .backgroundColor($r('sys.color.interactive_pressed'))
                   }
                 })
-                .visualEffect(new hdsEffect.HdsEffectBuilder()
-                  .pointLight({
-                    sourceType: hdsEffect.PointLightSourceType.SOFT,
-                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-                  })
-                  .buildEffect())
+                .systemMaterial(new uiMaterial.ImmersiveMaterial({
+                  style: uiMaterial.ImmersiveStyle.REGULAR,
+                  interactive: true,
+                  lightEffect: {
+                    color: Color.White
+                  }
+                }))
                 .width(40)
                 .onClick(() => {
                   this.fileArray.forEach(item => {
@@ -1528,12 +1543,13 @@ export default struct Filelist {
                     .backgroundColor($r('sys.color.interactive_pressed'))
                   }
                 })
-                .visualEffect(new hdsEffect.HdsEffectBuilder()
-                  .pointLight({
-                    sourceType: hdsEffect.PointLightSourceType.SOFT,
-                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
-                  })
-                  .buildEffect())
+                .systemMaterial(new uiMaterial.ImmersiveMaterial({
+                  style: uiMaterial.ImmersiveStyle.REGULAR,
+                  interactive: true,
+                  lightEffect: {
+                    color: Color.White
+                  }
+                }))
                 .width(40)
                 .onClick(() => {
                   this.fileArray.forEach(item => {
@@ -1647,18 +1663,13 @@ export default struct Filelist {
                       })
                       .stateStyles({
                         normal: {
-                          .backgroundColor(this.hoverId === item.index ? $r('sys.color.interactive_hover') : '')
+                          .backgroundColor($r('sys.color.background_secondary'))
+                        },
+                        hovered: {
+                          .backgroundColor($r('sys.color.interactive_hover'))
                         },
                         pressed: {
-                          .backgroundColor($r('sys.color.comp_background_secondary'))
-                        }
-                      })
-                      .onHover(isHover => {
-                        if (!isHover) {
-                          this.hoverId = -1
-                        }
-                        if (isHover) {
-                          this.hoverId = item.index
+                          .backgroundColor($r('sys.color.interactive_pressed'))
                         }
                       })
                       .onClick(async () => {
@@ -1872,14 +1883,15 @@ export default struct Filelist {
                                 await fileIo.unlink(filePath)
                                 if (err.code !== 1007900992) {
                                   await promptAction.openToast({
-                                    message: '下载失败，错误码：' + err.code
+                                    message: '下载失败，错误码：' + err.code +
+                                      (err.message ? '，错误信息：' + err.message : '')
                                   })
                                 }
                               }
                             }
                           } catch (err) {
                             await promptAction.openToast({
-                              message: '发生错误，错误码：' + err.code
+                              message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
                             })
                           }
                         }
@@ -1899,7 +1911,7 @@ export default struct Filelist {
                   }
                   .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
                   .selected(this.multipleSelectArray.some(selectItem => selectItem.path === item.item.path))
-                  .visibility(item.item.name.includes(this.searchKeyword) ? 0 : 2)
+                  .visibility(item.item.name.includes(this.searchKeyword) ? Visibility.Visible : Visibility.None)
                   .onDragStart(event => {
                     event.dragBehavior = DragBehavior.MOVE
                     const data = new unifiedDataChannel.PlainText()

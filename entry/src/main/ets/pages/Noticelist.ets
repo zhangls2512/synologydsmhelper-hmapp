@@ -204,6 +204,7 @@ export default struct Noticelist {
                   message: '清除成功'
                 })
                 await this.get()
+                this.context.eventHub.emit('refreshCardlist')
               }
             })
         }

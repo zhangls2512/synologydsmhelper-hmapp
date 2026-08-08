@@ -25,7 +25,6 @@ export function SandboxfilelistBuilder() {
 struct Sandboxfilelist {
   @Local fileArray: FileItem[] = []
   @Local dirnames: string[] = []
-  @Local hoverId: number | string = -1
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
 
@@ -133,7 +132,7 @@ struct Sandboxfilelist {
       } catch (err) {
         if (err.code !== 13900012) {
           await promptAction.openToast({
-            message: '发生错误，错误码：' + err.code
+            message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
           })
         }
         if (err.code === 13900012) {
@@ -201,7 +200,7 @@ struct Sandboxfilelist {
             } catch (err) {
               if (err.code !== 13900012) {
                 await promptAction.openToast({
-                  message: '发生错误，错误码：' + err.code
+                  message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
                 })
               }
               if (err.code === 13900012) {
@@ -300,18 +299,13 @@ struct Sandboxfilelist {
                   })
                   .stateStyles({
                     normal: {
-                      .backgroundColor(this.hoverId === index + ',0' ? $r('sys.color.interactive_hover') : '')
+                      .backgroundColor($r('app.color.sheet_background'))
+                    },
+                    hovered: {
+                      .backgroundColor($r('sys.color.interactive_hover'))
                     },
                     pressed: {
-                      .backgroundColor($r('sys.color.comp_background_secondary'))
-                    }
-                  })
-                  .onHover(isHover => {
-                    if (!isHover) {
-                      this.hoverId = -1
-                    }
-                    if (isHover) {
-                      this.hoverId = index + ',0'
+                      .backgroundColor($r('sys.color.interactive_pressed'))
                     }
                   })
                   .onClick(async () => {
@@ -381,19 +375,13 @@ struct Sandboxfilelist {
                   })
                   .stateStyles({
                     normal: {
-                      .backgroundColor(this.hoverId === index + ',1' ? $r('sys.color.interactive_hover') :
-                        $r('app.color.sheet_background'))
+                      .backgroundColor($r('app.color.sheet_background'))
+                    },
+                    hovered: {
+                      .backgroundColor($r('sys.color.interactive_hover'))
                     },
                     pressed: {
-                      .backgroundColor($r('sys.color.comp_background_secondary'))
-                    }
-                  })
-                  .onHover(isHover => {
-                    if (!isHover) {
-                      this.hoverId = -1
-                    }
-                    if (isHover) {
-                      this.hoverId = index + ',1'
+                      .backgroundColor($r('sys.color.interactive_pressed'))
                     }
                   })
                   .onClick(async () => {

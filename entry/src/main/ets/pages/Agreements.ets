@@ -11,7 +11,6 @@ export function AgreementsBuilder() {
 
 @ComponentV2
 struct Agreements {
-  @Local hoverId: number = -1
   context = this.getUIContext().getHostContext() as common.UIAbilityContext
 
   build() {
@@ -39,19 +38,13 @@ struct Agreements {
             .padding(12)
             .stateStyles({
               normal: {
-                .backgroundColor(this.hoverId === 0 ? $r('sys.color.interactive_hover') :
-                  $r('sys.color.ohos_id_color_card_bg'))
+                .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+              },
+              hovered: {
+                .backgroundColor($r('sys.color.interactive_hover'))
               },
               pressed: {
                 .backgroundColor($r('sys.color.interactive_pressed'))
-              }
-            })
-            .onHover(isHover => {
-              if (!isHover) {
-                this.hoverId = -1
-              }
-              if (isHover) {
-                this.hoverId = 0
               }
             })
             .onClick(async () => {
@@ -61,7 +54,7 @@ struct Agreements {
                 await openLink(this.context, appPrivacyLink?.url as string)
               } catch (err) {
                 await promptAction.openToast({
-                  message: '发生错误，错误码：' + err.code + '，错误信息：' + err.message
+                  message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
                 })
               }
             })

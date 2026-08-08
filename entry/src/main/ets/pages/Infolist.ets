@@ -9,7 +9,6 @@ export function InfolistBuilder() {
 
 @ComponentV2
 struct Infolist {
-  @Local hoverId: number = -1
   pageInfos = new NavPathStack()
 
   build() {
@@ -140,19 +139,13 @@ struct Infolist {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 0 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 0
                 }
               })
               .onClick(async () => {
@@ -179,7 +172,7 @@ struct Infolist {
                 } catch (err) {
                   dialogControllerProgress.close()
                   await promptAction.openToast({
-                    message: '发生错误，错误码：' + err.code
+                    message: '发生错误，错误码：' + err.code + (err.message ? '，错误信息：' + err.message : '')
                   })
                 }
               })
@@ -312,19 +305,13 @@ struct Infolist {
               .padding(12)
               .stateStyles({
                 normal: {
-                  .backgroundColor(this.hoverId === 1 ? $r('sys.color.interactive_hover') :
-                    $r('sys.color.ohos_id_color_card_bg'))
+                  .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                },
+                hovered: {
+                  .backgroundColor($r('sys.color.interactive_hover'))
                 },
                 pressed: {
                   .backgroundColor($r('sys.color.interactive_pressed'))
-                }
-              })
-              .onHover(isHover => {
-                if (!isHover) {
-                  this.hoverId = -1
-                }
-                if (isHover) {
-                  this.hoverId = 1
                 }
               })
               .onClick(() => {
