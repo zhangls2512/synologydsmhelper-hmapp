@@ -59,7 +59,7 @@ export default struct Filelist {
   @Provider() totalSize: number = 0
   @Local isShowPlayerSheet: boolean = false
   @Local isShowReaderSheet: boolean = false
-  @Local preferType: number = 1
+  @Local preferType: SheetType = SheetType.CENTER
   @Local loading: boolean = false
   @Local fileArray: FileItem[] = []
   @Local dirnames: string[] = []
@@ -654,6 +654,7 @@ export default struct Filelist {
               Column() {
                 Image($r('app.media.cancel'))
               }
+              .bindTips('退出多选')
               .borderRadius(20)
               .height(40)
               .keyboardShortcut(FunctionKey.ESC, [])
@@ -691,6 +692,7 @@ export default struct Filelist {
               Column() {
                 Image($r('app.media.download'))
               }
+              .bindTips('下载')
               .borderRadius(20)
               .height(40)
               .margin({
@@ -780,6 +782,7 @@ export default struct Filelist {
                 Column() {
                   Image($r('app.media.confirm'))
                 }
+                .bindTips('确定')
                 .borderRadius(20)
                 .height(40)
                 .keyboardShortcut('V', [ModifierKey.CTRL])
@@ -866,6 +869,7 @@ export default struct Filelist {
                 Column() {
                   Image($r('app.media.copy'))
                 }
+                .bindTips('复制')
                 .borderRadius(20)
                 .height(40)
                 .keyboardShortcut('C', [ModifierKey.CTRL], () => {
@@ -945,6 +949,7 @@ export default struct Filelist {
                 Column() {
                   Image($r('app.media.move'))
                 }
+                .bindTips('移动')
                 .borderRadius(20)
                 .height(40)
                 .keyboardShortcut('X', [ModifierKey.CTRL], () => {
@@ -1024,6 +1029,7 @@ export default struct Filelist {
               Column() {
                 Image($r('app.media.delete'))
               }
+              .bindTips('删除')
               .borderRadius(20)
               .height(40)
               .keyboardShortcut('D', [ModifierKey.CTRL])
@@ -1116,6 +1122,7 @@ export default struct Filelist {
               Column() {
                 Image($r('app.media.back'))
               }
+              .bindTips('返回')
               .borderRadius(20)
               .height(40)
               .margin({
@@ -1234,6 +1241,7 @@ export default struct Filelist {
             Column() {
               Image($r('app.media.newfolder'))
             }
+            .bindTips('新建文件夹')
             .borderRadius(20)
             .height(40)
             .keyboardShortcut('N', [ModifierKey.CTRL, ModifierKey.SHIFT])
@@ -1274,6 +1282,7 @@ export default struct Filelist {
               Column() {
                 Image($r('app.media.upload'))
               }
+              .bindTips('上传')
               .borderRadius(20)
               .height(40)
               .padding(11)
@@ -1327,6 +1336,7 @@ export default struct Filelist {
               Column() {
                 Image($r('app.media.close'))
               }
+              .bindTips('取消')
               .borderRadius(20)
               .height(40)
               .keyboardShortcut(FunctionKey.ESC, [])
@@ -1358,6 +1368,7 @@ export default struct Filelist {
               Column() {
                 Image($r('app.media.confirm'))
               }
+              .bindTips('确定')
               .borderRadius(20)
               .height(40)
               .padding(11)
@@ -1435,6 +1446,7 @@ export default struct Filelist {
               Column() {
                 Image($r('app.media.compress'))
               }
+              .bindTips('压缩')
               .borderRadius(20)
               .height(40)
               .margin({
@@ -1499,6 +1511,7 @@ export default struct Filelist {
                 Column() {
                   Image($r('app.media.selectall'))
                 }
+                .bindTips('全选')
                 .borderRadius(20)
                 .height(40)
                 .keyboardShortcut('A', [ModifierKey.CTRL])
@@ -1532,6 +1545,7 @@ export default struct Filelist {
                 Column() {
                   Image($r('app.media.cancelselectall'))
                 }
+                .bindTips('取消全选')
                 .borderRadius(20)
                 .height(40)
                 .padding(11)
@@ -2128,7 +2142,7 @@ export default struct Filelist {
     .padding({
       left: $r('sys.float.ohos_id_elements_margin_horizontal_l'),
       right: $r('sys.float.ohos_id_elements_margin_horizontal_l'),
-      top: this.preferType === 0 ? 0 : $r('sys.float.ohos_id_default_padding_top')
+      top: this.preferType === SheetType.BOTTOM ? 0 : $r('sys.float.ohos_id_default_padding_top')
     })
     .onAppear(async () => {
       this.preferType = getPreferType(this.UIContext)

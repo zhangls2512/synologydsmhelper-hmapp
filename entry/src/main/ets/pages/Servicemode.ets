@@ -55,7 +55,7 @@ struct Servicemode {
               Span(
                 '全量模式下，本应用需要连接本应用开发者服务器，除可使用检查本应用更新等无需连接本应用开发者服务器的功能外，还可使用自动上传故障日志等需要连接本应用开发者服务器的功能。我们仅在您使用具体业务功能时，才会触发上述行为收集使用相关的个人信息。详情请参阅')
                 .fontColor($r('sys.color.font_secondary'))
-              Span('关于SynDSM助手与隐私的声明')
+              Span('关于NAS管家与隐私的声明')
                 .fontColor($r('sys.color.font_emphasize'))
                 .fontWeight(FontWeight.Medium)
                 .onClick(async () => {

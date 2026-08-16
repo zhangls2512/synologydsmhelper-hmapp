@@ -77,6 +77,7 @@ export default struct Accountlist {
           Column() {
             Image($r('app.media.new'))
           }
+          .bindTips('新增')
           .borderRadius(20)
           .height(40)
           .keyboardShortcut('N', [ModifierKey.CTRL, ModifierKey.SHIFT])
@@ -108,6 +109,7 @@ export default struct Accountlist {
           Column() {
             Image($r('app.media.cancel'))
           }
+          .bindTips('关闭')
           .borderRadius(20)
           .height(40)
           .padding(11)

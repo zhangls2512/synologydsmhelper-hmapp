@@ -19,7 +19,7 @@ export default async function copy(context: Context, UIContext: UIContext, text:
   if (!canWritePasteBoard) {
     const promptAction = UIContext.getPromptAction()
     const data = await promptAction.showDialog({
-      title: '允许“SynDSM 助手”写入剪贴板？',
+      title: '允许“NAS 管家”写入剪贴板？',
       message: $r('app.string.WRITE_PASTEBOARD_reason'),
       buttons: [
         {

@@ -23,7 +23,7 @@ interface NoticeResponseData {
 export default struct Cardlist {
   @Local isShowCardeditSheet: boolean = false
   @Local isShowNoticelistSheet: boolean = false
-  @Local preferType: number = 1
+  @Local preferType: SheetType = SheetType.CENTER
   @Local isLogin: boolean = false
   @Local cards: string[] = []
   @Local haveNotice: boolean = false
@@ -75,6 +75,7 @@ export default struct Cardlist {
             Column() {
               Image($r('app.media.edit'))
             }
+            .bindTips('编辑')
             .borderRadius(20)
             .height(40)
             .margin({
@@ -119,6 +120,7 @@ export default struct Cardlist {
               Column() {
                 Image($r('app.media.notice'))
               }
+              .bindTips('消息')
               .borderRadius(20)
               .height(40)
               .padding(11)
@@ -237,7 +239,7 @@ export default struct Cardlist {
           }
           ListItem()
             .margin({
-              bottom: this.preferType === 0 ? 80 : 0
+              bottom: this.preferType === SheetType.BOTTOM ? 80 : 0
             })
         }
         .layoutWeight(1)
@@ -246,7 +248,7 @@ export default struct Cardlist {
     .padding({
       left: $r('sys.float.ohos_id_elements_margin_horizontal_l'),
       right: $r('sys.float.ohos_id_elements_margin_horizontal_l'),
-      top: this.preferType === 0 ? 0 : $r('sys.float.ohos_id_default_padding_top')
+      top: this.preferType === SheetType.BOTTOM ? 0 : $r('sys.float.ohos_id_default_padding_top')
     })
     .onAppear(async () => {
       this.preferType = getPreferType(this.UIContext)

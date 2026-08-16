@@ -11,7 +11,7 @@ export default struct Addphotointoalbum {
   @Consumer() isShowAddphotointoalbumSheet: boolean = false
   @Provider() isShowNewalbumSheet: boolean = false
   @Param addId: number = -1
-  @Local preferType: number = 1
+  @Local preferType: SheetType = SheetType.CENTER
   @Local albumArray: AlbumItem[] = []
   UIContext = this.getUIContext()
   context = this.UIContext.getHostContext() as common.UIAbilityContext
@@ -38,6 +38,7 @@ export default struct Addphotointoalbum {
         Column() {
           Image($r('app.media.new_white'))
         }
+        .bindTips('新增')
         .borderRadius(20)
         .height(40)
         .keyboardShortcut('N', [ModifierKey.CTRL, ModifierKey.SHIFT])
