@@ -1,6 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { url } from '@kit.ArkTS'
-import { display, uiMaterial } from '@kit.ArkUI'
+import { display } from '@kit.ArkUI'
+import { hdsEffect } from '@kit.UIDesignKit'
 import { getLoginStatus } from '../common/Account'
 import { getFlushPreference } from '../common/Preference'
 import { getPreferType } from '../common/Prefertype'
@@ -90,13 +91,12 @@ export default struct Cardlist {
                 .backgroundColor($r('sys.color.interactive_pressed'))
               }
             })
-            .systemMaterial(new uiMaterial.ImmersiveMaterial({
-              style: uiMaterial.ImmersiveStyle.REGULAR,
-              interactive: true,
-              lightEffect: {
-                color: Color.White
-              }
-            }))
+            .visualEffect(new hdsEffect.HdsEffectBuilder()
+              .pointLight({
+                sourceType: hdsEffect.PointLightSourceType.SOFT,
+                illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+              })
+              .buildEffect())
             .width(40)
             .onClick(() => {
               this.isShowCardeditSheet = true
@@ -132,13 +132,12 @@ export default struct Cardlist {
                   .backgroundColor($r('sys.color.interactive_pressed'))
                 }
               })
-              .systemMaterial(new uiMaterial.ImmersiveMaterial({
-                style: uiMaterial.ImmersiveStyle.REGULAR,
-                interactive: true,
-                lightEffect: {
-                  color: Color.White
-                }
-              }))
+              .visualEffect(new hdsEffect.HdsEffectBuilder()
+                .pointLight({
+                  sourceType: hdsEffect.PointLightSourceType.SOFT,
+                  illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                })
+                .buildEffect())
               .width(40)
               .onClick(() => {
                 this.isShowNoticelistSheet = true

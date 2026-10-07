@@ -1,20 +1,13 @@
 import { common } from '@kit.AbilityKit'
 import { dataSharePredicates, sendablePreferences } from '@kit.ArkData'
 import { taskpool, url, util } from '@kit.ArkTS'
-import {
-  display,
-  LoadingDialog,
-  promptAction,
-  SegmentButtonV2Items,
-  TabSegmentButtonV2,
-  uiMaterial,
-  window
-} from '@kit.ArkUI'
+import { display, LoadingDialog, promptAction, SegmentButtonV2Items, TabSegmentButtonV2, window } from '@kit.ArkUI'
 import { fileIo, fileUri, picker } from '@kit.CoreFileKit'
 import { map, mapCommon, MapComponent, petalMaps, site } from '@kit.MapKit'
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { netBoost } from '@kit.NetworkBoostKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
+import { hdsEffect } from '@kit.UIDesignKit'
 import { getAccountHash, getAccountInfo, getLoginStatus } from '../common/Account'
 import { getDnsServer } from '../common/Dnsserver'
 import { getCurrentNetworkBearerType } from '../common/Network'
@@ -1210,13 +1203,12 @@ export default struct Album {
                     .backgroundColor($r('sys.color.interactive_pressed'))
                   }
                 })
-                .systemMaterial(new uiMaterial.ImmersiveMaterial({
-                  style: uiMaterial.ImmersiveStyle.REGULAR,
-                  interactive: true,
-                  lightEffect: {
-                    color: Color.White
-                  }
-                }))
+                .visualEffect(new hdsEffect.HdsEffectBuilder()
+                  .pointLight({
+                    sourceType: hdsEffect.PointLightSourceType.SOFT,
+                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                  })
+                  .buildEffect())
                 .width(40)
                 .onClick(async () => {
                   const transferTaskDataPreferences = sendablePreferences.getPreferencesSync(this.context, {
@@ -1519,13 +1511,12 @@ export default struct Album {
                     .backgroundColor($r('sys.color.interactive_pressed'))
                   }
                 })
-                .systemMaterial(new uiMaterial.ImmersiveMaterial({
-                  style: uiMaterial.ImmersiveStyle.REGULAR,
-                  interactive: true,
-                  lightEffect: {
-                    color: Color.White
-                  }
-                }))
+                .visualEffect(new hdsEffect.HdsEffectBuilder()
+                  .pointLight({
+                    sourceType: hdsEffect.PointLightSourceType.SOFT,
+                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                  })
+                  .buildEffect())
                 .width(40)
                 .onClick(() => {
                   this.previewPhoto = undefined
@@ -1558,13 +1549,12 @@ export default struct Album {
                     .backgroundColor($r('sys.color.interactive_pressed'))
                   }
                 })
-                .systemMaterial(new uiMaterial.ImmersiveMaterial({
-                  style: uiMaterial.ImmersiveStyle.REGULAR,
-                  interactive: true,
-                  lightEffect: {
-                    color: Color.White
-                  }
-                }))
+                .visualEffect(new hdsEffect.HdsEffectBuilder()
+                  .pointLight({
+                    sourceType: hdsEffect.PointLightSourceType.SOFT,
+                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                  })
+                  .buildEffect())
                 .width(40)
                 .bindMenu(this.MenuBuilder(this.previewPhoto))
               }
@@ -1730,13 +1720,12 @@ export default struct Album {
                       .backgroundColor($r('sys.color.interactive_pressed'))
                     }
                   })
-                  .systemMaterial(new uiMaterial.ImmersiveMaterial({
-                    style: uiMaterial.ImmersiveStyle.REGULAR,
-                    interactive: true,
-                    lightEffect: {
-                      color: Color.White
-                    }
-                  }))
+                  .visualEffect(new hdsEffect.HdsEffectBuilder()
+                    .pointLight({
+                      sourceType: hdsEffect.PointLightSourceType.SOFT,
+                      illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                    })
+                    .buildEffect())
                   .width(40)
                   .onClick(() => {
                     this.previewAlbum = undefined

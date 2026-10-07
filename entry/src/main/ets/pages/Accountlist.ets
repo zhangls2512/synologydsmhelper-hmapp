@@ -1,5 +1,6 @@
 import { common } from '@kit.AbilityKit'
-import { promptAction, uiMaterial } from '@kit.ArkUI'
+import { promptAction } from '@kit.ArkUI'
+import { hdsEffect } from '@kit.UIDesignKit'
 import { AccountInfo, getAccountList, removeAccount, setAccount, setAccountBz } from '../common/Account'
 import { autoBackup } from '../common/Backup'
 import copy from '../common/Pasteboard'
@@ -93,13 +94,12 @@ export default struct Accountlist {
               .backgroundColor($r('sys.color.interactive_pressed'))
             }
           })
-          .systemMaterial(new uiMaterial.ImmersiveMaterial({
-            style: uiMaterial.ImmersiveStyle.REGULAR,
-            interactive: true,
-            lightEffect: {
-              color: Color.White
-            }
-          }))
+          .visualEffect(new hdsEffect.HdsEffectBuilder()
+            .pointLight({
+              sourceType: hdsEffect.PointLightSourceType.SOFT,
+              illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+            })
+            .buildEffect())
           .width(40)
           .onClick(() => {
             this.context.eventHub.emit('login')
@@ -121,13 +121,12 @@ export default struct Accountlist {
               .backgroundColor($r('sys.color.interactive_pressed'))
             }
           })
-          .systemMaterial(new uiMaterial.ImmersiveMaterial({
-            style: uiMaterial.ImmersiveStyle.REGULAR,
-            interactive: true,
-            lightEffect: {
-              color: Color.White
-            }
-          }))
+          .visualEffect(new hdsEffect.HdsEffectBuilder()
+            .pointLight({
+              sourceType: hdsEffect.PointLightSourceType.SOFT,
+              illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+            })
+            .buildEffect())
           .width(40)
           .onClick(() => {
             this.isShowAccountlistSheet = false
