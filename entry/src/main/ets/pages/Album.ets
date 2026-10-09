@@ -1,20 +1,13 @@
 import { common } from '@kit.AbilityKit'
 import { dataSharePredicates, sendablePreferences } from '@kit.ArkData'
 import { taskpool, url, util } from '@kit.ArkTS'
-import {
-  display,
-  LoadingDialog,
-  promptAction,
-  SegmentButtonV2Items,
-  TabSegmentButtonV2,
-  uiMaterial,
-  window
-} from '@kit.ArkUI'
+import { display, LoadingDialog, promptAction, SegmentButtonV2Items, TabSegmentButtonV2, window } from '@kit.ArkUI'
 import { fileIo, fileUri, picker } from '@kit.CoreFileKit'
 import { map, mapCommon, MapComponent, petalMaps, site } from '@kit.MapKit'
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { netBoost } from '@kit.NetworkBoostKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
+import { hdsEffect } from '@kit.UIDesignKit'
 import { getAccountHash, getAccountInfo, getLoginStatus } from '../common/Account'
 import { getDnsServer } from '../common/Dnsserver'
 import { getCurrentNetworkBearerType } from '../common/Network'
@@ -119,7 +112,7 @@ export default struct Album {
   @Provider() isShowProgressSheet: boolean = false
   @Provider() transferredSize: number = 0
   @Provider() totalSize: number = 0
-  @Local preferType: number = 1
+  @Local preferType: SheetType = SheetType.CENTER
   @Local selectedIndex: number = 0
   @Local loading: boolean = false
   @Local timelineArray: TimelineItem[] = []
@@ -1198,6 +1191,7 @@ export default struct Album {
                 Column() {
                   Image($r('app.media.upload'))
                 }
+                .bindTips('上传')
                 .borderRadius(20)
                 .height(40)
                 .padding(11)
@@ -1209,13 +1203,12 @@ export default struct Album {
                     .backgroundColor($r('sys.color.interactive_pressed'))
                   }
                 })
-                .systemMaterial(new uiMaterial.ImmersiveMaterial({
-                  style: uiMaterial.ImmersiveStyle.REGULAR,
-                  interactive: true,
-                  lightEffect: {
-                    color: Color.White
-                  }
-                }))
+                .visualEffect(new hdsEffect.HdsEffectBuilder()
+                  .pointLight({
+                    sourceType: hdsEffect.PointLightSourceType.SOFT,
+                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                  })
+                  .buildEffect())
                 .width(40)
                 .onClick(async () => {
                   const transferTaskDataPreferences = sendablePreferences.getPreferencesSync(this.context, {
@@ -1408,7 +1401,7 @@ export default struct Album {
                       .virtualScroll()
                     ListItem()
                       .margin({
-                        bottom: this.preferType === 0 ? 80 : 0
+                        bottom: this.preferType === SheetType.BOTTOM ? 80 : 0
                       })
                   }
                   .height('100%')
@@ -1481,7 +1474,7 @@ export default struct Album {
                   .backgroundColor($r('sys.color.comp_background_primary'))
                   .borderRadius($r('sys.float.ohos_id_corner_radius_default_l'))
                   .margin({
-                    bottom: this.preferType === 0 ? 80 : 0
+                    bottom: this.preferType === SheetType.BOTTOM ? 80 : 0
                   })
                   .padding($r('sys.float.ohos_id_corner_radius_mark'))
                 }
@@ -1503,6 +1496,7 @@ export default struct Album {
                 Column() {
                   Image($r('app.media.back'))
                 }
+                .bindTips('返回')
                 .borderRadius(20)
                 .height(40)
                 .margin({
@@ -1517,13 +1511,12 @@ export default struct Album {
                     .backgroundColor($r('sys.color.interactive_pressed'))
                   }
                 })
-                .systemMaterial(new uiMaterial.ImmersiveMaterial({
-                  style: uiMaterial.ImmersiveStyle.REGULAR,
-                  interactive: true,
-                  lightEffect: {
-                    color: Color.White
-                  }
-                }))
+                .visualEffect(new hdsEffect.HdsEffectBuilder()
+                  .pointLight({
+                    sourceType: hdsEffect.PointLightSourceType.SOFT,
+                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                  })
+                  .buildEffect())
                 .width(40)
                 .onClick(() => {
                   this.previewPhoto = undefined
@@ -1544,6 +1537,7 @@ export default struct Album {
                 Column() {
                   Image($r('app.media.menu'))
                 }
+                .bindTips('更多')
                 .borderRadius(20)
                 .height(40)
                 .padding(11)
@@ -1555,13 +1549,12 @@ export default struct Album {
                     .backgroundColor($r('sys.color.interactive_pressed'))
                   }
                 })
-                .systemMaterial(new uiMaterial.ImmersiveMaterial({
-                  style: uiMaterial.ImmersiveStyle.REGULAR,
-                  interactive: true,
-                  lightEffect: {
-                    color: Color.White
-                  }
-                }))
+                .visualEffect(new hdsEffect.HdsEffectBuilder()
+                  .pointLight({
+                    sourceType: hdsEffect.PointLightSourceType.SOFT,
+                    illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                  })
+                  .buildEffect())
                 .width(40)
                 .bindMenu(this.MenuBuilder(this.previewPhoto))
               }
@@ -1695,7 +1688,7 @@ export default struct Album {
             }
             .alignItems(HorizontalAlign.Start)
             .margin({
-              bottom: this.preferType === 0 ? 80 : 0
+              bottom: this.preferType === SheetType.BOTTOM ? 80 : 0
             })
             .bindSheet(this.isShowInfoSheet!!, this.InfoSheetBuilder(), {
               height: SheetSize.FIT_CONTENT,
@@ -1712,6 +1705,7 @@ export default struct Album {
                   Column() {
                     Image($r('app.media.back'))
                   }
+                  .bindTips('返回')
                   .borderRadius(20)
                   .height(40)
                   .margin({
@@ -1726,13 +1720,12 @@ export default struct Album {
                       .backgroundColor($r('sys.color.interactive_pressed'))
                     }
                   })
-                  .systemMaterial(new uiMaterial.ImmersiveMaterial({
-                    style: uiMaterial.ImmersiveStyle.REGULAR,
-                    interactive: true,
-                    lightEffect: {
-                      color: Color.White
-                    }
-                  }))
+                  .visualEffect(new hdsEffect.HdsEffectBuilder()
+                    .pointLight({
+                      sourceType: hdsEffect.PointLightSourceType.SOFT,
+                      illuminatedType: hdsEffect.PointLightIlluminatedType.BORDER_CONTENT
+                    })
+                    .buildEffect())
                   .width(40)
                   .onClick(() => {
                     this.previewAlbum = undefined
@@ -1850,7 +1843,7 @@ export default struct Album {
                     .virtualScroll()
                   ListItem()
                     .margin({
-                      bottom: this.preferType === 0 ? 80 : 0
+                      bottom: this.preferType === SheetType.BOTTOM ? 80 : 0
                     })
                 }
                 .lanes(4)
@@ -1864,7 +1857,7 @@ export default struct Album {
     .padding({
       left: $r('sys.float.ohos_id_elements_margin_horizontal_l'),
       right: $r('sys.float.ohos_id_elements_margin_horizontal_l'),
-      top: this.preferType === 0 ? 0 : $r('sys.float.ohos_id_default_padding_top')
+      top: this.preferType === SheetType.BOTTOM ? 0 : $r('sys.float.ohos_id_default_padding_top')
     })
     .onAppear(async () => {
       this.preferType = getPreferType(this.UIContext)

@@ -56,7 +56,7 @@ struct Index {
   @Local errorType: string = ''
   @Local errorObject: string = ''
   @Local backgroundImagePixelMap: PixelMap | undefined = undefined
-  @Local preferType: number = 1
+  @Local preferType: SheetType = SheetType.CENTER
   @Local index: number = 0
   @Local showAlbum: boolean = false
   @Local isShowCleardataSheet: boolean = false
@@ -289,7 +289,7 @@ struct Index {
         .barPosition(BarPosition.End)
         .barWidth(this.showAlbum ? 320 : 240)
         .scrollable(false)
-        .vertical(this.preferType === 0 ? false : true)
+        .vertical(this.preferType === SheetType.BOTTOM ? false : true)
         .onChange(index => {
           this.index = index
         })

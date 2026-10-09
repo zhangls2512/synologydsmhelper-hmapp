@@ -34,7 +34,9 @@
         "buildOption": {
           "packOptions": {
             "fastBuildApp": true,
-            "appWithSignedPkg": true
+            "appWithSignedPkg": true,
+            "enableIncrementalSoCompress": true,
+            "deduplicateSo": true
           },
           "resOptions": {
             "resCompileThreads": 32

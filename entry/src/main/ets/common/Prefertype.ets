@@ -1,10 +1,7 @@
 export function getPreferType(UIContext: UIContext) {
   const windowHeightBreakpoint = UIContext.getWindowHeightBreakpoint()
-  if (windowHeightBreakpoint !== HeightBreakpoint.HEIGHT_SM) {
-    return 0
-  }
   if (windowHeightBreakpoint === HeightBreakpoint.HEIGHT_SM) {
-    return 1
+    return SheetType.CENTER
   }
-  return -1
+  return SheetType.BOTTOM
 }
