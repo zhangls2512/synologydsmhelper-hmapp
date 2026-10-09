@@ -19,7 +19,7 @@ struct License {
   gabaInfoArray: Item[] = [
     {
       key: '名称',
-      value: 'SynDSM助手'
+      value: 'NAS管家'
     },
     {
       key: '主体类型',

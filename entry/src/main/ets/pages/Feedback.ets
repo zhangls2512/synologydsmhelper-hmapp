@@ -110,7 +110,7 @@ struct Feedback {
                 dialogControllerProgress.open()
                 const res = await developerRequest(this.context, '/product/sendFeedbackEmail', {
                   product: 'synologydsmhelper',
-                  version: '1.1.4.13',
+                  version: '1.1.4.14',
                   content: this.content,
                   contactType: this.contactType,
                   contactValue: this.contactValue
