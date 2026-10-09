@@ -681,7 +681,6 @@ struct Index {
       this.context.eventHub.on('refreshIndex', async () => {
         await this.get()
       })
-      this.showAlbum = getFlushPreference(this.context, 'commonSetting', 'showAlbum', false) as boolean
       await this.get()
     })
     .onDisAppear(() => {
