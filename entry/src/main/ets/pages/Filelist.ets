@@ -1225,6 +1225,7 @@ export default struct Filelist {
               placeholder: '请输入搜索关键词',
               value: this.searchKeyword!!
             })
+              .enableAutoSpacing(true)
               .searchButton('搜索')
           }
           Row() {
@@ -1687,11 +1688,11 @@ export default struct Filelist {
                           let houzhui = ''
                           const lastDotIndex = item.item.name.lastIndexOf('.')
                           if (lastDotIndex !== -1) {
-                            houzhui = item.item.name.slice(lastDotIndex + 1)
+                            houzhui = item.item.name.slice(lastDotIndex + 1).toLowerCase()
                           }
                           const supportedFormats =
                             ['mp4', 'mkv', 'm4a', 'aac', 'mp3', 'ogg', 'wav', 'flac', 'amr', 'ape']
-                          if (supportedFormats.includes(houzhui.toLowerCase()) &&
+                          if (supportedFormats.includes(houzhui) &&
                             getFlushPreference(this.context, 'commonSetting', 'onlinePreviewMedia', true)) {
                             this.dialogControllerProgress.open()
                             this.src = await this.getPreviewUrl(item.item.path, item.item.name)
@@ -1819,9 +1820,8 @@ export default struct Filelist {
                                   const filePreviewType =
                                     getFlushPreference(this.context, 'commonSetting', 'filePreviewType', 0)
                                   if (filePreviewType === 0) {
-                                    const supportedReaderFormats = ['.epub', '.mobi', '.azw', '.azw3']
-                                    if (!supportedReaderFormats.some(
-                                      formatItem => item.item.name.endsWith(formatItem))) {
+                                    const supportedReaderFormats = ['epub', 'mobi', 'azw', 'azw3']
+                                    if (!supportedReaderFormats.includes(houzhui)) {
                                       const canPreview = await filePreview.canPreview(this.context, uri)
                                       if (!canPreview) {
                                         await promptAction.openToast({
@@ -1836,10 +1836,9 @@ export default struct Filelist {
                                         })
                                       }
                                     }
-                                    if (supportedReaderFormats.some(
-                                      formatItem => item.item.name.endsWith(formatItem))) {
+                                    if (supportedReaderFormats.includes(houzhui)) {
                                       const dir = this.context.tempDir + '/preview/reader/' + this.account + '/' +
-                                        sha256hash(item.item.name)
+                                        sha256hash(item.item.path)
                                       if (!fileIo.accessSync(dir)) {
                                         await fileIo.mkdir(dir, true)
                                       }
